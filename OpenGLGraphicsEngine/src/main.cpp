@@ -28,7 +28,9 @@ const GLuint SCR_WIDTH{ 800 };
 const GLuint SCR_HEIGHT{ 600 };
 
 // Camera settings
-Camera camera(glm::vec3(4.25f, 2.5f, 4.25f), glm::vec3(0.0f, 1.0f, 0.0f), -135.0f, -24.0f);
+glm::vec3 initialCameraPosition{ 4.25f, 2.5f, 4.25f }, initialCameraUp{ 0.0f, 1.0f, 0.0f };
+GLfloat initialCameraYaw{ -135.0f }, initialCameraPitch{ -24.0f };
+Camera camera(initialCameraPosition, initialCameraUp, initialCameraYaw, initialCameraPitch);
 GLfloat lastX{ SCR_WIDTH / 2.0f };
 GLfloat lastY{ SCR_HEIGHT / 2.0f };
 GLboolean firstMouse{ true };
@@ -224,15 +226,9 @@ void processInput(GLFWwindow* window)
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, true);
 
-	// Camera controls (WASD)
-	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-		camera.ProcessKeyboard(FORWARD, deltaTime);
-	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-		camera.ProcessKeyboard(BACKWARD, deltaTime);
-	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-		camera.ProcessKeyboard(LEFT, deltaTime);
-	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-		camera.ProcessKeyboard(RIGHT, deltaTime);
+	// Reset camera position and rotation on R
+	if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS)
+		camera = Camera(initialCameraPosition, initialCameraUp, initialCameraYaw, initialCameraPitch);
 }
 
 // GLFW callbacks
@@ -244,6 +240,25 @@ void framebuffer_size_callback(GLFWwindow* window, GLint width, GLint height)
 
 void mouse_callback(GLFWwindow* window, GLdouble xposIn, GLdouble yposIn)
 {
+	static GLboolean rightMouseButtonPressed{ false };
+	static GLboolean leftMouseButtonPressed{ false };
+
+	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS)
+	{
+		rightMouseButtonPressed = true;
+		leftMouseButtonPressed = false;
+	}
+	else if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
+	{
+		leftMouseButtonPressed = true;
+		rightMouseButtonPressed = false;
+	}
+	else
+	{
+		rightMouseButtonPressed = false;
+		leftMouseButtonPressed = false;
+	}
+
 	GLfloat xpos = static_cast<GLfloat>(xposIn);
 	GLfloat ypos = static_cast<GLfloat>(yposIn);
 
@@ -251,19 +266,21 @@ void mouse_callback(GLFWwindow* window, GLdouble xposIn, GLdouble yposIn)
 	{
 		lastX = xpos;
 		lastY = ypos;
-		firstMouse = GL_FALSE;
+		firstMouse = false;
 	}
 
 	GLfloat xoffset = xpos - lastX;
-	GLfloat yoffset = lastY - ypos; // reversed since y-coordinates go from bottom to top
-
+	GLfloat yoffset = lastY - ypos; // reversed since y-coordinates range from bottom to top
 	lastX = xpos;
 	lastY = ypos;
 
-	camera.ProcessMouseMovement(xoffset, yoffset);
+	if (rightMouseButtonPressed) // the right mouse button is used to rotate the camera
+		camera.ProcessMouseRotation(xoffset, yoffset);
+	else if (leftMouseButtonPressed) // the left mouse button is used to translate the camera in 2D
+		camera.ProcessMouseTranslation(xoffset, yoffset, 0.025f);
 }
 
 void scroll_callback(GLFWwindow* window, GLdouble xoffset, GLdouble yoffset)
 {
-	camera.ProcessMouseScroll(static_cast<GLfloat>(yoffset));
+	camera.ProcessMouseScroll(static_cast<GLfloat>(yoffset), 2.5f);
 }

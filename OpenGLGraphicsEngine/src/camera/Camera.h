@@ -68,12 +68,21 @@ public:
 	// Returns the view matrix calculated using Euler Angles and the LookAt Matrix
 	glm::mat4 GetViewMatrix() const;
 
-	// Processes input received from any keyboard-like input system. Accepts input parameter in the form of camera defined ENUM (to abstract it from windowing systems)
+	// Processes input received from any keyboard-like input system.
+	// Accepts input parameter in the form of camera defined ENUM (to abstract it from windowing systems)
 	void ProcessKeyboard(Camera_Movement direction, GLfloat deltaTime);
-	// Processes input received from a mouse input system. Expects the offset value in both the x and y direction.
-	void ProcessMouseMovement(GLfloat xoffset, GLfloat yoffset, GLboolean constrainPitch = true);
-	// Processes input received from a mouse scroll-wheel event. Only requires input on the vertical wheel-axis
-	void ProcessMouseScroll(GLfloat yoffset);
+	// Processes input received from a left-click drag event.
+	// Expects the offset values in both the x and y directions and the sensitivity of the mouse movement.
+	// This method is intended to be used for camera translation
+	void ProcessMouseTranslation(GLfloat xoffset, GLfloat yoffset, GLfloat sensitivity = 0.1f);
+	// Processes input received from a mouse right-click drag event.
+	// Expects the offset values in both the x and y directions, the sensitivity of the mouse movement, 
+	// and whether the user wants to constrain the pitch. 
+	// This method is intended to be used for camera rotation
+	void ProcessMouseRotation(GLfloat xoffset, GLfloat yoffset, GLfloat sensitivity = 0.1f, GLboolean constrainPitch = true);
+	// Processes input received from a mouse scroll-wheel event.
+	// Expects the offset value in the y direction and the sensitivity of the scroll
+	void ProcessMouseScroll(GLfloat yoffset, GLfloat sensitivity = 1.0f);
 
 private:
 	// Private Methods

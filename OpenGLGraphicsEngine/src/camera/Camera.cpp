@@ -50,13 +50,25 @@ void Camera::ProcessKeyboard(Camera_Movement direction, GLfloat deltaTime)
 	// position.y = 0.0f;  // make sure the user stays at the ground level (y = 0, XZ plane)
 }
 
-// Processes input received from a mouse input system. 
-// Expects the offset value in both the x and y direction.
-void Camera::ProcessMouseMovement(GLfloat xoffset, GLfloat yoffset, GLboolean constrainPitch)
+// Processes input received from a left-click drag event.
+// Expects the offset values in both the x and y directions and the sensitivity of the mouse movement.
+// This method is intended to be used for camera translation
+void Camera::ProcessMouseTranslation(GLfloat xoffset, GLfloat yoffset, GLfloat sensitivity)
 {
-	xoffset *= mouseSensitivity;
-	yoffset *= mouseSensitivity;
+	xoffset *= sensitivity;
+	yoffset *= sensitivity;
+	position += right * xoffset;
+	position += up * yoffset;
+}
 
+// Processes input received from a mouse right-click drag event.
+// Expects the offset values in both the x and y directions, the sensitivity of the mouse movement, 
+// and whether the user wants to constrain the pitch. 
+// This method is intended to be used for camera rotation
+void Camera::ProcessMouseRotation(GLfloat xoffset, GLfloat yoffset, GLfloat sensitivity, GLboolean constrainPitch)
+{
+	xoffset *= sensitivity;
+	yoffset *= sensitivity;
 	yaw += xoffset;
 	pitch += yoffset;
 
@@ -64,15 +76,16 @@ void Camera::ProcessMouseMovement(GLfloat xoffset, GLfloat yoffset, GLboolean co
 	if (constrainPitch)
 		pitch = std::clamp(pitch, -89.0f, 89.0f);
 
-	// update front, right and up Vectors using the updated Euler angles
+	// update front, right and up Vectors using the updated Euler Angles
 	updateCameraVectors();
 }
 
 // Processes input received from a mouse scroll-wheel event. 
 // Only requires input on the vertical wheel-axis
-void Camera::ProcessMouseScroll(GLfloat yoffset)
+void Camera::ProcessMouseScroll(GLfloat yoffset, GLfloat sensitivity)
 {
-	zoom = std::clamp(zoom - yoffset, 1.0f, 45.0f);
+	zoom -= yoffset * sensitivity;
+	zoom = std::clamp(zoom, 1.0f, 45.0f);
 }
 
 // Private Methods
