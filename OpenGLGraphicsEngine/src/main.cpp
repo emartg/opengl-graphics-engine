@@ -94,26 +94,38 @@ int main()
 
 	// Set up buffers and configure vertex attributes
 	// ----------------------------------------------
-	GLuint cubeVAO, cubeVBO, cubeEBO;
+	GLuint cubeVAO, cubeVerticesVBO, cubeNormalsVBO, cubeTexCoordsVBO, cubeEBO;
 	glGenVertexArrays(1, &cubeVAO);
-	glGenBuffers(1, &cubeVBO);
+	glGenBuffers(1, &cubeVerticesVBO);
+	glGenBuffers(1, &cubeNormalsVBO);
+	glGenBuffers(1, &cubeTexCoordsVBO);
 	glGenBuffers(1, &cubeEBO);
 
 	glBindVertexArray(cubeVAO);
 
-	// load data into vertex buffer
-	glBindBuffer(GL_ARRAY_BUFFER, cubeVBO);
+	// load vertex position data and configure vertex position attribute
+	glBindBuffer(GL_ARRAY_BUFFER, cubeVerticesVBO);
 	glBufferData(GL_ARRAY_BUFFER, cubeVertices.size() * sizeof(GLfloat), cubeVertices.data(), GL_STATIC_DRAW);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), static_cast<GLvoid*>(0));
+	glEnableVertexAttribArray(0);
 
-	// load data into index buffer
+	// load vertex normal data and configure vertex normal attribute
+	glBindBuffer(GL_ARRAY_BUFFER, cubeNormalsVBO);
+	glBufferData(GL_ARRAY_BUFFER, cubeNormals.size() * sizeof(GLfloat), cubeNormals.data(), GL_STATIC_DRAW);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), static_cast<GLvoid*>(0));
+	glEnableVertexAttribArray(1);
+
+	// load vertex texture coordinate data and configure vertex texture coordinate attribute
+	glBindBuffer(GL_ARRAY_BUFFER, cubeTexCoordsVBO);
+	glBufferData(GL_ARRAY_BUFFER, cubeTexCoords.size() * sizeof(GLfloat), cubeTexCoords.data(), GL_STATIC_DRAW);
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(GLfloat), static_cast<GLvoid*>(0));
+	glEnableVertexAttribArray(2);
+
+	// load index data and configure element buffer object
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cubeEBO);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, cubeIndices.size() * sizeof(GLuint), cubeIndices.data(), GL_STATIC_DRAW);
 
-	// set the vertex attribute pointers
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), static_cast<GLvoid*>(nullptr));
-	glEnableVertexAttribArray(0);
-
-	// unbind buffers and vertex array
+	// unbind the objects
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
@@ -125,8 +137,19 @@ int main()
 	// Shader configuration
 	// --------------------
 	cubeShader.Use();
-	cubeShader.SetVec3("albedo", glm::vec3(0.5f, 0.0f, 0.0f)); // red
 
+	// vertex shader uniforms
+	cubeShader.SetVec3("lightPos", glm::vec3(-1.0f, 2.0f, 2.0f));
+
+	// fragment shader uniforms
+	cubeShader.SetVec3("albedo", glm::vec3(0.5f, 0.0f, 0.0f));			// red
+	cubeShader.SetFloat("shininess", 32.0f);
+	cubeShader.SetVec3("light.ambient", glm::vec3(0.1f, 0.1f, 0.1f));	// low influence of ambient light
+	cubeShader.SetVec3("light.diffuse", glm::vec3(0.8f, 0.8f, 0.8f));	// slightly higher influence of diffuse light
+	cubeShader.SetVec3("light.specular", glm::vec3(1.0f, 1.0f, 1.0f));	// full influence of specular light
+	cubeShader.SetFloat("light.constant", 1.0f);						// constant attenuation term for a distance of 50
+	cubeShader.SetFloat("light.linear", 0.09f);							// linear attenuation term for a distance of 50
+	cubeShader.SetFloat("light.quadratic", 0.032f);						// quadratic attenuation term for a distance of 50
 
 	// Render loop
 	// -----------
@@ -163,7 +186,7 @@ int main()
 		// render the cube
 		glBindVertexArray(cubeVAO);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cubeEBO);
-		glDrawElements(GL_TRIANGLES, cubeIndices.size(), GL_UNSIGNED_INT, nullptr);
+		glDrawElements(GL_TRIANGLES, cubeIndices.size(), GL_UNSIGNED_INT, 0);
 		glBindVertexArray(0);
 
 		// GLFW: swap buffers and poll IO events
@@ -177,7 +200,10 @@ int main()
 	glDeleteProgram(cubeShader.ID);
 
 	glDeleteVertexArrays(1, &cubeVAO);
-	glDeleteBuffers(1, &cubeVBO);
+	glDeleteBuffers(1, &cubeVerticesVBO);
+	glDeleteBuffers(1, &cubeNormalsVBO);
+	glDeleteBuffers(1, &cubeTexCoordsVBO);
+	glDeleteBuffers(1, &cubeEBO);
 
 	// GLFW: terminate, clearing all previously allocated GLFW resources
 	// -----------------------------------------------------------------
