@@ -99,27 +99,32 @@ int main()
 	glGenBuffers(1, &cubeVBO);
 	glGenBuffers(1, &cubeEBO);
 
+	// interleave the vertex data so that it is laid out as follows: vertex, normal, texture coordinate
+	std::vector<GLfloat> interleavedData;
+	for (size_t i = 0; i < cubeVertices.size() / 3; ++i) {
+		interleavedData.push_back(cubeVertices[i * 3]);
+		interleavedData.push_back(cubeVertices[i * 3 + 1]);
+		interleavedData.push_back(cubeVertices[i * 3 + 2]);
+		interleavedData.push_back(cubeNormals[i * 3]);
+		interleavedData.push_back(cubeNormals[i * 3 + 1]);
+		interleavedData.push_back(cubeNormals[i * 3 + 2]);
+		interleavedData.push_back(cubeTexCoords[i * 2]);
+		interleavedData.push_back(cubeTexCoords[i * 2 + 1]);
+	}
+
 	glBindVertexArray(cubeVAO);
 
-	glBindBuffer(GL_ARRAY_BUFFER, cubeVBO);
-
 	// load data into vertex buffer
-	glBufferData(GL_ARRAY_BUFFER, (cubeVertices.size() + cubeNormals.size() + cubeTexCoords.size()) * sizeof(GLfloat),
-		nullptr, GL_STATIC_DRAW); // allocate memory
-	glBufferSubData(GL_ARRAY_BUFFER, 0, cubeVertices.size() * sizeof(GLfloat), cubeVertices.data()); // copy vertices
-	glBufferSubData(GL_ARRAY_BUFFER, cubeVertices.size() * sizeof(GLfloat),
-		cubeNormals.size() * sizeof(GLfloat), cubeNormals.data()); // copy normals
-	glBufferSubData(GL_ARRAY_BUFFER, (cubeVertices.size() + cubeNormals.size()) * sizeof(GLfloat),
-		cubeTexCoords.size() * sizeof(GLfloat), cubeTexCoords.data()); // copy texture coordinates
+	glBindBuffer(GL_ARRAY_BUFFER, cubeVBO);
+	glBufferData(GL_ARRAY_BUFFER, interleavedData.size() * sizeof(GLfloat), interleavedData.data(), GL_STATIC_DRAW);
 
 	// set the vertex attribute pointers
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (void*)0); // vertex coordinates
 	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (void*)0); // vertex positions
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (void*)(3 * sizeof(GLfloat))); // normal coordinates
 	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (void*)(cubeVertices.size() * sizeof(GLfloat))); // normals
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (void*)(6 * sizeof(GLfloat))); // texture coordinates
 	glEnableVertexAttribArray(2);
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(GLfloat),
-		(void*)((cubeVertices.size() + cubeNormals.size()) * sizeof(GLfloat))); // texture coordinates
 
 	// load index data and configure element buffer object
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cubeEBO);
