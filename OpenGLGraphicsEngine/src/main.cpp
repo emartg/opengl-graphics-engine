@@ -76,7 +76,7 @@ int main()
 
 	// GLFW: other configurations
 	// --------------------------
-	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_CAPTURED); // make the cursor visible and confined to the window
+	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL); // cursor is visible but not confined to the window
 
 	// GLAD: load all OpenGL function pointers
 	// ---------------------------------------
