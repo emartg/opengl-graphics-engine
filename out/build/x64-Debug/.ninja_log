@@ -1,0 +1,12 @@
+# ninja log v6
+277	321	7590792153503602	STB_IMAGE.lib	b39888f10d5cbf06
+27	274	7590792151013565	CMakeFiles/Engine.dir/src/stb_image.cpp.obj	10afe33748a8b05b
+19	901	7590792150933564	CMakeFiles/Engine.dir/src/camera/Camera.cpp.obj	bd51a1ed5a3d2f6f
+15	276	7590792150893562	CMakeFiles/STB_IMAGE.dir/src/stb_image.cpp.obj	221f02768d2b2818
+11	355	7590792150843551	CMakeFiles/GLAD.dir/src/glad.c.obj	ee31bf4c072062ac
+31	1360	7590792151053603	CMakeFiles/Engine.dir/src/test/test.cpp.obj	786b71b64826078e
+355	398	7590792154293569	GLAD.lib	6bab7440d4734d48
+23	1255	7590792150973568	CMakeFiles/Engine.dir/src/shader/Shader.cpp.obj	41520ed5297542d2
+36	1397	7590792151093609	CMakeFiles/EngineTest.dir/src/test/test.cpp.obj	7e9ba22745419bc2
+1360	1406	7590792164343595	Engine.lib	8a2900455de1210d
+1406	1694	7590792164804760	bin/EngineTest.exe	414c3e7fcd33d2c4

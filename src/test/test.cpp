@@ -7,11 +7,10 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
 #include "camera/Camera.h"
-#include "shaders/Shader.h"
+#include "shader/Shader.h"
 
 #include "CUBE.h"
 
@@ -59,7 +58,7 @@ int main()
 
 	// GLFW: window creation
 	// ---------------------
-	GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "LearnOpenGL", nullptr, nullptr);
+	GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Engine", nullptr, nullptr);
 	if (window == nullptr)
 	{
 		std::cerr << "Failed to create GLFW window" << std::endl;
@@ -92,7 +91,7 @@ int main()
 
 	// Build and compile shader programs
 	// ---------------------------------
-	Shader cubeShader("src/shaders/shader.vert", "src/shaders/shader.frag");
+	Shader cubeShader("shaders/vertex_shader.glsl", "shaders/fragment_shader.glsl");
 
 	// Set up buffers and configure vertex attributes
 	// ----------------------------------------------

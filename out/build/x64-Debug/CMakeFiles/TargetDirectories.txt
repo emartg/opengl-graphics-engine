@@ -1,0 +1,6 @@
+C:/Dev/XRaySim/Engine/out/build/x64-Debug/CMakeFiles/GLAD.dir
+C:/Dev/XRaySim/Engine/out/build/x64-Debug/CMakeFiles/STB_IMAGE.dir
+C:/Dev/XRaySim/Engine/out/build/x64-Debug/CMakeFiles/Engine.dir
+C:/Dev/XRaySim/Engine/out/build/x64-Debug/CMakeFiles/EngineTest.dir
+C:/Dev/XRaySim/Engine/out/build/x64-Debug/CMakeFiles/edit_cache.dir
+C:/Dev/XRaySim/Engine/out/build/x64-Debug/CMakeFiles/rebuild_cache.dir

@@ -1,7 +1,7 @@
 /* Shader.cpp
 This file implements the Shader class, which is used to read, compile, and link shaders */
 
-#include "Shader.h"
+#include "shader/Shader.h"
 
 // Constructors
 // ------------
