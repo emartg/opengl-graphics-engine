@@ -2,15 +2,15 @@
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
-
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
-
 #include <stb_image.h>
 
-#include "camera/Camera.h"
-#include "shader/Shader.h"
+#include "../camera/Camera.h"
+#include "../shader/Shader.h"
+#include "../model/Model.h"
+#include "../model/Shape.h"
 
 #include "CUBE.h"
 
@@ -93,52 +93,10 @@ int main()
 	// ---------------------------------
 	Shader cubeShader("shaders/vertex_shader.glsl", "shaders/fragment_shader.glsl");
 
-	// Set up buffers and configure vertex attributes
-	// ----------------------------------------------
-	GLuint cubeVAO, cubeVBO, cubeEBO;
-	glGenVertexArrays(1, &cubeVAO);
-	glGenBuffers(1, &cubeVBO);
-	glGenBuffers(1, &cubeEBO);
-
-	// interleave the vertex data so that it is laid out as follows: vertex, normal, texture coordinate
-	std::vector<GLfloat> interleavedData;
-	for (size_t i = 0; i < cubeVertices.size() / 3; ++i) {
-		interleavedData.push_back(cubeVertices[i * 3]);
-		interleavedData.push_back(cubeVertices[i * 3 + 1]);
-		interleavedData.push_back(cubeVertices[i * 3 + 2]);
-		interleavedData.push_back(cubeNormals[i * 3]);
-		interleavedData.push_back(cubeNormals[i * 3 + 1]);
-		interleavedData.push_back(cubeNormals[i * 3 + 2]);
-		interleavedData.push_back(cubeTexCoords[i * 2]);
-		interleavedData.push_back(cubeTexCoords[i * 2 + 1]);
-	}
-
-	glBindVertexArray(cubeVAO);
-
-	// load data into vertex buffer
-	glBindBuffer(GL_ARRAY_BUFFER, cubeVBO);
-	glBufferData(GL_ARRAY_BUFFER, interleavedData.size() * sizeof(GLfloat), interleavedData.data(), GL_STATIC_DRAW);
-
-	// set the vertex attribute pointers
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (void*)0); // vertex coordinates
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (void*)(3 * sizeof(GLfloat))); // normal coordinates
-	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (void*)(6 * sizeof(GLfloat))); // texture coordinates
-	glEnableVertexAttribArray(2);
-
-	// load index data and configure element buffer object
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cubeEBO);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, cubeIndices.size() * sizeof(GLuint), cubeIndices.data(), GL_STATIC_DRAW);
-
-	// unbind the objects
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-	glBindVertexArray(0);
-
-	// Load textures
-	// -------------
-	// ...
+	// Load models
+	// -----------
+	// Cube model
+	Model* cubeModel = new Shape(cubeVertices, cubeNormals, cubeTexCoords, cubeIndices);
 
 	// Shader configuration
 	// --------------------
@@ -181,7 +139,7 @@ int main()
 
 		// view/projection transformations
 		glm::mat4 projection = glm::perspective(glm::radians(camera.GetZoom()),
-			static_cast<GLfloat>(SCR_WIDTH) / static_cast<GLfloat>(SCR_HEIGHT), 0.1f, 100.0f);
+												static_cast<GLfloat>(SCR_WIDTH) / static_cast<GLfloat>(SCR_HEIGHT), 0.1f, 100.0f);
 		glm::mat4 view = camera.GetViewMatrix();
 		cubeShader.SetMat4("projection", projection);
 		cubeShader.SetMat4("view", view);
@@ -189,11 +147,8 @@ int main()
 		glm::mat4 model{ 1.0f };
 		cubeShader.SetMat4("model", model);
 
-		// render the cube
-		glBindVertexArray(cubeVAO);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cubeEBO);
-		glDrawElements(GL_TRIANGLES, cubeIndices.size(), GL_UNSIGNED_INT, 0);
-		glBindVertexArray(0);
+		// render the model
+		cubeModel->Draw(cubeShader);
 
 		// GLFW: swap buffers and poll IO events
 		// -------------------------------------
@@ -205,9 +160,7 @@ int main()
 	// -------------------------------------------------------------
 	glDeleteProgram(cubeShader.ID);
 
-	glDeleteVertexArrays(1, &cubeVAO);
-	glDeleteBuffers(1, &cubeVBO);
-	glDeleteBuffers(1, &cubeEBO);
+	delete cubeModel;
 
 	// GLFW: terminate, clearing all previously allocated GLFW resources
 	// -----------------------------------------------------------------

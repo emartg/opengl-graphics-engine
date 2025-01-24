@@ -1,8 +1,8 @@
-#pragma once
-
 /* Camera.h
 This file defines the Camera class, which is used to process input and calculate
 the corresponding Euler Angles, Vectors, and Matrices for use in OpenGL */
+
+#pragma once
 
 #include <algorithm>
 
@@ -46,7 +46,7 @@ public:
 	// ------------
 	// Constructor with vectors
 	Camera(glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f),
-		GLfloat yaw = YAW, GLfloat pitch = PITCH);
+		   GLfloat yaw = YAW, GLfloat pitch = PITCH);
 	// Constructor with scalar values
 	Camera(GLfloat posX, GLfloat posY, GLfloat posZ, GLfloat upX, GLfloat upY, GLfloat upZ, GLfloat yaw, GLfloat pitch);
 

@@ -1,11 +1,10 @@
 /* Shader.cpp
 This file implements the Shader class, which is used to read, compile, and link shaders */
 
-#include "shader/Shader.h"
+#include "Shader.h"
 
 // Constructors
 // ------------
-// Constructor that reads and builds the shader
 Shader::Shader(const GLchar* vertexPath, const GLchar* fragmentPath)
 {
 	// 1. retrieve the vertex/fragment source code from filePath
@@ -63,7 +62,6 @@ Shader::Shader(const GLchar* vertexPath, const GLchar* fragmentPath)
 	glDeleteShader(fragment);
 }
 
-// Constructor that reads and builds the shader with a geometry shader in addition to the vertex and fragment shaders
 Shader::Shader(const GLchar* vertexPath, const GLchar* geometryPath, const GLchar* fragmentPath)
 {
 	// 1. retrieve the vertex/geometry/fragment source code from filePath
@@ -137,10 +135,8 @@ Shader::Shader(const GLchar* vertexPath, const GLchar* geometryPath, const GLcha
 
 // Public Methods
 // --------------
-// Activates the shader
 void Shader::Use() { glUseProgram(ID); }
 
-// Uniform setters
 void Shader::SetBool(const std::string& name, GLboolean value) const
 {
 	glUniform1i(glGetUniformLocation(ID, name.c_str()), (int)value);
@@ -164,8 +160,6 @@ void Shader::SetMat4(const std::string& name, const glm::mat4& mat) const
 
 // Private Methods
 // ---------------
-// utility method for checking shader compilation/linking errors
-// ------------------------------------------------------------------------
 void Shader::checkCompileErrors(GLuint shader, std::string type)
 {
 	int success;

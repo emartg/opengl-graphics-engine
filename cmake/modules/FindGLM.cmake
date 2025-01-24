@@ -31,24 +31,24 @@
 set(_glm_HEADER_SEARCH_DIRS
 	"/usr/include"
 	"/usr/local/include"
-	"${CMAKE_SOURCE_DIR}/includes"
+	"${CMAKE_SOURCE_DIR}/external/include"
 	"C:/Program Files (x86)/glm" 
 )
 
-# check environment variable
+# Check environment variable
 set(_glm_ENV_ROOT_DIR "$ENV{GLM_ROOT_DIR}")
 if(NOT GLM_ROOT_DIR AND _glm_ENV_ROOT_DIR)
 	set(GLM_ROOT_DIR "${_glm_ENV_ROOT_DIR}")
 endif(NOT GLM_ROOT_DIR AND _glm_ENV_ROOT_DIR)
 
-# put user specified location at beginning of search
+# Put user specified location at beginning of search
 if(GLM_ROOT_DIR)
 	set(_glm_HEADER_SEARCH_DIRS "${GLM_ROOT_DIR}"
 		"${GLM_ROOT_DIR}/include"
 		${_glm_HEADER_SEARCH_DIRS})
 endif(GLM_ROOT_DIR)
 
-# locate header
+# Locate header
 find_path(GLM_INCLUDE_DIR "glm/glm.hpp"
 paths ${_glm_HEADER_SEARCH_DIRS})
 include(FindPackageHandleStandardArgs)

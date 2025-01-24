@@ -36,7 +36,7 @@ find_package(GLFW3 REQUIRED)
 message(STATUS "Found GLFW3 in ${GLFW3_INCLUDE_DIR}")
 
 find_package(Assimp REQUIRED)
-message(STATUS "Found ASSIMP in ${ASSIMP_INCLUDE_DIR}")
+message(STATUS "Found Assimp in ${ASSIMP_INCLUDE_DIR}")
 
 # List of libraries to link against
 set(LIBS
@@ -46,28 +46,26 @@ set(LIBS
 )
 
 # Create static libraries for GLAD and STB_IMAGE
-add_library(GLAD STATIC ${CMAKE_SOURCE_DIR}/src/glad.c)
-list(APPEND LIBS GLAD)
+add_library(GLAD STATIC ${CMAKE_SOURCE_DIR}/engine/glad.c)
+add_library(STB_IMAGE STATIC ${CMAKE_SOURCE_DIR}/engine/stb_image.cpp)
 
-add_library(STB_IMAGE STATIC ${CMAKE_SOURCE_DIR}/src/stb_image.cpp)
+# Include directories for the GLAD library and STB_IMAGE library
+target_include_directories(GLAD PUBLIC ${CMAKE_SOURCE_DIR}/external/include)
+target_include_directories(STB_IMAGE PUBLIC ${CMAKE_SOURCE_DIR}/external/include)
+
+# Add GLAD and STB_IMAGE to the list of libraries to link against
+list(APPEND LIBS GLAD)
 list(APPEND LIBS STB_IMAGE)
 
 # Collect header, source, and shader files
-set(HEADERS_SRC ${CMAKE_SOURCE_DIR}/includes/engine)
-file(GLOB_RECURSE HEADERS ${HEADERS_SRC}/*.h*)
+set(HEADERS_DIR ${CMAKE_SOURCE_DIR}/engine)
+file(GLOB_RECURSE HEADERS ${HEADERS_DIR}/*.h*)
 
-set(SOURCES_SRC ${CMAKE_SOURCE_DIR}/src)
-file(GLOB_RECURSE SOURCES ${SOURCES_SRC}/*.cpp)
+set(SOURCES_DIR ${CMAKE_SOURCE_DIR}/engine)
+file(GLOB_RECURSE SOURCES ${SOURCES_DIR}/*.cpp)
 
-set(SHADERS_SRC ${CMAKE_SOURCE_DIR}/shaders)
-file(GLOB_RECURSE SHADERS ${SHADERS_SRC}/*.glsl)
-
-# Include current directory
-set(CMAKE_INCLUDE_CURRENT_DIR ON)
-
-# Include directories for the GLAD library
-target_include_directories(GLAD PUBLIC ${CMAKE_SOURCE_DIR}/includes)
-target_include_directories(STB_IMAGE PUBLIC ${CMAKE_SOURCE_DIR}/includes)
+set(SHADERS_DIR ${CMAKE_SOURCE_DIR}/shaders)
+file(GLOB_RECURSE SHADERS ${SHADERS_DIR}/*.glsl)
 
 # Create the Engine static library
 add_library(Engine STATIC ${HEADERS} ${SOURCES} ${SHADERS})
@@ -78,15 +76,14 @@ target_include_directories(Engine PUBLIC
 	${GLM_INCLUDE_DIR}
 	${GLFW3_INCLUDE_DIR}
 	${ASSIMP_INCLUDE_DIR}
-	${CMAKE_SOURCE_DIR}/includes
-	${CMAKE_SOURCE_DIR}/includes/engine
+	${CMAKE_SOURCE_DIR}/external
 )
 
 # Link libraries to the Engine library
 target_link_libraries(Engine ${LIBS})
 
 # Create the EngineTest executable
-add_executable(EngineTest ${CMAKE_SOURCE_DIR}/src/test/test.cpp)
+add_executable(EngineTest ${CMAKE_SOURCE_DIR}/engine/test/test.cpp)
 
 # Include directories for the EngineTest executable
 target_include_directories(EngineTest PUBLIC
@@ -94,8 +91,7 @@ target_include_directories(EngineTest PUBLIC
 	${GLM_INCLUDE_DIR}
 	${GLFW3_INCLUDE_DIR}
 	${ASSIMP_INCLUDE_DIR}
-	${CMAKE_SOURCE_DIR}/includes
-	${CMAKE_SOURCE_DIR}/includes/engine
+	${CMAKE_SOURCE_DIR}/external
 )
 
 # Link libraries to the EngineTest executable
@@ -105,6 +101,6 @@ target_link_libraries(EngineTest Engine ${LIBS})
 file(INSTALL shaders/ DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/shaders/)
 
 # Organize files into source groups for Visual Studio
-source_group("Header Files" FILES ${HEADERS})
-source_group("Source Files" FILES ${SOURCES})
-source_group("Shader Files" FILES ${SHADERS})
+source_group("Header Files" FILES ${HEADERS_DIR})
+source_group("Source Files" FILES ${SOURCES_DIR})
+source_group("Shader Files" FILES ${SHADERS_DIR})

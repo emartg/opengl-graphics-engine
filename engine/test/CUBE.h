@@ -1,8 +1,8 @@
-#pragma once
-
 /* CUBE.h
 This file defines the vertex data for a simple cube.
 Vertices are replicated for each face, so that each face can have different normals and texture coordinates */
+
+#pragma once
 
 #include <vector>
 

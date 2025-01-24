@@ -1,4 +1,4 @@
-# FindAssimp - attempts to locate the Assimp library.
+# FindASSIMP - attempts to locate the Assimp library.
 # 
 # This module defines the following variables (on success):
 # ASSIMP_FOUND - system has Assimp
@@ -6,18 +6,18 @@
 # ASSIMP_LIBRARIES - link these to use Assimp
 
 find_path(ASSIMP_INCLUDE_DIR assimp/mesh.h
-	/usr/include
-	/usr/local/include
-	/opt/local/include
-	${CMAKE_SOURCE_DIR}/includes
+	"/usr/include"
+	"/usr/local/include"
+	"/opt/local/include"
+	"${CMAKE_SOURCE_DIR}/external/include"
 )
 
 find_library(ASSIMP_LIBRARY assimp
-	/usr/lib64
-	/usr/lib
-	/usr/local/lib
-	/opt/local/lib
-	${CMAKE_SOURCE_DIR}/lib
+	"/usr/lib64"
+	"/usr/lib"
+	"/usr/local/lib"
+	"/opt/local/lib"
+	"${CMAKE_SOURCE_DIR}/external/lib"
 )
 
 if(ASSIMP_INCLUDE_DIR AND ASSIMP_LIBRARY)

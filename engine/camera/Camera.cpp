@@ -2,11 +2,10 @@
 This file implements the Camera class, which is used to process input and calculate
 the corresponding Euler Angles, Vectors, and Matrices for use in OpenGL */
 
-#include "camera/Camera.h"
+#include "Camera.h"
 
 // Constructors
 // ------------
-// Constructor with vectors
 Camera::Camera(glm::vec3 position, glm::vec3 up, GLfloat yaw, GLfloat pitch)
 	: front(glm::vec3(0.0f, 0.0f, -1.0f)), position(position), worldUp(up), yaw(yaw), pitch(pitch),
 	movementSpeed(SPEED), mouseSensitivity(SENSITIVITY), zoom(ZOOM)
@@ -14,45 +13,38 @@ Camera::Camera(glm::vec3 position, glm::vec3 up, GLfloat yaw, GLfloat pitch)
 	updateCameraVectors();
 }
 
-// Constructor with scalar values
 Camera::Camera(GLfloat posX, GLfloat posY, GLfloat posZ, GLfloat upX, GLfloat upY, GLfloat upZ, GLfloat yaw, GLfloat pitch)
-	: Camera(glm::vec3(posX, posY, posZ), glm::vec3(upX, upY, upZ), yaw, pitch) {
-}
+	: Camera(glm::vec3(posX, posY, posZ), glm::vec3(upX, upY, upZ), yaw, pitch)
+{}
 
 // Public Methods
 // --------------
-// Returns the view matrix calculated using Euler Angles and the LookAt Matrix
 glm::mat4 Camera::GetViewMatrix() const
 {
 	return glm::lookAt(position, position + front, up);
 }
 
-// Processes input received from any keyboard-like input system. 
-// Accepts input parameter in the form of camera defined ENUM (to abstract it from windowing systems)
 void Camera::ProcessKeyboard(Camera_Movement direction, GLfloat deltaTime)
 {
 	GLfloat velocity = movementSpeed * deltaTime;
 	switch (direction)
 	{
-	case FORWARD:
-		position += front * velocity;
-		break;
-	case BACKWARD:
-		position -= front * velocity;
-		break;
-	case LEFT:
-		position -= right * velocity;
-		break;
-	case RIGHT:
-		position += right * velocity;
-		break;
+		case FORWARD:
+			position += front * velocity;
+			break;
+		case BACKWARD:
+			position -= front * velocity;
+			break;
+		case LEFT:
+			position -= right * velocity;
+			break;
+		case RIGHT:
+			position += right * velocity;
+			break;
 	}
 	// position.y = 0.0f;  // make sure the user stays at the ground level (y = 0, XZ plane)
 }
 
-// Processes input received from a left-click drag event.
-// Expects the offset values in both the x and y directions and the sensitivity of the mouse movement.
-// This method is intended to be used for camera translation
 void Camera::ProcessMouseTranslation(GLfloat xoffset, GLfloat yoffset, GLfloat sensitivity)
 {
 	xoffset *= sensitivity;
@@ -61,10 +53,6 @@ void Camera::ProcessMouseTranslation(GLfloat xoffset, GLfloat yoffset, GLfloat s
 	position += up * yoffset;
 }
 
-// Processes input received from a mouse right-click drag event.
-// Expects the offset values in both the x and y directions, the sensitivity of the mouse movement, 
-// and whether the user wants to constrain the pitch. 
-// This method is intended to be used for camera rotation
 void Camera::ProcessMouseRotation(GLfloat xoffset, GLfloat yoffset, GLfloat sensitivity, GLboolean constrainPitch)
 {
 	xoffset *= sensitivity;
@@ -80,8 +68,6 @@ void Camera::ProcessMouseRotation(GLfloat xoffset, GLfloat yoffset, GLfloat sens
 	updateCameraVectors();
 }
 
-// Processes input received from a mouse scroll-wheel event. 
-// Only requires input on the vertical wheel-axis
 void Camera::ProcessMouseScroll(GLfloat yoffset, GLfloat sensitivity)
 {
 	zoom -= yoffset * sensitivity;
@@ -90,8 +76,6 @@ void Camera::ProcessMouseScroll(GLfloat yoffset, GLfloat sensitivity)
 
 // Private Methods
 // ---------------
-// Utility function for updating the camera's front vector.
-// Calculates the front vector from the Camera's (updated) Euler Angles
 void Camera::updateCameraVectors()
 {
 	// calculate the new front vector

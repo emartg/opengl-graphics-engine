@@ -1,7 +1,7 @@
-#pragma once
-
 /* Shader.h
 This file defines the Shader class, which is used to read, compile, and link shaders */
+
+#pragma once
 
 #include <string>
 #include <fstream>
@@ -28,7 +28,7 @@ public:
 
 	// Public Methods
 	// ----------------
-	// Activates the shader
+	// Activates the shader program
 	void Use();
 
 	// Uniform setters
