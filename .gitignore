@@ -400,7 +400,7 @@ FodyWeavers.xsd
 *.sln.iml
 
 
-## Ignore CMake output and build directorues, and user-specific and temporary files
+## Ignore CMake output and build directories, and user-specific and temporary files
 
 # CMake build output directoriwa
 [Oo]ut/
