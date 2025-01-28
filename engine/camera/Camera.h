@@ -31,6 +31,9 @@ class Camera
 	GLfloat movementSpeed;
 	GLfloat mouseSensitivity;
 	GLfloat zoom;
+	// Camera initial values
+	glm::vec3 initialPosition, initialUp;
+	GLfloat initialYaw, initialPitch;
 
 	// Static Constants
 	// ----------------
@@ -84,9 +87,13 @@ public:
 	// Expects the offset value in the y direction and the sensitivity of the scroll
 	void ProcessMouseScroll(GLfloat yoffset, GLfloat sensitivity = 1.0f);
 
+	// Resets the camera to its initial position and orientation
+	void Reset();
+
 private:
 	// Private Methods
 	// ---------------
 	// Calculates the front vector from the Camera's (updated) Euler Angles
 	void updateCameraVectors();
+
 };

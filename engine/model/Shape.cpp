@@ -8,18 +8,37 @@ which is used to create a shape from vertex, normal, texture coordinate, and ind
 
 // Constructors
 // ------------
+Shape::Shape(std::vector<GLfloat> interleavedVertexData, std::vector<GLuint> indices)
+{
+	// create a vector of Vertex objects from the interleaved vertex data
+	std::vector<Vertex> vertexData;
+	for (size_t i{}; i < interleavedVertexData.size() / 8; ++i)
+	{
+		Vertex vertex;
+		vertex.Position = glm::vec3(interleavedVertexData[i * 8], interleavedVertexData[i * 8 + 1], interleavedVertexData[i * 8 + 2]);
+		vertex.Normal = glm::vec3(interleavedVertexData[i * 8 + 3], interleavedVertexData[i * 8 + 4], interleavedVertexData[i * 8 + 5]);
+		vertex.TexCoords = glm::vec2(interleavedVertexData[i * 8 + 6], interleavedVertexData[i * 8 + 7]);
+		vertexData.push_back(vertex);
+	}
+
+	// create a mesh from the interleaved vertex data
+	meshes.push_back(Mesh(vertexData, indices, {}));
+}
+
 Shape::Shape(std::vector<GLfloat> vertices, std::vector<GLfloat> normals, std::vector<GLfloat> texCoords,
 			 std::vector<GLuint> indices)
 {
-	loadShape(vertices, normals, texCoords, indices);
+	// interleave vertex data
+	std::vector<Vertex> interleavedVertexData = interleaveVertexData(vertices, normals, texCoords);
+
+	// create a mesh from the interleaved vertex data
+	meshes.push_back(Mesh(interleavedVertexData, indices, {}));
 }
 
 // Private Functions
 // -----------------
-void Shape::loadShape(std::vector<GLfloat> vertices, std::vector<GLfloat> normals, std::vector<GLfloat> texCoords,
-					  std::vector<GLuint> indices)
+std::vector<Vertex> Shape::interleaveVertexData(std::vector<GLfloat> vertices, std::vector<GLfloat> normals, std::vector<GLfloat> texCoords)
 {
-	// interleave vertex data
 	std::vector<Vertex> interleavedVertexData;
 	for (size_t i{}; i < vertices.size() / 3; ++i)
 	{
@@ -29,7 +48,5 @@ void Shape::loadShape(std::vector<GLfloat> vertices, std::vector<GLfloat> normal
 		vertex.TexCoords = glm::vec2(texCoords[i * 2], texCoords[i * 2 + 1]);
 		interleavedVertexData.push_back(vertex);
 	}
-
-	// create a mesh from the interleaved vertex data
-	meshes.push_back(Mesh(interleavedVertexData, indices, {}));
+	return interleavedVertexData;
 }

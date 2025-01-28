@@ -58,4 +58,5 @@ private:
 	// -----------------
 	// Initializes all the buffer objects/arrays
 	void setupMesh();
+
 };

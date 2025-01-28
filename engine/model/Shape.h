@@ -13,6 +13,8 @@ class Shape : public Model
 public:
 	// Constructors
 	// ------------
+	// Constructor that creates a shape from interleaved vertex, normal and texture coordinate data, and index data
+	Shape(std::vector<GLfloat> interleavedVertexData, std::vector<GLuint> indices);
 	// Constructor that creates a shape from vertices, normals, texture coordinates, and indices
 	Shape(std::vector<GLfloat> vertices, std::vector<GLfloat> normals, std::vector<GLfloat> texCoords,
 		  std::vector<GLuint> indices);
@@ -20,7 +22,9 @@ public:
 private:
 	// Private Functions
 	// -----------------
-	// Processes the data from the vectors and creates a Mesh object
-	void loadShape(std::vector<GLfloat> vertices, std::vector<GLfloat> normals, std::vector<GLfloat> texCoords,
-				   std::vector<GLuint> indices);
+	// Interleaves vertex data (position, normal, texture coordinates), 
+	// that is, combines the data into a single vector of Vertex objects,
+	// where each Vertex object contains the position, normal, and texture coordinates of a vertex
+	std::vector<Vertex> interleaveVertexData(std::vector<GLfloat> vertices, std::vector<GLfloat> normals, std::vector<GLfloat> texCoords);
+
 };

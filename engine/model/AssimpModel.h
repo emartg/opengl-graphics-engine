@@ -35,4 +35,5 @@ private:
 
 	// Loads the material textures of a mesh
 	std::vector<Texture> loadMaterialTextures(aiMaterial* mat, aiTextureType type, std::string typeName);
+
 };

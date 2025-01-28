@@ -74,6 +74,14 @@ void Camera::ProcessMouseScroll(GLfloat yoffset, GLfloat sensitivity)
 	zoom = std::clamp(zoom, 1.0f, 45.0f);
 }
 
+void Camera::Reset()
+{
+	position = initialPosition;
+	worldUp = initialUp;
+	yaw = initialYaw;
+	pitch = initialPitch;
+}
+
 // Private Methods
 // ---------------
 void Camera::updateCameraVectors()

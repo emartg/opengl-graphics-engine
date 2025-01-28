@@ -43,4 +43,5 @@ private:
 	// ---------------
 	// Utility method to check for shader compilation/linking errors
 	void checkCompileErrors(GLuint shader, std::string type);
+
 };
