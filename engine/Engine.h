@@ -37,8 +37,13 @@ public:
 	void InitOGL(); // initialize OpenGL
 	void MainLoop(); // the main rendering loop of the engine (includes input processing)
 
+	// Setters
 	void SetCamera(std::unique_ptr<Camera> camera);
 	void SetLightPos(glm::vec3 lightPos);
+
+	// Getters
+	std::unique_ptr<Camera>& GetCamera() { return m_camera; }
+	glm::vec3 GetLightPos() const { return m_lightPos; }
 
 	void AddResource(std::string name, std::unique_ptr<Model> model);
 
@@ -46,7 +51,14 @@ private:
 	// Private Attributes
 	// ------------------
 	// Screen settings
-	const GLuint SCR_WIDTH, SCR_HEIGHT;
+	const GLuint SCR_WIDTH{ 800 }, SCR_HEIGHT{ 600 };
+
+	// Camera settings
+	const glm::vec3 INITIAL_CAMERA_POSITION{ 4.25f, 2.5f, 4.25f }, INITIAL_CAMERA_UP{ 0.0f, 1.0f, 0.0f };
+	const GLfloat INITIAL_CAMERA_YAW{ -135.0f }, INITIAL_CAMERA_PITCH{ -24.0f };
+
+	// Light settings
+	const glm::vec3 INITIAL_LIGHT_POS{ -1.0f, 2.0f, 2.0f };
 
 	// Mouse settings
 	GLfloat lastX, lastY, firstMouse;
@@ -54,9 +66,9 @@ private:
 	// Time settings
 	GLfloat deltaTime, lastFrame; // time between current frame and last frame and time of last frame
 
-	GLFWwindow* m_window; // the window object
-	std::unique_ptr<Camera> m_camera; // the camera object
-	glm::vec3 m_lightPos; // the light position
+	GLFWwindow* m_window;
+	std::unique_ptr<Camera> m_camera;
+	glm::vec3 m_lightPos;
 	std::vector<std::pair<std::string, std::unique_ptr<Model>>> m_models; // the models to be rendered
 
 	// Private Functions

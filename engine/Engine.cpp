@@ -8,13 +8,10 @@ It also manages the camera, the lighting and models that are to be rendered */
 
 #include "Engine.h"
 
-// Constructors
-// ------------
 Engine::Engine()
-	: SCR_WIDTH{ 800 }, SCR_HEIGHT{ 600 },
-	lastX{ SCR_WIDTH / 2.0f }, lastY{ SCR_HEIGHT / 2.0f }, firstMouse{ true },
+	: lastX{ SCR_WIDTH / 2.0f }, lastY{ SCR_HEIGHT / 2.0f }, firstMouse{ true },
 	deltaTime{ 0.0f }, lastFrame{ 0.0f },
-	m_window{ nullptr }, m_camera{ nullptr }, m_lightPos{ glm::vec3(1.0f) }
+	m_window{ nullptr }, m_camera{ nullptr }, m_lightPos{ 1.0f }
 {}
 
 Engine::~Engine()
@@ -218,7 +215,10 @@ void Engine::processInput()
 	// Reset camera position and rotation on R
 	if (glfwGetKey(m_window, GLFW_KEY_R) == GLFW_PRESS)
 		if (m_camera)
-			m_camera->Reset();
+		{
+			auto camera = std::make_unique<Camera>(INITIAL_CAMERA_POSITION, INITIAL_CAMERA_UP, INITIAL_CAMERA_YAW, INITIAL_CAMERA_PITCH);
+			SetCamera(std::move(camera));
+		}
 }
 
 bool Engine::shouldClose() const { return glfwWindowShouldClose(m_window); }
