@@ -1,5 +1,7 @@
-/* Shader.h
-This file defines the Shader class, which is used to read, compile, and link shaders */
+/*
+* Shader.h
+* This file defines the Shader class, which is used to read, compile, and link shaders.
+*/
 
 #pragma once
 

@@ -1,7 +1,9 @@
-/* Engine.cpp
-This file implements the Engine class, which is is responsible for initializing OpenGL,
-creating a window, and running the main loop.
-It also manages the camera, the lighting and models that are to be rendered */
+/*
+* Engine.cpp
+* This file implements the Engine class, which is is responsible for initializing OpenGL,
+* creating a window, and running the main loop.
+* It also manages the camera, the lighting and models that are to be rendered.
+*/
 
 #include <iostream>
 #include <memory> // for smart pointers

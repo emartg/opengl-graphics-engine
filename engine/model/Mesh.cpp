@@ -1,5 +1,7 @@
-/* Mesh.cpp
-This file implements the Mesh class, which is used to store mesh data and render it */
+/*
+* Mesh.cpp
+* This file implements the Mesh class, which is used to store mesh data and render it.
+*/
 
 #include "Mesh.h"
 
@@ -19,21 +21,24 @@ void Mesh::Draw(Shader& shader) const
 	GLuint diffuseTextureMapIdx{ 1 }, specularTextureMapIdx{ 1 };
 	for (GLuint i{}; i < textures.size(); i++)
 	{
-		glActiveTexture(GL_TEXTURE0 + i); // activate proper texture unit before binding
+		std::string textureNumber, textureName;
+		TextureType type = textures[i].GetType();
+		if (type == TextureType::DIFFUSE)
+		{
+			textureName = "texture_diffuse";
+			textureNumber = std::to_string(diffuseTextureMapIdx++);
+		}
+		else if (type == TextureType::SPECULAR)
+		{
+			textureName = "texture_specular";
+			textureNumber = std::to_string(specularTextureMapIdx++);
+		}
 
-		// retrieve texture number (the N in _textureN) and texture type (diffuse_, specular_)
-		// to get the apprpriate uniform (location)
-		std::string number, name{ textures[i].type };
-		if (name == "texture_diffuse")
-			number = std::to_string(diffuseTextureMapIdx++);
-		else if (name == "texture_specular")
-			number = std::to_string(specularTextureMapIdx++);
-
-		// set the sampler to the correct texture unit and bind the texture
-		shader.SetInt(("material." + name + number).c_str(), i);
-		glBindTexture(GL_TEXTURE_2D, textures[i].id);
+		// set the sampler to the correct texture unit and bind the texture to the proper texture unit
+		shader.SetInt("material." + textureName + textureNumber, i);
+		textures[i].Bind(i);
 	}
-	glActiveTexture(GL_TEXTURE0); // good practice: set everything back to defaults once configured
+	glActiveTexture(GL_TEXTURE0); // set the active texture unit back to 0 once all textures are bound
 
 	// draw mesh
 	glBindVertexArray(VAO);

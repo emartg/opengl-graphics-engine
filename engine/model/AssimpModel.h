@@ -1,6 +1,8 @@
-/* AssimpModel.h
-This file defines the AssimpModel class (a derived class of Model),
-which is used to load an Assimp model from a file and draw it */
+/*
+* AssimpModel.h
+* This file defines the AssimpModel class (a derived class of Model),
+* which is used to load an Assimp model from a file and draw it.
+*/
 
 #pragma once
 
@@ -8,6 +10,7 @@ which is used to load an Assimp model from a file and draw it */
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 
+#include "../texture/Texture.h"
 #include "../shader/Shader.h"
 #include "Model.h"
 #include "Mesh.h"
@@ -34,6 +37,6 @@ private:
 	Mesh processMesh(aiMesh* mesh, const aiScene* scene);
 
 	// Loads the material textures of a mesh
-	std::vector<Texture> loadMaterialTextures(aiMaterial* mat, aiTextureType type, std::string typeName);
+	std::vector<Texture> loadMaterialTextures(aiMaterial* mat, aiTextureType type, TextureType textureType);
 
 };

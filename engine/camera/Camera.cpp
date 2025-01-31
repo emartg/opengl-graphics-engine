@@ -1,6 +1,8 @@
-/* Camera.cpp
-This file implements the Camera class, which is used to process input and calculate
-the corresponding Euler Angles, Vectors, and Matrices for use in OpenGL */
+/*
+* Camera.cpp
+* This file implements the Camera class, which is used to process input and calculate
+* the corresponding Euler Angles, vectors, and Matrices for use in OpenGL.
+*/
 
 #include "Camera.h"
 

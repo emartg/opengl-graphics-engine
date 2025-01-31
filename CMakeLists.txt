@@ -24,3 +24,4 @@ endif()
 
 # Add subdirectories
 add_subdirectory(engine)
+add_subdirectory(app)

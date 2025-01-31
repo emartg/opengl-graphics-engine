@@ -1,5 +1,7 @@
-/* Mesh.h
-This file defines the Mesh class, which is used to store mesh data and render it */
+/*
+* Mesh.h
+* This file defines the Mesh class, which is used to store mesh data and render it.
+*/
 
 #pragma once
 
@@ -11,19 +13,13 @@ This file defines the Mesh class, which is used to store mesh data and render it
 #include <glm/gtc/matrix_transform.hpp>
 
 #include "../shader/Shader.h"
+#include "../texture/Texture.h"
 
 struct Vertex
 {
 	glm::vec3 Position;
 	glm::vec3 Normal;
 	glm::vec2 TexCoords;
-};
-
-struct Texture
-{
-	GLuint id;
-	std::string type;
-	std::string path; // path of the texture to compare with other textures
 };
 
 class Mesh

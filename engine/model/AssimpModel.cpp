@@ -1,6 +1,8 @@
-/* AssimpModel.cpp
-This file implements the AssimpModel class (a derived class of Model),
-which is used to load an Assimp model from a file and draw it */
+/*
+* AssimpModel.cpp
+* This file implements the AssimpModel class (a derived class of Model),
+* which is used to load an Assimp model from a file and draw it.
+*/
 
 #include "AssimpModel.h"
 
@@ -23,9 +25,6 @@ void AssimpModel::loadAssimpModel(std::string const& path)
 		std::cerr << "ERROR::Assimp::" << importer.GetErrorString() << std::endl;
 		return;
 	}
-
-	// retrieve the directory path of the filepath
-	directory = path.substr(0, path.find_last_of('/'));
 
 	// process the root node (recursively process all of its children)
 	processNode(scene->mRootNode, scene);
@@ -89,10 +88,10 @@ Mesh AssimpModel::processMesh(aiMesh* mesh, const aiScene* scene)
 	{
 		aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
 		// load diffuse maps and add them to the textures vector
-		std::vector<Texture> diffuseMaps = loadMaterialTextures(material, aiTextureType_DIFFUSE, "texture_diffuse");
+		std::vector<Texture> diffuseMaps = loadMaterialTextures(material, aiTextureType_DIFFUSE, TextureType::DIFFUSE);
 		textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end());
 		// load specular maps and add them to the textures vector
-		std::vector<Texture> specularMaps = loadMaterialTextures(material, aiTextureType_SPECULAR, "texture_specular");
+		std::vector<Texture> specularMaps = loadMaterialTextures(material, aiTextureType_SPECULAR, TextureType::SPECULAR);
 		textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
 	}
 
@@ -100,7 +99,7 @@ Mesh AssimpModel::processMesh(aiMesh* mesh, const aiScene* scene)
 	return Mesh(vertices, indices, textures);
 }
 
-std::vector<Texture> AssimpModel::loadMaterialTextures(aiMaterial* mat, aiTextureType type, std::string typeName)
+std::vector<Texture> AssimpModel::loadMaterialTextures(aiMaterial* mat, aiTextureType type, TextureType textureType)
 {
 	std::vector<Texture> textures;
 	for (GLuint i{}; i < mat->GetTextureCount(type); i++)
@@ -112,7 +111,7 @@ std::vector<Texture> AssimpModel::loadMaterialTextures(aiMaterial* mat, aiTextur
 		GLboolean skip{ false };
 		for (GLuint j{}; j < loadedTextures.size(); j++)
 		{
-			if (std::strcmp(loadedTextures[j].path.data(), str.C_Str()) == 0)
+			if (std::strcmp(loadedTextures[j].GetPath().data(), str.C_Str()) == 0)
 			{
 				textures.push_back(loadedTextures[j]);
 				skip = true; // a texture with the same filepath has already been loaded, so no need to load it again
@@ -121,10 +120,7 @@ std::vector<Texture> AssimpModel::loadMaterialTextures(aiMaterial* mat, aiTextur
 		}
 		if (!skip) // if the texture hasn't been loaded already, load it
 		{
-			Texture texture;
-			texture.id = LoadTextureFromFile(str.C_Str(), directory);
-			texture.type = typeName;
-			texture.path = str.C_Str();
+			Texture texture{ str.C_Str(), textureType };
 			textures.push_back(texture);
 			loadedTextures.push_back(texture); // to ensure we won't load the same texture again, store it in the loaded textures
 		}

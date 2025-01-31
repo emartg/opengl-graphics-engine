@@ -65,24 +65,6 @@ target_include_directories(Engine PUBLIC
 # Link libraries to the Engine library
 target_link_libraries(Engine ${LIBS})
 
-# Create the EngineTest executable
-add_executable(EngineTest main.cpp)
-
-# Include directories for the EngineTest executable
-target_include_directories(EngineTest PUBLIC
-	${OPENGL_INCLUDE_DIR}
-	${GLM_INCLUDE_DIR}
-	${GLFW3_INCLUDE_DIR}
-	${ASSIMP_INCLUDE_DIR}
-    ${CMAKE_SOURCE_DIR}/external
-)
-
-# Link libraries to the EngineTest executable
-target_link_libraries(EngineTest Engine)
-
-# Copy shader files to the runtime directory
-file(INSTALL ${CMAKE_SOURCE_DIR}/shaders/ DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/shaders/)
-
 # Organize files into source groups for Visual Studio
 source_group("Header Files" FILES ${HEADERS_DIR})
 source_group("Source Files" FILES ${SOURCES_DIR})

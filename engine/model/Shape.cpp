@@ -1,6 +1,8 @@
-/* Shape.cpp
-This file implements the Shape class (a derived class of Model),
-which is used to create a shape from vertex, normal, texture coordinate, and index data; and draw it */
+/*
+* Shape.cpp
+* This file implements the Shape class (a derived class of Model),
+* which is used to create a shape from vertex, normal, texture coordinate, and index data; and draw it.
+*/
 
 #pragma once
 
