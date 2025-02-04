@@ -1,7 +1,6 @@
 /*
-* Engine.h
-* This file defines the Engine class, which is is responsible for initializing OpenGL,
-* creating a window, and running the main loop.
+* Core.h
+* This file defines the Core class, which is is responsible for initializing OpenGL, creating a window, and running the main loop.
 * It also manages the camera, the lighting and models that are to be rendered.
 */
 
@@ -23,16 +22,16 @@
 #include "model/Model.h"
 #include "model/Shape.h"
 
-class Engine
+class Core
 {
 public:
 	// Constructors
 	// ------------
-	Engine();
+	Core();
 
 	// Destructor
 	// ----------
-	~Engine();
+	~Core();
 
 	// Public Methods
 	// --------------
@@ -80,7 +79,7 @@ private:
 	static void mouse_callback_static(GLFWwindow* window, GLdouble xposIn, GLdouble yposIn);
 	static void scroll_callback_static(GLFWwindow* window, GLdouble xoffset, GLdouble yoffset);
 
-	// GLFW callback Engine-specific functions
+	// GLFW callback engine-specific functions
 	void framebuffer_size_callback(GLint width, GLint height);
 	void mouse_callback(GLdouble xposIn, GLdouble yposIn);
 	void scroll_callback(GLdouble xoffset, GLdouble yoffset);

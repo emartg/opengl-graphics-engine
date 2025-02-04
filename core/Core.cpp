@@ -1,22 +1,21 @@
 /*
-* Engine.cpp
-* This file implements the Engine class, which is is responsible for initializing OpenGL,
-* creating a window, and running the main loop.
+* Core.cpp
+* This file implements the Core class, which is is responsible for initializing OpenGL, creating a window, and running the main loop.
 * It also manages the camera, the lighting and models that are to be rendered.
 */
 
 #include <iostream>
 #include <memory> // for smart pointers
 
-#include "Engine.h"
+#include "Core.h"
 
-Engine::Engine()
+Core::Core()
 	: lastX{ SCR_WIDTH / 2.0f }, lastY{ SCR_HEIGHT / 2.0f }, firstMouse{ true },
 	deltaTime{ 0.0f }, lastFrame{ 0.0f },
 	m_window{ nullptr }, m_camera{ nullptr }, m_lightPos{ 1.0f }
 {}
 
-Engine::~Engine()
+Core::~Core()
 {
 	// Terminate GLFW, clearing any resources allocated by GLFW
 	glfwTerminate();
@@ -24,7 +23,7 @@ Engine::~Engine()
 
 // Public Methods
 // --------------
-void Engine::InitOGL()
+void Core::InitOGL()
 {
 	// GLFW: initialize and configure
 	if (!glfwInit())
@@ -41,7 +40,7 @@ void Engine::InitOGL()
 #endif
 
 	// GLFW: window creation
-	m_window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Engine", nullptr, nullptr);
+	m_window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Test Window", nullptr, nullptr);
 	if (m_window == nullptr)
 	{
 		std::cerr << "Failed to create GLFW window" << std::endl;
@@ -70,24 +69,27 @@ void Engine::InitOGL()
 	glEnable(GL_DEPTH_TEST);
 }
 
-void Engine::MainLoop()
+void Core::MainLoop()
 {
 	// Build and compile shader programs
-	Shader cubeShader("shaders/vertex_shader.glsl", "shaders/fragment_shader.glsl");
+	Shader cubeShader("shaders/vs.glsl", "shaders/fs_albedo.glsl");
+	//Shader cubeShader("shaders/vs.glsl", "shaders/fs_textures.glsl");
 
 	// Shader configuration
 	cubeShader.Use();
 	// vertex shader uniforms
 	cubeShader.SetVec3("lightPos", m_lightPos);
 	// fragment shader uniforms
-	cubeShader.SetVec3("albedo", glm::vec3(0.5f, 0.0f, 0.0f));            // red
-	cubeShader.SetFloat("shininess", 32.0f);
-	cubeShader.SetVec3("light.ambient", glm::vec3(0.1f, 0.1f, 0.1f));    // low influence of ambient light
-	cubeShader.SetVec3("light.diffuse", glm::vec3(0.8f, 0.8f, 0.8f));    // slightly higher influence of diffuse light
-	cubeShader.SetVec3("light.specular", glm::vec3(1.0f, 1.0f, 1.0f));    // full influence of specular light
+	cubeShader.SetVec3("light.ambient", glm::vec3(0.1f, 0.1f, 0.1f));	// low influence of ambient light
+	cubeShader.SetVec3("light.diffuse", glm::vec3(0.8f, 0.8f, 0.8f));   // slightly higher influence of diffuse light
+	cubeShader.SetVec3("light.specular", glm::vec3(1.0f, 1.0f, 1.0f));  // full influence of specular light
 	cubeShader.SetFloat("light.constant", 1.0f);                        // constant attenuation term for a distance of 50
-	cubeShader.SetFloat("light.linear", 0.09f);                            // linear attenuation term for a distance of 50
-	cubeShader.SetFloat("light.quadratic", 0.032f);                        // quadratic attenuation term for a distance of 50
+	cubeShader.SetFloat("light.linear", 0.09f);                         // linear attenuation term for a distance of 50
+	cubeShader.SetFloat("light.quadratic", 0.032f);                     // quadratic attenuation term for a distance of 50
+	//for (const auto& res : m_models)									// set the textures for each model
+	//	res.second->BindTextures(cubeShader);							// sets "material.diffuseN" and "material.specularN" for each material
+	cubeShader.SetVec3("material.albedo", glm::vec3(0.5f, 0.0f, 0.0f));	// albedo color for the material (red)
+	cubeShader.SetFloat("material.shininess", 32.0f);					// shininess factor for the material
 
 	// Render loop
 	while (!shouldClose())
@@ -120,7 +122,7 @@ void Engine::MainLoop()
 
 		// render the model
 		for (const auto& res : m_models)
-			res.second->Draw(cubeShader);
+			res.second->Draw();
 
 		// GLFW: swap buffers and poll IO events
 		glfwPollEvents();
@@ -131,20 +133,20 @@ void Engine::MainLoop()
 	glDeleteProgram(cubeShader.ID);
 }
 
-void Engine::SetCamera(std::unique_ptr<Camera> camera) { m_camera = std::move(camera); }
+void Core::SetCamera(std::unique_ptr<Camera> camera) { m_camera = std::move(camera); }
 
-void Engine::SetLightPos(glm::vec3 lightPos) { m_lightPos = lightPos; }
+void Core::SetLightPos(glm::vec3 lightPos) { m_lightPos = lightPos; }
 
-void Engine::AddResource(std::string name, std::unique_ptr<Model> model) { m_models.emplace_back(name, std::move(model)); }
+void Core::AddResource(std::string name, std::unique_ptr<Model> model) { m_models.emplace_back(name, std::move(model)); }
 
 // Private Methods
 // ---------------
-void Engine::framebuffer_size_callback(GLint width, GLint height)
+void Core::framebuffer_size_callback(GLint width, GLint height)
 {
 	glViewport(0, 0, width, height);
 }
 
-void Engine::mouse_callback(GLdouble xposIn, GLdouble yposIn)
+void Core::mouse_callback(GLdouble xposIn, GLdouble yposIn)
 {
 	static GLboolean rightMouseButtonPressed{ false };
 	static GLboolean leftMouseButtonPressed{ false };
@@ -187,28 +189,28 @@ void Engine::mouse_callback(GLdouble xposIn, GLdouble yposIn)
 			m_camera->ProcessMouseTranslation(xoffset, yoffset, 0.025f);
 }
 
-void Engine::scroll_callback(GLdouble xoffset, GLdouble yoffset)
+void Core::scroll_callback(GLdouble xoffset, GLdouble yoffset)
 {
 	if (m_camera) // only zoom if a camera is present
 		m_camera->ProcessMouseScroll(static_cast<GLfloat>(yoffset), 2.5f);
 }
 
-void Engine::framebuffer_size_callback_static(GLFWwindow* window, GLint width, GLint height)
+void Core::framebuffer_size_callback_static(GLFWwindow* window, GLint width, GLint height)
 {
-	reinterpret_cast<Engine*>(glfwGetWindowUserPointer(window))->framebuffer_size_callback(width, height);
+	reinterpret_cast<Core*>(glfwGetWindowUserPointer(window))->framebuffer_size_callback(width, height);
 }
 
-void Engine::mouse_callback_static(GLFWwindow* window, GLdouble xpos, GLdouble ypos)
+void Core::mouse_callback_static(GLFWwindow* window, GLdouble xpos, GLdouble ypos)
 {
-	reinterpret_cast<Engine*>(glfwGetWindowUserPointer(window))->mouse_callback(xpos, ypos);
+	reinterpret_cast<Core*>(glfwGetWindowUserPointer(window))->mouse_callback(xpos, ypos);
 }
 
-void Engine::scroll_callback_static(GLFWwindow* window, GLdouble xoffset, GLdouble yoffset)
+void Core::scroll_callback_static(GLFWwindow* window, GLdouble xoffset, GLdouble yoffset)
 {
-	reinterpret_cast<Engine*>(glfwGetWindowUserPointer(window))->scroll_callback(xoffset, yoffset);
+	reinterpret_cast<Core*>(glfwGetWindowUserPointer(window))->scroll_callback(xoffset, yoffset);
 }
 
-void Engine::processInput()
+void Core::processInput()
 {
 	// Close window on ESC
 	if (glfwGetKey(m_window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
@@ -223,4 +225,4 @@ void Engine::processInput()
 		}
 }
 
-bool Engine::shouldClose() const { return glfwWindowShouldClose(m_window); }
+bool Core::shouldClose() const { return glfwWindowShouldClose(m_window); }

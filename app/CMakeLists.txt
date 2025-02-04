@@ -1,8 +1,11 @@
-# Create the EngineTest executable
-add_executable(EngineTest main.cpp )
+## CMakeLists.txt for the App executable, that uses the Core library 
+## to create a simple OpenGL application
 
-# Include directories for the EngineTest executable
-target_include_directories(EngineTest PUBLIC
+# Create the App executable
+add_executable(App main.cpp )
+
+# Include directories for the App executable
+target_include_directories(App PUBLIC
 	${OPENGL_INCLUDE_DIR}
 	${GLM_INCLUDE_DIR}
 	${GLFW3_INCLUDE_DIR}
@@ -10,8 +13,11 @@ target_include_directories(EngineTest PUBLIC
     ${CMAKE_SOURCE_DIR}/external
 )
 
-# Link libraries to the EngineTest executable
-target_link_libraries(EngineTest Engine)
+# Link libraries to the App executable
+target_link_libraries(App Core)
 
 # Copy shader files to the runtime directory
 file(INSTALL ${CMAKE_SOURCE_DIR}/shaders/ DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/shaders/)
+
+# Copy resource files to the runtime directory
+file(INSTALL ${CMAKE_SOURCE_DIR}/resources/ DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/resources/)

@@ -14,30 +14,35 @@ struct Light
 	float quadratic;
 };
 
+struct Material
+{
+	vec3 albedo;
+	float shininess;
+};
+
 in vec3 LightPos;	// light position already in view space
 in vec3 FragPos;	// fragment position already in view space
 in vec3 Normal;		// normal already in view space
 in vec2 TexCoords;
 
-uniform vec3 albedo;
-uniform float shininess;
 uniform Light light;
+uniform Material material;
 
 void main()
 {
 	// ambient component
-	vec3 ambient = light.ambient * albedo;
+	vec3 ambient = light.ambient * material.albedo;
 
 	// diffuse component
 	vec3 norm = normalize(Normal);
 	vec3 lightDir = normalize(LightPos - FragPos);
 	float diff = max(dot(norm, lightDir), 0.0);
-	vec3 diffuse = light.diffuse * diff * albedo;
+	vec3 diffuse = light.diffuse * diff * material.albedo;
 
 	// specular component
 	vec3 viewDir = normalize(-FragPos);		// we already are in view space so view position is (0, 0, 0)
 	vec3 reflectDir = reflect(-lightDir, norm);
-	float spec = pow(max(dot(viewDir, reflectDir), 0.0), shininess);
+	float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
 	vec3 specular = light.specular * spec;  // there is no specular map for now, the entire object will be shiny
 
 	// attenuation

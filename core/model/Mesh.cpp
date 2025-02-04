@@ -15,7 +15,18 @@ Mesh::Mesh(std::vector<Vertex> vertices, std::vector<GLuint> indices, std::vecto
 
 // Public Functions
 // ----------------
-void Mesh::Draw(Shader& shader) const
+void Mesh::Draw() const
+{
+	// draw mesh
+	glBindVertexArray(VAO);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+	glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
+
+	// unbind the VAO
+	glBindVertexArray(0);
+}
+
+void Mesh::BindTextures(Shader& shader) const
 {
 	// bind appropriate textures
 	GLuint diffuseTextureMapIdx{ 1 }, specularTextureMapIdx{ 1 };
@@ -25,28 +36,20 @@ void Mesh::Draw(Shader& shader) const
 		TextureType type = textures[i].GetType();
 		if (type == TextureType::DIFFUSE)
 		{
-			textureName = "texture_diffuse";
+			textureName = "diffuse";
 			textureNumber = std::to_string(diffuseTextureMapIdx++);
 		}
 		else if (type == TextureType::SPECULAR)
 		{
-			textureName = "texture_specular";
+			textureName = "specular";
 			textureNumber = std::to_string(specularTextureMapIdx++);
 		}
 
-		// set the sampler to the correct texture unit and bind the texture to the proper texture unit
+		// set the sampler to the correct texture unit and bind the texture to it
 		shader.SetInt("material." + textureName + textureNumber, i);
 		textures[i].Bind(i);
 	}
 	glActiveTexture(GL_TEXTURE0); // set the active texture unit back to 0 once all textures are bound
-
-	// draw mesh
-	glBindVertexArray(VAO);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-	glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
-
-	// unbind the VAO
-	glBindVertexArray(0);
 }
 
 void Mesh::DeallocateResources()

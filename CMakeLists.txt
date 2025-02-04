@@ -1,3 +1,5 @@
+## Top-level CMakeLists.txt for the Engine project, that combines the Core library and the App executable
+
 cmake_minimum_required(VERSION 3.20)
 cmake_policy(VERSION 3.20)
 
@@ -23,5 +25,5 @@ if(WIN32)
 endif()
 
 # Add subdirectories
-add_subdirectory(engine)
+add_subdirectory(core)
 add_subdirectory(app)

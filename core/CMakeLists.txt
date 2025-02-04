@@ -1,3 +1,6 @@
+## CMakeLists.txt for the Core library, that provides the basic functionality
+## for creating an OpenGL application
+
 # Set output directory for runtime libraries on Windows (if not already done at the root)
 if(WIN32)
   if(NOT CMAKE_RUNTIME_OUTPUT_DIRECTORY)
@@ -29,8 +32,8 @@ set(LIBS
 )
 
 # Create static libraries for GLAD and STB_IMAGE
-add_library(GLAD STATIC ${CMAKE_SOURCE_DIR}/engine/glad.c)
-add_library(STB_IMAGE STATIC ${CMAKE_SOURCE_DIR}/engine/stb_image.cpp)
+add_library(GLAD STATIC ${CMAKE_SOURCE_DIR}/core/glad.c)
+add_library(STB_IMAGE STATIC ${CMAKE_SOURCE_DIR}/core/stb_image.cpp)
 
 # Include directories for the GLAD library and STB_IMAGE library
 target_include_directories(GLAD PUBLIC ${CMAKE_SOURCE_DIR}/external/include)
@@ -41,20 +44,20 @@ list(APPEND LIBS GLAD)
 list(APPEND LIBS STB_IMAGE)
 
 # Collect header, source, and shader files
-set(HEADERS_DIR ${CMAKE_SOURCE_DIR}/engine)
+set(HEADERS_DIR ${CMAKE_SOURCE_DIR}/core)
 file(GLOB_RECURSE HEADERS ${HEADERS_DIR}/*.h*)
 
-set(SOURCES_DIR ${CMAKE_SOURCE_DIR}/engine)
+set(SOURCES_DIR ${CMAKE_SOURCE_DIR}/core)
 file(GLOB_RECURSE SOURCES ${SOURCES_DIR}/*.cpp)
 
 set(SHADERS_DIR ${CMAKE_SOURCE_DIR}/shaders)
 file(GLOB SHADERS ${SHADERS_DIR}/*.glsl)
 
-# Create the Engine static library
-add_library(Engine STATIC ${HEADERS} ${SOURCES})
+# Create the Core static library
+add_library(Core STATIC ${HEADERS} ${SOURCES})
 
-# Include directories for the Engine library
-target_include_directories(Engine PUBLIC
+# Include directories for the Core library
+target_include_directories(Core PUBLIC
 	${OPENGL_INCLUDE_DIR}
 	${GLM_INCLUDE_DIR}
 	${GLFW3_INCLUDE_DIR}
@@ -62,8 +65,8 @@ target_include_directories(Engine PUBLIC
     ${CMAKE_SOURCE_DIR}/external
 )
 
-# Link libraries to the Engine library
-target_link_libraries(Engine ${LIBS})
+# Link libraries to the Core library
+target_link_libraries(Core ${LIBS})
 
 # Organize files into source groups for Visual Studio
 source_group("Header Files" FILES ${HEADERS_DIR})

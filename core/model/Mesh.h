@@ -38,8 +38,11 @@ public:
 
 	// Public Functions
 	// --------------
-	// Renders the mesh using the provided shader
-	void Draw(Shader& shader) const;
+	// Renders the mesh
+	void Draw() const;
+
+	// Binds the textures of the mesh
+	void BindTextures(Shader& shader) const;
 
 	// Deletes all the buffer objects/arrays
 	void DeallocateResources();

@@ -9,17 +9,23 @@
 
 #include "Texture.h"
 
+// Constructors
+// ------------
 Texture::Texture(const std::string& path, const TextureType type)
 	: id{ 0 }, type{ type }, path{ path }
 {
 	id = LoadTextureFromFile(path.c_str());
 }
 
+// Destructor
+// ----------
 Texture::~Texture()
 {
 	glDeleteTextures(1, &id);
 }
 
+// Public Methods
+// --------------
 GLuint Texture::LoadTextureFromFile(const GLchar* path)
 {
 	std::string filename = std::string(path);
