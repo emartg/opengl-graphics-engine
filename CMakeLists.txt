@@ -19,10 +19,20 @@ endif()
 # Add custom CMake modules path
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/modules)
 
-# Set output directory for runtime binaries on Windows
+# Set output directory for archives, libraries, and runtime on different platforms
 if(WIN32)
+	set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+	set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 	set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+	set(BUILD_SHARED_LIBS OFF)
 endif()
+
+# Add library directories
+link_directories(${CMAKE_BINARY_DIR}/lib)
+
+# Find and include required packages
+find_package(GLM REQUIRED)
+message(STATUS "[Engine] GLM included at ${GLM_INCLUDE_DIR}")
 
 # Add subdirectories
 add_subdirectory(core)

@@ -1,33 +1,22 @@
 ## CMakeLists.txt for the Core library, that provides the basic functionality
 ## for creating an OpenGL application
 
-# Set output directory for runtime libraries on Windows (if not already done at the root)
-if(WIN32)
-  if(NOT CMAKE_RUNTIME_OUTPUT_DIRECTORY)
-	set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-    endif()
-endif()
-
 # Add library directories
 link_directories(${CMAKE_BINARY_DIR}/lib)
 
 # Find and include required packages
 find_package(OpenGL REQUIRED)
-message(STATUS "OpenGL included at ${OPENGL_INCLUDE_DIR}")
+message(STATUS "[CORE] OpenGL included at ${OPENGL_INCLUDE_DIR}")
 
 find_package(GLM REQUIRED)
-message(STATUS "GLM included at ${GLM_INCLUDE_DIR}")
-
-find_package(GLFW3 REQUIRED)
-message(STATUS "Found GLFW3 in ${GLFW3_INCLUDE_DIR}")
+message(STATUS "[CORE] GLM included at ${GLM_INCLUDE_DIR}")
 
 find_package(Assimp REQUIRED)
-message(STATUS "Found Assimp in ${ASSIMP_INCLUDE_DIR}")
+message(STATUS "[CORE] Found Assimp in ${ASSIMP_INCLUDE_DIR}")
 
 # List of libraries to link against
 set(LIBS
 	${OPENGL_gl_LIBRARY}
-	${GLFW3_LIBRARY}
 	${ASSIMP_LIBRARY}
 )
 
@@ -60,7 +49,6 @@ add_library(Core STATIC ${HEADERS} ${SOURCES})
 target_include_directories(Core PUBLIC
 	${OPENGL_INCLUDE_DIR}
 	${GLM_INCLUDE_DIR}
-	${GLFW3_INCLUDE_DIR}
 	${ASSIMP_INCLUDE_DIR}
     ${CMAKE_SOURCE_DIR}/external
 )
