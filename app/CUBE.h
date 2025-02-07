@@ -3,7 +3,7 @@
 * This file defines the vertex data for a simple cube.
 * Vertices are replicated for each face, so that each face can have different normals and texture coordinates.
 * The vertex data is separated into position, normal, and texture coordinate data.
-* There is also a vector with the interleaved vertex data to test the Shape constructor that takes
+* There is also an array with the interleaved vertex data to test the Shape constructor that takes
 * interleaved vertex data directly.
 */
 
@@ -13,8 +13,11 @@
 
 #include <glad/glad.h> // holds all OpenGL type declarations
 
+// Number of vertices and indices in the cube
+const GLuint nVertices = 24, nIndices = 36;
+
 // Cube vertex position data
-const std::vector<GLfloat> cubeVertices = {
+const GLfloat positions[] = {
 	// front
 	-1.0f,	-1.0f,  1.0f,
 	 1.0f,	-1.0f,  1.0f,
@@ -48,7 +51,7 @@ const std::vector<GLfloat> cubeVertices = {
 };
 
 // Cube normal data
-const std::vector<GLfloat> cubeNormals = {
+const GLfloat normals[] = {
 	// front
 	0.0f,	0.0f,	1.0f,
 	0.0f,	0.0f,	1.0f,
@@ -82,7 +85,7 @@ const std::vector<GLfloat> cubeNormals = {
 };
 
 // Cube texture coordinate data
-const std::vector<GLfloat> cubeTexCoords = {
+const GLfloat texCoords[] = {
 	// front
 	0.0f,	0.0f,
 	1.0f,	0.0f,
@@ -116,7 +119,7 @@ const std::vector<GLfloat> cubeTexCoords = {
 };
 
 // Cube index data
-const std::vector<GLuint> cubeIndices = {
+const GLuint indices[] = {
 	// front
 	0,	1,	2,
 	2,	3,	0,
@@ -138,7 +141,7 @@ const std::vector<GLuint> cubeIndices = {
 };
 
 // Interleaved cube vertex data (position, normal, texture coordinates)
-const std::vector<GLfloat> cubeInterleavedVertexData = {
+const GLfloat vertices[] = {
 	// position				 // normal				// texture coordinates
 	// front
 	-1.0f, -1.0f,  1.0f,	 0.0f, 0.0f, 1.0f,		0.0f, 0.0f,

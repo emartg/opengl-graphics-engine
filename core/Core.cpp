@@ -137,7 +137,7 @@ void Core::SetCamera(std::unique_ptr<Camera> camera) { m_camera = std::move(came
 
 void Core::SetLightPos(glm::vec3 lightPos) { m_lightPos = lightPos; }
 
-void Core::AddResource(std::string name, std::unique_ptr<Model> model) { m_models.emplace_back(name, std::move(model)); }
+void Core::AddAsset(std::string name, std::unique_ptr<Model> model) { m_models.emplace_back(name, std::move(model)); }
 
 // Private Methods
 // ---------------

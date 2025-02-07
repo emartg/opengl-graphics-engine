@@ -11,18 +11,47 @@
 
 // Constructors
 // ------------
-Shape::Shape(std::vector<GLfloat> vertices, std::vector<GLuint> indices, std::vector<Texture> textures)
-	: indices(indices), textures(textures)
+Shape::Shape(const std::vector<GLfloat> vertices, const std::vector<GLuint> indices,
+			 const std::vector<Texture> textures)
+	: vertices{ processVertexData(vertices) }, indices{ indices }, textures{ textures }
 {
-	vertexData = processVertexData(vertices);
 	createMesh();
 }
 
-Shape::Shape(std::vector<GLfloat> vertices, std::vector<GLfloat> normals, std::vector<GLfloat> texCoords,
-			 std::vector<GLuint> indices, std::vector<Texture> textures)
-	: indices(indices), textures(textures)
+Shape::Shape(const std::vector<GLfloat> positions, const std::vector<GLfloat> normals,
+			 const std::vector<GLfloat> texCoords, const std::vector<GLuint> indices,
+			 const std::vector<Texture> textures)
+	: vertices{ processVertexData(positions, normals, texCoords) }, indices{ indices }, textures{ textures }
 {
-	vertexData = processVertexData(vertices, normals, texCoords);
+	createMesh();
+}
+
+Shape::Shape(const GLfloat* vertices, const GLuint nVertices, const GLuint* indices, const GLuint nIndices,
+			 const Texture* textures, const GLuint nTextures)
+{
+	std::vector<GLfloat> vertexData{ vertices, vertices + nVertices * 8 };
+	std::vector<GLuint> indexData{ indices, indices + nIndices };
+	std::vector<Texture> textureData{ textures, textures + nTextures };
+	this->vertices = processVertexData(vertexData);
+	this->indices = indexData;
+	this->textures = textureData;
+
+	createMesh();
+}
+
+Shape::Shape(const GLfloat* positions, const GLfloat* normals, const GLfloat* texCoords, const GLuint nVertices,
+			 const GLuint* indices, const GLuint nIndices,
+			 const Texture* textures, const GLuint nTextures)
+{
+	std::vector<GLfloat> positionData{ positions, positions + nVertices * 3 };
+	std::vector<GLfloat> normalData{ normals, normals + nVertices * 3 };
+	std::vector<GLfloat> texCoordData{ texCoords, texCoords + nVertices * 2 };
+	std::vector<GLuint> indexData{ indices, indices + nIndices };
+	std::vector<Texture> textureData{ textures, textures + nTextures };
+	this->vertices = processVertexData(positionData, normalData, texCoordData);
+	this->indices = indexData;
+	this->textures = textureData;
+
 	createMesh();
 }
 
@@ -59,7 +88,7 @@ std::vector<Vertex> Shape::processVertexData(std::vector<GLfloat> vertices, std:
 
 void Shape::createMesh()
 {
-	Mesh mesh{ vertexData, indices, textures };
+	Mesh mesh{ vertices, indices, textures };
 	meshes.push_back(mesh);
 }
 

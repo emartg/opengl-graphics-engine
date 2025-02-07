@@ -16,18 +16,33 @@ class Shape : public Model
 public:
 	// Constructors
 	// ------------
-	// Constructor that creates a shape from interleaved vertex, normal and texture coordinate data, 
+	// Constructor that creates a shape from interleaved position, normal and texture coordinate data, 
 	// index data, and texture data
-	Shape(std::vector<GLfloat> vertices, std::vector<GLuint> indices, std::vector<Texture> textures = {});
-	// Constructor that creates a shape from separate vertex, normal, and texture coordinate data,
+	Shape(const std::vector<GLfloat> vertices, const std::vector<GLuint> indices,
+		  const std::vector<Texture> textures = {});
+	// Constructor that creates a shape from separate position, normal, and texture coordinate data,
 	// index data, and texture data
-	Shape(std::vector<GLfloat> vertices, std::vector<GLfloat> normals, std::vector<GLfloat> texCoords,
-		  std::vector<GLuint> indices, std::vector<Texture> textures = {});
+	Shape(const std::vector<GLfloat> positions, const std::vector<GLfloat> normals,
+		  const std::vector<GLfloat> texCoords, const std::vector<GLuint> indices,
+		  const std::vector<Texture> textures = {});
+	// Constructor that creates a shape from interleaved position, normal and texture coordinate data, 
+	// index data, and texture data. 
+	// This variant takes in arrays instead of vectors, in case the data is laid out in arrays,
+	// and thus requires the number of elements (or vectors of 3 elements) conform each of the arrays
+	Shape(const GLfloat* vertices, const GLuint nVertices, const GLuint* indices, const GLuint nIndices,
+		  const Texture* textures = nullptr, const GLuint nTextures = 0);
+	// Constructor that creates a shape from separate position, normal, and texture coordinate data,
+	// index data, and texture data. 
+	// This variant takes in arrays instead of vectors, in case the data is laid out in arrays, 
+	// and thus requires the number of elements (or vectors of 3 elements) conform each of the arrays
+	Shape(const GLfloat* positions, const GLfloat* normals, const GLfloat* texCoords, const GLuint nVertices,
+		  const GLuint* indices, const GLuint nIndices,
+		  const Texture* textures = nullptr, const GLuint nTextures = 0);
 
 private:
 	// Private Attributes
 	// ------------------
-	std::vector<Vertex> vertexData;
+	std::vector<Vertex> vertices;
 	std::vector<GLuint> indices;
 	std::vector<Texture> textures;
 
@@ -36,9 +51,11 @@ private:
 	// Creates a vector of Vertex objects from interleaved vertex data
 	std::vector<Vertex> processVertexData(std::vector<GLfloat> vertices);
 	// Interleaves vertex, normal, and texture coordinate data into a single vector of Vertex objects
-	std::vector<Vertex> processVertexData(std::vector<GLfloat> vertices, std::vector<GLfloat> normals,
+	std::vector<Vertex> processVertexData(std::vector<GLfloat> position,
+										  std::vector<GLfloat> normals,
 										  std::vector<GLfloat> texCoords);
 
 	// Creates the mesh from the vertex, index and texture data
 	void createMesh();
+
 };

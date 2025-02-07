@@ -10,7 +10,6 @@
 #include "CUBE.h"
 #include "../core/Core.h"
 
-
 int main(int argc, char** argv)
 {
 	auto engine = std::make_unique<Core>();
@@ -21,16 +20,20 @@ int main(int argc, char** argv)
 	auto lightPos = glm::vec3(-1.0f, 2.0f, 2.0f); // hardcoded initial light position (the same as the constant value in Engine.h) - provisional
 	engine->SetLightPos(lightPos);
 
-	/*std::vector<Texture> textures = {
-		Texture{ "resources/textures/blue_metal_plate_diffuse.jpg", TextureType::DIFFUSE },
-		Texture{ "resources/textures/blue_metal_plate_specular.jpg", TextureType::SPECULAR }
-	};*/
+	// cube without textures
+	auto cubeModel = std::make_unique<Shape>(positions, normals, texCoords, nVertices, indices, nIndices);
+	//auto cubeModel = std::make_unique<Shape>(vertices, nVertices, indices, nIndices);
 
-	auto cubeModel = std::make_unique<Shape>(cubeVertices, cubeNormals, cubeTexCoords, cubeIndices);
-	//auto cubeModel = std::make_unique<Shape>(cubeVertices, cubeNormals, cubeTexCoords, cubeIndices, textures);
-	//auto cubeModel = std::make_unique<Shape>(cubeInterleavedVertexData, cubeIndices);
-	//auto cubeModel = std::make_unique<Shape>(cubeInterleavedVertexData, cubeIndices, textures);
-	engine->AddResource("Main Cube", std::move(cubeModel));
+	// cube with textures
+	//Texture textures[] = {
+	//	Texture{ "resources/textures/blue_metal_plate_diffuse.jpg", TextureType::DIFFUSE },
+	//	Texture{ "resources/textures/blue_metal_plate_specular.jpg", TextureType::SPECULAR }
+	//};
+	//GLuint nTextures = 2;
+	//auto cubeModel = std::make_unique<Shape>(positions, normals, texCoords, nVertices, indices, nIndices, textures, nTextures);
+	//auto cubeModel = std::make_unique<Shape>(vertices, nVertices, indices, nIndices, textures, nTextures);
+
+	engine->AddAsset("Main Cube", std::move(cubeModel));
 
 	engine->MainLoop();
 

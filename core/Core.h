@@ -46,7 +46,7 @@ public:
 	std::unique_ptr<Camera>& GetCamera() { return m_camera; }
 	glm::vec3 GetLightPos() const { return m_lightPos; }
 
-	void AddResource(std::string name, std::unique_ptr<Model> model);
+	void AddAsset(std::string name, std::unique_ptr<Model> model);
 
 private:
 	// Private Attributes
@@ -89,4 +89,5 @@ private:
 
 	// Check if the window should close
 	bool shouldClose() const;
+
 };
