@@ -3,8 +3,8 @@
 cmake_minimum_required(VERSION 3.20)
 cmake_policy(VERSION 3.20)
 
-# Project name and version
-project(EngineProject)
+# Project name, version and languages
+project(EngineProject VERSION 0.5.2 LANGUAGES C CXX)
 
 # Set C++ standard
 set(CMAKE_CXX_STANDARD 20)
@@ -32,7 +32,7 @@ link_directories(${CMAKE_BINARY_DIR}/lib)
 
 # Find and include required packages
 find_package(GLM REQUIRED)
-message(STATUS "[Engine] GLM included at ${GLM_INCLUDE_DIR}")
+message(STATUS "[${PROJECT_NAME}] GLM included at ${GLM_INCLUDE_DIR}")
 
 # Add subdirectories
 add_subdirectory(core)
