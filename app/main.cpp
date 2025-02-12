@@ -1,8 +1,8 @@
 /*
 * main.cpp
 * This file is the entry point of the application.
-* It creates an Engine object, initializes OpenGL, creates a camera, and adds a cube model to the engine.
-* It then runs the main loop of the engine.
+* It creates a Core object, initializes OpenGL, adds a camera, sets the light source position,
+* and adds models to the engine. It then runs the main loop of the engine that includes input processing.
 */
 
 #include <memory>
@@ -15,25 +15,23 @@ int main(int argc, char** argv)
 	auto engine = std::make_unique<Core>();
 	engine->InitOGL();
 
-	auto camera = std::make_unique<Camera>(glm::vec3(4.25f, 2.5f, 4.25f), glm::vec3(0.0f, 1.0f, 0.0f), -135.0f, -24.0f); // hardcoded initial camera settings (the same as the constant values in Engine.h) - provisional
-	engine->SetCamera(std::move(camera));
-	auto lightPos = glm::vec3(-1.0f, 2.0f, 2.0f); // hardcoded initial light position (the same as the constant value in Engine.h) - provisional
-	engine->SetLightPos(lightPos);
+	auto camera = std::make_unique<Camera>("Main Camera");
+	engine->AddCamera(std::move(camera));
 
-	// cube without textures
-	auto cubeModel = std::make_unique<Shape>(positions, normals, texCoords, nVertices, indices, nIndices);
-	//auto cubeModel = std::make_unique<Shape>(vertices, nVertices, indices, nIndices);
+	auto pointLight = std::make_unique<PointLight>("Main Light");
+	engine->AddLight(std::move(pointLight));
 
-	// cube with textures
-	//Texture textures[] = {
-	//	Texture{ "resources/textures/blue_metal_plate_diffuse.jpg", TextureType::DIFFUSE },
-	//	Texture{ "resources/textures/blue_metal_plate_specular.jpg", TextureType::SPECULAR }
-	//};
-	//GLuint nTextures = 2;
-	//auto cubeModel = std::make_unique<Shape>(positions, normals, texCoords, nVertices, indices, nIndices, textures, nTextures);
-	//auto cubeModel = std::make_unique<Shape>(vertices, nVertices, indices, nIndices, textures, nTextures);
+	// create cube models
+	auto cube1 = std::make_unique<Shape>("redCube", positionsArr, normalsArr, texCoordsArr, nVertices, indicesArr, nIndices);
+	auto cube2 = std::make_unique<Shape>("blueCube", positionsVec, normalsVec, texCoordsVec, indicesVec);
+	auto cube3 = std::make_unique<Shape>("greenCube", verticesArr, nVertices, indicesArr, nIndices);
+	auto cube4 = std::make_unique<Shape>("yellowCube", verticesVec, indicesVec);
 
-	engine->AddAsset("Main Cube", std::move(cubeModel));
+	// add cube models to the engine
+	engine->AddModel(std::move(cube1));
+	engine->AddModel(std::move(cube2));
+	engine->AddModel(std::move(cube3));
+	engine->AddModel(std::move(cube4));
 
 	engine->MainLoop();
 

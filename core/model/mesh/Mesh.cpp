@@ -13,8 +13,8 @@ Mesh::Mesh(std::vector<Vertex> vertices, std::vector<GLuint> indices, std::vecto
 	setupMesh();
 }
 
-// Public Functions
-// ----------------
+// Public methods
+// --------------
 void Mesh::Draw() const
 {
 	// draw mesh
@@ -33,7 +33,7 @@ void Mesh::BindTextures(Shader& shader) const
 	for (GLuint i{}; i < textures.size(); i++)
 	{
 		std::string textureNumber, textureName;
-		TextureType type = textures[i].GetType();
+		TextureType type = textures[i].GetTextureType();
 		if (type == TextureType::DIFFUSE)
 		{
 			textureName = "diffuse";
@@ -59,8 +59,8 @@ void Mesh::DeallocateResources()
 	glDeleteBuffers(1, &EBO);
 }
 
-// Private Functions
-// -----------------
+// Private Methods
+// ---------------
 void Mesh::setupMesh()
 {
 	// create buffers/arrays

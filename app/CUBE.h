@@ -1,9 +1,9 @@
 /*
 * CUBE.h
-* This file defines the vertex data for a simple cube.
+* This file defines the vertex data for a simple cube, both in array and vector form.
 * Vertices are replicated for each face, so that each face can have different normals and texture coordinates.
-* The vertex data is separated into position, normal, and texture coordinate data.
-* There is also an array with the interleaved vertex data to test the Shape constructor that takes
+* The vertex data is separated into position, normal, and texture coordinate data, but there is also
+* an array and a vector with the interleaved vertex data to test the Shape constructors that take
 * interleaved vertex data directly.
 */
 
@@ -17,7 +17,7 @@
 const GLuint nVertices = 24, nIndices = 36;
 
 // Cube vertex position data
-const GLfloat positions[] = {
+const GLfloat positionsArr[] = {
 	// front
 	-1.0f,	-1.0f,  1.0f,
 	 1.0f,	-1.0f,  1.0f,
@@ -51,7 +51,7 @@ const GLfloat positions[] = {
 };
 
 // Cube normal data
-const GLfloat normals[] = {
+const GLfloat normalsArr[] = {
 	// front
 	0.0f,	0.0f,	1.0f,
 	0.0f,	0.0f,	1.0f,
@@ -85,7 +85,7 @@ const GLfloat normals[] = {
 };
 
 // Cube texture coordinate data
-const GLfloat texCoords[] = {
+const GLfloat texCoordsArr[] = {
 	// front
 	0.0f,	0.0f,
 	1.0f,	0.0f,
@@ -119,7 +119,7 @@ const GLfloat texCoords[] = {
 };
 
 // Cube index data
-const GLuint indices[] = {
+const GLuint indicesArr[] = {
 	// front
 	0,	1,	2,
 	2,	3,	0,
@@ -141,7 +141,7 @@ const GLuint indices[] = {
 };
 
 // Interleaved cube vertex data (position, normal, texture coordinates)
-const GLfloat vertices[] = {
+const GLfloat verticesArr[] = {
 	// position				 // normal				// texture coordinates
 	// front
 	-1.0f, -1.0f,  1.0f,	 0.0f, 0.0f, 1.0f,		0.0f, 0.0f,
@@ -174,3 +174,18 @@ const GLfloat vertices[] = {
 	 1.0f, -1.0f,  1.0f,	 0.0f, -1.0f, 0.0f,		1.0f, 1.0f,
 	-1.0f, -1.0f,  1.0f,	 0.0f, -1.0f, 0.0f,		0.0f, 1.0f
 };
+
+// Cube vertex position data in vector form
+const std::vector<GLfloat> positionsVec{ std::begin(positionsArr), std::end(positionsArr) };
+
+// Cube normal data in vector form
+const std::vector<GLfloat> normalsVec{ std::begin(normalsArr), std::end(normalsArr) };
+
+// Cube texture coordinate data in vector form
+const std::vector<GLfloat> texCoordsVec{ std::begin(texCoordsArr), std::end(texCoordsArr) };
+
+// Cube index data in vector form
+const std::vector<GLuint> indicesVec{ std::begin(indicesArr), std::end(indicesArr) };
+
+// Interleaved cube vertex data in vector form
+const std::vector<GLfloat> verticesVec{ std::begin(verticesArr), std::end(verticesArr) };

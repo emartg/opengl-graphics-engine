@@ -13,7 +13,6 @@
 #include "../texture/Texture.h"
 #include "../shader/Shader.h"
 #include "Model.h"
-#include "Mesh.h"
 
 class AssimpModel : public Model
 {
@@ -21,11 +20,11 @@ public:
 	// Constructors
 	// ------------
 	// Constructor that loads a model from a file
-	AssimpModel(std::string const& path);
+	AssimpModel(const std::string& name, std::string const& path);
 
 private:
-	// Private Functions
-	// -----------------
+	// Private Methods
+	// ---------------
 	// Loads a model with supported Assimp extensions from file and stores the resulting meshes in the meshes vector
 	void loadAssimpModel(std::string const& path);
 

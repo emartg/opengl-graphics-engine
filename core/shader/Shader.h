@@ -1,6 +1,7 @@
 /*
 * Shader.h
-* This file defines the Shader class, which is used to read, compile, and link shaders.
+* This file defines the Shader class (a derived class of Asset),
+* which is used to read, compile, and link shaders.
 */
 
 #pragma once
@@ -14,7 +15,9 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-class Shader
+#include "../Asset.h"
+
+class Shader : public Asset
 {
 public:
 	// Public Attributes
@@ -24,12 +27,20 @@ public:
 	// Constructors
 	// ------------
 	// Constructor that reads and builds the shader with a vertex and fragment shader
-	Shader(const GLchar* vertexPath, const GLchar* fragmentPath);
+	Shader(const std::string& name,
+		   const GLchar* vertexPath, const GLchar* fragmentPath);
 	// Constructor that reads and builds the shader with a geometry shader in addition to the vertex and fragment shaders
-	Shader(const GLchar* vertexPath, const GLchar* geometryPath, const GLchar* fragmentPath);
+	Shader(const std::string& name,
+		   const GLchar* vertexPath, const GLchar* geometryPath, const GLchar* fragmentPath);
 
 	// Public Methods
-	// ----------------
+	// --------------
+	// Loads the shader
+	void Load() override {}
+
+	// Deallocates all the resources of the shader
+	void DeallocateResources() override { glDeleteProgram(ID); }
+
 	// Activates the shader program
 	void Use();
 

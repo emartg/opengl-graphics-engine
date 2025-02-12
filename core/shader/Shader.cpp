@@ -1,13 +1,16 @@
 /*
 * Shader.cpp
-* This file implements the Shader class, which is used to read, compile, and link shaders.
+* This file implements the Shader class (a derived class of Asset),
+* which is used to read, compile, and link shaders.
 */
 
 #include "Shader.h"
 
 // Constructors
 // ------------
-Shader::Shader(const GLchar* vertexPath, const GLchar* fragmentPath)
+Shader::Shader(const std::string& name,
+			   const GLchar* vertexPath, const GLchar* fragmentPath)
+	: Asset(name, AssetType::SHADER)
 {
 	// 1. retrieve the vertex/fragment source code from filePath
 	std::string vertexCode;
@@ -64,7 +67,9 @@ Shader::Shader(const GLchar* vertexPath, const GLchar* fragmentPath)
 	glDeleteShader(fragment);
 }
 
-Shader::Shader(const GLchar* vertexPath, const GLchar* geometryPath, const GLchar* fragmentPath)
+Shader::Shader(const std::string& name,
+			   const GLchar* vertexPath, const GLchar* geometryPath, const GLchar* fragmentPath)
+	: Asset(name, AssetType::SHADER)
 {
 	// 1. retrieve the vertex/geometry/fragment source code from filePath
 	std::string vertexCode;

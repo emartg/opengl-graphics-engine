@@ -1,22 +1,29 @@
 /*
 * Camera.cpp
-* This file implements the Camera class, which is used to process input and calculate
-* the corresponding Euler Angles, vectors, and Matrices for use in OpenGL.
+* This file implements the Camera class (a derived class of Asset),
+* which is used to process input and calculate the corresponding Euler Angles,
+* vectors, and Matrices for use in OpenGL.
 */
 
 #include "Camera.h"
 
 // Constructors
 // ------------
-Camera::Camera(glm::vec3 position, glm::vec3 up, GLfloat yaw, GLfloat pitch)
-	: front(glm::vec3(0.0f, 0.0f, -1.0f)), position(position), worldUp(up), yaw(yaw), pitch(pitch),
+Camera::Camera(const std::string& name,
+			   const glm::vec3 position, const glm::vec3 up,
+			   const GLfloat yaw, const GLfloat pitch)
+	: Asset(name, AssetType::CAMERA),
+	front(glm::vec3(0.0f, 0.0f, -1.0f)), position(position), worldUp(up), yaw(yaw), pitch(pitch),
 	movementSpeed(SPEED), mouseSensitivity(SENSITIVITY), zoom(ZOOM)
 {
 	updateCameraVectors();
 }
 
-Camera::Camera(GLfloat posX, GLfloat posY, GLfloat posZ, GLfloat upX, GLfloat upY, GLfloat upZ, GLfloat yaw, GLfloat pitch)
-	: Camera(glm::vec3(posX, posY, posZ), glm::vec3(upX, upY, upZ), yaw, pitch)
+Camera::Camera(const std::string& name,
+			   const  GLfloat posX, const GLfloat posY, const GLfloat posZ,
+			   const GLfloat upX, const GLfloat upY, const GLfloat upZ,
+			   const GLfloat yaw, const GLfloat pitch)
+	: Camera(name, glm::vec3(posX, posY, posZ), glm::vec3(upX, upY, upZ), yaw, pitch)
 {}
 
 // Public Methods
@@ -73,7 +80,7 @@ void Camera::ProcessMouseRotation(GLfloat xoffset, GLfloat yoffset, GLfloat sens
 void Camera::ProcessMouseScroll(GLfloat yoffset, GLfloat sensitivity)
 {
 	zoom -= yoffset * sensitivity;
-	zoom = std::clamp(zoom, 1.0f, 45.0f);
+	zoom = std::clamp(zoom, -100.0f, 100.0f);
 }
 
 // Private Methods

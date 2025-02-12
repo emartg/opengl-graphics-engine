@@ -12,8 +12,8 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-#include "../shader/Shader.h"
-#include "../texture/Texture.h"
+#include "../../shader/Shader.h"
+#include "../../texture/Texture.h"
 
 struct Vertex
 {
@@ -25,18 +25,11 @@ struct Vertex
 class Mesh
 {
 public:
-	// Public Attributes
-	// ---------------
-	// Mesh data
-	std::vector<Vertex> vertices;
-	std::vector<GLuint> indices;
-	std::vector<Texture> textures;
-
 	// Constructors
 	// ------------
 	Mesh(std::vector<Vertex> vertices, std::vector<GLuint> indices, std::vector<Texture> textures);
 
-	// Public Functions
+	// Public Methods
 	// --------------
 	// Renders the mesh
 	void Draw() const;
@@ -50,11 +43,13 @@ public:
 private:
 	// Private Attributes
 	// ------------------
-	// Render data
+	std::vector<Vertex> vertices;
+	std::vector<GLuint> indices;
+	std::vector<Texture> textures;
 	GLuint VAO, VBO, EBO;
 
-	// Private Functions
-	// -----------------
+	// Private Methods
+	// ---------------
 	// Initializes all the buffer objects/arrays
 	void setupMesh();
 

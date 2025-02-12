@@ -11,23 +11,28 @@
 
 // Constructors
 // ------------
-Shape::Shape(const std::vector<GLfloat> vertices, const std::vector<GLuint> indices,
+Shape::Shape(const std::string& name,
+			 const std::vector<GLfloat> vertices, const std::vector<GLuint> indices,
 			 const std::vector<Texture> textures)
-	: vertices{ processVertexData(vertices) }, indices{ indices }, textures{ textures }
+	: Model(name), vertices{ processVertexData(vertices) }, indices{ indices }, textures{ textures }
 {
 	createMesh();
 }
 
-Shape::Shape(const std::vector<GLfloat> positions, const std::vector<GLfloat> normals,
+Shape::Shape(const std::string& name,
+			 const std::vector<GLfloat> positions, const std::vector<GLfloat> normals,
 			 const std::vector<GLfloat> texCoords, const std::vector<GLuint> indices,
 			 const std::vector<Texture> textures)
-	: vertices{ processVertexData(positions, normals, texCoords) }, indices{ indices }, textures{ textures }
+	: Model(name), vertices{ processVertexData(positions, normals, texCoords) }, indices{ indices }, textures{ textures }
 {
 	createMesh();
 }
 
-Shape::Shape(const GLfloat* vertices, const GLuint nVertices, const GLuint* indices, const GLuint nIndices,
+Shape::Shape(const std::string& name,
+			 const GLfloat* vertices, const GLuint nVertices,
+			 const GLuint* indices, const GLuint nIndices,
 			 const Texture* textures, const GLuint nTextures)
+	: Model(name)
 {
 	std::vector<GLfloat> vertexData{ vertices, vertices + nVertices * 8 };
 	std::vector<GLuint> indexData{ indices, indices + nIndices };
@@ -39,9 +44,12 @@ Shape::Shape(const GLfloat* vertices, const GLuint nVertices, const GLuint* indi
 	createMesh();
 }
 
-Shape::Shape(const GLfloat* positions, const GLfloat* normals, const GLfloat* texCoords, const GLuint nVertices,
+Shape::Shape(const std::string& name,
+			 const GLfloat* positions, const GLfloat* normals,
+			 const GLfloat* texCoords, const GLuint nVertices,
 			 const GLuint* indices, const GLuint nIndices,
 			 const Texture* textures, const GLuint nTextures)
+	: Model(name)
 {
 	std::vector<GLfloat> positionData{ positions, positions + nVertices * 3 };
 	std::vector<GLfloat> normalData{ normals, normals + nVertices * 3 };
@@ -55,8 +63,8 @@ Shape::Shape(const GLfloat* positions, const GLfloat* normals, const GLfloat* te
 	createMesh();
 }
 
-// Private Functions
-// -----------------
+// Private Methods
+// ---------------
 std::vector<Vertex> Shape::processVertexData(std::vector<GLfloat> vertices)
 {
 	std::vector<Vertex> vertexData;

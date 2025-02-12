@@ -1,7 +1,8 @@
 /*
 * Camera.h
-* This file defines the Camera class, which is used to process input and calculate
-* the corresponding Euler Angles, vectors, and Matrices for use in OpenGL.
+* This file defines the Camera class (a derived class of Asset),
+* which is used to process input and calculate the corresponding Euler Angles,
+* vectors, and Matrices for use in OpenGL.
 */
 
 #pragma once
@@ -12,48 +13,36 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+#include "../Asset.h"
+
 // Enumeration that defines several possible options for camera movement. 
 // Used as abstraction to stay away from window-system specific input methods
 enum Camera_Movement { FORWARD, BACKWARD, LEFT, RIGHT };
 
-class Camera
+class Camera : public Asset
 {
-	// Private Attributes
-	// ------------------
-	// Camera attributes
-	glm::vec3 position;
-	glm::vec3 front;
-	glm::vec3 up;
-	glm::vec3 right;
-	glm::vec3 worldUp;
-	// Euler angles
-	GLfloat yaw;
-	GLfloat pitch;
-	// Camera options
-	GLfloat movementSpeed;
-	GLfloat mouseSensitivity;
-	GLfloat zoom;
-
-	// Static Constants
-	// ----------------
-	// Default camera values
-	static constexpr GLfloat YAW = -90.0f;
-	static constexpr GLfloat PITCH = 0.0f;
-	static constexpr GLfloat SPEED = 2.5f;
-	static constexpr GLfloat SENSITIVITY = 0.1f;
-	static constexpr GLfloat ZOOM = 45.0f;
-
 public:
 	// Constructors
 	// ------------
 	// Constructor with vectors
-	Camera(glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f),
-		   GLfloat yaw = YAW, GLfloat pitch = PITCH);
+	Camera(const std::string& name,
+		   const glm::vec3 position = POSITION, const glm::vec3 up = UP,
+		   const GLfloat yaw = YAW, const GLfloat pitch = PITCH);
 	// Constructor with scalar values
-	Camera(GLfloat posX, GLfloat posY, GLfloat posZ, GLfloat upX, GLfloat upY, GLfloat upZ, GLfloat yaw, GLfloat pitch);
+	Camera(const std::string& name,
+		   const GLfloat posX, const GLfloat posY, const GLfloat posZ,
+		   const GLfloat upX, const GLfloat upY, const GLfloat upZ,
+		   const GLfloat yaw, const GLfloat pitch);
+
+	// Public Methods
+	// --------------
+	// Loads the camera
+	void Load() override {}
+
+	// Deallocates all the resources of the camera
+	void DeallocateResources() override {}
 
 	// Getters
-	// -------
 	glm::vec3 GetPosition() const { return position; }
 	glm::vec3 GetFront() const { return front; }
 	glm::vec3 GetUp() const { return up; }
@@ -65,8 +54,6 @@ public:
 	GLfloat GetMouseSensitivity() const { return mouseSensitivity; }
 	GLfloat GetZoom() const { return zoom; }
 
-	// Public Methods
-	// --------------
 	// Returns the view matrix calculated using Euler Angles and the LookAt Matrix
 	glm::mat4 GetViewMatrix() const;
 
@@ -87,6 +74,33 @@ public:
 	void ProcessMouseScroll(GLfloat yoffset, GLfloat sensitivity = 1.0f);
 
 private:
+	// Private Attributes
+	// ------------------
+	// Camera attributes
+	glm::vec3 position;
+	glm::vec3 front;
+	glm::vec3 up;
+	glm::vec3 right;
+	glm::vec3 worldUp;
+	// Euler angles
+	GLfloat yaw;
+	GLfloat pitch;
+	// Camera options
+	GLfloat movementSpeed;
+	GLfloat mouseSensitivity;
+	GLfloat zoom;
+
+	// Static Constants
+	// ----------------
+	// Default camera values
+	static constexpr glm::vec3 POSITION = glm::vec3(4.25f, 2.5f, 4.25f);
+	static constexpr glm::vec3 UP = glm::vec3(0.0f, 1.0f, 0.0f);
+	static constexpr GLfloat YAW = -135.0f;
+	static constexpr GLfloat PITCH = -24.0f;
+	static constexpr GLfloat SPEED = 2.5f;
+	static constexpr GLfloat SENSITIVITY = 0.1f;
+	static constexpr GLfloat ZOOM = 45.0f;
+
 	// Private Methods
 	// ---------------
 	// Calculates the front vector from the Camera's (updated) Euler Angles

@@ -9,10 +9,14 @@
 // Constructors
 // ------------
 // Constructor that loads a model from a file
-AssimpModel::AssimpModel(std::string const& path) { loadAssimpModel(path); }
+AssimpModel::AssimpModel(const std::string& name, std::string const& path)
+	: Model(name)
+{
+	loadAssimpModel(path);
+}
 
-// Private Functions
-// -----------------
+// Private Methods
+// ---------------
 void AssimpModel::loadAssimpModel(std::string const& path)
 {
 	// read file via Assimp (the second argument of ReadFile is a combination of post-processing options)
@@ -120,7 +124,8 @@ std::vector<Texture> AssimpModel::loadMaterialTextures(aiMaterial* mat, aiTextur
 		}
 		if (!skip) // if the texture hasn't been loaded already, load it
 		{
-			Texture texture{ str.C_Str(), textureType };
+			std::string textureName{ "texture" + std::to_string(i) };
+			Texture texture{ textureName, str.C_Str(), textureType };
 			textures.push_back(texture);
 			loadedTextures.push_back(texture); // to ensure we won't load the same texture again, store it in the loaded textures
 		}

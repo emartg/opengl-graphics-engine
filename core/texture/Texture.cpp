@@ -1,6 +1,7 @@
 /*
 * Texture.cpp
-* This file implements the Texture class, which is used to load a texture from a file and bind it to a unit.
+* This file implements the Texture class (a derived class of Asset),
+* which is used to load a texture from a file and bind it to a unit.
 */
 
 #include <iostream>
@@ -11,18 +12,11 @@
 
 // Constructors
 // ------------
-Texture::Texture(const std::string& path, const TextureType type)
-	: id{ 0 }, type{ type }, path{ path }
-{
-	id = LoadTextureFromFile(path.c_str());
-}
-
-// Destructor
-// ----------
-Texture::~Texture()
-{
-	glDeleteTextures(1, &id);
-}
+Texture::Texture(const std::string& name,
+				 const std::string& path, const TextureType type)
+	: Asset(name, AssetType::TEXTURE),
+	id{ LoadTextureFromFile(path.c_str()) }, path{ path }, textureType{ type }
+{}
 
 // Public Methods
 // --------------
@@ -55,6 +49,7 @@ GLuint Texture::LoadTextureFromFile(const GLchar* path)
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
+		std::cout << "Texture loaded successfully at path: " << path << std::endl;
 		stbi_image_free(data);
 	}
 	else

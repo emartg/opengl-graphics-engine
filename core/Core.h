@@ -17,10 +17,12 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <stb_image.h>
 
+#include "Asset.h"
 #include "camera/Camera.h"
-#include "shader/Shader.h"
-#include "model/Model.h"
+#include "light/PointLight.h"
 #include "model/Shape.h"
+#include "shader/Shader.h"
+#include "texture/Texture.h"
 
 class Core
 {
@@ -38,39 +40,33 @@ public:
 	void InitOGL(); // initialize OpenGL
 	void MainLoop(); // the main rendering loop of the engine (includes input processing)
 
-	// Setters
-	void SetCamera(std::unique_ptr<Camera> camera);
-	void SetLightPos(glm::vec3 lightPos);
-
 	// Getters
-	std::unique_ptr<Camera>& GetCamera() { return m_camera; }
-	glm::vec3 GetLightPos() const { return m_lightPos; }
+	std::unique_ptr<Camera>& GetCamera() { return m_cameras.front(); }
 
-	void AddAsset(std::string name, std::unique_ptr<Model> model);
+	// Adds an asset to the engine (e.g., a camera, light, model, etc.)
+	void AddAsset(std::unique_ptr<Asset> asset);
+	void AddCamera(std::unique_ptr<Camera> camera);
+	void AddLight(std::unique_ptr<PointLight> light);
+	void AddModel(std::unique_ptr<Shape> shape);
+	void AddShader(std::unique_ptr<Shader> shader);
+	void AddTexture(std::unique_ptr<Texture> texture);
 
 private:
 	// Private Attributes
 	// ------------------
-	// Screen settings
-	const GLuint SCR_WIDTH{ 800 }, SCR_HEIGHT{ 600 };
+	GLfloat m_lastMouseX, m_lastMouseY, m_firstMouse; // mouse settings
+	GLfloat m_deltaTime, m_lastFrameTime; // time settings
+	GLFWwindow* m_window; // window object
+	std::vector<std::unique_ptr<Camera>> m_cameras; // cameras in the engine
+	std::vector<std::unique_ptr<PointLight>> m_lights; // lights in the engine
+	std::vector<std::unique_ptr<Shape>> m_models; // models in the engine
+	std::vector<std::unique_ptr<Shader>> m_shaders; // shaders in the engine
+	std::vector<std::unique_ptr<Texture>> m_textures; // textures in the engine
+	std::unique_ptr<Camera> m_camera; // camera currently in use
 
-	// Camera settings
-	const glm::vec3 INITIAL_CAMERA_POSITION{ 4.25f, 2.5f, 4.25f }, INITIAL_CAMERA_UP{ 0.0f, 1.0f, 0.0f };
-	const GLfloat INITIAL_CAMERA_YAW{ -135.0f }, INITIAL_CAMERA_PITCH{ -24.0f };
-
-	// Light settings
-	const glm::vec3 INITIAL_LIGHT_POS{ -1.0f, 2.0f, 2.0f };
-
-	// Mouse settings
-	GLfloat lastX, lastY, firstMouse;
-
-	// Time settings
-	GLfloat deltaTime, lastFrame; // time between current frame and last frame and time of last frame
-
-	GLFWwindow* m_window;
-	std::unique_ptr<Camera> m_camera;
-	glm::vec3 m_lightPos;
-	std::vector<std::pair<std::string, std::unique_ptr<Model>>> m_models; // the models to be rendered
+	// Static Constants
+	// ----------------
+	static constexpr GLuint SCR_WIDTH{ 800 }, SCR_HEIGHT{ 600 }; // screen settings
 
 	// Private Functions
 	// -----------------
