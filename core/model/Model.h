@@ -21,7 +21,8 @@ public:
 	// Constructors
 	// ------------
 	Model(const std::string& name)
-		: Asset(name, AssetType::MODEL) {}
+		: Asset(name, AssetType::MODEL) 
+	{}
 
 	// Virtual destructor (ensures that derived classes can be deleted properly - polymorphism)
 	// ---------------------------------------------------------------------------------------

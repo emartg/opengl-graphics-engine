@@ -16,7 +16,8 @@ struct Light
 
 struct Material
 {
-	vec3 albedo;
+	sampler2D diffuse1;
+	sampler2D specular1;
 	float shininess;
 };
 
@@ -31,19 +32,19 @@ uniform Material material;
 void main()
 {
 	// ambient component
-	vec3 ambient = light.ambient * material.albedo;
+	vec3 ambient = light.ambient * texture(material.diffuse1, TexCoords).rgb;
 
 	// diffuse component
 	vec3 norm = normalize(Normal);
 	vec3 lightDir = normalize(LightPos - FragPos);
 	float diff = max(dot(norm, lightDir), 0.0);
-	vec3 diffuse = light.diffuse * diff * material.albedo;
+	vec3 diffuse = light.diffuse * diff * texture(material.diffuse1, TexCoords).rgb;
 
 	// specular component
 	vec3 viewDir = normalize(-FragPos);		// we already are in view space so view position is (0, 0, 0)
 	vec3 reflectDir = reflect(-lightDir, norm);
 	float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
-	vec3 specular = light.specular * spec;  // there is no specular map for now, the entire object will be shiny
+	vec3 specular = light.specular * spec * texture(material.specular1, TexCoords).rgb;
 
 	// attenuation
 	float distance = length(LightPos - FragPos);

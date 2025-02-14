@@ -121,6 +121,9 @@ void Core::MainLoop()
 	shapeShader.SetFloat("light.linear", m_lights.front()->GetLinear());
 	shapeShader.SetFloat("light.quadratic", m_lights.front()->GetQuadratic());
 
+	for (auto& model : m_models)
+		model->BindTextures(shapeShader);
+
 	shapeShader.SetFloat("material.shininess", 32.0f);
 
 	// Render loop
@@ -160,8 +163,6 @@ void Core::MainLoop()
 			glm::mat4 model = glm::mat4(1.0f);
 			model = glm::translate(model, shapeTranslations[i]);
 			shapeShader.SetMat4("model", model);
-			// set shape color
-			shapeShader.SetVec3("material.albedo", shapeColors[i]);
 			// render the model
 			m_models[i]->Draw(shapeShader);
 		}
