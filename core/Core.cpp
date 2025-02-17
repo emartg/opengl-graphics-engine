@@ -107,6 +107,31 @@ void Core::MainLoop()
 	Shader shapeShader("shapeShader", "shaders/shape.vert.glsl", "shaders/shape.frag.glsl");
 	AddShader(std::make_unique<Shader>(shapeShader));
 
+	// Load textures
+	// -------------
+	const GLuint nTextures{ 2 };
+	Texture texturesArr[] = {
+		{ "diffuse_metal_plate_texture", "textures/blue_metal_plate_diffuse.jpg", TextureType::DIFFUSE },
+		{ "specular_metal_plate_texture", "textures/blue_metal_plate_specular.jpg", TextureType::SPECULAR }
+	};
+	std::vector<Texture> texturesVec{
+		{ "diffuse_container_texture", "textures/container_diffuse.png", TextureType::DIFFUSE },
+		{ "specular_container_texture", "textures/container_specular.png", TextureType::SPECULAR }
+	};
+	for (size_t i{}; i < nTextures; ++i)
+		AddTexture(std::make_unique<Texture>(texturesArr[i]));
+	for (const auto& texture : texturesVec)
+		AddTexture(std::make_unique<Texture>(texture));
+
+	// add and bind textures to the models
+	for (size_t i{}; i < m_models.size(); ++i)
+	{
+		if (i < nTextures)	// use array of textures to test the AddTextureData method
+			m_models[i]->AddTextureData(texturesArr, nTextures);
+		else				// use vector of textures to test the AddTextureData method overload
+			m_models[i]->AddTextureData(texturesVec);
+	}
+
 	// Shader configuration
 	// --------------------
 	shapeShader.Use();
@@ -120,9 +145,6 @@ void Core::MainLoop()
 	shapeShader.SetFloat("light.constant", m_lights.front()->GetConstant());
 	shapeShader.SetFloat("light.linear", m_lights.front()->GetLinear());
 	shapeShader.SetFloat("light.quadratic", m_lights.front()->GetQuadratic());
-
-	for (auto& model : m_models)
-		model->BindTextures(shapeShader);
 
 	shapeShader.SetFloat("material.shininess", 32.0f);
 

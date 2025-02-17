@@ -1,8 +1,8 @@
 /*
 * Shape.cpp
 * This file implements the Shape class (a derived class of Model),
-* which is used to create a shape from vertex, normal, texture coordinate, index, and texture data;
-* and draw it.
+* which is used to create a shape from vertex, normal, texture coordinate, index
+* and texture data (if added); and draw it.
 */
 
 #pragma once
@@ -12,34 +12,29 @@
 // Constructors
 // ------------
 Shape::Shape(const std::string& name,
-			 const std::vector<GLfloat> vertices, const std::vector<GLuint> indices,
-			 const std::vector<Texture> textures)
-	: Model(name), vertices{ processVertexData(vertices) }, indices{ indices }, textures{ textures }
+			 const std::vector<GLfloat> vertices, const std::vector<GLuint> indices)
+	: Model(name), vertices{ processVertexData(vertices) }, indices{ indices }
 {
 	createMesh();
 }
 
 Shape::Shape(const std::string& name,
 			 const std::vector<GLfloat> positions, const std::vector<GLfloat> normals,
-			 const std::vector<GLfloat> texCoords, const std::vector<GLuint> indices,
-			 const std::vector<Texture> textures)
-	: Model(name), vertices{ processVertexData(positions, normals, texCoords) }, indices{ indices }, textures{ textures }
+			 const std::vector<GLfloat> texCoords, const std::vector<GLuint> indices)
+	: Model(name), vertices{ processVertexData(positions, normals, texCoords) }, indices{ indices }
 {
 	createMesh();
 }
 
 Shape::Shape(const std::string& name,
 			 const GLfloat* vertices, const GLuint nVertices,
-			 const GLuint* indices, const GLuint nIndices,
-			 const Texture* textures, const GLuint nTextures)
+			 const GLuint* indices, const GLuint nIndices)
 	: Model(name)
 {
 	std::vector<GLfloat> vertexData{ vertices, vertices + nVertices * 8 };
 	std::vector<GLuint> indexData{ indices, indices + nIndices };
-	std::vector<Texture> textureData{ textures, textures + nTextures };
 	this->vertices = processVertexData(vertexData);
 	this->indices = indexData;
-	this->textures = textureData;
 
 	createMesh();
 }
@@ -47,19 +42,34 @@ Shape::Shape(const std::string& name,
 Shape::Shape(const std::string& name,
 			 const GLfloat* positions, const GLfloat* normals,
 			 const GLfloat* texCoords, const GLuint nVertices,
-			 const GLuint* indices, const GLuint nIndices,
-			 const Texture* textures, const GLuint nTextures)
+			 const GLuint* indices, const GLuint nIndices)
 	: Model(name)
 {
 	std::vector<GLfloat> positionData{ positions, positions + nVertices * 3 };
 	std::vector<GLfloat> normalData{ normals, normals + nVertices * 3 };
 	std::vector<GLfloat> texCoordData{ texCoords, texCoords + nVertices * 2 };
 	std::vector<GLuint> indexData{ indices, indices + nIndices };
-	std::vector<Texture> textureData{ textures, textures + nTextures };
 	this->vertices = processVertexData(positionData, normalData, texCoordData);
 	this->indices = indexData;
-	this->textures = textureData;
 
+	createMesh();
+}
+
+// Public Methods
+// --------------
+void Shape::AddTextureData(const Texture* textures, const GLuint nTextures)
+{
+	for (GLuint i{}; i < nTextures; i++)
+		this->textures.push_back(textures[i]);
+	meshes.clear();
+	createMesh();
+}
+
+void Shape::AddTextureData(const std::vector<Texture> textures)
+{
+	for (const Texture& texture : textures)
+		this->textures.push_back(texture);
+	meshes.clear();
 	createMesh();
 }
 
@@ -94,9 +104,5 @@ std::vector<Vertex> Shape::processVertexData(std::vector<GLfloat> vertices, std:
 	return vertexData;
 }
 
-void Shape::createMesh()
-{
-	Mesh mesh{ vertices, indices, textures };
-	meshes.push_back(mesh);
-}
+void Shape::createMesh() { meshes.emplace_back(vertices, indices, textures); }
 
