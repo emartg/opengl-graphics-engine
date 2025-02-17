@@ -44,7 +44,6 @@ public:
 	std::unique_ptr<Camera>& GetCamera() { return m_cameras.front(); }
 
 	// Adds an asset to the engine (e.g., a camera, light, model, etc.)
-	void AddAsset(std::unique_ptr<Asset> asset);
 	void AddCamera(std::unique_ptr<Camera> camera);
 	void AddLight(std::unique_ptr<PointLight> light);
 	void AddModel(std::unique_ptr<Shape> shape);
