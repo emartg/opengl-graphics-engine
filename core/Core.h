@@ -38,11 +38,22 @@ public:
 
 	// Public Methods
 	// --------------
-	// Pipeline methods
-	void InitOGL(); // initializes OpenGL
-	void CompileShaders(); // builds and compiles the shader programs and adds them to the engine
-	void LoadTextures(); // loads the textures and adds them to the engine
-	void MainLoop(); // the main rendering loop of the engine (includes input processing)
+	// Initializes OpenGL
+	void InitOGL();
+	// Builds and compiles the shaders and adds them to the engine
+	void CompileShaders(const std::vector<std::string>& shaderNames,
+						const std::vector<std::string>& vertexShaderPaths,
+						const std::vector<std::string>& fragmentShaderPaths);
+	void CompileShaders(const std::vector<std::string>& shaderNames,
+						const std::vector<std::string>& vertexShaderPaths,
+						const std::vector<std::string>& geometryShaderPaths,
+						const std::vector<std::string>& fragmentShaderPaths);
+	// Loads the textures and adds them to the engine
+	void LoadTextures(const std::vector<std::string>& textureNames,
+					  const std::vector<std::string>& texturePaths,
+					  const std::vector<std::string>& textureTypes);
+	// Main rendering loop of the engine (includes input processing)
+	void MainLoop();
 
 	// Setters
 	void SetCamera(std::unique_ptr<Camera> camera) { m_camera = std::move(camera); }

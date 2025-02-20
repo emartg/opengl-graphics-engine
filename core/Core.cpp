@@ -81,27 +81,40 @@ void Core::InitOGL()
 	glEnable(GL_DEPTH_TEST);
 }
 
-void Core::CompileShaders()
+void Core::CompileShaders(const std::vector<std::string>& shaderNames,
+						  const std::vector<std::string>& vertexShaderPaths,
+						  const std::vector<std::string>& fragmentShaderPaths)
 {
-	// Build and compile shader programs
-	// ---------------------------------
-	std::vector<Shader> shaders{
-		{ "shape_shader", "shaders/shape.vert.glsl", "shaders/shape.frag.glsl" }
-	};
-	for (const auto& shader : shaders)
-		AddAsset(std::make_unique<Shader>(shader));
+	for (GLuint i{}; i < shaderNames.size(); i++)
+	{
+		auto shader = std::make_unique<Shader>(shaderNames[i], vertexShaderPaths[i].c_str(), 
+											   fragmentShaderPaths[i].c_str());
+		AddAsset(std::move(shader));
+	}
 }
 
-void Core::LoadTextures()
+void Core::CompileShaders(const std::vector<std::string>& shaderNames,
+						  const std::vector<std::string>& vertexShaderPaths,
+						  const std::vector<std::string>& geometryShaderPaths,
+						  const std::vector<std::string>& fragmentShaderPaths)
 {
-	// Load textures
-	// -------------
-	std::vector<Texture> textures{
-		{ "diffuse_blue_metal_plate_texture", "textures/blue_metal_plate_diffuse.jpg", TextureType::DIFFUSE },
-		{ "specular_blue_metal_plate_texture", "textures/blue_metal_plate_specular.jpg", TextureType::SPECULAR }
-	};
-	for (const auto& texture : textures)
-		AddAsset(std::make_unique<Texture>(texture));
+	for (GLuint i{}; i < shaderNames.size(); i++)
+	{
+		auto shader = std::make_unique<Shader>(shaderNames[i], vertexShaderPaths[i].c_str(),
+											   geometryShaderPaths[i].c_str(), fragmentShaderPaths[i].c_str());
+		AddAsset(std::move(shader));
+	}
+}
+
+void Core::LoadTextures(const std::vector<std::string>& textureNames,
+						const std::vector<std::string>& texturePaths,
+						const std::vector<std::string>& textureTypes)
+{
+	for (GLuint i{}; i < textureNames.size(); i++)
+	{
+		auto texture = std::make_unique<Texture>(textureNames[i], texturePaths[i], TextureType::DIFFUSE);
+		AddAsset(std::move(texture));
+	}
 }
 
 void Core::MainLoop()
