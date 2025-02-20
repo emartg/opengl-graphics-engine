@@ -13,8 +13,8 @@ Camera::Camera(const std::string& name,
 			   const glm::vec3 position, const glm::vec3 up,
 			   const GLfloat yaw, const GLfloat pitch)
 	: Asset(name, AssetType::CAMERA),
-	front(glm::vec3(0.0f, 0.0f, -1.0f)), position(position), worldUp(up), yaw(yaw), pitch(pitch),
-	movementSpeed(SPEED), mouseSensitivity(SENSITIVITY), zoom(ZOOM)
+	front{ glm::vec3(0.0f, 0.0f, -1.0f) }, position{ position }, worldUp{ up }, yaw{ yaw }, pitch{ pitch },
+	movementSpeed{ SPEED }, mouseSensitivity{ SENSITIVITY }, zoom{ ZOOM }
 {
 	updateCameraVectors();
 }

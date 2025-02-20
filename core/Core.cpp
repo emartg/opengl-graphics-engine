@@ -19,11 +19,9 @@ Core::~Core()
 {
 	// Deallocate all of the engine's resources
 	// ----------------------------------------
-	for (auto& camera : m_cameras) { camera->DeallocateResources(); }
-	for (auto& light : m_lights) { light->DeallocateResources(); }
-	for (auto& shape : m_models) { shape->DeallocateResources(); }
-	for (auto& shader : m_shaders) { shader->DeallocateResources(); }
-	for (auto& texture : m_textures) { texture->DeallocateResources(); }
+	for (auto& assetType : m_assets)
+		for (auto& asset : assetType.second)
+			asset->DeallocateResources();
 
 	// Terminate GLFW, clearing any resources allocated by GLFW
 	// --------------------------------------------------------
@@ -83,6 +81,29 @@ void Core::InitOGL()
 	glEnable(GL_DEPTH_TEST);
 }
 
+void Core::CompileShaders()
+{
+	// Build and compile shader programs
+	// ---------------------------------
+	std::vector<Shader> shaders{
+		{ "shape_shader", "shaders/shape.vert.glsl", "shaders/shape.frag.glsl" }
+	};
+	for (const auto& shader : shaders)
+		AddAsset(std::make_unique<Shader>(shader));
+}
+
+void Core::LoadTextures()
+{
+	// Load textures
+	// -------------
+	std::vector<Texture> textures{
+		{ "diffuse_blue_metal_plate_texture", "textures/blue_metal_plate_diffuse.jpg", TextureType::DIFFUSE },
+		{ "specular_blue_metal_plate_texture", "textures/blue_metal_plate_specular.jpg", TextureType::SPECULAR }
+	};
+	for (const auto& texture : textures)
+		AddAsset(std::make_unique<Texture>(texture));
+}
+
 void Core::MainLoop()
 {
 	// Shape hardcoded transformation and color data
@@ -102,51 +123,49 @@ void Core::MainLoop()
 		glm::vec3(0.5f, 0.5f, 0.0f),
 	};
 
-	// Build and compile shader programs
-	// ---------------------------------
-	Shader shapeShader("shapeShader", "shaders/shape.vert.glsl", "shaders/shape.frag.glsl");
-	AddShader(std::make_unique<Shader>(shapeShader));
+	// Get local pointers to all the assets needed for rendering,
+	// set the main camera, and output the assets to the console
+	// ----------------------------------------------------------
+	auto shader = std::make_unique<Shader>(*dynamic_cast<Shader*>(m_assets["SHADER"].front().get()));
+	auto light = std::make_unique<PointLight>(*dynamic_cast<PointLight*>(m_assets["LIGHT"].front().get()));
+	auto textures = std::vector<Texture>{ *dynamic_cast<Texture*>(m_assets["TEXTURE"].front().get()),
+										  *dynamic_cast<Texture*>(m_assets["TEXTURE"].back().get()) };
 
-	// Load textures
-	// -------------
-	const GLuint nTextures{ 2 };
-	Texture texturesArr[] = {
-		{ "diffuse_metal_plate_texture", "textures/blue_metal_plate_diffuse.jpg", TextureType::DIFFUSE },
-		{ "specular_metal_plate_texture", "textures/blue_metal_plate_specular.jpg", TextureType::SPECULAR }
-	};
-	std::vector<Texture> texturesVec{
-		{ "diffuse_container_texture", "textures/container_diffuse.png", TextureType::DIFFUSE },
-		{ "specular_container_texture", "textures/container_specular.png", TextureType::SPECULAR }
-	};
-	for (size_t i{}; i < nTextures; ++i)
-		AddTexture(std::make_unique<Texture>(texturesArr[i]));
-	for (const auto& texture : texturesVec)
-		AddTexture(std::make_unique<Texture>(texture));
-
-	// add and bind textures to the models
-	for (size_t i{}; i < m_models.size(); ++i)
+	std::vector<Shape> shapes;
+	for (GLuint i{}; i < m_assets["MODEL"].size(); i++)
 	{
-		if (i < nTextures)	// use array of textures to test the AddTextureData method
-			m_models[i]->AddTextureData(texturesArr, nTextures);
-		else				// use vector of textures to test the AddTextureData method overload
-			m_models[i]->AddTextureData(texturesVec);
+		auto shape = std::make_unique<Shape>(*dynamic_cast<Shape*>(m_assets["MODEL"][i].get()));
+		shape->AddTextureData(textures.data(), textures.size());
+		shapes.emplace_back(*shape);
+	}
+
+	// set the main camera
+	m_camera = std::make_unique<Camera>(*dynamic_cast<Camera*>(m_assets["CAMERA"].front().get()));
+
+	// output the assets to the console
+	std::cout << "Assets loaded:" << std::endl;
+	for (const auto& assetType : m_assets)
+	{
+		std::cout << "Asset type: " << assetType.first << std::endl;
+		for (const auto& asset : assetType.second)
+			std::cout << "Asset name: " << asset->GetName() << std::endl;
 	}
 
 	// Shader configuration
 	// --------------------
-	shapeShader.Use();
+	shader->Use();
+
 	// vertex shader constant uniforms
-	shapeShader.SetVec3("lightPos", m_lights.front()->GetPosition());
-
+	shader->SetVec3("lightPos", light->GetPosition());
 	// fragment shader constant uniforms
-	shapeShader.SetVec3("light.ambient", m_lights.front()->GetAmbient());
-	shapeShader.SetVec3("light.diffuse", m_lights.front()->GetDiffuse());
-	shapeShader.SetVec3("light.specular", m_lights.front()->GetSpecular());
-	shapeShader.SetFloat("light.constant", m_lights.front()->GetConstant());
-	shapeShader.SetFloat("light.linear", m_lights.front()->GetLinear());
-	shapeShader.SetFloat("light.quadratic", m_lights.front()->GetQuadratic());
+	shader->SetVec3("light.ambient", light->GetAmbient());
+	shader->SetVec3("light.diffuse", light->GetDiffuse());
+	shader->SetVec3("light.specular", light->GetSpecular());
+	shader->SetFloat("light.constant", light->GetConstant());
+	shader->SetFloat("light.linear", light->GetLinear());
+	shader->SetFloat("light.quadratic", light->GetQuadratic());
 
-	shapeShader.SetFloat("material.shininess", 32.0f);
+	shader->SetFloat("material.shininess", 32.0f);
 
 	// Render loop
 	// -----------
@@ -168,25 +187,25 @@ void Core::MainLoop()
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		// activate shader
-		shapeShader.Use();
+		shader->Use();
 
 		// view/projection transformations
-		glm::mat4 projection = glm::perspective(glm::radians(m_cameras.front()->GetZoom()),
+		glm::mat4 projection = glm::perspective(glm::radians(m_camera->GetZoom()),
 												static_cast<GLfloat>(SCR_WIDTH) / static_cast<GLfloat>(SCR_HEIGHT),
 												0.1f, 100.0f);
-		glm::mat4 view = m_cameras.front()->GetViewMatrix();
-		shapeShader.SetMat4("projection", projection);
-		shapeShader.SetMat4("view", view);
+		glm::mat4 view = m_camera->GetViewMatrix();
+		shader->SetMat4("projection", projection);
+		shader->SetMat4("view", view);
 
-		// render shapes at different locations and with different colors
-		for (size_t i{}; i < m_models.size(); ++i)
+		// render shapes at different locations
+		for (GLuint i{}; i < shapes.size(); i++)
 		{
-			// set model matrix
 			glm::mat4 model = glm::mat4(1.0f);
+			// translate the shape to its corresponding location
 			model = glm::translate(model, shapeTranslations[i]);
-			shapeShader.SetMat4("model", model);
-			// render the model
-			m_models[i]->Draw(shapeShader);
+			shader->SetMat4("model", model);
+			// draw the shape with the corresponding texture
+			shapes[i].Draw(*shader);
 		}
 
 		// GLFW: swap buffers and poll IO events
@@ -196,15 +215,34 @@ void Core::MainLoop()
 	}
 }
 
-void Core::AddCamera(std::unique_ptr<Camera> camera) { m_cameras.push_back(std::move(camera)); }
-
-void Core::AddLight(std::unique_ptr<PointLight> pointLight) { m_lights.push_back(std::move(pointLight)); }
-
-void Core::AddModel(std::unique_ptr<Shape> shape) { m_models.push_back(std::move(shape)); }
-
-void Core::AddShader(std::unique_ptr<Shader> shader) { m_shaders.push_back(std::move(shader)); }
-
-void Core::AddTexture(std::unique_ptr<Texture> texture) { m_textures.push_back(std::move(texture)); }
+void Core::AddAsset(std::unique_ptr<Asset> asset)
+{
+	// get the key for the asset type
+	std::string assetType;
+	switch (asset->GetType())
+	{
+		case AssetType::CAMERA:
+			assetType = "CAMERA";
+			break;
+		case AssetType::LIGHT:
+			assetType = "LIGHT";
+			break;
+		case AssetType::MODEL:
+			assetType = "MODEL";
+			break;
+		case AssetType::SHADER:
+			assetType = "SHADER";
+			break;
+		case AssetType::TEXTURE:
+			assetType = "TEXTURE";
+			break;
+		default:
+			std::cerr << "AssetType not defined!" << std::endl;
+			return;
+	}
+	// add asset to the corresponding vector in the map
+	m_assets[assetType].emplace_back(std::move(asset));
+}
 
 // Private Methods
 // ---------------
@@ -249,17 +287,17 @@ void Core::mouse_callback(GLdouble xposIn, GLdouble yposIn)
 	m_lastMouseX = xpos;
 	m_lastMouseY = ypos;
 
-	if (m_cameras.front()) // only process mouse movement if a camera is present
+	if (m_camera) // only process mouse movement if a camera is present
 		if (rightMouseButtonPressed) // the right mouse button is used to rotate the camera
-			m_cameras.front()->ProcessMouseRotation(xoffset, yoffset);
+			m_camera->ProcessMouseRotation(xoffset, yoffset);
 		else if (leftMouseButtonPressed) // the left mouse button is used to translate the camera in 2D
-			m_cameras.front()->ProcessMouseTranslation(xoffset, yoffset, 0.025f);
+			m_camera->ProcessMouseTranslation(xoffset, yoffset, 0.025f);
 }
 
 void Core::scroll_callback(GLdouble xoffset, GLdouble yoffset)
 {
-	if (m_cameras.front()) // only zoom if a camera is present
-		m_cameras.front()->ProcessMouseScroll(static_cast<GLfloat>(yoffset), 2.5f);
+	if (m_camera) // only zoom if a camera is present
+		m_camera->ProcessMouseScroll(static_cast<GLfloat>(yoffset), 2.5f);
 }
 
 void Core::framebuffer_size_callback_static(GLFWwindow* window, GLint width, GLint height)
@@ -285,10 +323,12 @@ void Core::processInput()
 
 	// Reset camera position and rotation on R
 	if (glfwGetKey(m_window, GLFW_KEY_R) == GLFW_PRESS)
-		if (m_cameras.front())
+		if (m_camera)
 		{
+			m_assets["CAMERA"].clear();
 			auto camera = std::make_unique<Camera>("Main Camera");
-			m_cameras.front() = std::move(camera);
+			AddAsset(std::move(camera));
+			m_camera = std::make_unique<Camera>(*dynamic_cast<Camera*>(m_assets["CAMERA"].front().get()));
 		}
 }
 

@@ -15,24 +15,24 @@ int main(int argc, char** argv)
 	auto engine = std::make_unique<Core>();
 	engine->InitOGL();
 
+	// create camera and light and add them to the engine
 	auto camera = std::make_unique<Camera>("Main Camera");
-	engine->AddCamera(std::move(camera));
+	engine->AddAsset(std::move(camera));
+	auto light = std::make_unique<PointLight>("Main Light");
+	engine->AddAsset(std::move(light));
 
-	auto pointLight = std::make_unique<PointLight>("Main Light");
-	engine->AddLight(std::move(pointLight));
-
-	// create cube models
+	// create cube models and add them to the engine
 	auto cube1 = std::make_unique<Shape>("metalPlateCube1", positionsArr, normalsArr, texCoordsArr, nVertices, indicesArr, nIndices);
 	auto cube2 = std::make_unique<Shape>("metalPlateCube2", verticesArr, nVertices, indicesArr, nIndices);
 	auto cube3 = std::make_unique<Shape>("containerCube1", positionsVec, normalsVec, texCoordsVec, indicesVec);
 	auto cube4 = std::make_unique<Shape>("containerCube2", verticesVec, indicesVec);
+	engine->AddAsset(std::move(cube1));
+	engine->AddAsset(std::move(cube2));
+	engine->AddAsset(std::move(cube3));
+	engine->AddAsset(std::move(cube4));
 
-	// add cube models to the engine
-	engine->AddModel(std::move(cube1));
-	engine->AddModel(std::move(cube2));
-	engine->AddModel(std::move(cube3));
-	engine->AddModel(std::move(cube4));
-
+	engine->CompileShaders();
+	engine->LoadTextures();
 	engine->MainLoop();
 
 	return 0;

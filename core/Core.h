@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 #include <memory> // for smart pointers
+#include <map>
 
 #include <glad/glad.h> // holds all OpenGL type declarations
 #include <GLFW/glfw3.h>
@@ -37,18 +38,17 @@ public:
 
 	// Public Methods
 	// --------------
-	void InitOGL(); // initialize OpenGL
+	// Pipeline methods
+	void InitOGL(); // initializes OpenGL
+	void CompileShaders(); // builds and compiles the shader programs and adds them to the engine
+	void LoadTextures(); // loads the textures and adds them to the engine
 	void MainLoop(); // the main rendering loop of the engine (includes input processing)
 
-	// Getters
-	std::unique_ptr<Camera>& GetCamera() { return m_cameras.front(); }
+	// Setters
+	void SetCamera(std::unique_ptr<Camera> camera) { m_camera = std::move(camera); }
 
 	// Adds an asset to the engine (e.g., a camera, light, model, etc.)
-	void AddCamera(std::unique_ptr<Camera> camera);
-	void AddLight(std::unique_ptr<PointLight> light);
-	void AddModel(std::unique_ptr<Shape> shape);
-	void AddShader(std::unique_ptr<Shader> shader);
-	void AddTexture(std::unique_ptr<Texture> texture);
+	void AddAsset(std::unique_ptr<Asset> asset);
 
 private:
 	// Private Attributes
@@ -56,12 +56,8 @@ private:
 	GLfloat m_lastMouseX, m_lastMouseY, m_firstMouse; // mouse settings
 	GLfloat m_deltaTime, m_lastFrameTime; // time settings
 	GLFWwindow* m_window; // window object
-	std::vector<std::unique_ptr<Camera>> m_cameras; // cameras in the engine
-	std::vector<std::unique_ptr<PointLight>> m_lights; // lights in the engine
-	std::vector<std::unique_ptr<Shape>> m_models; // models in the engine
-	std::vector<std::unique_ptr<Shader>> m_shaders; // shaders in the engine
-	std::vector<std::unique_ptr<Texture>> m_textures; // textures in the engine
-	std::unique_ptr<Camera> m_camera; // camera currently in use
+	std::map<std::string, std::vector<std::unique_ptr<Asset>>> m_assets; // map of assets
+	std::unique_ptr<Camera> m_camera; // current camera object
 
 	// Static Constants
 	// ----------------
