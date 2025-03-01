@@ -1,7 +1,9 @@
 /*
 * Core.h
-* This file defines the Core class, which is is responsible for initializing OpenGL, creating a window, and running the main loop.
+* This file defines the Core class, which is is responsible for initializing OpenGL, 
+* creating a window, and running the main loop.
 * It also manages the camera, the lighting and models that are to be rendered.
+* It is a Singleton class.
 */
 
 #pragma once
@@ -12,7 +14,6 @@
 #include <map>
 
 #include <glad/glad.h> // holds all OpenGL type declarations
-#include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -24,10 +25,11 @@
 #include "model/Shape.h"
 #include "shader/Shader.h"
 #include "texture/Texture.h"
+#include "renderer/Renderer.h"
 
 class Core
 {
-public:
+private:
 	// Constructors
 	// ------------
 	Core();
@@ -36,10 +38,53 @@ public:
 	// ----------
 	~Core();
 
+	// Static Instance
+	// ---------------
+	static Core* m_instance; // instance of the Core class (Singleton)
+
+	// Static Constants
+	// ----------------
+	static constexpr GLuint SCR_WIDTH{ 800 }, SCR_HEIGHT{ 600 }; // screen settings
+
+	// Private Attributes
+	// ------------------
+	Renderer* m_renderer; // current renderer object
+
+	GLfloat m_lastMouseX, m_lastMouseY, m_firstMouse; // mouse settings
+	GLfloat m_deltaTime, m_lastFrameTime; // time settings
+	std::map<std::string, std::vector<std::unique_ptr<Asset>>> m_assets; // map of assets
+	std::unique_ptr<Camera> m_camera; // current camera object
+
+	// Private Functions
+	// -----------------
+	// Input processing
+	void processInput(std::string input);
+
+public:
+	// Constructors
+	// ------------
+	Core(Core const&) = delete; // copy constructor (Singleton is not cloneable)
+
+	// Operator overloading
+	// --------------------
+	void operator=(Core const&) = delete; // assignment operator (Singleton is not assignable)
+
+	// Static Methods
+	// --------------
+	// Returns the instance of the Core class (Singleton)
+	static Core* GetInstance();
+
 	// Public Methods
 	// --------------
+	// Getters
+	std::unique_ptr<Camera>& GetCamera() { return m_camera; }
+
+	// Setters
+	void SetRenderer(Renderer* renderer) { m_renderer = renderer; }
+	void SetCamera(std::unique_ptr<Camera> camera) { m_camera = std::move(camera); }
+
 	// Initializes OpenGL
-	void InitOGL();
+	void InitOGL() const;
 	// Builds and compiles the shaders and adds them to the engine
 	void CompileShaders(const std::vector<std::string>& shaderNames,
 						const std::vector<std::string>& vertexShaderPaths,
@@ -55,41 +100,12 @@ public:
 	// Main rendering loop of the engine (includes input processing)
 	void MainLoop();
 
-	// Setters
-	void SetCamera(std::unique_ptr<Camera> camera) { m_camera = std::move(camera); }
-
 	// Adds an asset to the engine (e.g., a camera, light, model, etc.)
 	void AddAsset(std::unique_ptr<Asset> asset);
 
-private:
-	// Private Attributes
-	// ------------------
-	GLfloat m_lastMouseX, m_lastMouseY, m_firstMouse; // mouse settings
-	GLfloat m_deltaTime, m_lastFrameTime; // time settings
-	GLFWwindow* m_window; // window object
-	std::map<std::string, std::vector<std::unique_ptr<Asset>>> m_assets; // map of assets
-	std::unique_ptr<Camera> m_camera; // current camera object
-
-	// Static Constants
-	// ----------------
-	static constexpr GLuint SCR_WIDTH{ 800 }, SCR_HEIGHT{ 600 }; // screen settings
-
-	// Private Functions
-	// -----------------
-	// GLFW callback functions
-	static void framebuffer_size_callback_static(GLFWwindow* window, GLint width, GLint height);
-	static void mouse_callback_static(GLFWwindow* window, GLdouble xposIn, GLdouble yposIn);
-	static void scroll_callback_static(GLFWwindow* window, GLdouble xoffset, GLdouble yoffset);
-
-	// GLFW callback engine-specific functions
-	void framebuffer_size_callback(GLint width, GLint height);
-	void mouse_callback(GLdouble xposIn, GLdouble yposIn);
-	void scroll_callback(GLdouble xoffset, GLdouble yoffset);
-
-	// Input processing
-	void processInput();
-
-	// Check if the window should close
-	bool shouldClose() const;
+	// Engine-specific callback functions
+	void FramebufferSizeCallback(GLint width, GLint height);
+	void CursorPosCallback(GLdouble xposIn, GLdouble yposIn, std::string input);
+	void ScrollCallback(GLdouble xoffset, GLdouble yoffset);
 
 };

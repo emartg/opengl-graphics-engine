@@ -25,7 +25,7 @@ public:
 	{}
 
 	// Virtual destructor (ensures that derived classes can be deleted properly - polymorphism)
-	// ---------------------------------------------------------------------------------------
+	// ----------------------------------------------------------------------------------------
 	virtual ~Model() {}
 
 	// Public Functions

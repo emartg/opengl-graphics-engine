@@ -15,7 +15,7 @@ set(LIBS
 )
 
 # Create the App executable
-add_executable(App main.cpp)
+add_executable(App main.cpp "renderer/GLFWRenderer.h" "renderer/GLFWRenderer.cpp")
 
 # Include directories for the App executable
 target_include_directories(App PUBLIC

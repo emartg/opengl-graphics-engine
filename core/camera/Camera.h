@@ -73,6 +73,9 @@ public:
 	// Expects the offset value in the y direction and the sensitivity of the scroll
 	void ProcessMouseScroll(GLfloat yoffset, GLfloat sensitivity = 1.0f);
 
+	// Resets the camera to its default values
+	void ResetCamera();
+
 private:
 	// Private Attributes
 	// ------------------

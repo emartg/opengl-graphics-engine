@@ -9,11 +9,16 @@
 
 #include "CUBE.h"
 #include "../core/Core.h"
+#include "renderer/GLFWRenderer.h"
 
 int main(int argc, char** argv)
 {
-	// create engine and initialize OpenGL
-	auto engine = std::make_unique<Core>();
+	// create pointer to a renderer object
+	Renderer* renderer = new GLFWRenderer();
+
+	// get engine instance, set the renderer, and initialize OpenGL
+	auto engine = Core::GetInstance();
+	engine->SetRenderer(renderer);
 	engine->InitOGL();
 
 	// create camera and light and add them to the engine

@@ -19,6 +19,7 @@ set(_glfw3_HEADER_SEARCH_DIRS
 	"${CMAKE_SOURCE_DIR}/external/include"
 	"C:/Program Files (x86)/glfw/include"
 )
+
 set(_glfw3_LIB_SEARCH_DIRS
 	"/usr/lib"
 	"/usr/local/lib"

@@ -1,7 +1,9 @@
 /*
 * Core.cpp
-* This file implements the Core class, which is is responsible for initializing OpenGL, creating a window, and running the main loop.
+* This file implements the Core class, which is is responsible for initializing OpenGL,
+* creating a window, and running the main loop.
 * It also manages the camera, the lighting and models that are to be rendered.
+* It is a Singleton class.
 */
 
 #include <iostream>
@@ -9,12 +11,16 @@
 
 #include "Core.h"
 
+// Constructors
+// ------------
 Core::Core()
-	: m_lastMouseX{ SCR_WIDTH / 2.0f }, m_lastMouseY{ SCR_HEIGHT / 2.0f }, m_firstMouse{ true },
-	m_deltaTime{ 0.0f }, m_lastFrameTime{ 0.0f },
-	m_window{ nullptr }, m_camera{ nullptr }
+	: m_renderer{ nullptr },
+	m_lastMouseX{ SCR_WIDTH / 2.0f }, m_lastMouseY{ SCR_HEIGHT / 2.0f }, m_firstMouse{ true },
+	m_deltaTime{ 0.0f }, m_lastFrameTime{ 0.0f }, m_camera{ nullptr }
 {}
 
+// Destructor
+// ----------
 Core::~Core()
 {
 	// Deallocate all of the engine's resources
@@ -23,58 +29,55 @@ Core::~Core()
 		for (auto& asset : assetType.second)
 			asset->DeallocateResources();
 
-	// Terminate GLFW, clearing any resources allocated by GLFW
-	// --------------------------------------------------------
-	glfwTerminate();
+	delete m_renderer;
+}
+
+// Static Instance initialization
+// ------------------------------
+Core* Core::m_instance = nullptr;
+
+// Static Methods
+// --------------
+Core* Core::GetInstance()
+{
+	if (!m_instance)
+		m_instance = new Core();
+	return m_instance;
 }
 
 // Public Methods
 // --------------
-void Core::InitOGL()
+void Core::InitOGL() const
 {
-	// GLFW: initialization and configuration
-	// --------------------------------------
-	if (!glfwInit())
+	// Initialize the renderer
+	// -----------------------
+	if (!m_renderer->Init())
 	{
-		std::cerr << "Failed to initialize GLFW" << std::endl;
+		std::cerr << "Failed to initialize the renderer" << std::endl;
 		return;
 	}
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
-	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-#ifdef __APPLE__
-	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-#endif
+	// Create the window and configure it
+	// -----------------------------------
+	m_renderer->CreateWindow(SCR_WIDTH, SCR_HEIGHT, "Test Window");
+	m_renderer->ConfigureWindow();
 
-	// GLFW: window creation
-	m_window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Test Window", nullptr, nullptr);
-	if (m_window == nullptr)
-	{
-		std::cerr << "Failed to create GLFW window" << std::endl;
-		glfwTerminate();
-		return;
-	}
-	glfwMakeContextCurrent(m_window);
-
-	// GLFW: register callbacks
-	// ------------------------
-	glfwSetWindowUserPointer(m_window, this);
-	glfwSetFramebufferSizeCallback(m_window, framebuffer_size_callback_static);
-	glfwSetCursorPosCallback(m_window, mouse_callback_static);
-	glfwSetScrollCallback(m_window, scroll_callback_static);
-
-	// GLFW: other configurations
-	// ---------------------------
-	glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_NORMAL); // cursor is visible but not confined to the window
+	// Set the callback functions
+	// --------------------------
+	m_renderer->SetCallbackFunctions();
 
 	// GLAD: load all OpenGL function pointers
 	// ---------------------------------------
-	if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress)))
+	if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(m_renderer->GetProcAddress())))
 	{
 		std::cerr << "Failed to initialize GLAD" << std::endl;
 		return;
 	}
+	// Now the OpenGL context is set up, and we can use OpenGL functions
+
+	// Set viewport
+	// ------------
+	m_renderer->SetViewport(SCR_WIDTH, SCR_HEIGHT);
 
 	// OpenGL global state configuration
 	// ---------------------------------
@@ -87,7 +90,8 @@ void Core::CompileShaders(const std::vector<std::string>& shaderNames,
 {
 	for (GLuint i{}; i < shaderNames.size(); i++)
 	{
-		auto shader = std::make_unique<Shader>(shaderNames[i], vertexShaderPaths[i].c_str(), 
+		auto shader = std::make_unique<Shader>(shaderNames[i],
+											   vertexShaderPaths[i].c_str(),
 											   fragmentShaderPaths[i].c_str());
 		AddAsset(std::move(shader));
 	}
@@ -100,8 +104,10 @@ void Core::CompileShaders(const std::vector<std::string>& shaderNames,
 {
 	for (GLuint i{}; i < shaderNames.size(); i++)
 	{
-		auto shader = std::make_unique<Shader>(shaderNames[i], vertexShaderPaths[i].c_str(),
-											   geometryShaderPaths[i].c_str(), fragmentShaderPaths[i].c_str());
+		auto shader = std::make_unique<Shader>(shaderNames[i],
+											   vertexShaderPaths[i].c_str(),
+											   geometryShaderPaths[i].c_str(),
+											   fragmentShaderPaths[i].c_str());
 		AddAsset(std::move(shader));
 	}
 }
@@ -182,22 +188,22 @@ void Core::MainLoop()
 
 	// Render loop
 	// -----------
-	while (!shouldClose())
+	while (!m_renderer->ShouldClose())
 	{
 		// Per-frame time logic
 		// --------------------
-		GLfloat currentFrame = static_cast<GLfloat>(glfwGetTime());
+		GLfloat currentFrame = static_cast<GLfloat>(m_renderer->GetTime());
 		m_deltaTime = currentFrame - m_lastFrameTime;
 		m_lastFrameTime = currentFrame;
 
 		// Input
 		// -----
-		processInput();
+		processInput(m_renderer->ProcessKeyboardInput());
 
 		// Render
 		// ------
-		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		m_renderer->SetClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+		m_renderer->ClearBuffers();
 
 		// activate shader
 		shader->Use();
@@ -221,10 +227,8 @@ void Core::MainLoop()
 			shapes[i].Draw(*shader);
 		}
 
-		// GLFW: swap buffers and poll IO events
-		// -------------------------------------
-		glfwPollEvents();
-		glfwSwapBuffers(m_window);
+		m_renderer->PollIOEvents();
+		m_renderer->SwapBuffers();
 	}
 }
 
@@ -257,24 +261,22 @@ void Core::AddAsset(std::unique_ptr<Asset> asset)
 	m_assets[assetType].emplace_back(std::move(asset));
 }
 
-// Private Methods
-// ---------------
-void Core::framebuffer_size_callback(GLint width, GLint height)
+void Core::FramebufferSizeCallback(GLint width, GLint height)
 {
 	glViewport(0, 0, width, height);
 }
 
-void Core::mouse_callback(GLdouble xposIn, GLdouble yposIn)
+void Core::CursorPosCallback(GLdouble xposIn, GLdouble yposIn, std::string input)
 {
 	static GLboolean rightMouseButtonPressed{ false };
 	static GLboolean leftMouseButtonPressed{ false };
 
-	if (glfwGetMouseButton(m_window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS)
+	if (input == "right_mouse_button_pressed")
 	{
 		rightMouseButtonPressed = true;
 		leftMouseButtonPressed = false;
 	}
-	else if (glfwGetMouseButton(m_window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
+	else if (input == "left_mouse_button_pressed")
 	{
 		leftMouseButtonPressed = true;
 		rightMouseButtonPressed = false;
@@ -307,42 +309,18 @@ void Core::mouse_callback(GLdouble xposIn, GLdouble yposIn)
 			m_camera->ProcessMouseTranslation(xoffset, yoffset, 0.025f);
 }
 
-void Core::scroll_callback(GLdouble xoffset, GLdouble yoffset)
+void Core::ScrollCallback(GLdouble xoffset, GLdouble yoffset)
 {
 	if (m_camera) // only zoom if a camera is present
-		m_camera->ProcessMouseScroll(static_cast<GLfloat>(yoffset), 2.5f);
+		m_camera->ProcessMouseScroll(yoffset, 2.0f);
 }
 
-void Core::framebuffer_size_callback_static(GLFWwindow* window, GLint width, GLint height)
+// Private Functions
+// -----------------
+void Core::processInput(std::string input)
 {
-	reinterpret_cast<Core*>(glfwGetWindowUserPointer(window))->framebuffer_size_callback(width, height);
+	if (input == "Esc_pressed")
+		m_renderer->SetWindowShouldClose();
+	else if (input == "R_pressed")
+		m_camera->ResetCamera();
 }
-
-void Core::mouse_callback_static(GLFWwindow* window, GLdouble xpos, GLdouble ypos)
-{
-	reinterpret_cast<Core*>(glfwGetWindowUserPointer(window))->mouse_callback(xpos, ypos);
-}
-
-void Core::scroll_callback_static(GLFWwindow* window, GLdouble xoffset, GLdouble yoffset)
-{
-	reinterpret_cast<Core*>(glfwGetWindowUserPointer(window))->scroll_callback(xoffset, yoffset);
-}
-
-void Core::processInput()
-{
-	// Close window on ESC
-	if (glfwGetKey(m_window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-		glfwSetWindowShouldClose(m_window, true);
-
-	// Reset camera position and rotation on R
-	if (glfwGetKey(m_window, GLFW_KEY_R) == GLFW_PRESS)
-		if (m_camera)
-		{
-			m_assets["CAMERA"].clear();
-			auto camera = std::make_unique<Camera>("Main Camera");
-			AddAsset(std::move(camera));
-			m_camera = std::make_unique<Camera>(*dynamic_cast<Camera*>(m_assets["CAMERA"].front().get()));
-		}
-}
-
-bool Core::shouldClose() const { return glfwWindowShouldClose(m_window); }
