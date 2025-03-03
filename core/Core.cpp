@@ -125,38 +125,21 @@ void Core::LoadTextures(const std::vector<std::string>& textureNames,
 
 void Core::MainLoop()
 {
-	// Shape hardcoded transformation and color data
-	// ---------------------------------------------
-	const std::vector<glm::vec3> shapeTranslations
-	{
-		glm::vec3(0.0f, 0.0f, 0.0f),
-		glm::vec3(2.0f, 5.0f, -15.0f),
-		glm::vec3(-1.5f, -2.2f, -2.5f),
-		glm::vec3(-3.8f, -2.0f, -12.3f),
-	};
-	const std::vector<glm::vec3> shapeColors
-	{
-		glm::vec3(0.5f, 0.0f, 0.0f),
-		glm::vec3(0.0f, 0.5f, 0.0f),
-		glm::vec3(0.0f, 0.0f, 0.5f),
-		glm::vec3(0.5f, 0.5f, 0.0f),
-	};
-
 	// Get local pointers to all the assets needed for rendering,
 	// set the main camera, and output the assets to the console
 	// ----------------------------------------------------------
 	auto shader = std::make_unique<Shader>(*dynamic_cast<Shader*>(m_assets["SHADER"].front().get()));
 	auto light = std::make_unique<PointLight>(*dynamic_cast<PointLight*>(m_assets["LIGHT"].front().get()));
-	auto textures = std::vector<Texture>{ *dynamic_cast<Texture*>(m_assets["TEXTURE"].front().get()),
-										  *dynamic_cast<Texture*>(m_assets["TEXTURE"].back().get()) };
-
-	std::vector<Shape> shapes;
-	for (GLuint i{}; i < m_assets["MODEL"].size(); i++)
-	{
-		auto shape = std::make_unique<Shape>(*dynamic_cast<Shape*>(m_assets["MODEL"][i].get()));
-		shape->AddTextureData(textures.data(), textures.size());
-		shapes.emplace_back(*shape);
-	}
+	//auto textures = std::vector<Texture>{ *dynamic_cast<Texture*>(m_assets["TEXTURE"].front().get()),
+	//									  *dynamic_cast<Texture*>(m_assets["TEXTURE"].back().get()) };
+	auto shape = std::make_unique<Shape>(*dynamic_cast<Shape*>(m_assets["MODEL"].front().get()));
+	//std::vector<Shape> shapes;
+	//for (GLuint i{}; i < m_assets["MODEL"].size(); i++)
+	//{
+	//	auto shape = std::make_unique<Shape>(*dynamic_cast<Shape*>(m_assets["MODEL"][i].get()));
+	//	shape->AddTextureData(textures.data(), textures.size());
+	//	shapes.emplace_back(*shape);
+	//}
 
 	// set the main camera
 	m_camera = std::make_unique<Camera>(*dynamic_cast<Camera*>(m_assets["CAMERA"].front().get()));
@@ -176,6 +159,7 @@ void Core::MainLoop()
 
 	// vertex shader constant uniforms
 	shader->SetVec3("lightPos", light->GetPosition());
+
 	// fragment shader constant uniforms
 	shader->SetVec3("light.ambient", light->GetAmbient());
 	shader->SetVec3("light.diffuse", light->GetDiffuse());
@@ -184,6 +168,7 @@ void Core::MainLoop()
 	shader->SetFloat("light.linear", light->GetLinear());
 	shader->SetFloat("light.quadratic", light->GetQuadratic());
 
+	shader->SetVec3("material.albedo", glm::vec3(0.5f, 0.0f, 0.0f));
 	shader->SetFloat("material.shininess", 32.0f);
 
 	// Render loop
@@ -216,16 +201,13 @@ void Core::MainLoop()
 		shader->SetMat4("projection", projection);
 		shader->SetMat4("view", view);
 
-		// render shapes at different locations
-		for (GLuint i{}; i < shapes.size(); i++)
-		{
-			glm::mat4 model = glm::mat4(1.0f);
-			// translate the shape to its corresponding location
-			model = glm::translate(model, shapeTranslations[i]);
-			shader->SetMat4("model", model);
-			// draw the shape with the corresponding texture
-			shapes[i].Draw(*shader);
-		}
+		// world transformation
+		glm::mat4 model{ 1.0f };
+		shader->SetMat4("model", model);
+
+		// render the main cube
+		shape->Draw(*shader);
+
 
 		m_renderer->PollIOEvents();
 		m_renderer->SwapBuffers();

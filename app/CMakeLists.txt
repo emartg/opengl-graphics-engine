@@ -22,6 +22,7 @@ target_include_directories(App PUBLIC
 	${GLM_INCLUDE_DIR}
 	${GLFW3_INCLUDE_DIR}
 	${ASSIMP_INCLUDE_DIR}
+	${CMAKE_SOURCE_DIR}/external/ImGui
 )
 
 # Link libraries to the App executable

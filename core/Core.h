@@ -1,6 +1,6 @@
 /*
 * Core.h
-* This file defines the Core class, which is is responsible for initializing OpenGL, 
+* This file defines the Core class, which is is responsible for initializing OpenGL,
 * creating a window, and running the main loop.
 * It also manages the camera, the lighting and models that are to be rendered.
 * It is a Singleton class.
