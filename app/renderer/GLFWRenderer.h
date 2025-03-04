@@ -6,19 +6,28 @@
 
 #pragma once
 
+#include <iostream>
+
+#define GLFW_INCLUDE_NONE // prevent GLFW from including OpenGL headers
+#include <GLFW/glfw3.h>
+
 #include "../core/Core.h"
 #include "../core/renderer/Renderer.h"
-
-#include <iostream>
-#include <GLFW/glfw3.h>
+#include "../gui/Gui.h"
 
 class GLFWRenderer : public Renderer
 {
 public:
+	// Constructors
+	// ------------
 	GLFWRenderer();
 
+	// Destructor
+	// ----------
 	~GLFWRenderer();
 
+	// Public Methods
+	// --------------
 	bool Init() const override;
 	void CreateWindow(int width, int height, const char* title);
 	void ConfigureWindow() const;
@@ -28,17 +37,30 @@ public:
 	bool ShouldClose() override;
 	const std::string ProcessKeyboardInput() override;
 
+	// Getters
 	const char* GetProcAddress() const override;
 	float GetTime() override;
 
+	// Setters
 	void SetCallbackFunctions() const;
 	void SetViewport(int width, int height) override;
 	void SetClearColor(float r, float g, float b, float a = 1.0f) override;
 	void SetWindowShouldClose() override;
 
-private:
-	GLFWwindow* window;
+	// GUI
+	void InitGUI() override;
+	void SetupGUI() override;
+	void RenderGUI() override;
+	void CleanupGUI() override;
 
+private:
+	// Private Attributes
+	// ------------------
+	GLFWwindow* window;
+	GUI* gui;
+
+	// Static Callback Functions
+	// -------------------------
 	static void framebufferSizeCallback(GLFWwindow* window, int width, int height);
 	static void cursorPosCallback(GLFWwindow* window, double xpos, double ypos);
 	static void scrollCallback(GLFWwindow* window, double xoffset, double yoffset);

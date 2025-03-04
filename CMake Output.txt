@@ -1,0 +1,43 @@
+1> CMake generation started for configuration: 'x64-Debug'.
+1> Command line: "C:\WINDOWS\system32\cmd.exe" /c "%SYSTEMROOT%\System32\chcp.com 65001 >NUL && "C:\PROGRAM FILES\MICROSOFT VISUAL STUDIO\2022\COMMUNITY\COMMON7\IDE\COMMONEXTENSIONS\MICROSOFT\CMAKE\CMake\bin\cmake.exe"  -G "Ninja"  -DCMAKE_BUILD_TYPE:STRING="Debug" -DCMAKE_INSTALL_PREFIX:PATH="C:\Dev\XRaySim\Engine\out\install\x64-Debug" -DCMAKE_C_COMPILER:FILEPATH="C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.43.34808/bin/Hostx64/x64/cl.exe" -DCMAKE_CXX_COMPILER:FILEPATH="C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.43.34808/bin/Hostx64/x64/cl.exe"   -DCMAKE_MAKE_PROGRAM="C:\PROGRAM FILES\MICROSOFT VISUAL STUDIO\2022\COMMUNITY\COMMON7\IDE\COMMONEXTENSIONS\MICROSOFT\CMAKE\Ninja\ninja.exe" "C:\Dev\XRaySim\Engine" 2>&1"
+1> Working directory: C:\Dev\XRaySim\Engine\out\build\x64-Debug
+1> [CMake] -- The C compiler identification is MSVC 19.43.34808.0
+1> [CMake] -- The CXX compiler identification is MSVC 19.43.34808.0
+1> [CMake] -- Detecting C compiler ABI info
+1> [CMake] -- Detecting C compiler ABI info - done
+1> [CMake] -- Check for working C compiler: C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.43.34808/bin/Hostx64/x64/cl.exe - skipped
+1> [CMake] -- Detecting C compile features
+1> [CMake] -- Detecting C compile features - done
+1> [CMake] -- Detecting CXX compiler ABI info
+1> [CMake] -- Detecting CXX compiler ABI info - done
+1> [CMake] -- Check for working CXX compiler: C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.43.34808/bin/Hostx64/x64/cl.exe - skipped
+1> [CMake] -- Detecting CXX compile features
+1> [CMake] -- Detecting CXX compile features - done
+1> [CMake] -- Found GLM: C:/Dev/XRaySim/Engine/external/include
+1> [CMake] -- GLM_INCLUDE_DIR = C:/Dev/XRaySim/Engine/external/include
+1> [CMake] -- [EngineProject] GLM included at C:/Dev/XRaySim/Engine/external/include
+1> [CMake] -- Found OpenGL: opengl32
+1> [CMake] -- [CORE] OpenGL included at 
+1> [CMake] -- GLM_INCLUDE_DIR = C:/Dev/XRaySim/Engine/external/include
+1> [CMake] -- [CORE] GLM included at C:/Dev/XRaySim/Engine/external/include
+1> [CMake] -- Found ASSIMP: C:/Dev/XRaySim/Engine/external/lib/assimp.lib
+1> [CMake] -- [CORE] Found Assimp in C:/Dev/XRaySim/Engine/external/include
+1> [CMake] -- Found GLFW3: C:/Dev/XRaySim/Engine/external/lib/glfw3.lib
+1> [CMake] -- [APP] Found GLFW3 in C:/Dev/XRaySim/Engine/external/include
+1> [CMake] -- Up-to-date: C:/Dev/XRaySim/Engine/out/build/x64-Debug/bin/shaders/
+1> [CMake] -- Installing: C:/Dev/XRaySim/Engine/out/build/x64-Debug/bin/shaders//shape.frag.glsl
+1> [CMake] -- Installing: C:/Dev/XRaySim/Engine/out/build/x64-Debug/bin/shaders//shape.vert.glsl
+1> [CMake] -- Up-to-date: C:/Dev/XRaySim/Engine/out/build/x64-Debug/bin/textures/
+1> [CMake] -- Installing: C:/Dev/XRaySim/Engine/out/build/x64-Debug/bin/textures//blue_metal_plate_diffuse.jpg
+1> [CMake] -- Installing: C:/Dev/XRaySim/Engine/out/build/x64-Debug/bin/textures//blue_metal_plate_specular.jpg
+1> [CMake] -- Installing: C:/Dev/XRaySim/Engine/out/build/x64-Debug/bin/textures//container_diffuse.png
+1> [CMake] -- Installing: C:/Dev/XRaySim/Engine/out/build/x64-Debug/bin/textures//container_specular.png
+1> [CMake] -- Configuring done (1.5s)
+1> [CMake] -- Generating done (0.1s)
+1> [CMake] -- Build files have been written to: C:/Dev/XRaySim/Engine/out/build/x64-Debug
+1> Extracted CMake variables.
+1> Extracted source files and headers.
+1> Extracted code model.
+1> Extracted toolchain configurations.
+1> Extracted includes paths.
+1> CMake generation finished.

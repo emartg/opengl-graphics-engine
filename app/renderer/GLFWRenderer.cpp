@@ -6,10 +6,13 @@
 
 #include "GLFWRenderer.h"
 
-GLFWRenderer::GLFWRenderer() : window{ nullptr } {}
+GLFWRenderer::GLFWRenderer() : window{ nullptr }, gui{ nullptr } {}
 
 GLFWRenderer::~GLFWRenderer()
 {
+	if (gui)
+		delete gui;
+
 	if (window)
 		glfwDestroyWindow(window);
 	glfwTerminate();
@@ -62,45 +65,21 @@ void GLFWRenderer::SetCallbackFunctions() const
 	glfwSetScrollCallback(window, scrollCallback);
 }
 
-void GLFWRenderer::SetViewport(int width, int height)
-{
-	glViewport(0, 0, width, height);
-}
+void GLFWRenderer::SetViewport(int width, int height) { glViewport(0, 0, width, height); }
 
-float GLFWRenderer::GetTime()
-{
-	return glfwGetTime();
-}
+float GLFWRenderer::GetTime() { return glfwGetTime(); }
 
-void GLFWRenderer::PollIOEvents()
-{
-	glfwPollEvents();
-}
+void GLFWRenderer::PollIOEvents() { glfwPollEvents(); }
 
-void GLFWRenderer::SwapBuffers()
-{
-	glfwSwapBuffers(window);
-}
+void GLFWRenderer::SwapBuffers() { glfwSwapBuffers(window); }
 
-void GLFWRenderer::SetClearColor(float r, float g, float b, float a)
-{
-	glClearColor(r, g, b, a);
-}
+void GLFWRenderer::SetClearColor(float r, float g, float b, float a) { glClearColor(r, g, b, a); }
 
-void GLFWRenderer::ClearBuffers()
-{
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-}
+void GLFWRenderer::ClearBuffers() { glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); }
 
-bool GLFWRenderer::ShouldClose()
-{
-	return glfwWindowShouldClose(window);
-}
+bool GLFWRenderer::ShouldClose() { return glfwWindowShouldClose(window); }
 
-void GLFWRenderer::SetWindowShouldClose()
-{
-	glfwSetWindowShouldClose(window, true);
-}
+void GLFWRenderer::SetWindowShouldClose() { glfwSetWindowShouldClose(window, true); }
 
 const std::string GLFWRenderer::ProcessKeyboardInput()
 {
@@ -110,6 +89,18 @@ const std::string GLFWRenderer::ProcessKeyboardInput()
 		return "R_pressed";
 	return "";
 }
+
+void GLFWRenderer::InitGUI()
+{
+	gui = new GUI();
+	gui->Init(window, "#version 420");
+}
+
+void GLFWRenderer::SetupGUI() { gui->Setup(); }
+
+void GLFWRenderer::RenderGUI() { gui->Render(); }
+
+void GLFWRenderer::CleanupGUI() { gui->Cleanup(); }
 
 void GLFWRenderer::framebufferSizeCallback(GLFWwindow* window, int width, int height)
 {

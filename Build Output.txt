@@ -1,0 +1,62 @@
+>------ Build All started: Project: Engine, Configuration: x64-Debug ------
+  [1/24] Building CXX object core\CMakeFiles\STB_IMAGE.dir\stb_image.cpp.obj
+  [2/24] Building CXX object core\CMakeFiles\Core.dir\stb_image.cpp.obj
+  [3/24] Building CXX object app\CMakeFiles\ImGui.dir\__\external\include\ImGui\imgui_demo.cpp.obj
+  [4/24] Building CXX object app\CMakeFiles\ImGui.dir\__\external\include\ImGui\imgui_tables.cpp.obj
+  [5/24] Building C object core\CMakeFiles\GLAD.dir\glad.c.obj
+  [6/24] Linking CXX static library lib\STB_IMAGE.lib
+  [7/24] Linking C static library lib\GLAD.lib
+  [8/24] Building CXX object app\CMakeFiles\ImGui.dir\__\external\include\ImGui\imgui_draw.cpp.obj
+  [9/24] Building CXX object app\CMakeFiles\ImGui.dir\__\external\include\ImGui\imgui_widgets.cpp.obj
+  [10/24] Building CXX object app\CMakeFiles\ImGui.dir\__\external\include\ImGui\imgui.cpp.obj
+  [11/24] Linking CXX static library lib\ImGui.lib
+  [12/24] Building CXX object app\CMakeFiles\App.dir\gui\Gui.cpp.obj
+  [13/24] Building CXX object core\CMakeFiles\Core.dir\texture\Texture.cpp.obj
+  [14/24] Building CXX object core\CMakeFiles\Core.dir\light\PointLight.cpp.obj
+  [15/24] Building CXX object core\CMakeFiles\Core.dir\camera\Camera.cpp.obj
+  [16/24] Building CXX object core\CMakeFiles\Core.dir\shader\Shader.cpp.obj
+  [17/24] Building CXX object core\CMakeFiles\Core.dir\model\mesh\Mesh.cpp.obj
+  [18/24] Building CXX object core\CMakeFiles\Core.dir\model\Shape.cpp.obj
+  [19/24] Building CXX object core\CMakeFiles\Core.dir\Core.cpp.obj
+  [20/24] Building CXX object core\CMakeFiles\Core.dir\model\AssimpModel.cpp.obj
+  [21/24] Linking CXX static library lib\Core.lib
+  [22/24] Building CXX object app\CMakeFiles\App.dir\main.cpp.obj
+  [23/24] Building CXX object app\CMakeFiles\App.dir\renderer\GLFWRenderer.cpp.obj
+  [24/24] Linking CXX executable bin\App.exe
+  FAILED: bin/App.exe 
+  C:\WINDOWS\system32\cmd.exe /C "cd . && "C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe" -E vs_link_exe --intdir=app\CMakeFiles\App.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100226~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100226~1.0\x64\mt.exe --manifests  -- C:\PROGRA~1\MIB055~1\2022\COMMUN~1\VC\Tools\MSVC\1443~1.348\bin\Hostx64\x64\link.exe /nologo app\CMakeFiles\App.dir\gui\Gui.cpp.obj app\CMakeFiles\App.dir\main.cpp.obj app\CMakeFiles\App.dir\renderer\GLFWRenderer.cpp.obj  /out:bin\App.exe /implib:lib\App.lib /pdb:bin\App.pdb /version:0.0 /machine:x64 /debug /INCREMENTAL /subsystem:console -LIBPATH:C:\Dev\XRaySim\Engine\out\build\x64-Debug\lib lib\Core.lib  C:\Dev\XRaySim\Engine\external\lib\glfw3.lib  C:\Dev\XRaySim\Engine\external\lib\assimp.lib  lib\ImGui.lib  opengl32.lib  C:\Dev\XRaySim\Engine\external\lib\assimp.lib  lib\GLAD.lib  lib\STB_IMAGE.lib  C:\Dev\XRaySim\Engine\external\lib\glfw3.lib  kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib && cd ."
+  LINK Pass 1: command "C:\PROGRA~1\MIB055~1\2022\COMMUN~1\VC\Tools\MSVC\1443~1.348\bin\Hostx64\x64\link.exe /nologo app\CMakeFiles\App.dir\gui\Gui.cpp.obj app\CMakeFiles\App.dir\main.cpp.obj app\CMakeFiles\App.dir\renderer\GLFWRenderer.cpp.obj /out:bin\App.exe /implib:lib\App.lib /pdb:bin\App.pdb /version:0.0 /machine:x64 /debug /INCREMENTAL /subsystem:console -LIBPATH:C:\Dev\XRaySim\Engine\out\build\x64-Debug\lib lib\Core.lib C:\Dev\XRaySim\Engine\external\lib\glfw3.lib C:\Dev\XRaySim\Engine\external\lib\assimp.lib lib\ImGui.lib opengl32.lib C:\Dev\XRaySim\Engine\external\lib\assimp.lib lib\GLAD.lib lib\STB_IMAGE.lib C:\Dev\XRaySim\Engine\external\lib\glfw3.lib kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTFILE:app\CMakeFiles\App.dir/intermediate.manifest app\CMakeFiles\App.dir/manifest.res" failed (exit code 1120) with the following output:
+C:\Dev\XRaySim\Engine\out\build\x64-Debug\glfw3.lib(init.obj) : warning LNK4099: PDB '' was not found with 'glfw3.lib(init.obj)' or at ''; linking object as if no debug info
+C:\Dev\XRaySim\Engine\out\build\x64-Debug\glfw3.lib(window.obj) : warning LNK4099: PDB '' was not found with 'glfw3.lib(window.obj)' or at ''; linking object as if no debug info
+C:\Dev\XRaySim\Engine\out\build\x64-Debug\glfw3.lib(input.obj) : warning LNK4099: PDB '' was not found with 'glfw3.lib(input.obj)' or at ''; linking object as if no debug info
+C:\Dev\XRaySim\Engine\out\build\x64-Debug\glfw3.lib(context.obj) : warning LNK4099: PDB '' was not found with 'glfw3.lib(context.obj)' or at ''; linking object as if no debug info
+C:\Dev\XRaySim\Engine\out\build\x64-Debug\glfw3.lib(win32_time.obj) : warning LNK4099: PDB '' was not found with 'glfw3.lib(win32_time.obj)' or at ''; linking object as if no debug info
+C:\Dev\XRaySim\Engine\out\build\x64-Debug\glfw3.lib(win32_thread.obj) : warning LNK4099: PDB '' was not found with 'glfw3.lib(win32_thread.obj)' or at ''; linking object as if no debug info
+C:\Dev\XRaySim\Engine\out\build\x64-Debug\glfw3.lib(platform.obj) : warning LNK4099: PDB '' was not found with 'glfw3.lib(platform.obj)' or at ''; linking object as if no debug info
+C:\Dev\XRaySim\Engine\out\build\x64-Debug\glfw3.lib(monitor.obj) : warning LNK4099: PDB '' was not found with 'glfw3.lib(monitor.obj)' or at ''; linking object as if no debug info
+C:\Dev\XRaySim\Engine\out\build\x64-Debug\glfw3.lib(vulkan.obj) : warning LNK4099: PDB '' was not found with 'glfw3.lib(vulkan.obj)' or at ''; linking object as if no debug info
+C:\Dev\XRaySim\Engine\out\build\x64-Debug\glfw3.lib(win32_init.obj) : warning LNK4099: PDB '' was not found with 'glfw3.lib(win32_init.obj)' or at ''; linking object as if no debug info
+C:\Dev\XRaySim\Engine\out\build\x64-Debug\glfw3.lib(null_init.obj) : warning LNK4099: PDB '' was not found with 'glfw3.lib(null_init.obj)' or at ''; linking object as if no debug info
+C:\Dev\XRaySim\Engine\out\build\x64-Debug\glfw3.lib(win32_module.obj) : warning LNK4099: PDB '' was not found with 'glfw3.lib(win32_module.obj)' or at ''; linking object as if no debug info
+C:\Dev\XRaySim\Engine\out\build\x64-Debug\glfw3.lib(win32_monitor.obj) : warning LNK4099: PDB '' was not found with 'glfw3.lib(win32_monitor.obj)' or at ''; linking object as if no debug info
+C:\Dev\XRaySim\Engine\out\build\x64-Debug\glfw3.lib(win32_window.obj) : warning LNK4099: PDB '' was not found with 'glfw3.lib(win32_window.obj)' or at ''; linking object as if no debug info
+C:\Dev\XRaySim\Engine\out\build\x64-Debug\glfw3.lib(win32_joystick.obj) : warning LNK4099: PDB '' was not found with 'glfw3.lib(win32_joystick.obj)' or at ''; linking object as if no debug info
+C:\Dev\XRaySim\Engine\out\build\x64-Debug\glfw3.lib(wgl_context.obj) : warning LNK4099: PDB '' was not found with 'glfw3.lib(wgl_context.obj)' or at ''; linking object as if no debug info
+C:\Dev\XRaySim\Engine\out\build\x64-Debug\glfw3.lib(egl_context.obj) : warning LNK4099: PDB '' was not found with 'glfw3.lib(egl_context.obj)' or at ''; linking object as if no debug info
+C:\Dev\XRaySim\Engine\out\build\x64-Debug\glfw3.lib(osmesa_context.obj) : warning LNK4099: PDB '' was not found with 'glfw3.lib(osmesa_context.obj)' or at ''; linking object as if no debug info
+C:\Dev\XRaySim\Engine\out\build\x64-Debug\glfw3.lib(null_monitor.obj) : warning LNK4099: PDB '' was not found with 'glfw3.lib(null_monitor.obj)' or at ''; linking object as if no debug info
+C:\Dev\XRaySim\Engine\out\build\x64-Debug\glfw3.lib(null_window.obj) : warning LNK4099: PDB '' was not found with 'glfw3.lib(null_window.obj)' or at ''; linking object as if no debug info
+C:\Dev\XRaySim\Engine\out\build\x64-Debug\glfw3.lib(null_joystick.obj) : warning LNK4099: PDB '' was not found with 'glfw3.lib(null_joystick.obj)' or at ''; linking object as if no debug info
+C:\Dev\XRaySim\Engine\out\build\x64-Debug\Gui.cpp.obj : error LNK2019: unresolved external symbol "bool __cdecl ImGui_ImplGlfw_InitForOpenGL(struct GLFWwindow *,bool)" (?ImGui_ImplGlfw_InitForOpenGL@@YA_NPEAUGLFWwindow@@_N@Z) referenced in function "public: void __cdecl GUI::Init(struct GLFWwindow *,char const *)" (?Init@GUI@@QEAAXPEAUGLFWwindow@@PEBD@Z)
+C:\Dev\XRaySim\Engine\out\build\x64-Debug\Gui.cpp.obj : error LNK2019: unresolved external symbol "void __cdecl ImGui_ImplGlfw_Shutdown(void)" (?ImGui_ImplGlfw_Shutdown@@YAXXZ) referenced in function "public: __cdecl GUI::~GUI(void)" (??1GUI@@QEAA@XZ)
+C:\Dev\XRaySim\Engine\out\build\x64-Debug\Gui.cpp.obj : error LNK2019: unresolved external symbol "void __cdecl ImGui_ImplGlfw_NewFrame(void)" (?ImGui_ImplGlfw_NewFrame@@YAXXZ) referenced in function "public: void __cdecl GUI::Setup(void)" (?Setup@GUI@@QEAAXXZ)
+C:\Dev\XRaySim\Engine\out\build\x64-Debug\Gui.cpp.obj : error LNK2019: unresolved external symbol "bool __cdecl ImGui_ImplOpenGL3_Init(char const *)" (?ImGui_ImplOpenGL3_Init@@YA_NPEBD@Z) referenced in function "public: void __cdecl GUI::Init(struct GLFWwindow *,char const *)" (?Init@GUI@@QEAAXPEAUGLFWwindow@@PEBD@Z)
+C:\Dev\XRaySim\Engine\out\build\x64-Debug\Gui.cpp.obj : error LNK2019: unresolved external symbol "void __cdecl ImGui_ImplOpenGL3_Shutdown(void)" (?ImGui_ImplOpenGL3_Shutdown@@YAXXZ) referenced in function "public: __cdecl GUI::~GUI(void)" (??1GUI@@QEAA@XZ)
+C:\Dev\XRaySim\Engine\out\build\x64-Debug\Gui.cpp.obj : error LNK2019: unresolved external symbol "void __cdecl ImGui_ImplOpenGL3_NewFrame(void)" (?ImGui_ImplOpenGL3_NewFrame@@YAXXZ) referenced in function "public: void __cdecl GUI::Setup(void)" (?Setup@GUI@@QEAAXXZ)
+C:\Dev\XRaySim\Engine\out\build\x64-Debug\Gui.cpp.obj : error LNK2019: unresolved external symbol "void __cdecl ImGui_ImplOpenGL3_RenderDrawData(struct ImDrawData *)" (?ImGui_ImplOpenGL3_RenderDrawData@@YAXPEAUImDrawData@@@Z) referenced in function "public: void __cdecl GUI::Render(void)" (?Render@GUI@@QEAAXXZ)
+  
+C:\Dev\XRaySim\Engine\out\build\x64-Debug\bin\App.exe : fatal error LNK1120: 7 unresolved externals
+  
+  ninja: build stopped: subcommand failed.
+
+Build All failed.

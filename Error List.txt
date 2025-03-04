@@ -1,0 +1,29 @@
+PDB '' was not found with 'glfw3.lib(context.obj)' or at ''; linking object as if no debug info
+PDB '' was not found with 'glfw3.lib(init.obj)' or at ''; linking object as if no debug info
+PDB '' was not found with 'glfw3.lib(window.obj)' or at ''; linking object as if no debug info
+PDB '' was not found with 'glfw3.lib(input.obj)' or at ''; linking object as if no debug info
+PDB '' was not found with 'glfw3.lib(win32_time.obj)' or at ''; linking object as if no debug info
+PDB '' was not found with 'glfw3.lib(win32_thread.obj)' or at ''; linking object as if no debug info
+PDB '' was not found with 'glfw3.lib(platform.obj)' or at ''; linking object as if no debug info
+PDB '' was not found with 'glfw3.lib(monitor.obj)' or at ''; linking object as if no debug info
+PDB '' was not found with 'glfw3.lib(vulkan.obj)' or at ''; linking object as if no debug info
+PDB '' was not found with 'glfw3.lib(win32_init.obj)' or at ''; linking object as if no debug info
+PDB '' was not found with 'glfw3.lib(null_init.obj)' or at ''; linking object as if no debug info
+PDB '' was not found with 'glfw3.lib(win32_module.obj)' or at ''; linking object as if no debug info
+PDB '' was not found with 'glfw3.lib(win32_monitor.obj)' or at ''; linking object as if no debug info
+PDB '' was not found with 'glfw3.lib(win32_window.obj)' or at ''; linking object as if no debug info
+PDB '' was not found with 'glfw3.lib(win32_joystick.obj)' or at ''; linking object as if no debug info
+PDB '' was not found with 'glfw3.lib(wgl_context.obj)' or at ''; linking object as if no debug info
+PDB '' was not found with 'glfw3.lib(egl_context.obj)' or at ''; linking object as if no debug info
+PDB '' was not found with 'glfw3.lib(osmesa_context.obj)' or at ''; linking object as if no debug info
+PDB '' was not found with 'glfw3.lib(null_monitor.obj)' or at ''; linking object as if no debug info
+PDB '' was not found with 'glfw3.lib(null_window.obj)' or at ''; linking object as if no debug info
+PDB '' was not found with 'glfw3.lib(null_joystick.obj)' or at ''; linking object as if no debug info
+unresolved external symbol "bool __cdecl ImGui_ImplGlfw_InitForOpenGL(struct GLFWwindow *,bool)" (?ImGui_ImplGlfw_InitForOpenGL@@YA_NPEAUGLFWwindow@@_N@Z) referenced in function "public: void __cdecl GUI::Init(struct GLFWwindow *,char const *)" (?Init@GUI@@QEAAXPEAUGLFWwindow@@PEBD@Z)
+unresolved external symbol "void __cdecl ImGui_ImplGlfw_Shutdown(void)" (?ImGui_ImplGlfw_Shutdown@@YAXXZ) referenced in function "public: __cdecl GUI::~GUI(void)" (??1GUI@@QEAA@XZ)
+unresolved external symbol "void __cdecl ImGui_ImplGlfw_NewFrame(void)" (?ImGui_ImplGlfw_NewFrame@@YAXXZ) referenced in function "public: void __cdecl GUI::Setup(void)" (?Setup@GUI@@QEAAXXZ)
+unresolved external symbol "bool __cdecl ImGui_ImplOpenGL3_Init(char const *)" (?ImGui_ImplOpenGL3_Init@@YA_NPEBD@Z) referenced in function "public: void __cdecl GUI::Init(struct GLFWwindow *,char const *)" (?Init@GUI@@QEAAXPEAUGLFWwindow@@PEBD@Z)
+unresolved external symbol "void __cdecl ImGui_ImplOpenGL3_Shutdown(void)" (?ImGui_ImplOpenGL3_Shutdown@@YAXXZ) referenced in function "public: __cdecl GUI::~GUI(void)" (??1GUI@@QEAA@XZ)
+unresolved external symbol "void __cdecl ImGui_ImplOpenGL3_NewFrame(void)" (?ImGui_ImplOpenGL3_NewFrame@@YAXXZ) referenced in function "public: void __cdecl GUI::Setup(void)" (?Setup@GUI@@QEAAXXZ)
+unresolved external symbol "void __cdecl ImGui_ImplOpenGL3_RenderDrawData(struct ImDrawData *)" (?ImGui_ImplOpenGL3_RenderDrawData@@YAXPEAUImDrawData@@@Z) referenced in function "public: void __cdecl GUI::Render(void)" (?Render@GUI@@QEAAXXZ)
+7 unresolved externals

@@ -8,14 +8,7 @@
 
 #include <string>
 
-enum class AssetType
-{
-	CAMERA,
-	LIGHT,
-	MODEL,
-	SHADER,
-	TEXTURE
-};
+enum class AssetType { CAMERA, LIGHT, MODEL, SHADER, TEXTURE };
 
 class Asset
 {
