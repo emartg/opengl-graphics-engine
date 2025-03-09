@@ -23,12 +23,18 @@ Core::Core()
 // ----------
 Core::~Core()
 {
+	// Cleanup the GUI
+	// ---------------
+	m_renderer->CleanupGUI();
+
 	// Deallocate all of the engine's resources
 	// ----------------------------------------
 	for (auto& assetType : m_assets)
 		for (auto& asset : assetType.second)
 			asset->DeallocateResources();
 
+	// Delete the renderer
+	// -------------------
 	delete m_renderer;
 }
 
@@ -78,6 +84,10 @@ void Core::InitOGL() const
 	// Set viewport
 	// ------------
 	m_renderer->SetViewport(SCR_WIDTH, SCR_HEIGHT);
+
+	// Initialize the GUI
+	// ------------------
+	m_renderer->InitGUI();
 
 	// OpenGL global state configuration
 	// ---------------------------------
@@ -130,16 +140,7 @@ void Core::MainLoop()
 	// ----------------------------------------------------------
 	auto shader = std::make_unique<Shader>(*dynamic_cast<Shader*>(m_assets["SHADER"].front().get()));
 	auto light = std::make_unique<PointLight>(*dynamic_cast<PointLight*>(m_assets["LIGHT"].front().get()));
-	//auto textures = std::vector<Texture>{ *dynamic_cast<Texture*>(m_assets["TEXTURE"].front().get()),
-	//									  *dynamic_cast<Texture*>(m_assets["TEXTURE"].back().get()) };
 	auto shape = std::make_unique<Shape>(*dynamic_cast<Shape*>(m_assets["MODEL"].front().get()));
-	//std::vector<Shape> shapes;
-	//for (GLuint i{}; i < m_assets["MODEL"].size(); i++)
-	//{
-	//	auto shape = std::make_unique<Shape>(*dynamic_cast<Shape*>(m_assets["MODEL"][i].get()));
-	//	shape->AddTextureData(textures.data(), textures.size());
-	//	shapes.emplace_back(*shape);
-	//}
 
 	// set the main camera
 	m_camera = std::make_unique<Camera>(*dynamic_cast<Camera*>(m_assets["CAMERA"].front().get()));
@@ -175,6 +176,14 @@ void Core::MainLoop()
 	// -----------
 	while (!m_renderer->ShouldClose())
 	{
+		// Poll IO events
+		// --------------
+		m_renderer->PollIOEvents();
+
+		// Setup the GUI
+		// -------------
+		m_renderer->SetupGUI();
+
 		// Per-frame time logic
 		// --------------------
 		GLfloat currentFrame = static_cast<GLfloat>(m_renderer->GetTime());
@@ -208,8 +217,11 @@ void Core::MainLoop()
 		// render the main cube
 		shape->Draw(*shader);
 
+		// render the GUI
+		m_renderer->RenderGUI();
 
-		m_renderer->PollIOEvents();
+		// Swap buffers
+		// ------------
 		m_renderer->SwapBuffers();
 	}
 }

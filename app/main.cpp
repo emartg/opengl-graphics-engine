@@ -5,7 +5,7 @@
 * and adds models to the engine. It then runs the main loop of the engine that includes input processing.
 */
 
-#include <memory>
+#include <memory> // for smart pointers
 
 #include "CUBE.h"
 #include "../core/Core.h"
@@ -29,27 +29,13 @@ int main(int argc, char** argv)
 
 	// create cube models and add them to the engine
 	auto cube = std::make_unique<Shape>("Main Cube", verticesVec, indicesVec);
-	//auto cube1 = std::make_unique<Shape>("Blue Metal Plate Cube 1", positionsArr, normalsArr, texCoordsArr, nVertices, indicesArr, nIndices);
-	//auto cube2 = std::make_unique<Shape>("Blue Metal Plate Cube 2", verticesArr, nVertices, indicesArr, nIndices);
-	//auto cube3 = std::make_unique<Shape>("Container Cube 1", positionsVec, normalsVec, texCoordsVec, indicesVec);
-	//auto cube4 = std::make_unique<Shape>("Container Cube 2", verticesVec, indicesVec);
 	engine->AddAsset(std::move(cube));
-	//engine->AddAsset(std::move(cube1));
-	//engine->AddAsset(std::move(cube2));
-	//engine->AddAsset(std::move(cube3));
-	//engine->AddAsset(std::move(cube4));
 
 	// define shader names and paths and compile the shaders
 	std::vector<std::string> shaderNames{ "Shape Shader Program" };
 	std::vector<std::string> vertexShaderPaths{ "shaders/shape.vert.glsl" };
 	std::vector<std::string> fragmentShaderPaths{ "shaders/shape.frag.glsl" };
 	engine->CompileShaders(shaderNames, vertexShaderPaths, fragmentShaderPaths);
-
-	// define texture names, paths, and types and load the textures
-	//std::vector<std::string> textureNames{ "Blue Metal Plate Diffuse Map", "Blue Metal Plate Specular Map" };
-	//std::vector<std::string> texturePaths{ "textures/blue_metal_plate_diffuse.jpg", "textures/blue_metal_plate_specular.jpg" };
-	//std::vector<std::string> textureTypes{ "DIFFUSE", "SPECULAR" };
-	//engine->LoadTextures(textureNames, texturePaths, textureTypes);
 
 	// run the main loop of the engine
 	engine->MainLoop();

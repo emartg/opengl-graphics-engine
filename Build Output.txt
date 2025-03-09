@@ -1,0 +1,28 @@
+>------ Build All started: Project: Engine, Configuration: x64-Debug ------
+  [1/25] Building CXX object core\CMakeFiles\Core.dir\stb_image.cpp.obj
+  [2/25] Building CXX object core\CMakeFiles\STB_IMAGE.dir\stb_image.cpp.obj
+  [3/25] Building CXX object app\CMakeFiles\App.dir\__\external\include\imgui\imgui_demo.cpp.obj
+  [4/25] Building C object core\CMakeFiles\GLAD.dir\glad.c.obj
+  [5/25] Building CXX object app\CMakeFiles\App.dir\__\external\include\imgui\backends\imgui_impl_opengl3.cpp.obj
+  [6/25] Linking CXX static library lib\STB_IMAGE.lib
+  [7/25] Building CXX object app\CMakeFiles\App.dir\__\external\include\imgui\backends\imgui_impl_glfw.cpp.obj
+  [8/25] Linking C static library lib\GLAD.lib
+  [9/25] Building CXX object app\CMakeFiles\App.dir\__\external\include\imgui\imgui_tables.cpp.obj
+  [10/25] Building CXX object app\CMakeFiles\App.dir\__\external\include\imgui\imgui.cpp.obj
+  [11/25] Building CXX object app\CMakeFiles\App.dir\__\external\include\imgui\imgui_draw.cpp.obj
+  [12/25] Building CXX object core\CMakeFiles\Core.dir\texture\Texture.cpp.obj
+  [13/25] Building CXX object app\CMakeFiles\App.dir\gui\Gui.cpp.obj
+  [14/25] Building CXX object app\CMakeFiles\App.dir\__\external\include\imgui\imgui_widgets.cpp.obj
+  [15/25] Building CXX object core\CMakeFiles\Core.dir\camera\Camera.cpp.obj
+  [16/25] Building CXX object core\CMakeFiles\Core.dir\light\PointLight.cpp.obj
+  [17/25] Building CXX object core\CMakeFiles\Core.dir\model\mesh\Mesh.cpp.obj
+  [18/25] Building CXX object core\CMakeFiles\Core.dir\shader\Shader.cpp.obj
+  [19/25] Building CXX object core\CMakeFiles\Core.dir\model\Shape.cpp.obj
+  [20/25] Building CXX object app\CMakeFiles\App.dir\renderer\GLFWRenderer.cpp.obj
+  [21/25] Building CXX object app\CMakeFiles\App.dir\main.cpp.obj
+  [22/25] Building CXX object core\CMakeFiles\Core.dir\Core.cpp.obj
+  [23/25] Building CXX object core\CMakeFiles\Core.dir\model\AssimpModel.cpp.obj
+  [24/25] Linking CXX static library lib\Core.lib
+  [25/25] Linking CXX executable bin\App.exe
+
+Build All succeeded.
