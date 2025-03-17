@@ -1,9 +1,9 @@
 /*
 * GUI.h
 * This file implements the GUI class, which is used to create a graphical user interface
-* using the ImGui library. The engine will use this class to create a window that will
-* display information about the scene and allow the user to interact with it and change
-* certain parameters.
+* using the ImGui library.
+* The engine will use this class to create a window that will display information about the scene
+* and allow the user to interact with it and change certain parameters.
 */
 
 #include "Gui.h"
@@ -49,41 +49,28 @@ void GUI::Setup()
 	ImGui_ImplGlfw_NewFrame();
 	ImGui::NewFrame();
 
-	// show the big demo window from Dear ImGui
-	if (m_showDemoWindow)
-		ImGui::ShowDemoWindow(&m_showDemoWindow);
+	// set initial window position to the top-left corner (with some padding)
+	ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_FirstUseEver);
+	// set initial window size to 400 pixels wide and 80 pixels tall
+	ImGui::SetNextWindowSize(ImVec2(300, 60), ImGuiCond_FirstUseEver);
 
-	// show a simple window
+	// show a window that allows the user to change the color of the main cube
 	{
-		static float f = 0.0f;
-		static int counter = 0;
-
-		ImGui::Begin("Hello, world!"); // create a window called "Hello, world!" and append into it
-		ImGui::Text("This is some useful text.");// display some text (you can use a format strings too)
-		ImGui::Checkbox("Demo Window", &m_showDemoWindow); // edit bools storing our window open/close state
-		ImGui::Checkbox("Another Window", &m_showAnotherWindow);
-
-		ImGui::SliderFloat("float", &f, 0.0f, 1.0f); //edit 1 float using a slider from 0.0f to 1.0f
-		ImGui::ColorEdit3("clear color", (float*)&m_clearColor); // edit 3 floats representing a color
-
-		if (ImGui::Button("Button")) // buttons return true when clicked (most widgets return true when edited/activated)
-			counter++;
-		ImGui::SameLine();
-		ImGui::Text("counter = %d", counter);
-
-		ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+		ImGui::Begin("Scene Settings");
+		// get reference to the color of the main cube
+		auto& cubeColor = Core::GetInstance()->GetCubeColor();
+		// create a color picker for the cube color (RGB) and set the new color
+		ImGui::ColorEdit3("Cube Color", (float*)&cubeColor);
+		// set the new color of the main cube
+		Core::GetInstance()->SetCubeColor(cubeColor);
 		ImGui::End();
 	}
 
-	// show another simple window
-	if (m_showAnotherWindow)
-	{
-		ImGui::Begin("Another Window", &m_showAnotherWindow); // pass a pointer to a bool to hold the window open/close state
-		ImGui::Text("Hello from another window!");
-		if (ImGui::Button("Close Me"))
-			m_showAnotherWindow = false;
-		ImGui::End();
-	}
+	// check if ImGui wants to capture the mouse (when interacting with the GUI)
+	if (ImGui::GetIO().WantCaptureMouse) // prevent camera manipulation
+		Core::GetInstance()->SetCameraControlEnabled(false);
+	else // re-enable camera manipulation
+		Core::GetInstance()->SetCameraControlEnabled(true);
 }
 
 void GUI::Render()

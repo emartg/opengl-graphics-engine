@@ -1,9 +1,9 @@
 /*
 * GUI.h
 * This file defines the GUI class, which is used to create a graphical user interface
-* using the ImGui library. The engine will use this class to create a window that will
-* display information about the scene and allow the user to interact with it and change
-* certain parameters.
+* using the ImGui library.
+* The engine will use this class to create a window that will display information about the scene
+* and allow the user to interact with it and change certain parameters.
 */
 
 #pragma once
@@ -16,6 +16,8 @@
 #include "imgui.h"
 #include "backends/imgui_impl_glfw.h"
 #include "backends/imgui_impl_opengl3.h"
+
+#include "../core/Core.h"
 
 class GUI
 {

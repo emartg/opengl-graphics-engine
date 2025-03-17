@@ -16,7 +16,8 @@
 Core::Core()
 	: m_renderer{ nullptr },
 	m_lastMouseX{ SCR_WIDTH / 2.0f }, m_lastMouseY{ SCR_HEIGHT / 2.0f }, m_firstMouse{ true },
-	m_deltaTime{ 0.0f }, m_lastFrameTime{ 0.0f }, m_camera{ nullptr }
+	m_deltaTime{ 0.0f }, m_lastFrameTime{ 0.0f }, m_camera{ nullptr },
+	m_cubeColor{ 0.5f, 0.0f, 0.0f }, m_cameraControlEnabled{ false }
 {}
 
 // Destructor
@@ -169,7 +170,7 @@ void Core::MainLoop()
 	shader->SetFloat("light.linear", light->GetLinear());
 	shader->SetFloat("light.quadratic", light->GetQuadratic());
 
-	shader->SetVec3("material.albedo", glm::vec3(0.5f, 0.0f, 0.0f));
+	shader->SetVec3("material.albedo", m_cubeColor);
 	shader->SetFloat("material.shininess", 32.0f);
 
 	// Render loop
@@ -183,6 +184,8 @@ void Core::MainLoop()
 		// Setup the GUI
 		// -------------
 		m_renderer->SetupGUI();
+		// change the color of the main cube based on the GUI input
+		shader->SetVec3("material.albedo", m_cubeColor);
 
 		// Per-frame time logic
 		// --------------------
@@ -296,7 +299,7 @@ void Core::CursorPosCallback(GLdouble xposIn, GLdouble yposIn, std::string input
 	m_lastMouseX = xpos;
 	m_lastMouseY = ypos;
 
-	if (m_camera) // only process mouse movement if a camera is present
+	if (m_cameraControlEnabled) // only process mouse input if camera control is enabled
 		if (rightMouseButtonPressed) // the right mouse button is used to rotate the camera
 			m_camera->ProcessMouseRotation(xoffset, yoffset);
 		else if (leftMouseButtonPressed) // the left mouse button is used to translate the camera in 2D
@@ -305,7 +308,7 @@ void Core::CursorPosCallback(GLdouble xposIn, GLdouble yposIn, std::string input
 
 void Core::ScrollCallback(GLdouble xoffset, GLdouble yoffset)
 {
-	if (m_camera) // only zoom if a camera is present
+	if (m_cameraControlEnabled) // only process mouse scrolling if camera control is enabled
 		m_camera->ProcessMouseScroll(yoffset, 2.0f);
 }
 

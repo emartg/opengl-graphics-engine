@@ -50,10 +50,15 @@ private:
 	// ------------------
 	Renderer* m_renderer; // current renderer object
 
+	// engine-specific attributes
 	GLfloat m_lastMouseX, m_lastMouseY, m_firstMouse; // mouse settings
 	GLfloat m_deltaTime, m_lastFrameTime; // time settings
 	std::map<std::string, std::vector<std::unique_ptr<Asset>>> m_assets; // map of assets
 	std::unique_ptr<Camera> m_camera; // current camera object
+
+	// gui-related attributes
+	glm::vec3 m_cubeColor; // color of the main cube
+	GLboolean m_cameraControlEnabled; // flag to disable camera control
 
 	// Private Functions
 	// -----------------
@@ -77,11 +82,16 @@ public:
 	// Public Methods
 	// --------------
 	// Getters
-	std::unique_ptr<Camera>& GetCamera() { return m_camera; }
+	const std::unique_ptr<Camera>& GetCamera() { return m_camera; }
+	const glm::vec3& GetCubeColor() const { return m_cubeColor; }
+	const GLboolean& GetCameraControlEnabled() const { return m_cameraControlEnabled; }
 
 	// Setters
 	void SetRenderer(Renderer* renderer) { m_renderer = renderer; }
 	void SetCamera(std::unique_ptr<Camera> camera) { m_camera = std::move(camera); }
+	void SetCubeColor(const glm::vec3& color) { m_cubeColor = color; }
+	void SetCubeColor(const std::vector<GLfloat>& color) { m_cubeColor = glm::vec3(color[0], color[1], color[2]); }
+	void SetCameraControlEnabled(GLboolean enabled) { m_cameraControlEnabled = enabled; }
 
 	// Initializes OpenGL
 	void InitOGL() const;
