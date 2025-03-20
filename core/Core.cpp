@@ -146,6 +146,9 @@ void Core::MainLoop()
 	// set the main camera
 	m_camera = std::make_unique<Camera>(*dynamic_cast<Camera*>(m_assets["CAMERA"].front().get()));
 
+	// get the light position
+	m_lightPos = light->GetPosition();
+
 	// output the assets to the console
 	std::cout << "Assets loaded:" << std::endl;
 	for (const auto& assetType : m_assets)
@@ -160,7 +163,7 @@ void Core::MainLoop()
 	shader->Use();
 
 	// vertex shader constant uniforms
-	shader->SetVec3("lightPos", light->GetPosition());
+	shader->SetVec3("lightPos", m_lightPos);
 
 	// fragment shader constant uniforms
 	shader->SetVec3("light.ambient", light->GetAmbient());
@@ -184,6 +187,8 @@ void Core::MainLoop()
 		// Setup the GUI
 		// -------------
 		m_renderer->SetupGUI();
+		// change the postion of the light source based on the GUI input
+		shader->SetVec3("lightPos", m_lightPos);
 		// change the color of the main cube based on the GUI input
 		shader->SetVec3("material.albedo", m_cubeColor);
 

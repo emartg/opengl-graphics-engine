@@ -51,8 +51,8 @@ void GUI::Setup()
 
 	// set initial window position to the top-left corner (with some padding)
 	ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_FirstUseEver);
-	// set initial window size to 400 pixels wide and 80 pixels tall
-	ImGui::SetNextWindowSize(ImVec2(300, 60), ImGuiCond_FirstUseEver);
+	// set initial window size to 400 pixels wide and 120 pixels tall
+	ImGui::SetNextWindowSize(ImVec2(400, 100), ImGuiCond_FirstUseEver);
 
 	// show a window that allows the user to change the color of the main cube
 	{
@@ -63,6 +63,12 @@ void GUI::Setup()
 		ImGui::ColorEdit3("Cube Color", (float*)&cubeColor);
 		// set the new color of the main cube
 		Core::GetInstance()->SetCubeColor(cubeColor);
+		// get reference to the position of the light source
+		auto& lightPos = Core::GetInstance()->GetLightPos();
+		// create a slider for the x, y, and z components of the light position
+		ImGui::SliderFloat3("Light Position", (float*)&lightPos, -5.0, 5.0f);
+		// set the new position of the light source
+		Core::GetInstance()->SetLightPos(lightPos);
 		ImGui::End();
 	}
 

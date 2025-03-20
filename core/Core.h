@@ -44,7 +44,7 @@ private:
 
 	// Static Constants
 	// ----------------
-	static constexpr GLuint SCR_WIDTH{ 800 }, SCR_HEIGHT{ 600 }; // screen settings
+	static constexpr GLuint SCR_WIDTH{ 1000 }, SCR_HEIGHT{ 750 }; // screen settings
 
 	// Private Attributes
 	// ------------------
@@ -57,6 +57,7 @@ private:
 	std::unique_ptr<Camera> m_camera; // current camera object
 
 	// gui-related attributes
+	glm::vec3 m_lightPos; // position of the light source
 	glm::vec3 m_cubeColor; // color of the main cube
 	GLboolean m_cameraControlEnabled; // flag to disable camera control
 
@@ -83,12 +84,15 @@ public:
 	// --------------
 	// Getters
 	const std::unique_ptr<Camera>& GetCamera() { return m_camera; }
+	const glm::vec3& GetLightPos() const { return m_lightPos; }
 	const glm::vec3& GetCubeColor() const { return m_cubeColor; }
 	const GLboolean& GetCameraControlEnabled() const { return m_cameraControlEnabled; }
 
 	// Setters
 	void SetRenderer(Renderer* renderer) { m_renderer = renderer; }
 	void SetCamera(std::unique_ptr<Camera> camera) { m_camera = std::move(camera); }
+	void SetLightPos(const glm::vec3& lightPos) { m_lightPos = lightPos; }
+	void SetLightPos(const std::vector<GLfloat>& lightPos) { m_lightPos = glm::vec3(lightPos[0], lightPos[1], lightPos[2]); }
 	void SetCubeColor(const glm::vec3& color) { m_cubeColor = color; }
 	void SetCubeColor(const std::vector<GLfloat>& color) { m_cubeColor = glm::vec3(color[0], color[1], color[2]); }
 	void SetCameraControlEnabled(GLboolean enabled) { m_cameraControlEnabled = enabled; }
