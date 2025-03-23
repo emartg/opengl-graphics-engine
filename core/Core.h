@@ -57,8 +57,9 @@ private:
 	std::unique_ptr<Camera> m_camera; // current camera object
 
 	// gui-related attributes
+	std::vector<glm::vec3> m_cubePositions; // positions of the cubes in the scene
+	std::vector<glm::vec3> m_cubeColors; // colors of the cubes in the scene
 	glm::vec3 m_lightPos; // position of the light source
-	glm::vec3 m_cubeColor; // color of the main cube
 	GLboolean m_cameraControlEnabled; // flag to disable camera control
 
 	// Private Functions
@@ -84,17 +85,31 @@ public:
 	// --------------
 	// Getters
 	const std::unique_ptr<Camera>& GetCamera() { return m_camera; }
+	// get a reference to the vector of cube positions
+	const std::vector<glm::vec3>& GetCubePositions() const { return m_cubePositions; }
+	// get position of a specific cube in the scene
+	const glm::vec3& GetCubePos(GLuint index) const { return m_cubePositions[index]; }
+	// get a reference to the vector of cube colors
+	const std::vector<glm::vec3>& GetCubeColors() const { return m_cubeColors; }
+	// get the color of a specific cube in the scene
+	const glm::vec3& GetCubeColor(GLuint index) const { return m_cubeColors[index]; }
+	// get the number of cubes in the scene
+	const GLuint GetNCubes() const { return m_cubePositions.size(); }
+	// get the position of the light source
 	const glm::vec3& GetLightPos() const { return m_lightPos; }
-	const glm::vec3& GetCubeColor() const { return m_cubeColor; }
+	// get the camera control flag
 	const GLboolean& GetCameraControlEnabled() const { return m_cameraControlEnabled; }
 
 	// Setters
 	void SetRenderer(Renderer* renderer) { m_renderer = renderer; }
 	void SetCamera(std::unique_ptr<Camera> camera) { m_camera = std::move(camera); }
-	void SetLightPos(const glm::vec3& lightPos) { m_lightPos = lightPos; }
-	void SetLightPos(const std::vector<GLfloat>& lightPos) { m_lightPos = glm::vec3(lightPos[0], lightPos[1], lightPos[2]); }
-	void SetCubeColor(const glm::vec3& color) { m_cubeColor = color; }
-	void SetCubeColor(const std::vector<GLfloat>& color) { m_cubeColor = glm::vec3(color[0], color[1], color[2]); }
+	// set the position of a specific cube in the scene
+	void SetCubePos(GLuint index, const glm::vec3& position) { m_cubePositions[index] = position; }
+	// set the color of a specific cube in the scene
+	void SetCubeColor(GLuint index, const glm::vec3& color) { m_cubeColors[index] = color; }
+	// set the position of the light source
+	void SetLightPos(const glm::vec3& position) { m_lightPos = position; }
+	// set the camera control flag
 	void SetCameraControlEnabled(GLboolean enabled) { m_cameraControlEnabled = enabled; }
 
 	// Initializes OpenGL
@@ -116,6 +131,11 @@ public:
 
 	// Adds an asset to the engine (e.g., a camera, light, model, etc.)
 	void AddAsset(std::unique_ptr<Asset> asset);
+
+	// Add a cube position to the vector of cube positions
+	void AddCubePos(const glm::vec3& position) { m_cubePositions.push_back(position); }
+	// Add a cube color to the vector of cube colors
+	void AddCubeColor(const glm::vec3& color) { m_cubeColors.push_back(color); }
 
 	// Engine-specific callback functions
 	void FramebufferSizeCallback(GLint width, GLint height);

@@ -28,7 +28,9 @@ int main(int argc, char** argv)
 	engine->AddAsset(std::move(light));
 
 	// create cube models and add them to the engine
-	auto cube = std::make_unique<Shape>("Main Cube", verticesVec, indicesVec);
+	auto cube = std::make_unique<Shape>("Cube 0", verticesVec, indicesVec);
+	engine->AddCubePos(glm::vec3(0.0f)); // add the cube's position to the engine (provisional)
+	engine->AddCubeColor(glm::vec3(0.5f, 0.0f, 0.0f)); // add the cube's color to the engine (provisional)
 	engine->AddAsset(std::move(cube));
 
 	// define shader names and paths and compile the shaders

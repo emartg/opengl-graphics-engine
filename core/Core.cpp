@@ -17,7 +17,7 @@ Core::Core()
 	: m_renderer{ nullptr },
 	m_lastMouseX{ SCR_WIDTH / 2.0f }, m_lastMouseY{ SCR_HEIGHT / 2.0f }, m_firstMouse{ true },
 	m_deltaTime{ 0.0f }, m_lastFrameTime{ 0.0f }, m_camera{ nullptr },
-	m_cubeColor{ 0.5f, 0.0f, 0.0f }, m_cameraControlEnabled{ false }
+	m_lightPos{ 1.2f, 1.0f, 2.0f }, m_cameraControlEnabled{ false }
 {}
 
 // Destructor
@@ -150,7 +150,7 @@ void Core::MainLoop()
 	m_lightPos = light->GetPosition();
 
 	// output the assets to the console
-	std::cout << "Assets loaded:" << std::endl;
+	std::cout << "Assets loaded at start:" << std::endl;
 	for (const auto& assetType : m_assets)
 	{
 		std::cout << "Asset type: " << assetType.first << std::endl;
@@ -173,7 +173,6 @@ void Core::MainLoop()
 	shader->SetFloat("light.linear", light->GetLinear());
 	shader->SetFloat("light.quadratic", light->GetQuadratic());
 
-	shader->SetVec3("material.albedo", m_cubeColor);
 	shader->SetFloat("material.shininess", 32.0f);
 
 	// Render loop
@@ -189,8 +188,6 @@ void Core::MainLoop()
 		m_renderer->SetupGUI();
 		// change the postion of the light source based on the GUI input
 		shader->SetVec3("lightPos", m_lightPos);
-		// change the color of the main cube based on the GUI input
-		shader->SetVec3("material.albedo", m_cubeColor);
 
 		// Per-frame time logic
 		// --------------------
@@ -218,12 +215,21 @@ void Core::MainLoop()
 		shader->SetMat4("projection", projection);
 		shader->SetMat4("view", view);
 
-		// world transformation
-		glm::mat4 model{ 1.0f };
-		shader->SetMat4("model", model);
+		// render the cubes
+		// (provisionally get the number of cubes in the scene from the vector of cube positions, 
+		// in the future we should be able to get it from the m_assets map)
+		for (GLuint i{}; i < m_cubePositions.size(); i++)
+		{
+			// set the cube's color based on the GUI input
+			shader->SetVec3("material.albedo", m_cubeColors[i]);
 
-		// render the main cube
-		shape->Draw(*shader);
+			// set the cube's position based on the GUI input
+			glm::mat4 model{ 1.0f };
+			model = glm::translate(model, m_cubePositions[i]);
+			shader->SetMat4("model", model);
+
+			shape->Draw(*shader);
+		}
 
 		// render the GUI
 		m_renderer->RenderGUI();
