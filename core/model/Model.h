@@ -20,13 +20,12 @@ class Model : public Asset
 public:
 	// Constructors
 	// ------------
-	Model(const std::string& name)
-		: Asset(name, AssetType::MODEL)
-	{}
+	Model(const std::string& name);
 
-	// Virtual destructor (ensures that derived classes can be deleted properly - polymorphism)
+	// Virtual destructor 
+	// (ensures that derived classes can be deleted properly - polymorphism)
 	// ----------------------------------------------------------------------------------------
-	virtual ~Model() {}
+	virtual ~Model() { nModels--; } // decrements the number of models
 
 	// Public Functions
 	// ----------------
@@ -52,9 +51,17 @@ public:
 	// Binds the textures of the model
 	virtual void BindTextures(Shader& shader) const { for (const Mesh& mesh : meshes) mesh.BindTextures(shader); }
 
+	// Static Public Functions
+	// -----------------------
+	static GLuint GetNModels() { return nModels; }
+
 protected:
-	// Protected Attributes (can be accessed by derived classes)
-	// ---------------------------------------------------------
+	// Static Protected Attributes
+	// ---------------------------
+	static GLuint nModels; // number of models in the scene
+
+	// Protected Attributes
+	// --------------------
 	std::vector<Mesh> meshes;
 	std::vector<Texture> loadedTextures;
 

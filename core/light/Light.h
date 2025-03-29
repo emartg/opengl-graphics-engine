@@ -18,14 +18,11 @@ public:
 	// Constructors
 	// ------------
 	Light(const std::string& name,
-		  const glm::vec3 ambient, const glm::vec3 diffuse, const glm::vec3 specular)
-		: Asset(name, AssetType::LIGHT),
-		ambient{ ambient }, diffuse{ diffuse }, specular{ specular }
-	{}
+		  const glm::vec3 ambient, const glm::vec3 diffuse, const glm::vec3 specular);
 
 	// Virtual destructor (ensures that derived classes can be deleted properly - polymorphism)
 	// ---------------------------------------------------------------------------------------
-	virtual ~Light() {}
+	virtual ~Light() { nLights--; } // decrements the number of lights
 
 	// Public Methods
 	// --------------
@@ -44,7 +41,15 @@ public:
 	void SetDiffuse(glm::vec3 diffuse) { this->diffuse = diffuse; }
 	void SetSpecular(glm::vec3 specular) { this->specular = specular; }
 
+	// Static Public Functions
+	// -----------------------
+	static GLuint GetNLights() { return nLights; }
+
 protected:
+	// Static Protected Attributes
+	// ---------------------------
+	static GLuint nLights; // number of lights in the scene
+
 	// Protected Attributes
 	// --------------------
 	glm::vec3 ambient;

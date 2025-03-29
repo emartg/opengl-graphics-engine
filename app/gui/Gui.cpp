@@ -25,7 +25,8 @@ GUI::~GUI()
 	ImGui::DestroyContext();
 }
 
-
+// Public Methods
+// --------------
 void GUI::Init(GLFWwindow* window, const char* glslVersion)
 {
 	// setup Dear ImGui context
@@ -52,103 +53,140 @@ void GUI::Setup()
 
 	// set initial window position to the top-left corner (with some padding)
 	ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_FirstUseEver);
-	// set initial window size to 320x200 pixels
-	ImGui::SetNextWindowSize(ImVec2(320, 200), ImGuiCond_FirstUseEver);
+	// set initial window size to 320x300 pixels
+	ImGui::SetNextWindowSize(ImVec2(320, 300), ImGuiCond_FirstUseEver);
 
-	// show a window that displays all the assets in the scene and allows the user to create a new cube
+	// show a window that displays all the assets in the scene and allows the user to create a new shape
 	{
 		ImGui::Begin("Scene Assets");
 
 		// get the camera object
 		auto& camera = Core::GetInstance()->GetCamera();
-		// display the name of the camera object and its position
+		// display the name of the camera and its position
 		ImGui::Text("Camera Name: %s", camera->GetName().c_str());
 		ImGui::Text("Camera Position: (%.3f, %.3f, %.3f)",
 					camera->GetPosition().x, camera->GetPosition().y, camera->GetPosition().z);
 
-		// get the position of the light source
-		auto lightPos = Core::GetInstance()->GetLightPos();
-		// display the position of the light source
-		ImGui::Text("Light Position: (%.3f, %.3f, %.3f)", lightPos.x, lightPos.y, lightPos.z);
+		ImGui::Separator();
 
-		// get the number of cubes in the scene via GetNCubes 
-		// (provisional, as this number of cubes comes from the size of the cubePositions vector)
-		unsigned int nCubes = Core::GetInstance()->GetNCubes();
-		// display the number of cubes in the scene
-		ImGui::Text("Number of Cubes: %d", nCubes);
-		// drop-down list of the cube positions and colors
-		for (GLuint i{}; i < nCubes; i++)
+		// get the number of lights in the scene
+		unsigned int nLights = Core::GetInstance()->GetNLights();
+		// get the number of point lights in the scene
+		unsigned int nPointLights = Core::GetInstance()->GetNPointLights();
+		// display the number of lights in the scene
+		ImGui::Text("Number of Lights: %d", nLights);
+		// display the number of point lights in the scene
+		ImGui::Text("Number of Point Lights: %d", nPointLights);
+
+		ImGui::Text("POINT LIGHTS:");
+		// for each point light in the scene, display its name, color, and position
+		for (unsigned int i{}; i < nPointLights; i++)
 		{
-			// display the position of the i-th cube
-			ImGui::Text("Cube %d Position: (%.3f, %.3f, %.3f)", i,
-						Core::GetInstance()->GetCubePos(i).x,
-						Core::GetInstance()->GetCubePos(i).y,
-						Core::GetInstance()->GetCubePos(i).z);
-			// display the color of the i-th cube
-			ImGui::Text("Cube %d Color: (%.3f, %.3f, %.3f)", i,
-						Core::GetInstance()->GetCubeColor(i).x,
-						Core::GetInstance()->GetCubeColor(i).y,
-						Core::GetInstance()->GetCubeColor(i).z);
+			// get the point light object
+			auto pointLight = dynamic_cast<PointLight*>(Core::GetInstance()->GetAssets("LIGHT")[i].get());
+			// display the name of the point light
+			ImGui::Text("Point Light %d: %s", i, pointLight->GetName().c_str());
+			// display the color of the point light
+			ImGui::Text("Color: (%.2f, %.2f, %.2f)", pointLight->GetDiffuse().x, pointLight->GetDiffuse().y, pointLight->GetDiffuse().z);
+			// display the position of the point light
+			ImGui::Text("Position: (%.2f, %.2f, %.2f)", pointLight->GetPosition().x, pointLight->GetPosition().y, pointLight->GetPosition().z);
 		}
 
-		// button to add a new cube to the scene
-		if (ImGui::Button("Add Cube"))
+		ImGui::Separator();
+
+		// get the number of models in the scene
+		unsigned int nModels = Core::GetInstance()->GetNModels();
+		// get the number of shapes in the scene
+		unsigned int nShapes = Core::GetInstance()->GetNShapes();
+		// display the number of models in the scene
+		ImGui::Text("Number of Models: %d", nModels);
+		// display the number of shapes in the scene
+		ImGui::Text("Number of Shapes: %d", nShapes);
+
+		ImGui::Text("SHAPES:");
+		// for each shape in the scene, display its name, color, and position
+		for (unsigned int i{}; i < nShapes; i++)
 		{
-			// create a new cube at a random position within a certain range 
-			// and ensure it is not too close to the camera
+			// get the shape object
+			auto shape = dynamic_cast<Shape*>(Core::GetInstance()->GetAssets("MODEL")[i].get());
+			// display the name of the shape
+			ImGui::Text("Shape %d: %s", i, shape->GetName().c_str());
+			// display the color of the shape
+			ImGui::Text("Color: (%.2f, %.2f, %.2f)", shape->GetAlbedo().x, shape->GetAlbedo().y, shape->GetAlbedo().z);
+			// display the position of the shape
+			ImGui::Text("Position: (%.2f, %.2f, %.2f)", shape->GetPosition().x, shape->GetPosition().y, shape->GetPosition().z);
+		}
+
+		// button to add a new shape to the scene
+		if (ImGui::Button("Add Shape"))
+		{
+			// create a new shape with a name "Shape nShapes" (where nShapes is the current number of shapes in the scene)
+			std::string newShapeName = "Shape " + std::to_string(nShapes);
+			auto newShape = std::make_unique<Shape>(newShapeName, verticesVec, indicesVec, glm::vec3(0.5f), glm::vec3(0.0f));
+
+			// use the current time as seed for the random number generator 
+			// (to get different positions and colors each run)
+			srand(static_cast<unsigned int>(time(0)));
+
+			// set the shape's color to a random color
+			glm::vec3 newColor{ (rand() % 100) / 100.0f, (rand() % 100) / 100.0f, (rand() % 100) / 100.0f };
+			newShape->SetAlbedo(newColor);
+			// set the shape's translation randomly 
+			// (within a certain range, ensuring it is neither too close to the camera nor too far away)
 			glm::vec3 newPos;
 			do
 			{
-				newPos.x = static_cast<float>(rand() % 10 - 5);
-				newPos.y = static_cast<float>(rand() % 10 - 5);
-				newPos.z = static_cast<float>(rand() % 10 - 5);
+				newPos = glm::vec3{ (rand() % 10) - 5, (rand() % 10) - 5, (rand() % 10) - 5 };
 			} while (glm::length(newPos - camera->GetPosition()) < 2.0f);
-			// add the new position to the vector of cube positions
-			Core::GetInstance()->AddCubePos(newPos);
-			// add a new random color to the vector of cube colors
-			Core::GetInstance()->AddCubeColor(glm::vec3(static_cast<float>(rand()) / RAND_MAX,
-														static_cast<float>(rand()) / RAND_MAX,
-														static_cast<float>(rand()) / RAND_MAX));
+			newShape->SetPosition(newPos);
 
-			// create a new cube with default vertices and indices and add it to the scene
-			auto newCube = std::make_unique<Shape>("Cube " + std::to_string(nCubes), verticesVec, indicesVec);
-			Core::GetInstance()->AddAsset(std::move(newCube));
+			// add the new shape to the engine
+			Core::GetInstance()->AddAsset(std::move(newShape));
+
+			// output the new asset to the console
+			std::cout << "Asset type: " << "MODEL" << std::endl;
+			std::cout << "Asset name: " << newShapeName << std::endl;
 		}
 
 		ImGui::End();
 	}
 
-    // set initial window position to the top-right corner (with some padding)
-    ImGuiIO& io = ImGui::GetIO();
-    ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x - 340, 10), ImGuiCond_FirstUseEver);
-	// set initial window size to 330x200 pixels
-	ImGui::SetNextWindowSize(ImVec2(330, 200), ImGuiCond_FirstUseEver);
+	// set initial window position to the top-right corner (with some padding)
+	ImGuiIO& io = ImGui::GetIO();
+	ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x - 390, 10), ImGuiCond_FirstUseEver);
+	// set initial window size to 380x100 pixels
+	ImGui::SetNextWindowSize(ImVec2(380, 100), ImGuiCond_FirstUseEver);
 
-	// show a window that allows the user to change the color of the cubes in the scene and
+	// show a window that allows the user to change the color of the shapes in the scene and
 	// the position of the light source
 	{
 		ImGui::Begin("Scene Settings");
 
-		// get reference to the position of the light source
-		auto& lightPos = Core::GetInstance()->GetLightPos();
+		// get the light object
+		auto light = dynamic_cast<PointLight*>(Core::GetInstance()->GetAssets("LIGHT")[0].get());
+		// get the position of the light source
+		glm::vec3 lightPos = light->GetPosition();
 		// create a slider for the x, y, and z components of the light position
-		ImGui::SliderFloat3("Light Position", (float*)&lightPos, -5.0, 5.0f);
-		// set the new position of the light source
-		Core::GetInstance()->SetLightPos(lightPos);
+		if (ImGui::SliderFloat3("Light Position", (float*)&lightPos, -5.0, 5.0f))
+			light->SetPosition(lightPos); // set the new position of the light source (only if the slider is moved)
 
-		// get number of cubes in the scene
-		unsigned int nCubes = Core::GetInstance()->GetNCubes();
-		// get a reference to the color of each of the cubes in the scene
-		auto& cubeColors = Core::GetInstance()->GetCubeColors();
-		// drop-down list of color pickers for each of the cubes in the scene
-		for (GLuint i{}; i < nCubes; i++)
+		// get number of shapes in the scene
+		unsigned int nShapes = Core::GetInstance()->GetNShapes();
+		// for each shape in the scene, create a color picker and a slider for its position component
+		for (unsigned int i{}; i < nShapes; i++)
 		{
-			// create a color picker for the i-th cube 
-			// (provisionally set the name of the cube to "Cube i", in the future we should be able 
-			// to get it from the Cube object itself, since it is an Asset)
-			ImGui::ColorEdit3(("Cube " + std::to_string(i) + " Color").c_str(), (float*)&cubeColors[i]);
-			// set the new color of the cube
-			Core::GetInstance()->SetCubeColor(i, cubeColors[i]);
+			// get the shape object
+			auto shape = dynamic_cast<Shape*>(Core::GetInstance()->GetAssets("MODEL")[i].get());
+			// get the color of the shape
+			glm::vec3 color = shape->GetAlbedo();
+			// create a color picker for the shape's color
+			if (ImGui::ColorEdit3(("Shape " + std::to_string(i)).c_str(), (float*)&color))
+				shape->SetAlbedo(color); // set the new color of the shape (only if the color picker is used)
+			// get the position of the shape
+			glm::vec3 pos = shape->GetPosition();
+			// create a slider for the x, y, and z components of the shape's position
+			if (ImGui::SliderFloat3(("Shape " + std::to_string(i) + " Position").c_str(), (float*)&pos, -5.0, 5.0f))
+				shape->SetPosition(pos); // set the new position of the shape (only if the slider is moved)
 		}
 
 		ImGui::End();

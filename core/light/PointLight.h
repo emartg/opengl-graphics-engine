@@ -22,6 +22,10 @@ public:
 			   const glm::vec3 position = POSITION,
 			   const GLfloat constant = CONSTANT, const GLfloat linear = LINEAR, const GLfloat quadratic = QUADRATIC);
 
+	// Destructor
+	// ----------
+	~PointLight() { nPointLights--; } // decrements the number of point lights
+
 	// Public Methods
 	// --------------
 	// Getters
@@ -36,7 +40,15 @@ public:
 	void SetLinear(GLfloat linear) { this->linear = linear; }
 	void SetQuadratic(GLfloat quadratic) { this->quadratic = quadratic; }
 
+	// Static Public Functions
+	// -----------------------
+	static GLuint GetNPointLights() { return nPointLights; }
+
 private:
+	// Static Private Attributes
+	// -------------------------
+	static GLuint nPointLights; // number of point lights in the scene
+
 	// Private Attributes
 	// ------------------
 	glm::vec3 position;

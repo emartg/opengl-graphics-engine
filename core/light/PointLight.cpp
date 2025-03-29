@@ -6,6 +6,10 @@
 
 #include "PointLight.h"
 
+// Static Private Attributes
+// -------------------------
+GLuint PointLight::nPointLights{}; // initialize the number of point lights in the scene to 0
+
 // Constructors
 // ------------
 PointLight::PointLight(const std::string& name,
@@ -15,4 +19,6 @@ PointLight::PointLight(const std::string& name,
 	: Light(name, ambient, diffuse, specular),
 	position{ position },
 	constant{ constant }, linear{ linear }, quadratic{ quadratic }
-{}
+{
+	nPointLights++; // increments the number of point lights
+}

@@ -17,7 +17,7 @@ Core::Core()
 	: m_renderer{ nullptr },
 	m_lastMouseX{ SCR_WIDTH / 2.0f }, m_lastMouseY{ SCR_HEIGHT / 2.0f }, m_firstMouse{ true },
 	m_deltaTime{ 0.0f }, m_lastFrameTime{ 0.0f }, m_camera{ nullptr },
-	m_lightPos{ 1.2f, 1.0f, 2.0f }, m_cameraControlEnabled{ false }
+	m_cameraControlEnabled{ false }
 {}
 
 // Destructor
@@ -139,18 +139,18 @@ void Core::MainLoop()
 	// Get local pointers to all the assets needed for rendering,
 	// set the main camera, and output the assets to the console
 	// ----------------------------------------------------------
-	auto shader = std::make_unique<Shader>(*dynamic_cast<Shader*>(m_assets["SHADER"].front().get()));
-	auto light = std::make_unique<PointLight>(*dynamic_cast<PointLight*>(m_assets["LIGHT"].front().get()));
-	auto shape = std::make_unique<Shape>(*dynamic_cast<Shape*>(m_assets["MODEL"].front().get()));
+	auto shader = dynamic_cast<Shader*>(m_assets["SHADER"].front().get());
+	auto light = dynamic_cast<PointLight*>(m_assets["LIGHT"].front().get());
+	// get a vector of pointers to all Shape objects
+	std::vector<Shape*> shapes;
+	for (const auto& asset : m_assets["MODEL"])
+		shapes.emplace_back(dynamic_cast<Shape*>(asset.get()));
 
 	// set the main camera
 	m_camera = std::make_unique<Camera>(*dynamic_cast<Camera*>(m_assets["CAMERA"].front().get()));
 
-	// get the light position
-	m_lightPos = light->GetPosition();
-
 	// output the assets to the console
-	std::cout << "Assets loaded at start:" << std::endl;
+	std::cout << "Assets loaded:" << std::endl;
 	for (const auto& assetType : m_assets)
 	{
 		std::cout << "Asset type: " << assetType.first << std::endl;
@@ -163,7 +163,7 @@ void Core::MainLoop()
 	shader->Use();
 
 	// vertex shader constant uniforms
-	shader->SetVec3("lightPos", m_lightPos);
+	shader->SetVec3("lightPos", light->GetPosition());
 
 	// fragment shader constant uniforms
 	shader->SetVec3("light.ambient", light->GetAmbient());
@@ -186,8 +186,6 @@ void Core::MainLoop()
 		// Setup the GUI
 		// -------------
 		m_renderer->SetupGUI();
-		// change the postion of the light source based on the GUI input
-		shader->SetVec3("lightPos", m_lightPos);
 
 		// Per-frame time logic
 		// --------------------
@@ -207,6 +205,10 @@ void Core::MainLoop()
 		// activate shader
 		shader->Use();
 
+		// change the postion of the light source based on the GUI input
+		glm::vec3 lightPos = light->GetPosition();
+		shader->SetVec3("lightPos", lightPos);
+
 		// view/projection transformations
 		glm::mat4 projection = glm::perspective(glm::radians(m_camera->GetZoom()),
 												static_cast<GLfloat>(SCR_WIDTH) / static_cast<GLfloat>(SCR_HEIGHT),
@@ -215,20 +217,19 @@ void Core::MainLoop()
 		shader->SetMat4("projection", projection);
 		shader->SetMat4("view", view);
 
-		// render the cubes
-		// (provisionally get the number of cubes in the scene from the vector of cube positions, 
-		// in the future we should be able to get it from the m_assets map)
-		for (GLuint i{}; i < m_cubePositions.size(); i++)
+		// render the shapes
+		GLuint nShapes = Shape::GetNShapes();
+		for (GLuint i{}; i < nShapes; i++)
 		{
-			// set the cube's color based on the GUI input
-			shader->SetVec3("material.albedo", m_cubeColors[i]);
+			// set the shape's color based on the GUI input
+			shader->SetVec3("material.albedo", shapes[i]->GetAlbedo());
 
-			// set the cube's position based on the GUI input
+			// set the shape's position based on the GUI input
 			glm::mat4 model{ 1.0f };
-			model = glm::translate(model, m_cubePositions[i]);
+			model = glm::translate(model, shapes[i]->GetPosition());
 			shader->SetMat4("model", model);
 
-			shape->Draw(*shader);
+			shapes[i]->Draw(*shader);
 		}
 
 		// render the GUI
@@ -267,6 +268,19 @@ void Core::AddAsset(std::unique_ptr<Asset> asset)
 	}
 	// add asset to the corresponding vector in the map
 	m_assets[assetType].emplace_back(std::move(asset));
+}
+
+const std::vector<std::unique_ptr<Asset>>& Core::GetAssets(const std::string& assetType) const
+{
+	// find the asset type in the map
+	auto it = m_assets.find(assetType);
+
+	if (it != m_assets.end()) // ensure at least one asset of the type exists
+		return it->second; // return the vector of assets of the specified type
+
+	// return an empty vector if the asset type is not found
+	static const std::vector<std::unique_ptr<Asset>> empty;
+	return empty;
 }
 
 void Core::FramebufferSizeCallback(GLint width, GLint height)

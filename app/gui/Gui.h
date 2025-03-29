@@ -9,6 +9,7 @@
 #pragma once
 
 #include <iostream>
+#include <memory> // for smart pointers
 
 #define GLFW_INCLUDE_NONE // prevent GLFW from including OpenGL headers
 #include <GLFW/glfw3.h>

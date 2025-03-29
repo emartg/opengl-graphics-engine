@@ -27,11 +27,9 @@ int main(int argc, char** argv)
 	auto light = std::make_unique<PointLight>("Main Light");
 	engine->AddAsset(std::move(light));
 
-	// create cube models and add them to the engine
-	auto cube = std::make_unique<Shape>("Cube 0", verticesVec, indicesVec);
-	engine->AddCubePos(glm::vec3(0.0f)); // add the cube's position to the engine (provisional)
-	engine->AddCubeColor(glm::vec3(0.5f, 0.0f, 0.0f)); // add the cube's color to the engine (provisional)
-	engine->AddAsset(std::move(cube));
+	// create a blue shape named "Shape n" and add it to the engine (where n is the number of shapes in the scene)
+	auto shape = std::make_unique<Shape>("Shape " + std::to_string(engine->GetNShapes()), verticesVec, indicesVec, glm::vec3{ 0.0f, 0.0f, 0.5f });
+	engine->AddAsset(std::move(shape));
 
 	// define shader names and paths and compile the shaders
 	std::vector<std::string> shaderNames{ "Shape Shader Program" };

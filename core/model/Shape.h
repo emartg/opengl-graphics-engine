@@ -17,45 +17,79 @@ public:
 	// Constructors
 	// ------------
 	// Constructor that creates a shape from interleaved position, normal and texture coordinate data, 
-	// and index data
+	// and index data. Two optional arguments can be specified for the shape: the albedo color (default is white)
+	// and the translation vector (default is the zero vector)
 	Shape(const std::string& name,
-		  const std::vector<GLfloat> vertices, const std::vector<GLuint> indices);
+		  const std::vector<GLfloat> vertices, const std::vector<GLuint> indices,
+		  const glm::vec3 albedo = glm::vec3(0.5f), const glm::vec3 translation = glm::vec3(0.0f)
+	);
 
 	// Constructor that creates a shape from separate position, normal, and texture coordinate data,
-	// and index data
+	// and index data. Two optional arguments can be specified for the shape: the albedo color (default is white)
+	// and the translation vector (default is the zero vector)
 	Shape(const std::string& name,
 		  const std::vector<GLfloat> positions, const std::vector<GLfloat> normals,
-		  const std::vector<GLfloat> texCoords, const std::vector<GLuint> indices);
+		  const std::vector<GLfloat> texCoords, const std::vector<GLuint> indices,
+		  const glm::vec3 albedo = glm::vec3(0.5f), const glm::vec3 translation = glm::vec3(0.0f)
+	);
 
 	// Constructor that creates a shape from interleaved position, normal and texture coordinate data, 
-	// and index data.
+	// and index data. Two optional arguments can be specified for the shape: the albedo color (default is white)
+	// and the translation vector (default is the zero vector)
 	// This variant takes arrays as arguments instead of vectors, in case the data is laid out in arrays,
 	// and thus requires the number of elements (or vectors of 3 elements) conform each of the arrays
 	Shape(const std::string& name,
 		  const GLfloat* vertices, const GLuint nVertices,
-		  const GLuint* indices, const GLuint nIndices);
+		  const GLuint* indices, const GLuint nIndices,
+		  const glm::vec3 albedo = glm::vec3(0.5f), const glm::vec3 translation = glm::vec3(0.0f)
+	);
 
 	// Constructor that creates a shape from separate position, normal, and texture coordinate data,
-	// and index data.
+	// and index data. Two optional arguments can be specified for the shape: the albedo color (default is white)
+	// and the translation vector (default is the zero vector)
 	// This variant takes arrays as arguments instead of vectors, in case the data is laid out in arrays, 
 	// and thus requires the number of elements (or vectors of 3 elements) conform each of the arrays
 	Shape(const std::string& name,
 		  const GLfloat* positions, const GLfloat* normals,
 		  const GLfloat* texCoords, const GLuint nVertices,
-		  const GLuint* indices, const GLuint nIndices);
+		  const GLuint* indices, const GLuint nIndices,
+		  const glm::vec3 albedo = glm::vec3(0.5f), const glm::vec3 translation = glm::vec3(0.0f)
+	);
+
+	// Destructor
+	// ----------
+	~Shape() { nShapes--; } // decrements the number of shapes
 
 	// Public Methods
 	// --------------
+	// Getters
+	const glm::vec3& GetAlbedo() const { return albedo; }
+	const glm::vec3& GetPosition() const { return translation; }
+
+	// Setters
+	void SetAlbedo(const glm::vec3& albedo) { this->albedo = albedo; }
+	void SetPosition(const glm::vec3& translation) { this->translation = translation; }
+
 	// Adds texture data to the shape
 	void AddTextureData(const Texture* textures, const GLuint nTextures);
 	void AddTextureData(const std::vector<Texture> textures);
 
+	// Static Public Methods
+	// ---------------------
+	static GLuint GetNShapes() { return nShapes; }
+
 private:
+	// Static Private Attributes
+	// -------------------------
+	static GLuint nShapes; // number of shapes created
+
 	// Private Attributes
 	// ------------------
 	std::vector<Vertex> vertices;
 	std::vector<GLuint> indices;
 	std::vector<Texture> textures;
+	glm::vec3 albedo; // color of the shape in case no textures are used
+	glm::vec3 translation; // translation vector for the shape in the scene
 
 	// Private Methods
 	// ---------------

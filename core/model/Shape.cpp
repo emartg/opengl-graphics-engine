@@ -9,27 +9,40 @@
 
 #include "Shape.h"
 
+// Static Private Attributes
+// -------------------------
+GLuint Shape::nShapes{}; // initialize the number of shapes in the scene to 0
+
 // Constructors
 // ------------
 Shape::Shape(const std::string& name,
-			 const std::vector<GLfloat> vertices, const std::vector<GLuint> indices)
-	: Model(name), vertices{ processVertexData(vertices) }, indices{ indices }
+			 const std::vector<GLfloat> vertices, const std::vector<GLuint> indices,
+			 const glm::vec3 albedo, const glm::vec3 translation)
+	: Model(name),
+	vertices{ processVertexData(vertices) }, indices{ indices },
+	albedo{ albedo }, translation{ translation }
 {
 	createMesh();
+	nShapes++; // increments the number of shapes
 }
 
 Shape::Shape(const std::string& name,
 			 const std::vector<GLfloat> positions, const std::vector<GLfloat> normals,
-			 const std::vector<GLfloat> texCoords, const std::vector<GLuint> indices)
-	: Model(name), vertices{ processVertexData(positions, normals, texCoords) }, indices{ indices }
+			 const std::vector<GLfloat> texCoords, const std::vector<GLuint> indices,
+			 const glm::vec3 albedo, const glm::vec3 translation)
+	: Model(name),
+	vertices{ processVertexData(positions, normals, texCoords) }, indices{ indices },
+	albedo{ albedo }, translation{ translation }
 {
 	createMesh();
+	nShapes++; // increments the number of shapes
 }
 
 Shape::Shape(const std::string& name,
 			 const GLfloat* vertices, const GLuint nVertices,
-			 const GLuint* indices, const GLuint nIndices)
-	: Model(name)
+			 const GLuint* indices, const GLuint nIndices,
+			 const glm::vec3 albedo, const glm::vec3 translation)
+	: Model(name), albedo{ albedo }, translation{ translation }
 {
 	std::vector<GLfloat> vertexData{ vertices, vertices + nVertices * 8 };
 	std::vector<GLuint> indexData{ indices, indices + nIndices };
@@ -37,13 +50,15 @@ Shape::Shape(const std::string& name,
 	this->indices = indexData;
 
 	createMesh();
+	nShapes++; // increments the number of shapes
 }
 
 Shape::Shape(const std::string& name,
 			 const GLfloat* positions, const GLfloat* normals,
 			 const GLfloat* texCoords, const GLuint nVertices,
-			 const GLuint* indices, const GLuint nIndices)
-	: Model(name)
+			 const GLuint* indices, const GLuint nIndices,
+			 const glm::vec3 albedo, const glm::vec3 translation)
+	: Model(name), albedo{ albedo }, translation{ translation }
 {
 	std::vector<GLfloat> positionData{ positions, positions + nVertices * 3 };
 	std::vector<GLfloat> normalData{ normals, normals + nVertices * 3 };
@@ -53,6 +68,7 @@ Shape::Shape(const std::string& name,
 	this->indices = indexData;
 
 	createMesh();
+	nShapes++; // increments the number of shapes
 }
 
 // Public Methods
