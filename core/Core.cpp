@@ -8,6 +8,7 @@
 
 #include <iostream>
 #include <memory> // for smart pointers
+#include <algorithm> // for std::for_each
 
 #include "Core.h"
 
@@ -37,6 +38,7 @@ Core::~Core()
 	// Delete the renderer
 	// -------------------
 	delete m_renderer;
+	m_renderer = nullptr;
 }
 
 // Static Instance initialization
@@ -50,6 +52,12 @@ Core* Core::GetInstance()
 	if (!m_instance)
 		m_instance = new Core();
 	return m_instance;
+}
+
+void Core::DestroyInstance()
+{
+	delete m_instance;
+	m_instance = nullptr;
 }
 
 // Public Methods
@@ -136,20 +144,21 @@ void Core::LoadTextures(const std::vector<std::string>& textureNames,
 
 void Core::MainLoop()
 {
-	// Get local pointers to all the assets needed for rendering,
-	// set the main camera, and output the assets to the console
-	// ----------------------------------------------------------
+	// Get raw pointers to the shader and light objects through dynamic casting.
+	// This is done because accessing objects via dynamic casting does not transfer ownership of the objects. 
+	// Hence, these objects don't need to be manually deallocated, as the unique_ptrs in the m_assets map still 
+	// own them and will deallocate them when the Core object is destroyed.
+	// In short, these raw pointers are just temporary references to the objects managed by unique_ptrs.
+	// -------------------------------------------------------------------------------------------------
 	auto shader = dynamic_cast<Shader*>(m_assets["SHADER"].front().get());
 	auto light = dynamic_cast<PointLight*>(m_assets["LIGHT"].front().get());
-	// get a vector of pointers to all Shape objects
-	std::vector<Shape*> shapes;
-	for (const auto& asset : m_assets["MODEL"])
-		shapes.emplace_back(dynamic_cast<Shape*>(asset.get()));
 
-	// set the main camera
+	// Set the main camera
+	// -------------------
 	m_camera = std::make_unique<Camera>(*dynamic_cast<Camera*>(m_assets["CAMERA"].front().get()));
 
-	// output the assets to the console
+	// Output the initially loaded assets to the console
+	// --------------------------------------------------
 	std::cout << "Assets loaded:" << std::endl;
 	for (const auto& assetType : m_assets)
 	{
@@ -217,20 +226,26 @@ void Core::MainLoop()
 		shader->SetMat4("projection", projection);
 		shader->SetMat4("view", view);
 
-		// render the shapes
-		GLuint nShapes = Shape::GetNShapes();
-		for (GLuint i{}; i < nShapes; i++)
+		// render the shapes using an algorithm to iterate over the vector of assets of type "MODEL":
+		// render each shape, dynamically casting the Asset to a Shape object first,
+		// then setting the shape's color and position based on the GUI input,
+		// before finally rendering the shape
+		std::for_each(m_assets["MODEL"].begin(), m_assets["MODEL"].end(),
+					  [&](const std::unique_ptr<Asset>& asset)
 		{
+			auto shape = dynamic_cast<Shape*>(asset.get());
+
 			// set the shape's color based on the GUI input
-			shader->SetVec3("material.albedo", shapes[i]->GetAlbedo());
+			shader->SetVec3("material.albedo", shape->GetAlbedo());
 
 			// set the shape's position based on the GUI input
 			glm::mat4 model{ 1.0f };
-			model = glm::translate(model, shapes[i]->GetPosition());
+			model = glm::translate(model, shape->GetPosition());
 			shader->SetMat4("model", model);
 
-			shapes[i]->Draw(*shader);
-		}
+			// render the shape
+			shape->Draw(*shader);
+		});
 
 		// render the GUI
 		m_renderer->RenderGUI();
@@ -280,6 +295,19 @@ const std::vector<std::unique_ptr<Asset>>& Core::GetAssets(const std::string& as
 
 	// return an empty vector if the asset type is not found
 	static const std::vector<std::unique_ptr<Asset>> empty;
+	return empty;
+}
+
+const std::unique_ptr<Asset>& Core::GetAssetByIndex(const std::string& assetType, GLuint index) const
+{
+	// find the asset type in the map
+	auto it = m_assets.find(assetType);
+
+	if (it != m_assets.end()) // ensure at least one asset of the type exists
+		return it->second[index]; // return the asset of the specified type at the specified index
+
+	// return an empty unique_ptr if the asset type is not found
+	static const std::unique_ptr<Asset> empty;
 	return empty;
 }
 

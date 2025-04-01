@@ -80,6 +80,9 @@ public:
 	// Returns the instance of the Core class (Singleton)
 	static Core* GetInstance();
 
+	// Destroys the instance of the Core class (Singleton)
+	static void DestroyInstance();
+
 	// Public Methods
 	// --------------
 	// Getters
@@ -97,6 +100,8 @@ public:
 	const GLuint GetNShapes() const { return Shape::GetNShapes(); }
 	// get all the assets of a specific type
 	const std::vector<std::unique_ptr<Asset>>& GetAssets(const std::string& assetType) const;
+	// get an asset of a specific type by index
+	const std::unique_ptr<Asset>& GetAssetByIndex(const std::string& assetType, GLuint index) const;
 	// get the camera control flag
 	const GLboolean& GetCameraControlEnabled() const { return m_cameraControlEnabled; }
 

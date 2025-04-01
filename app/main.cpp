@@ -40,5 +40,8 @@ int main(int argc, char** argv)
 	// run the main loop of the engine
 	engine->MainLoop();
 
+	// destroy the engine instance
+	Core::DestroyInstance();
+
 	return 0;
 }
