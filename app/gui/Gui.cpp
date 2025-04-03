@@ -20,9 +20,7 @@ GUI::GUI()
 // ----------
 GUI::~GUI()
 {
-	ImGui_ImplOpenGL3_Shutdown();
-	ImGui_ImplGlfw_Shutdown();
-	ImGui::DestroyContext();
+
 }
 
 // Public Methods
@@ -205,7 +203,7 @@ void GUI::Render()
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
 
-void GUI::Cleanup() const
+void GUI::Shutdown() const
 {
 	ImGui_ImplOpenGL3_Shutdown();
 	ImGui_ImplGlfw_Shutdown();

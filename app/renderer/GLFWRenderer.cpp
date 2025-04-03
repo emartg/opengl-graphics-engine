@@ -10,11 +10,11 @@ GLFWRenderer::GLFWRenderer() : window{ nullptr }, gui{ nullptr } {}
 
 GLFWRenderer::~GLFWRenderer()
 {
-	if (gui)
-		delete gui;
-
 	if (window)
+	{
 		glfwDestroyWindow(window);
+		window = nullptr;
+	}
 	glfwTerminate();
 }
 
@@ -100,7 +100,16 @@ void GLFWRenderer::SetupGUI() { gui->Setup(); }
 
 void GLFWRenderer::RenderGUI() { gui->Render(); }
 
-void GLFWRenderer::CleanupGUI() { gui->Cleanup(); }
+void GLFWRenderer::ShutdownGUI()
+{
+	if (gui)
+	{
+		std::cout << "Shutting down GUI..." << std::endl;
+		gui->Shutdown();
+		delete gui;
+		gui = nullptr;
+	}
+}
 
 void GLFWRenderer::framebufferSizeCallback(GLFWwindow* window, int width, int height)
 {

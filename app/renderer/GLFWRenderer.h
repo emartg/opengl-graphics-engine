@@ -51,7 +51,7 @@ public:
 	void InitGUI() override;
 	void SetupGUI() override;
 	void RenderGUI() override;
-	void CleanupGUI() override;
+	void ShutdownGUI() override;
 
 private:
 	// Private Attributes

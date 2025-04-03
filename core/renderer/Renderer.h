@@ -41,6 +41,6 @@ public:
 	virtual void InitGUI() {};
 	virtual void SetupGUI() {};
 	virtual void RenderGUI() {};
-	virtual void CleanupGUI() {};
+	virtual void ShutdownGUI() {};
 
 };

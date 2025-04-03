@@ -40,7 +40,7 @@ public:
 	// Renders the GUI
 	void Render();
 	// Cleans up the GUI
-	void Cleanup() const;
+	void Shutdown() const;
 
 private:
 	// Private Attributes

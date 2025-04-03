@@ -41,7 +41,7 @@ int main(int argc, char** argv)
 	engine->MainLoop();
 
 	// destroy the engine instance
-	Core::DestroyInstance();
+	engine->DestroyInstance();
 
 	return 0;
 }

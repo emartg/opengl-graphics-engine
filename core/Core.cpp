@@ -25,20 +25,13 @@ Core::Core()
 // ----------
 Core::~Core()
 {
-	// Cleanup the GUI
-	// ---------------
-	m_renderer->CleanupGUI();
+	std::cout << "Core destructor called" << std::endl;
 
 	// Deallocate all of the engine's resources
 	// ----------------------------------------
 	for (auto& assetType : m_assets)
 		for (auto& asset : assetType.second)
 			asset->DeallocateResources();
-
-	// Delete the renderer
-	// -------------------
-	delete m_renderer;
-	m_renderer = nullptr;
 }
 
 // Static Instance initialization
@@ -50,14 +43,33 @@ Core* Core::m_instance = nullptr;
 Core* Core::GetInstance()
 {
 	if (!m_instance)
+	{
+		std::cout << "Creating Core instance..." << std::endl;
 		m_instance = new Core();
+	}
 	return m_instance;
 }
 
 void Core::DestroyInstance()
 {
-	delete m_instance;
-	m_instance = nullptr;
+	if (m_instance)
+	{
+		if (m_instance->m_renderer)
+		{
+			m_instance->m_renderer->ShutdownGUI(); // the GUI must be shut down before the renderer
+			std::cout << "Destroying renderer..." << std::endl;
+			delete m_instance->m_renderer; // destroy the renderer before the Core instance
+			m_instance->m_renderer = nullptr;
+		}
+		else
+		{
+			std::cerr << "Renderer is null during Core destruction!" << std::endl;
+		}
+
+		std::cout << "Destroying Core instance..." << std::endl;
+		delete m_instance; // destroy the Core instance
+		m_instance = nullptr;
+	}
 }
 
 // Public Methods
