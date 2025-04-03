@@ -19,9 +19,7 @@ GUI::GUI()
 // Destructor
 // ----------
 GUI::~GUI()
-{
-
-}
+{}
 
 // Public Methods
 // --------------
@@ -85,9 +83,11 @@ void GUI::Setup()
 			// display the name of the point light
 			ImGui::Text("Point Light %d: %s", i, pointLight->GetName().c_str());
 			// display the color of the point light
-			ImGui::Text("Color: (%.2f, %.2f, %.2f)", pointLight->GetDiffuse().x, pointLight->GetDiffuse().y, pointLight->GetDiffuse().z);
+			ImGui::Text("Color: (%.2f, %.2f, %.2f)",
+						pointLight->GetDiffuse().x, pointLight->GetDiffuse().y, pointLight->GetDiffuse().z);
 			// display the position of the point light
-			ImGui::Text("Position: (%.2f, %.2f, %.2f)", pointLight->GetPosition().x, pointLight->GetPosition().y, pointLight->GetPosition().z);
+			ImGui::Text("Position: (%.2f, %.2f, %.2f)",
+						pointLight->GetPosition().x, pointLight->GetPosition().y, pointLight->GetPosition().z);
 		}
 
 		ImGui::Separator();
@@ -110,17 +110,21 @@ void GUI::Setup()
 			// display the name of the shape
 			ImGui::Text("Shape %d: %s", i, shape->GetName().c_str());
 			// display the color of the shape
-			ImGui::Text("Color: (%.2f, %.2f, %.2f)", shape->GetAlbedo().x, shape->GetAlbedo().y, shape->GetAlbedo().z);
+			ImGui::Text("Color: (%.2f, %.2f, %.2f)",
+						shape->GetAlbedo().x, shape->GetAlbedo().y, shape->GetAlbedo().z);
 			// display the position of the shape
-			ImGui::Text("Position: (%.2f, %.2f, %.2f)", shape->GetPosition().x, shape->GetPosition().y, shape->GetPosition().z);
+			ImGui::Text("Position: (%.2f, %.2f, %.2f)",
+						shape->GetPosition().x, shape->GetPosition().y, shape->GetPosition().z);
 		}
 
 		// button to add a new shape to the scene
 		if (ImGui::Button("Add Shape"))
 		{
-			// create a new shape with a name "Shape nShapes" (where nShapes is the current number of shapes in the scene)
+			// create a new shape with a name "Shape nShapes" 
+			// (where nShapes is the current number of shapes in the scene)
 			std::string newShapeName = "Shape " + std::to_string(nShapes);
-			auto newShape = std::make_unique<Shape>(newShapeName, verticesVec, indicesVec, glm::vec3(0.5f), glm::vec3(0.0f));
+			auto newShape = std::make_unique<Shape>(newShapeName, verticesVec, indicesVec,
+													glm::vec3(0.5f), glm::vec3(0.0f));
 
 			// use the current time as seed for the random number generator 
 			// (to get different positions and colors each run)

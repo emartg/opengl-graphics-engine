@@ -29,7 +29,8 @@ public:
 	// Constructor that reads and builds the shader with a vertex and fragment shader
 	Shader(const std::string& name,
 		   const GLchar* vertexPath, const GLchar* fragmentPath);
-	// Constructor that reads and builds the shader with a geometry shader in addition to the vertex and fragment shaders
+	// Constructor that reads and builds the shader with a geometry shader 
+	// in addition to the vertex and fragment shaders
 	Shader(const std::string& name,
 		   const GLchar* vertexPath, const GLchar* geometryPath, const GLchar* fragmentPath);
 

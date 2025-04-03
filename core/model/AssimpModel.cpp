@@ -92,10 +92,14 @@ Mesh AssimpModel::processMesh(aiMesh* mesh, const aiScene* scene)
 	{
 		aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
 		// load diffuse maps and add them to the textures vector
-		std::vector<Texture> diffuseMaps = loadMaterialTextures(material, aiTextureType_DIFFUSE, TextureType::DIFFUSE);
+		std::vector<Texture> diffuseMaps = loadMaterialTextures(
+			material, aiTextureType_DIFFUSE, TextureType::DIFFUSE
+		);
 		textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end());
 		// load specular maps and add them to the textures vector
-		std::vector<Texture> specularMaps = loadMaterialTextures(material, aiTextureType_SPECULAR, TextureType::SPECULAR);
+		std::vector<Texture> specularMaps = loadMaterialTextures(
+			material, aiTextureType_SPECULAR, TextureType::SPECULAR
+		);
 		textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
 	}
 
@@ -127,7 +131,8 @@ std::vector<Texture> AssimpModel::loadMaterialTextures(aiMaterial* mat, aiTextur
 			std::string textureName{ "texture" + std::to_string(i) };
 			Texture texture{ textureName, str.C_Str(), textureType };
 			textures.push_back(texture);
-			loadedTextures.push_back(texture); // to ensure we won't load the same texture again, store it in the loaded textures
+			// to ensure we won't load the same texture again, store it in the loaded textures
+			loadedTextures.push_back(texture);
 		}
 	}
 	return textures;

@@ -68,7 +68,8 @@ public:
 	// Expects the offset values in both the x and y directions, the sensitivity of the mouse movement, 
 	// and whether the user wants to constrain the pitch. 
 	// This method is intended to be used for camera rotation
-	void ProcessMouseRotation(GLfloat xoffset, GLfloat yoffset, GLfloat sensitivity = 0.1f, GLboolean constrainPitch = true);
+	void ProcessMouseRotation(GLfloat xoffset, GLfloat yoffset, GLfloat sensitivity = 0.1f,
+							  GLboolean constrainPitch = true);
 	// Processes input received from a mouse scroll-wheel event.
 	// Expects the offset value in the y direction and the sensitivity of the scroll
 	void ProcessMouseScroll(GLfloat yoffset, GLfloat sensitivity = 1.0f);

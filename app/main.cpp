@@ -28,7 +28,8 @@ int main(int argc, char** argv)
 	engine->AddAsset(std::move(light));
 
 	// create a blue shape named "Shape n" and add it to the engine (where n is the number of shapes in the scene)
-	auto shape = std::make_unique<Shape>("Shape " + std::to_string(engine->GetNShapes()), verticesVec, indicesVec, glm::vec3{ 0.0f, 0.0f, 0.5f });
+	auto shape = std::make_unique<Shape>("Shape " + std::to_string(engine->GetNShapes()),
+										 verticesVec, indicesVec, glm::vec3{ 0.0f, 0.0f, 0.5f });
 	engine->AddAsset(std::move(shape));
 
 	// define shader names and paths and compile the shaders
