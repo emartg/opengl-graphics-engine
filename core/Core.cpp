@@ -156,45 +156,29 @@ void Core::LoadTextures(const std::vector<std::string>& textureNames,
 
 void Core::MainLoop()
 {
-	// Get raw pointers to the shader and light objects through dynamic casting.
-	// This is done because accessing objects via dynamic casting does not transfer ownership of the objects. 
-	// Hence, these objects don't need to be manually deallocated, as the unique_ptrs in the m_assets map still 
-	// own them and will deallocate them when the Core object is destroyed.
-	// In short, these raw pointers are just temporary references to the objects managed by unique_ptrs.
-	// -------------------------------------------------------------------------------------------------
-	auto shader = dynamic_cast<Shader*>(m_assets["SHADER"].front().get());
+	// Get raw pointers to the shader and light objects through dynamic casting
+	// ------------------------------------------------------------------------
+	auto shaders = std::vector<Shader*>();
+	for (const auto& asset : m_assets["SHADER"])
+		shaders.push_back(dynamic_cast<Shader*>(asset.get()));
 	auto light = dynamic_cast<PointLight*>(m_assets["LIGHT"].front().get());
 
 	// Set the main camera
 	// -------------------
 	m_camera = std::make_unique<Camera>(*dynamic_cast<Camera*>(m_assets["CAMERA"].front().get()));
 
-	// Output the initially loaded assets to the console
-	// --------------------------------------------------
-	std::cout << "Assets loaded:" << std::endl;
-	for (const auto& assetType : m_assets)
-	{
-		std::cout << "Asset type: " << assetType.first << std::endl;
-		for (const auto& asset : assetType.second)
-			std::cout << "Asset name: " << asset->GetName() << std::endl;
-	}
-
 	// Shader configuration
 	// --------------------
-	shader->Use();
-
-	// vertex shader constant uniforms
-	shader->SetVec3("lightPos", light->GetPosition());
-
+	// cube shader configuration
+	shaders[0]->Use();
 	// fragment shader constant uniforms
-	shader->SetVec3("light.ambient", light->GetAmbient());
-	shader->SetVec3("light.diffuse", light->GetDiffuse());
-	shader->SetVec3("light.specular", light->GetSpecular());
-	shader->SetFloat("light.constant", light->GetConstant());
-	shader->SetFloat("light.linear", light->GetLinear());
-	shader->SetFloat("light.quadratic", light->GetQuadratic());
-
-	shader->SetFloat("material.shininess", 32.0f);
+	shaders[0]->SetVec3("light.ambient", light->GetAmbient());
+	shaders[0]->SetVec3("light.diffuse", light->GetDiffuse());
+	shaders[0]->SetVec3("light.specular", light->GetSpecular());
+	shaders[0]->SetFloat("light.constant", light->GetConstant());
+	shaders[0]->SetFloat("light.linear", light->GetLinear());
+	shaders[0]->SetFloat("light.quadratic", light->GetQuadratic());
+	shaders[0]->SetFloat("material.shininess", 32.0f);
 
 	// Render loop
 	// -----------
@@ -223,40 +207,86 @@ void Core::MainLoop()
 		m_renderer->SetClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 		m_renderer->ClearBuffers();
 
-		// activate shader
-		shader->Use();
-
-		// change the postion of the light source based on the GUI input
-		glm::vec3 lightPos = light->GetPosition();
-		shader->SetVec3("lightPos", lightPos);
+		// activate cube shader program
+		shaders[0]->Use();
 
 		// view/projection transformations
 		glm::mat4 projection = glm::perspective(glm::radians(m_camera->GetZoom()),
 												static_cast<GLfloat>(SCR_WIDTH) / static_cast<GLfloat>(SCR_HEIGHT),
 												0.1f, 100.0f);
 		glm::mat4 view = m_camera->GetViewMatrix();
-		shader->SetMat4("projection", projection);
-		shader->SetMat4("view", view);
+		shaders[0]->SetMat4("projection", projection);
+		shaders[0]->SetMat4("view", view);
 
-		// render the shapes using an algorithm to iterate over the vector of assets of type "MODEL":
-		// render each shape, dynamically casting the Asset to a Shape object first,
-		// then setting the shape's color and position based on the GUI input,
-		// before finally rendering the shape
+		// for lighting calculations, set the position of the light source based on the GUI input
+		glm::vec3 lightPos = light->GetPosition();
+		shaders[0]->SetVec3("lightPos", lightPos);
+
+		// activate point Light shader program
+		shaders[1]->Use();
+
+		// view/projection transformations
+		shaders[1]->SetMat4("projection", projection);
+		shaders[1]->SetMat4("view", view);
+
+		// render the shapes using an algorithm to iterate over the vector of assets of type "MODEL"
 		std::for_each(m_assets["MODEL"].begin(), m_assets["MODEL"].end(),
 					  [&](const std::unique_ptr<Asset>& asset)
 		{
+			// dynamically cast the asset to a Shape object
 			auto shape = dynamic_cast<Shape*>(asset.get());
 
-			// set the shape's color based on the GUI input
-			shader->SetVec3("material.albedo", shape->GetAlbedo());
+			GLuint shaderIdx = 0; // default shader index for cube shader program
 
-			// set the shape's position based on the GUI input
-			glm::mat4 model{ 1.0f };
-			model = glm::translate(model, shape->GetPosition());
-			shader->SetMat4("model", model);
+			if (shape->GetName().find("Cube") != std::string::npos) // if the shape is a Cube
+			{
+				shaderIdx = 0; // set the shader index to 0 for cube shader program
 
-			// render the shape
-			shape->Draw(*shader);
+				// activate the shader program for cubes
+				shaders[shaderIdx]->Use();
+
+				// set the color of the cube's shape based on the GUI input
+				shaders[shaderIdx]->SetVec3("material.albedo", shape->GetAlbedo());
+
+				// set the position of the cube's shape based on the GUI input
+				glm::mat4 model{ 1.0f };
+				model = glm::translate(model, shape->GetPosition());
+				shaders[shaderIdx]->SetMat4("model", model);
+
+				// set the components of the light source based on the GUI input
+				shaders[shaderIdx]->SetVec3("light.ambient", light->GetAmbient());
+				shaders[shaderIdx]->SetVec3("light.diffuse", light->GetDiffuse());
+				shaders[shaderIdx]->SetVec3("light.specular", light->GetSpecular());
+			}
+			else if (shape->GetName().find("Point Light") != std::string::npos) // if the shape is a Point Light
+			{
+				shaderIdx = 1; // set the shader index to 1 for point light shader program
+
+				// activate the shader program for point lights
+				shaders[shaderIdx]->Use();
+
+				// set the color of the light's shape based on the GUI input
+				shaders[shaderIdx]->SetVec3("albedo", shape->GetAlbedo());
+
+				// set the postion of the light's shape based on the GUI input
+				glm::mat4 model{ 1.0f };
+				model = glm::translate(model, shape->GetPosition());
+				model = glm::scale(model, glm::vec3(0.2f)); // scale the shape to make it smaller
+				shaders[shaderIdx]->SetMat4("model", model);
+			}
+			else
+			{
+				std::cerr << "Unknown shape type: " << shape->GetName() << std::endl;
+				return;
+			}
+
+			// render the shape (if the shape is a Point Light, draw in wireframe mode)
+			if (shape->GetName().find("Point Light") != std::string::npos)
+				glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); // set wireframe mode
+			else
+				glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); // set fill mode
+
+			shape->Draw(*shaders[shaderIdx]);
 		});
 
 		// render the GUI
@@ -295,6 +325,8 @@ void Core::AddAsset(std::unique_ptr<Asset> asset)
 	}
 	// add asset to the corresponding vector in the map
 	m_assets[assetType].emplace_back(std::move(asset));
+	// print the type and name of the asset added to the console
+	std::cout << "Asset added: " << assetType << "\t| " << m_assets[assetType].back()->GetName() << std::endl;
 }
 
 const std::vector<std::unique_ptr<Asset>>& Core::GetAssets(const std::string& assetType) const
@@ -374,7 +406,7 @@ void Core::CursorPosCallback(GLdouble xposIn, GLdouble yposIn, std::string input
 void Core::ScrollCallback(GLdouble xoffset, GLdouble yoffset)
 {
 	if (m_cameraControlEnabled) // only process mouse scrolling if camera control is enabled
-		m_camera->ProcessMouseScroll(yoffset, 2.0f);
+		m_camera->ProcessMouseScroll(yoffset, 2.5f);
 }
 
 // Private Functions

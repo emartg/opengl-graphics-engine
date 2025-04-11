@@ -8,6 +8,7 @@
 
 #include "Gui.h"
 #include "../CUBE.h"
+#include "../DECAHEDRON.h"
 
 // Constructors
 // ------------
@@ -47,10 +48,15 @@ void GUI::Setup()
 	ImGui_ImplGlfw_NewFrame();
 	ImGui::NewFrame();
 
+	// get ImGuiIO object to access the display size later
+	ImGuiIO& io = ImGui::GetIO();
+
 	// set initial window position to the top-left corner (with some padding)
-	ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_FirstUseEver);
-	// set initial window size to 320x300 pixels
-	ImGui::SetNextWindowSize(ImVec2(320, 300), ImGuiCond_FirstUseEver);
+	ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_Appearing);
+	// set initial window size to 320x(DisplaySize.y - 20) pixels (i.e, full height of the window with some padding)
+	ImGui::SetNextWindowSize(ImVec2(320, io.DisplaySize.y - 20), ImGuiCond_Appearing);
+	// set the window to be not collapsed (i.e., not minimized)
+	ImGui::SetNextWindowCollapsed(false, ImGuiCond_Appearing);
 
 	// show a window that displays all the assets in the scene and allows the user to create a new shape
 	{
@@ -107,23 +113,25 @@ void GUI::Setup()
 		{
 			// get the shape object
 			auto shape = dynamic_cast<Shape*>(Core::GetInstance()->GetAssets("MODEL")[i].get());
+
 			// display the name of the shape
-			ImGui::Text("Shape %d: %s", i, shape->GetName().c_str());
+			ImGui::Text("Name: %s", shape->GetName().c_str());
+
 			// display the color of the shape
 			ImGui::Text("Color: (%.2f, %.2f, %.2f)",
 						shape->GetAlbedo().x, shape->GetAlbedo().y, shape->GetAlbedo().z);
+
 			// display the position of the shape
 			ImGui::Text("Position: (%.2f, %.2f, %.2f)",
 						shape->GetPosition().x, shape->GetPosition().y, shape->GetPosition().z);
 		}
 
-		// button to add a new shape to the scene
-		if (ImGui::Button("Add Shape"))
+		// button to add a new cube to the scene
+		if (ImGui::Button("Add Cube"))
 		{
-			// create a new shape with a name "Shape nShapes" 
-			// (where nShapes is the current number of shapes in the scene)
-			std::string newShapeName = "Shape " + std::to_string(nShapes);
-			auto newShape = std::make_unique<Shape>(newShapeName, verticesVec, indicesVec,
+			// create a new cube shape called "Cube (Shape n)", (where n is the current number of shapes in the scene)
+			std::string newShapeName = "Cube (Shape " + std::to_string(nShapes) + ")";
+			auto newShape = std::make_unique<Shape>(newShapeName, cubeVerticesVec, cubeIndicesVec,
 													glm::vec3(0.5f), glm::vec3(0.0f));
 
 			// use the current time as seed for the random number generator 
@@ -144,33 +152,25 @@ void GUI::Setup()
 
 			// add the new shape to the engine
 			Core::GetInstance()->AddAsset(std::move(newShape));
-
-			// output the new asset to the console
-			std::cout << "Asset type: " << "MODEL" << std::endl;
-			std::cout << "Asset name: " << newShapeName << std::endl;
 		}
 
 		ImGui::End();
 	}
 
 	// set initial window position to the top-right corner (with some padding)
-	ImGuiIO& io = ImGui::GetIO();
-	ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x - 390, 10), ImGuiCond_FirstUseEver);
-	// set initial window size to 380x100 pixels
-	ImGui::SetNextWindowSize(ImVec2(380, 100), ImGuiCond_FirstUseEver);
+	ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x - 330, 10), ImGuiCond_Appearing);
+	// set initial window size to 320x(DisplaySize.y - 20) pixels (i.e, full height of the window with some padding)
+	ImGui::SetNextWindowSize(ImVec2(320, io.DisplaySize.y - 20), ImGuiCond_Appearing);
+	// set the window to be not collapsed (i.e., not minimized)
+	ImGui::SetNextWindowCollapsed(false, ImGuiCond_Appearing);
 
-	// show a window that allows the user to change the color of the shapes in the scene and
-	// the position of the light source
+	// show a window that allows the user to change the position and color of the shapes in the scene
+	// (some shapes are light sources' gizmos, and modifying their attributes will result in changes in the lighting)
 	{
 		ImGui::Begin("Scene Settings");
 
-		// get the light object
+		// get the light object (as there is only one light in the scene in this case)
 		auto light = dynamic_cast<PointLight*>(Core::GetInstance()->GetAssets("LIGHT")[0].get());
-		// get the position of the light source
-		glm::vec3 lightPos = light->GetPosition();
-		// create a slider for the x, y, and z components of the light position
-		if (ImGui::SliderFloat3("Light Position", (float*)&lightPos, -5.0, 5.0f))
-			light->SetPosition(lightPos); // set the new position of the light source (only if the slider is moved)
 
 		// get number of shapes in the scene
 		unsigned int nShapes = Core::GetInstance()->GetNShapes();
@@ -179,16 +179,45 @@ void GUI::Setup()
 		{
 			// get the shape object
 			auto shape = dynamic_cast<Shape*>(Core::GetInstance()->GetAssets("MODEL")[i].get());
+
+			// use PushID to create a unique ID for each shape (to avoid conflicts with the GUI)
+			ImGui::PushID(i);
+
+			// display the name of the shape
+			ImGui::Text("%s", shape->GetName().c_str());
+
 			// get the color of the shape
 			glm::vec3 color = shape->GetAlbedo();
 			// create a color picker for the shape's color
-			if (ImGui::ColorEdit3(("Shape " + std::to_string(i)).c_str(), (float*)&color))
+			if (ImGui::ColorEdit3("Color", (float*)&color))
+			{
 				shape->SetAlbedo(color); // set the new color of the shape (only if the color picker is used)
+				// if the shape is a point light, also change the color of the light depending on the shape's color
+				if (shape->GetName().find("Point Light") != std::string::npos)
+				{
+					light->SetAmbient(glm::vec3(0.1f) * color); // set the new ambient color of the light
+					light->SetDiffuse(color); // set the new diffuse color of the light
+					light->SetSpecular(glm::vec3(1.0f) * color); // set the new specular color of the light
+				}
+			}
+
 			// get the position of the shape
 			glm::vec3 pos = shape->GetPosition();
 			// create a slider for the x, y, and z components of the shape's position
-			if (ImGui::SliderFloat3(("Shape " + std::to_string(i) + " Position").c_str(), (float*)&pos, -5.0, 5.0f))
+			if (ImGui::SliderFloat3("Position", (float*)&pos, -5.0, 5.0f))
+			{
 				shape->SetPosition(pos); // set the new position of the shape (only if the slider is moved)
+				// if the shape is a point light, also set the position of the light
+				if (shape->GetName().find("Point Light") != std::string::npos)
+					light->SetPosition(pos); // set the new position of the light
+			}
+
+			// use PopID to end the unique ID scope
+			ImGui::PopID();
+
+			// add a separator between shapes
+			if (i < nShapes - 1)
+				ImGui::Separator();
 		}
 
 		ImGui::End();

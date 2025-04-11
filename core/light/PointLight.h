@@ -58,10 +58,8 @@ private:
 
 	// Static Constants
 	// ----------------
-	static constexpr glm::vec3 POSITION{ 1.2f, 1.0f, 2.0f };
-	static constexpr glm::vec3 AMBIENT{ 0.1f, 0.1f, 0.1f };
-	static constexpr glm::vec3 DIFFUSE{ 0.8f, 0.8f, 0.8f };
-	static constexpr glm::vec3 SPECULAR{ 1.0f, 1.0f, 1.0f };
+	static constexpr glm::vec3 POSITION{ 1.0f, 2.0f, 3.0f };
+	static constexpr glm::vec3 AMBIENT{ 0.1f }, DIFFUSE{ 0.8f }, SPECULAR{ 1.0f };
 	static constexpr GLfloat CONSTANT{ 1.0f }, LINEAR{ 0.09f }, QUADRATIC{ 0.032f };
 
 };

@@ -675,7 +675,7 @@ namespace detail
 			i.y + vec<4, T, Q>(T(0), i1.y, i2.y, T(1))) +
 			i.x + vec<4, T, Q>(T(0), i1.x, i2.x, T(1))));
 
-		// Gradients: 7x7 points over a square, mapped onto an octahedron.
+		// Gradients: 7x7 points over a square, mapped onto an decahedron.
 		// The ring size 17*17 = 289 is close to a multiple of 49 (49*6 = 294)
 		T n_ = static_cast<T>(0.142857142857); // 1.0/7.0
 		vec<3, T, Q> ns(n_ * vec<3, T, Q>(D.w, D.y, D.z) - vec<3, T, Q>(D.x, D.z, D.x));

@@ -80,7 +80,7 @@ void Camera::ProcessMouseRotation(GLfloat xoffset, GLfloat yoffset, GLfloat sens
 void Camera::ProcessMouseScroll(GLfloat yoffset, GLfloat sensitivity)
 {
 	zoom -= yoffset * sensitivity;
-	zoom = std::clamp(zoom, -100.0f, 100.0f);
+	zoom = std::clamp(zoom, -300.0f, 300.0f); // restrict zoom to a certain range
 }
 
 void Camera::ResetCamera()

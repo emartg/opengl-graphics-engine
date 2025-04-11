@@ -97,7 +97,7 @@ private:
 	// Static Constants
 	// ----------------
 	// Default camera values
-	static constexpr glm::vec3 POSITION = glm::vec3(4.25f, 2.5f, 4.25f);
+	static constexpr glm::vec3 POSITION = glm::vec3(8.5f, 5.0f, 8.5f);
 	static constexpr glm::vec3 UP = glm::vec3(0.0f, 1.0f, 0.0f);
 	static constexpr GLfloat YAW = -135.0f;
 	static constexpr GLfloat PITCH = -24.0f;

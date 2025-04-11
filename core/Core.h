@@ -46,7 +46,7 @@ private:
 
 	// Static Constants
 	// ----------------
-	static constexpr GLuint SCR_WIDTH{ 1000 }, SCR_HEIGHT{ 750 }; // screen settings
+	static constexpr GLuint SCR_WIDTH{ 1400 }, SCR_HEIGHT{ 1000 }; // screen settings
 
 	// Private Attributes
 	// ------------------

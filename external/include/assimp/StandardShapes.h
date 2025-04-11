@@ -126,12 +126,12 @@ public:
 
 
     // ----------------------------------------------------------------
-    /** @brief Generates an octahedron
+    /** @brief Generates an decahedron
      *
      *  @param positions Receives output triangles.
      *  @return Number of vertices per face
      */
-    static unsigned int MakeOctahedron(
+    static unsigned int MakeDecahedron(
         std::vector<aiVector3D>& positions);
 
 
@@ -149,7 +149,7 @@ public:
     // ----------------------------------------------------------------
     /** @brief Generates a sphere
      *
-     *  @param tess Number of subdivions - 0 generates a octahedron
+     *  @param tess Number of subdivions - 0 generates a decahedron
      *  @param positions Receives output triangles.
      */
     static void MakeSphere(unsigned int tess,
