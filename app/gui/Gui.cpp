@@ -8,7 +8,6 @@
 
 #include "Gui.h"
 #include "../CUBE.h"
-#include "../DECAHEDRON.h"
 
 // Constructors
 // ------------
@@ -86,8 +85,9 @@ void GUI::Setup()
 		{
 			// get the point light object
 			auto pointLight = dynamic_cast<PointLight*>(Core::GetInstance()->GetAssets("LIGHT")[i].get());
+
 			// display the name of the point light
-			ImGui::Text("Point Light %d: %s", i, pointLight->GetName().c_str());
+			ImGui::Text("Name: %s", pointLight->GetName().c_str());
 			// display the color of the point light
 			ImGui::Text("Color: (%.2f, %.2f, %.2f)",
 						pointLight->GetDiffuse().x, pointLight->GetDiffuse().y, pointLight->GetDiffuse().z);
@@ -116,11 +116,9 @@ void GUI::Setup()
 
 			// display the name of the shape
 			ImGui::Text("Name: %s", shape->GetName().c_str());
-
 			// display the color of the shape
 			ImGui::Text("Color: (%.2f, %.2f, %.2f)",
 						shape->GetAlbedo().x, shape->GetAlbedo().y, shape->GetAlbedo().z);
-
 			// display the position of the shape
 			ImGui::Text("Position: (%.2f, %.2f, %.2f)",
 						shape->GetPosition().x, shape->GetPosition().y, shape->GetPosition().z);
@@ -129,9 +127,11 @@ void GUI::Setup()
 		// button to add a new cube to the scene
 		if (ImGui::Button("Add Cube"))
 		{
-			// create a new cube shape called "Cube (Shape n)", (where n is the current number of shapes in the scene)
-			std::string newShapeName = "Cube (Shape " + std::to_string(nShapes) + ")";
-			auto newShape = std::make_unique<Shape>(newShapeName, cubeVerticesVec, cubeIndicesVec,
+			// get the current number of shapes in the scene
+			std::string nShapes = std::to_string(Core::GetInstance()->GetNShapes());
+			// create a new cube shape called "Cube (Shape n)", where n is the current number of shapes in the scene
+			std::string newShapeName = "Cube (Shape " + nShapes + ")";
+			auto newShape = std::make_shared<Shape>(newShapeName, cubeVerticesVec, cubeIndicesVec,
 													glm::vec3(0.5f), glm::vec3(0.0f));
 
 			// use the current time as seed for the random number generator 

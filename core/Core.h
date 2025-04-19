@@ -55,8 +55,8 @@ private:
 	// engine-specific attributes
 	GLfloat m_lastMouseX, m_lastMouseY, m_firstMouse; // mouse settings
 	GLfloat m_deltaTime, m_lastFrameTime; // time settings
-	std::unordered_map<std::string, std::vector<std::unique_ptr<Asset>>> m_assets; // map of assets
-	std::unique_ptr<Camera> m_camera; // current camera object
+	std::unordered_map<std::string, std::vector<std::shared_ptr<Asset>>> m_assets; // map of assets
+	std::shared_ptr<Camera> m_camera; // current camera object
 
 	// gui-related attributes
 	GLboolean m_cameraControlEnabled; // flag to disable camera control
@@ -89,7 +89,7 @@ public:
 	// get the renderer object
 	const Renderer* GetRenderer() const { return m_renderer; }
 	// get the camera object
-	const std::unique_ptr<Camera>& GetCamera() { return m_camera; }
+	const std::shared_ptr<Camera>& GetCamera() { return m_camera; }
 	// get number of lights in the scene
 	const GLuint GetNLights() const { return Light::GetNLights(); }
 	// get number of point lights in the scene
@@ -99,9 +99,9 @@ public:
 	// get number of shapes in the scene
 	const GLuint GetNShapes() const { return Shape::GetNShapes(); }
 	// get all the assets of a specific type
-	const std::vector<std::unique_ptr<Asset>>& GetAssets(const std::string& assetType) const;
+	const std::vector<std::shared_ptr<Asset>>& GetAssets(const std::string& assetType) const;
 	// get an asset of a specific type by index
-	const std::unique_ptr<Asset>& GetAssetByIndex(const std::string& assetType, GLuint index) const;
+	const std::shared_ptr<Asset>& GetAssetByIndex(const std::string& assetType, GLuint index) const;
 	// get the camera control flag
 	const GLboolean& GetCameraControlEnabled() const { return m_cameraControlEnabled; }
 
@@ -109,7 +109,7 @@ public:
 	// set the renderer object
 	void SetRenderer(Renderer* renderer) { m_renderer = renderer; }
 	// set the camera object
-	void SetCamera(std::unique_ptr<Camera> camera) { m_camera = std::move(camera); }
+	void SetCamera(std::shared_ptr<Camera> camera) { m_camera = std::move(camera); }
 	// set the camera control flag
 	void SetCameraControlEnabled(GLboolean enabled) { m_cameraControlEnabled = enabled; }
 
@@ -131,7 +131,7 @@ public:
 	void MainLoop();
 
 	// Adds an asset to the engine (e.g., a camera, light, model, etc.)
-	void AddAsset(std::unique_ptr<Asset> asset);
+	void AddAsset(std::shared_ptr<Asset> asset);
 
 	// Engine-specific callback functions
 	void FramebufferSizeCallback(GLint width, GLint height);

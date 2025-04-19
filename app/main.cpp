@@ -1,14 +1,13 @@
 /*
 * main.cpp
 * This file is the entry point of the application.
-* It creates a Core object, initializes OpenGL, adds a camera, sets the light source position,
-* and adds models to the engine. It then runs the main loop of the engine that includes input processing.
+* It creates a Core object, initializes OpenGL, adds a camera, a point light (with its gizmo),
+* and a cube shape to the engine, compiles the shaders, and runs the main loop.
 */
 
 #include <memory> // for smart pointers
 
 #include "CUBE.h"
-#include "DECAHEDRON.h"
 #include "../core/Core.h"
 #include "renderer/GLFWRenderer.h"
 
@@ -22,36 +21,36 @@ int main(int argc, char** argv)
 	engine->SetRenderer(renderer);
 	engine->InitOGL();
 
-	// create camera and light and add them to the engine
-	auto camera = std::make_unique<Camera>("Camera 0");
-	engine->AddAsset(std::move(camera));
-	auto light = std::make_unique<PointLight>("Point Light " + std::to_string(engine->GetNPointLights()));
-	std::string lightName = light->GetName(); // get the name of the light to use it when creating its shape
-	glm::vec3 lightPos{ light->GetPosition() }; // get the position of the light to position its corresponding shape
-	glm::vec3 lightDiffuse{ light->GetDiffuse() }; // get the diffuse color of the light to color its corresponding shape
-	engine->AddAsset(std::move(light));
+	// create the main camera
+	auto camera = std::make_shared<Camera>("Main Camera");
+	engine->AddAsset(std::move(camera)); // add the camera to the engine
 
-	// create a shape concatenating its name and "(Shape n)" and add it to the engine 
-	// (where n is the number of shapes in the scene).
-	// In this case, an decahedron is created at the position of the light source using the data from DECAHEDRON.h
-	// and gets its color from the light's diffuse component
-	auto pointLightShape = std::make_unique<Shape>(lightName + " (Shape " + std::to_string(engine->GetNShapes()) + ")",
-												   decahedronVerticesVec, decahedronIndicesVec,
-												   lightDiffuse, // set the shape's color to the light's diffuse color
-												   lightPos // set the shape's position to the light's position
+	// get the number of shapes in the scene (which is 0 at this point, as no shapes have been added yet)
+	// to use it for the name of the point light gizmo before adding the point light to the engine
+	// (since the creation of the point light gizmo - a Shape - is done in the constructor of the PointLight class)
+	std::string nShapes = std::to_string(engine->GetNShapes());
+	// create a point light object with a name "Point Light n", where n is the current number of point lights in the scene
+	auto pointLight = std::make_shared<PointLight>("Point Light " + std::to_string(engine->GetNPointLights()));
+	// get gizmo's shared_ptr from the point light before adding the latter to the engine (as it will be moved)
+	auto pointLightGizmo = pointLight->GetGizmo();
+	engine->AddAsset(std::move(pointLight)); // add the point light to the engine
+	// concatenate the point light gizmo's name and " (Shape n)", where n is the current number of shapes in the scene
+	pointLightGizmo->SetName(pointLightGizmo->GetName() + " (Shape " + nShapes + ")");
+	engine->AddAsset(std::move(pointLightGizmo)); // add the point light gizmo (a decahedron) to the engine
+
+	// update the number of shapes in the scene 
+	// (which should be 1 at this point, as one shape has been added - the gizmo -)
+	nShapes = std::to_string(engine->GetNShapes());
+	// set the cube's name to "Cube (Shape n)", where n is the current number of shapes in the scene
+	std::string cubeName = "Cube (Shape " + nShapes + ")";
+	// create a green cube at (0.0f, 0.0f, 0.0f) - default position - using the data from CUBE.h
+	auto cubeShape = std::make_shared<Shape>(cubeName, cubeVerticesVec, cubeIndicesVec,
+											 glm::vec3{ 0.0f, 0.5f, 0.0f } // clear green color
 	);
-	engine->AddAsset(std::move(pointLightShape));
-
-	// create a shape concatenating its name and "(Shape n)" and add it to the engine 
-	// (where n is the number of shapes in the scene).
-	// In this case, a blue cube is created at a position of (0.0f, 0.0f, 0.5f) using the data from CUBE.h
-	auto cubeShape = std::make_unique<Shape>("Cube (Shape " + std::to_string(engine->GetNShapes()) + ")",
-											 cubeVerticesVec, cubeIndicesVec,
-											 glm::vec3{ 0.0f, 0.0f, 0.5f });
-	engine->AddAsset(std::move(cubeShape));
+	engine->AddAsset(std::move(cubeShape)); // add the cube shape to the engine
 
 	// define shader names and paths and compile the shaders
-	std::vector<std::string> shaderNames{ "Shape Shader Program", "Point Light Shader Program" };
+	std::vector<std::string> shaderNames{ "Cube Shape Shader Program", "Point Light Gizmo Shader Program" };
 	std::vector<std::string> vertexShaderPaths{ "shaders/shape.vert.glsl" , "shaders/point_light.vert.glsl" };
 	std::vector<std::string> fragmentShaderPaths{ "shaders/shape.frag.glsl", "shaders/point_light.frag.glsl" };
 	engine->CompileShaders(shaderNames, vertexShaderPaths, fragmentShaderPaths);

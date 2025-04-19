@@ -1,6 +1,6 @@
 /*
 * PointLight.h
-* This file defines the PointLight class (a derived clas of Light),
+* This file defines the PointLight class (a derived class of Light),
 * which is used to create a point light source.
 */
 
@@ -11,6 +11,7 @@
 #include <glm/glm.hpp>
 
 #include "Light.h"
+#include "../gizmos/DECAHEDRON.h" // the Point Light gizmo is a decahedron
 
 class PointLight : public Light
 {
@@ -39,6 +40,11 @@ public:
 	void SetConstant(GLfloat constant) { this->constant = constant; }
 	void SetLinear(GLfloat linear) { this->linear = linear; }
 	void SetQuadratic(GLfloat quadratic) { this->quadratic = quadratic; }
+
+	// Create the gizmo for the point light
+	void CreateGizmo() override;
+	// Update the gizmo's properties
+	void UpdateGizmo() override;
 
 	// Static Public Functions
 	// -----------------------

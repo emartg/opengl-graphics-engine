@@ -6,11 +6,16 @@
 
 #pragma once
 
+#include <iostream>
+#include <string>
+#include <memory> // for smart pointers
+
 #include <glad/glad.h> // holds all OpenGL type declarations
 
 #include <glm/glm.hpp>
 
 #include "../Asset.h"
+#include "../model/Shape.h"	// in order for the Light class to be able to have a shape as a gizmo
 
 class Light : public Asset
 {
@@ -36,10 +41,21 @@ public:
 	glm::vec3 GetAmbient() const { return ambient; }
 	glm::vec3 GetDiffuse() const { return diffuse; }
 	glm::vec3 GetSpecular() const { return specular; }
+	std::shared_ptr<Shape>& GetGizmo() { return gizmo; }
+	glm::vec3 GetGizmoPosition() const { return gizmo->GetPosition(); }
+	glm::vec3 GetGizmoColor() const { return gizmo->GetAlbedo(); }
 	// Setters
 	void SetAmbient(glm::vec3 ambient) { this->ambient = ambient; }
 	void SetDiffuse(glm::vec3 diffuse) { this->diffuse = diffuse; }
 	void SetSpecular(glm::vec3 specular) { this->specular = specular; }
+	void SetGizmo(std::shared_ptr<Shape> gizmo) { this->gizmo = gizmo; }
+	void SetGizmoPosition(glm::vec3 position) { gizmo->SetPosition(position); }
+	void SetGizmoColor(glm::vec3 color) { gizmo->SetAlbedo(color); }
+
+	// Create the gizmo for the light
+	virtual void CreateGizmo() = 0;
+	// Update the gizmo's properties
+	virtual void UpdateGizmo() = 0;
 
 	// Static Public Functions
 	// -----------------------
@@ -55,5 +71,7 @@ protected:
 	glm::vec3 ambient;
 	glm::vec3 diffuse;
 	glm::vec3 specular;
+
+	std::shared_ptr<Shape> gizmo; // the shape used to represent the light in the scene
 
 };

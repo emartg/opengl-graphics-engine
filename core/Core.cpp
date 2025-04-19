@@ -121,7 +121,7 @@ void Core::CompileShaders(const std::vector<std::string>& shaderNames,
 {
 	for (GLuint i{}; i < shaderNames.size(); i++)
 	{
-		auto shader = std::make_unique<Shader>(shaderNames[i],
+		auto shader = std::make_shared<Shader>(shaderNames[i],
 											   vertexShaderPaths[i].c_str(),
 											   fragmentShaderPaths[i].c_str());
 		AddAsset(std::move(shader));
@@ -135,7 +135,7 @@ void Core::CompileShaders(const std::vector<std::string>& shaderNames,
 {
 	for (GLuint i{}; i < shaderNames.size(); i++)
 	{
-		auto shader = std::make_unique<Shader>(shaderNames[i],
+		auto shader = std::make_shared<Shader>(shaderNames[i],
 											   vertexShaderPaths[i].c_str(),
 											   geometryShaderPaths[i].c_str(),
 											   fragmentShaderPaths[i].c_str());
@@ -149,7 +149,7 @@ void Core::LoadTextures(const std::vector<std::string>& textureNames,
 {
 	for (GLuint i{}; i < textureNames.size(); i++)
 	{
-		auto texture = std::make_unique<Texture>(textureNames[i], texturePaths[i], TextureType::DIFFUSE);
+		auto texture = std::make_shared<Texture>(textureNames[i], texturePaths[i], TextureType::DIFFUSE);
 		AddAsset(std::move(texture));
 	}
 }
@@ -165,7 +165,7 @@ void Core::MainLoop()
 
 	// Set the main camera
 	// -------------------
-	m_camera = std::make_unique<Camera>(*dynamic_cast<Camera*>(m_assets["CAMERA"].front().get()));
+	m_camera = std::make_shared<Camera>(*dynamic_cast<Camera*>(m_assets["CAMERA"].front().get()));
 
 	// Shader configuration
 	// --------------------
@@ -231,7 +231,7 @@ void Core::MainLoop()
 
 		// render the shapes using an algorithm to iterate over the vector of assets of type "MODEL"
 		std::for_each(m_assets["MODEL"].begin(), m_assets["MODEL"].end(),
-					  [&](const std::unique_ptr<Asset>& asset)
+					  [&](const std::shared_ptr<Asset>& asset)
 		{
 			// dynamically cast the asset to a Shape object
 			auto shape = dynamic_cast<Shape*>(asset.get());
@@ -298,7 +298,7 @@ void Core::MainLoop()
 	}
 }
 
-void Core::AddAsset(std::unique_ptr<Asset> asset)
+void Core::AddAsset(std::shared_ptr<Asset> asset)
 {
 	// get the key for the asset type
 	std::string assetType;
@@ -324,12 +324,12 @@ void Core::AddAsset(std::unique_ptr<Asset> asset)
 			return;
 	}
 	// add asset to the corresponding vector in the map
-	m_assets[assetType].emplace_back(std::move(asset));
+	m_assets[assetType].emplace_back(asset);
 	// print the type and name of the asset added to the console
 	std::cout << "Asset added: " << assetType << "\t| " << m_assets[assetType].back()->GetName() << std::endl;
 }
 
-const std::vector<std::unique_ptr<Asset>>& Core::GetAssets(const std::string& assetType) const
+const std::vector<std::shared_ptr<Asset>>& Core::GetAssets(const std::string& assetType) const
 {
 	// find the asset type in the map
 	auto it = m_assets.find(assetType);
@@ -338,11 +338,11 @@ const std::vector<std::unique_ptr<Asset>>& Core::GetAssets(const std::string& as
 		return it->second; // return the vector of assets of the specified type
 
 	// return an empty vector if the asset type is not found
-	static const std::vector<std::unique_ptr<Asset>> empty;
+	static const std::vector<std::shared_ptr<Asset>> empty;
 	return empty;
 }
 
-const std::unique_ptr<Asset>& Core::GetAssetByIndex(const std::string& assetType, GLuint index) const
+const std::shared_ptr<Asset>& Core::GetAssetByIndex(const std::string& assetType, GLuint index) const
 {
 	// find the asset type in the map
 	auto it = m_assets.find(assetType);
@@ -350,8 +350,8 @@ const std::unique_ptr<Asset>& Core::GetAssetByIndex(const std::string& assetType
 	if (it != m_assets.end()) // ensure at least one asset of the type exists
 		return it->second[index]; // return the asset of the specified type at the specified index
 
-	// return an empty unique_ptr if the asset type is not found
-	static const std::unique_ptr<Asset> empty;
+	// return an empty shared_ptr if the asset type is not found
+	static const std::shared_ptr<Asset> empty;
 	return empty;
 }
 

@@ -1,6 +1,6 @@
 /*
 * PointLight.cpp
-* This file implements the PointLight class (a derived clas of Light),
+* This file implements the PointLight class (a derived class of Light),
 * which is used to create a point light source.
 */
 
@@ -20,5 +20,26 @@ PointLight::PointLight(const std::string& name,
 	position{ position },
 	constant{ constant }, linear{ linear }, quadratic{ quadratic }
 {
-	nPointLights++; // increments the number of point lights
+	CreateGizmo(); // create the gizmo for the point light
+	nPointLights++; // increment the number of point lights
+}
+
+// Public Methods  
+// --------------  
+void PointLight::CreateGizmo()
+{
+	// create a decahedron shape for the point light gizmo  
+	gizmo = std::make_shared<Shape>(name + " Gizmo",
+									decahedronVerticesVec, decahedronIndicesVec,
+									diffuse, // set the color of the gizmo to the light's diffuse color   
+									position); // set the position of the gizmo to the light's position  
+}
+
+void PointLight::UpdateGizmo()
+{
+	if (gizmo)
+	{
+		gizmo->SetPosition(position); // set the position of the gizmo to the current light's position  
+		gizmo->SetAlbedo(diffuse); // set the color of the gizmo to the current light's diffuse color  
+	}
 }
