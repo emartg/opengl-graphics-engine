@@ -172,12 +172,6 @@ void Core::MainLoop()
 	// cube shader configuration
 	shaders[0]->Use();
 	// fragment shader constant uniforms
-	shaders[0]->SetVec3("light.ambient", light->GetAmbient());
-	shaders[0]->SetVec3("light.diffuse", light->GetDiffuse());
-	shaders[0]->SetVec3("light.specular", light->GetSpecular());
-	shaders[0]->SetFloat("light.constant", light->GetConstant());
-	shaders[0]->SetFloat("light.linear", light->GetLinear());
-	shaders[0]->SetFloat("light.quadratic", light->GetQuadratic());
 	shaders[0]->SetFloat("material.shininess", 32.0f);
 
 	// Render loop
@@ -218,9 +212,30 @@ void Core::MainLoop()
 		shaders[0]->SetMat4("projection", projection);
 		shaders[0]->SetMat4("view", view);
 
-		// for lighting calculations, set the position of the light source based on the GUI input
-		glm::vec3 lightPos = light->GetPosition();
-		shaders[0]->SetVec3("lightPos", lightPos);
+		// set the properties of the point lights iterating over the vector of assets of type "LIGHT"
+		GLuint pointLightIdx{}; // indicates the point light whose properties are to be set
+		std::for_each(m_assets["LIGHT"].begin(), m_assets["LIGHT"].end(),
+					  [&](const std::shared_ptr<Asset>& asset)
+		{
+			auto light = dynamic_cast<PointLight*>(asset.get());
+
+			// vertex shader uniforms
+			shaders[0]->SetVec3("pointLightPos[" + std::to_string(pointLightIdx) + "]", light->GetPosition());
+
+			// fragment shader uniforms
+			std::string prefix = "pointLights[" + std::to_string(pointLightIdx) + "].";
+			shaders[0]->SetVec3(prefix + "ambient", light->GetAmbient());
+			shaders[0]->SetVec3(prefix + "diffuse", light->GetDiffuse());
+			shaders[0]->SetVec3(prefix + "specular", light->GetSpecular());
+			shaders[0]->SetFloat(prefix + "constant", light->GetConstant());
+			shaders[0]->SetFloat(prefix + "linear", light->GetLinear());
+			shaders[0]->SetFloat(prefix + "quadratic", light->GetQuadratic());
+
+			pointLightIdx++; // increment the point light index for the next iteration
+		});
+
+		// set the current number of point lights
+		shaders[0]->SetInt("nPointLights", static_cast<GLint>(pointLightIdx));
 
 		// activate point Light shader program
 		shaders[1]->Use();
@@ -229,7 +244,7 @@ void Core::MainLoop()
 		shaders[1]->SetMat4("projection", projection);
 		shaders[1]->SetMat4("view", view);
 
-		// render the shapes using an algorithm to iterate over the vector of assets of type "MODEL"
+		// render the shapes using an algorithm to iterating over the vector of assets of type "MODEL"
 		std::for_each(m_assets["MODEL"].begin(), m_assets["MODEL"].end(),
 					  [&](const std::shared_ptr<Asset>& asset)
 		{
@@ -252,11 +267,6 @@ void Core::MainLoop()
 				glm::mat4 model{ 1.0f };
 				model = glm::translate(model, shape->GetPosition());
 				shaders[shaderIdx]->SetMat4("model", model);
-
-				// set the components of the light source based on the GUI input
-				shaders[shaderIdx]->SetVec3("light.ambient", light->GetAmbient());
-				shaders[shaderIdx]->SetVec3("light.diffuse", light->GetDiffuse());
-				shaders[shaderIdx]->SetVec3("light.specular", light->GetSpecular());
 			}
 			else if (shape->GetName().find("Point Light") != std::string::npos) // if the shape is a Point Light
 			{

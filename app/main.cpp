@@ -30,22 +30,42 @@ int main(int argc, char** argv)
 	// (since the creation of the point light gizmo - a Shape - is done in the constructor of the PointLight class)
 	std::string nShapes = std::to_string(engine->GetNShapes());
 	// create a point light object with a name "Point Light n", where n is the current number of point lights in the scene
-	auto pointLight = std::make_shared<PointLight>("Point Light " + std::to_string(engine->GetNPointLights()));
+	auto pointLight1 = std::make_shared<PointLight>("Point Light " + std::to_string(engine->GetNPointLights()),
+													glm::vec3{ 0.1f }, // ambient color (default)
+													glm::vec3{ 0.5f, 0.5f, 0.9f }, // diffuse color (bright blue)
+													glm::vec3{ 1.0f }, // specular color (default)
+													glm::vec3{ 1.8f, 1.8f, 4.5f } // position
+	);
 	// get gizmo's shared_ptr from the point light before adding the latter to the engine (as it will be moved)
-	auto pointLightGizmo = pointLight->GetGizmo();
-	engine->AddAsset(std::move(pointLight)); // add the point light to the engine
+	auto pointLightGizmo1 = pointLight1->GetGizmo();
+	engine->AddAsset(std::move(pointLight1)); // add the point light to the engine
 	// concatenate the point light gizmo's name and " (Shape n)", where n is the current number of shapes in the scene
-	pointLightGizmo->SetName(pointLightGizmo->GetName() + " (Shape " + nShapes + ")");
-	engine->AddAsset(std::move(pointLightGizmo)); // add the point light gizmo (a decahedron) to the engine
+	pointLightGizmo1->SetName(pointLightGizmo1->GetName() + " (Shape " + nShapes + ")");
+	engine->AddAsset(std::move(pointLightGizmo1)); // add the point light gizmo (a decahedron) to the engine
 
 	// update the number of shapes in the scene 
-	// (which should be 1 at this point, as one shape has been added - the gizmo -)
+	// (which should be 1 at this point, as one shape has been added - the first light gizmo -)
+	nShapes = std::to_string(engine->GetNShapes());
+	// create another point light, at a different position and with a different color (full constructor)
+	auto pointLight2 = std::make_shared<PointLight>("Point Light " + std::to_string(engine->GetNPointLights()),
+													glm::vec3{ 0.1f }, // ambient color (default)
+													glm::vec3{ 0.9f, 0.5f, 0.5f }, // diffuse color (bright red)
+													glm::vec3{ 1.0f }, // specular color (default)
+													glm::vec3{ 4.0f, 3.0f, 2.0f } // position
+	);
+	auto pointLightGizmo2 = pointLight2->GetGizmo();
+	engine->AddAsset(std::move(pointLight2));
+	pointLightGizmo2->SetName(pointLightGizmo2->GetName() + " (Shape " + nShapes + ")");
+	engine->AddAsset(std::move(pointLightGizmo2));
+
+	// update the number of shapes in the scene 
+	// (which should be 2 at this point, as two shapes have been added - the lights' gizmos -)
 	nShapes = std::to_string(engine->GetNShapes());
 	// set the cube's name to "Cube (Shape n)", where n is the current number of shapes in the scene
 	std::string cubeName = "Cube (Shape " + nShapes + ")";
 	// create a green cube at (0.0f, 0.0f, 0.0f) - default position - using the data from CUBE.h
 	auto cubeShape = std::make_shared<Shape>(cubeName, cubeVerticesVec, cubeIndicesVec,
-											 glm::vec3{ 0.0f, 0.5f, 0.0f } // clear green color
+											 glm::vec3{ 0.8f } // albedo color (almost white)
 	);
 	engine->AddAsset(std::move(cubeShape)); // add the cube shape to the engine
 

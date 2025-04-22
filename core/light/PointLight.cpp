@@ -34,12 +34,3 @@ void PointLight::CreateGizmo()
 									diffuse, // set the color of the gizmo to the light's diffuse color   
 									position); // set the position of the gizmo to the light's position  
 }
-
-void PointLight::UpdateGizmo()
-{
-	if (gizmo)
-	{
-		gizmo->SetPosition(position); // set the position of the gizmo to the current light's position  
-		gizmo->SetAlbedo(diffuse); // set the color of the gizmo to the current light's diffuse color  
-	}
-}

@@ -86,6 +86,9 @@ void GUI::Setup()
 			// get the point light object
 			auto pointLight = dynamic_cast<PointLight*>(Core::GetInstance()->GetAssets("LIGHT")[i].get());
 
+			// use PushID to create a unique ID for each point light (to avoid conflicts with the GUI)
+			ImGui::PushID(pointLight->GetName().c_str());
+
 			// display the name of the point light
 			ImGui::Text("Name: %s", pointLight->GetName().c_str());
 			// display the color of the point light
@@ -94,6 +97,9 @@ void GUI::Setup()
 			// display the position of the point light
 			ImGui::Text("Position: (%.2f, %.2f, %.2f)",
 						pointLight->GetPosition().x, pointLight->GetPosition().y, pointLight->GetPosition().z);
+
+			// use PopID to end the unique ID scope
+			ImGui::PopID();
 		}
 
 		ImGui::Separator();
@@ -114,6 +120,9 @@ void GUI::Setup()
 			// get the shape object
 			auto shape = dynamic_cast<Shape*>(Core::GetInstance()->GetAssets("MODEL")[i].get());
 
+			// use PushID to create a unique ID for each shape (to avoid conflicts with the GUI)
+			ImGui::PushID(shape->GetName().c_str());
+
 			// display the name of the shape
 			ImGui::Text("Name: %s", shape->GetName().c_str());
 			// display the color of the shape
@@ -122,6 +131,9 @@ void GUI::Setup()
 			// display the position of the shape
 			ImGui::Text("Position: (%.2f, %.2f, %.2f)",
 						shape->GetPosition().x, shape->GetPosition().y, shape->GetPosition().z);
+
+			// use PopID to end the unique ID scope
+			ImGui::PopID();
 		}
 
 		// button to add a new cube to the scene
@@ -169,8 +181,45 @@ void GUI::Setup()
 	{
 		ImGui::Begin("Scene Settings");
 
-		// get the light object (as there is only one light in the scene in this case)
-		auto light = dynamic_cast<PointLight*>(Core::GetInstance()->GetAssets("LIGHT")[0].get());
+		// get the number of lights in the scene
+		unsigned int nPointLights = Core::GetInstance()->GetNPointLights();
+		// for each point light in the scene, create a color picker and a slider for its position component
+		for (unsigned int i{}; i < nPointLights; i++)
+		{
+			// get the point light object
+			auto light = dynamic_cast<PointLight*>(Core::GetInstance()->GetAssets("LIGHT")[i].get());
+
+			// use PushID to create a unique ID for each light (to avoid conflicts with the GUI)
+			ImGui::PushID(light->GetName().c_str());
+
+			// display the name of the light
+			ImGui::Text("%s", light->GetName().c_str());
+
+			// get the color of the light
+			glm::vec3 color = light->GetDiffuse();
+			// create a color picker for the light's color
+			if (ImGui::ColorEdit3("Color", (float*)&color)) // if the color picker is used
+			{
+				light->SetDiffuse(color); // set the new color of the light
+				light->SyncGizmoColorFromLight(); // set the new color of the light's gizmo
+			}
+
+			// get the position of the light
+			glm::vec3 pos = light->GetPosition();
+			// create a slider for the x, y, and z components of the light's position
+			if (ImGui::SliderFloat3("Position", (float*)&pos, -5.0, 5.0f)) // if the slider is moved
+			{
+				light->SetPosition(pos); // set the new position of the light
+				light->SyncGizmoPositionFromLight(); // set the new position of the light's gizmo
+			}
+
+			// use PopID to end the unique ID scope
+			ImGui::PopID();
+
+			// add a separator between lights
+			if (i < nPointLights - 1)
+				ImGui::Separator();
+		}
 
 		// get number of shapes in the scene
 		unsigned int nShapes = Core::GetInstance()->GetNShapes();
@@ -180,40 +229,31 @@ void GUI::Setup()
 			// get the shape object
 			auto shape = dynamic_cast<Shape*>(Core::GetInstance()->GetAssets("MODEL")[i].get());
 
-			// use PushID to create a unique ID for each shape (to avoid conflicts with the GUI)
-			ImGui::PushID(i);
-
-			// display the name of the shape
-			ImGui::Text("%s", shape->GetName().c_str());
-
-			// get the color of the shape
-			glm::vec3 color = shape->GetAlbedo();
-			// create a color picker for the shape's color
-			if (ImGui::ColorEdit3("Color", (float*)&color))
+			// if the shape is not a Light (i.e., not a light source's gizmo), then proceed,
+			// otherwise skip it (as the light sources' gizmos are already handled in the loop above)
+			if (shape->GetName().find("Light") == std::string::npos)
 			{
-				shape->SetAlbedo(color); // set the new color of the shape (only if the color picker is used)
-				// if the shape is a point light, also change the color of the light depending on the shape's color
-				if (shape->GetName().find("Point Light") != std::string::npos)
-				{
-					light->SetAmbient(glm::vec3(0.1f) * color); // set the new ambient color of the light
-					light->SetDiffuse(color); // set the new diffuse color of the light
-					light->SetSpecular(glm::vec3(1.0f) * color); // set the new specular color of the light
-				}
-			}
+				// use PushID to create a unique ID for each shape (to avoid conflicts with the GUI)
+				ImGui::PushID(shape->GetName().c_str());
 
-			// get the position of the shape
-			glm::vec3 pos = shape->GetPosition();
-			// create a slider for the x, y, and z components of the shape's position
-			if (ImGui::SliderFloat3("Position", (float*)&pos, -5.0, 5.0f))
-			{
-				shape->SetPosition(pos); // set the new position of the shape (only if the slider is moved)
-				// if the shape is a point light, also set the position of the light
-				if (shape->GetName().find("Point Light") != std::string::npos)
-					light->SetPosition(pos); // set the new position of the light
-			}
+				// display the name of the shape
+				ImGui::Text("%s", shape->GetName().c_str());
 
-			// use PopID to end the unique ID scope
-			ImGui::PopID();
+				// get the color of the shape
+				glm::vec3 color = shape->GetAlbedo();
+				// create a color picker for the shape's color
+				if (ImGui::ColorEdit3("Color", (float*)&color)) // if the color picker is used
+					shape->SetAlbedo(color); // set the new color of the shape
+
+				// get the position of the shape
+				glm::vec3 pos = shape->GetPosition();
+				// create a slider for the x, y, and z components of the shape's position
+				if (ImGui::SliderFloat3("Position", (float*)&pos, -5.0, 5.0f)) // if the slider is moved
+					shape->SetPosition(pos); // set the new position of the shape
+
+				// use PopID to end the unique ID scope
+				ImGui::PopID();
+			}
 
 			// add a separator between shapes
 			if (i < nShapes - 1)
