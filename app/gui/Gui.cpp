@@ -2,8 +2,8 @@
 * GUI.h
 * This file implements the GUI class, which is used to create a graphical user interface
 * using the ImGui library.
-* The engine will use this class to create a window that will display information about the scene
-* and allow the user to interact with it and change certain parameters.
+* The engine will use this class to create a windows to display information about the scene
+* and allow the user to interact with it, e.g. change certain parameters or add new objects.
 */
 
 #include "Gui.h"
@@ -52,14 +52,15 @@ void GUI::Setup()
 
 	// set initial window position to the top-left corner (with some padding)
 	ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_Appearing);
-	// set initial window size to 320x(DisplaySize.y - 20) pixels (i.e, full height of the window with some padding)
+	// set initial window size to 320x(DisplaySize.y - 20) pixels 
+	// (i.e, full height of the window with some padding)
 	ImGui::SetNextWindowSize(ImVec2(320, io.DisplaySize.y - 20), ImGuiCond_Appearing);
 	// set the window to be not collapsed (i.e., not minimized)
 	ImGui::SetNextWindowCollapsed(false, ImGuiCond_Appearing);
 
-	// show a window that displays all the assets in the scene and allows the user to create a new shape
+	// show a window that displays all information about the assets in the scene 
 	{
-		ImGui::Begin("Scene Assets");
+		ImGui::Begin("Scene Information");
 
 		// get the camera object
 		auto& camera = Core::GetInstance()->GetCamera();
@@ -136,48 +137,21 @@ void GUI::Setup()
 			ImGui::PopID();
 		}
 
-		// button to add a new cube to the scene
-		if (ImGui::Button("Add Cube"))
-		{
-			// get the current number of shapes in the scene
-			std::string nShapes = std::to_string(Core::GetInstance()->GetNShapes());
-			// create a new cube shape called "Cube (Shape n)", where n is the current number of shapes in the scene
-			std::string newShapeName = "Cube (Shape " + nShapes + ")";
-			auto newShape = std::make_shared<Shape>(newShapeName, cubeVerticesVec, cubeIndicesVec,
-													glm::vec3(0.5f), glm::vec3(0.0f));
-
-			// use the current time as seed for the random number generator 
-			// (to get different positions and colors each run)
-			srand(static_cast<unsigned int>(time(0)));
-
-			// set the shape's color to a random color
-			glm::vec3 newColor{ (rand() % 100) / 100.0f, (rand() % 100) / 100.0f, (rand() % 100) / 100.0f };
-			newShape->SetAlbedo(newColor);
-			// set the shape's translation randomly 
-			// (within a certain range, ensuring it is neither too close to the camera nor too far away)
-			glm::vec3 newPos;
-			do
-			{
-				newPos = glm::vec3{ (rand() % 10) - 5, (rand() % 10) - 5, (rand() % 10) - 5 };
-			} while (glm::length(newPos - camera->GetPosition()) < 2.0f);
-			newShape->SetPosition(newPos);
-
-			// add the new shape to the engine
-			Core::GetInstance()->AddAsset(std::move(newShape));
-		}
-
 		ImGui::End();
 	}
 
 	// set initial window position to the top-right corner (with some padding)
 	ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x - 330, 10), ImGuiCond_Appearing);
-	// set initial window size to 320x(DisplaySize.y - 20) pixels (i.e, full height of the window with some padding)
+	// set initial window size to 320x(DisplaySize.y - 20) pixels 
+	// (i.e, full height of the window with some padding)
 	ImGui::SetNextWindowSize(ImVec2(320, io.DisplaySize.y - 20), ImGuiCond_Appearing);
 	// set the window to be not collapsed (i.e., not minimized)
 	ImGui::SetNextWindowCollapsed(false, ImGuiCond_Appearing);
 
-	// show a window that allows the user to change the position and color of the shapes in the scene
-	// (some shapes are light sources' gizmos, and modifying their attributes will result in changes in the lighting)
+	// show a window that allows the user to change the position and color of the lights 
+	// (and their respective gizmos) and the position and color of the shapes in the scene
+	// and create either new light sources (and consequently their gizmos) or new shapes
+	// at random positions in the scene and with random colors
 	{
 		ImGui::Begin("Scene Settings");
 
@@ -216,9 +190,7 @@ void GUI::Setup()
 			// use PopID to end the unique ID scope
 			ImGui::PopID();
 
-			// add a separator between lights
-			if (i < nPointLights - 1)
-				ImGui::Separator();
+			ImGui::Separator(); // add a separator between lights
 		}
 
 		// get number of shapes in the scene
@@ -253,11 +225,82 @@ void GUI::Setup()
 
 				// use PopID to end the unique ID scope
 				ImGui::PopID();
-			}
 
-			// add a separator between shapes
-			if (i < nShapes - 1)
-				ImGui::Separator();
+				ImGui::Separator(); // add a separator between shapes
+			}
+		}
+
+		ImGui::Separator();
+
+		// get the camera object (as it is used to get the camera's position in both button callbacks)
+		auto& camera = Core::GetInstance()->GetCamera();
+
+		// button to add a new cube to the scene
+		if (ImGui::Button("Add Cube"))
+		{
+			// use the current time as seed for the random number generator 
+			// (to get different positions and colors each run)
+			srand(static_cast<unsigned int>(time(0)));
+			// declare a random color for the cube
+			glm::vec3 newColor{ (rand() % 100) / 100.0f, (rand() % 100) / 100.0f, (rand() % 100) / 100.0f };
+			// declare a random position for the cube
+			// (within a certain range, ensuring it is neither too close to the camera nor too far away)
+			glm::vec3 newPos;
+			do
+			{
+				newPos = glm::vec3{ (rand() % 10) - 5, (rand() % 10) - 5, (rand() % 10) - 5 };
+			} while (glm::length(newPos - camera->GetPosition()) < 2.0f);
+
+			// get the current number of shapes in the scene
+			std::string nShapes = std::to_string(Core::GetInstance()->GetNShapes());
+			// create a new cube called "Cube (Shape n)", 
+			// where n is the current number of shapes in the scene
+			auto newShape = std::make_shared<Shape>("Cube (Shape " + nShapes + ")",
+													cubeVerticesVec, cubeIndicesVec,
+													newColor, // color (random)
+													newPos // position (random)
+			);
+
+			// add the new shape (a cube) to the engine
+			Core::GetInstance()->AddAsset(std::move(newShape));
+		}
+
+		// button to add a new point light to the scene
+		if (ImGui::Button("Add Point Light"))
+		{
+			// use the current time as seed for the random number generator 
+			// (to get different positions and colors each run)
+			srand(static_cast<unsigned int>(time(0)));
+			// declare a random color for the point light and its gizmo
+			glm::vec3 newColor{ (rand() % 100) / 100.0f, (rand() % 100) / 100.0f, (rand() % 100) / 100.0f };
+			// declare a random position for the point light and its gizmo
+			// (within a certain range, ensuring it is neither too close to the camera nor too far away)
+			glm::vec3 newPos;
+			do
+			{
+				newPos = glm::vec3{ (rand() % 10) - 5, (rand() % 10) - 5, (rand() % 10) - 5 };
+			} while (glm::length(newPos - camera->GetPosition()) < 2.0f);
+
+			// get the current number of shapes in the scene
+			std::string nShapes = std::to_string(Core::GetInstance()->GetNShapes());
+			// get the current number of point lights in the scene
+			std::string nPointLights = std::to_string(Core::GetInstance()->GetNPointLights());
+			// create a new point light called "Point Light n", 
+			// where n is the current number of point lights in the scene
+			auto newPointLight = std::make_shared<PointLight>("Point Light " + nPointLights,
+															  glm::vec3{ 0.1f }, // ambient color (default)
+															  newColor, // diffuse color (random)
+															  glm::vec3{ 1.0f }, // specular color (default)
+															  newPos // position (random)
+			);
+			// get gizmo's shared_ptr from the new point light before adding the latter to the engine
+			auto newPointLightGizmo = newPointLight->GetGizmo();
+			Core::GetInstance()->AddAsset(std::move(newPointLight)); // add the new point light to the engine
+			// concatenate the name of the new point light and " (Shape n)", 
+			// where n is the current number of shapes in the scene
+			newPointLightGizmo->SetName(newPointLightGizmo->GetName() + " (Shape " + nShapes + ")");
+			// add the point light gizmo (a decahedron) to the engine
+			Core::GetInstance()->AddAsset(std::move(newPointLightGizmo));
 		}
 
 		ImGui::End();

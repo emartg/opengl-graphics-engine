@@ -31,7 +31,8 @@ uniform PointLight pointLights[MAX_N_POINT_LIGHTS]; // statically sized array of
 uniform int nPointLights;			                // actual number of point lights currently in the scene
 uniform Material material;
 
-// calculates the color of a single point light given the light properties, the fragment position, the normal and the view direction
+// calculates the color of a single point light given the light properties, 
+// the fragment position, the normal and the view direction (all in view space)
 vec3 computePointLightColor(PointLight light, vec3 lightPos, vec3 normal, vec3 fragPos, vec3 viewDir);
 
 void main()

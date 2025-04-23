@@ -17,7 +17,7 @@ public:
 	// Constructors
 	// ------------
 	// Constructor that creates a shape from interleaved position, normal and texture coordinate data, 
-	// and index data. Two optional arguments can be specified for the shape: the albedo color (default is white)
+	// and index data. Two optional arguments can be specified for the shape: the albedo color (default is grey)
 	// and the translation vector (default is the zero vector)
 	Shape(const std::string& name,
 		  const std::vector<GLfloat> vertices, const std::vector<GLuint> indices,
@@ -25,7 +25,7 @@ public:
 	);
 
 	// Constructor that creates a shape from separate position, normal, and texture coordinate data,
-	// and index data. Two optional arguments can be specified for the shape: the albedo color (default is white)
+	// and index data. Two optional arguments can be specified for the shape: the albedo color (default is grey)
 	// and the translation vector (default is the zero vector)
 	Shape(const std::string& name,
 		  const std::vector<GLfloat> positions, const std::vector<GLfloat> normals,
@@ -34,7 +34,7 @@ public:
 	);
 
 	// Constructor that creates a shape from interleaved position, normal and texture coordinate data, 
-	// and index data. Two optional arguments can be specified for the shape: the albedo color (default is white)
+	// and index data. Two optional arguments can be specified for the shape: the albedo color (default is grey)
 	// and the translation vector (default is the zero vector)
 	// This variant takes arrays as arguments instead of vectors, in case the data is laid out in arrays,
 	// and thus requires the number of elements (or vectors of 3 elements) conform each of the arrays
@@ -45,7 +45,7 @@ public:
 	);
 
 	// Constructor that creates a shape from separate position, normal, and texture coordinate data,
-	// and index data. Two optional arguments can be specified for the shape: the albedo color (default is white)
+	// and index data. Two optional arguments can be specified for the shape: the albedo color (default is grey)
 	// and the translation vector (default is the zero vector)
 	// This variant takes arrays as arguments instead of vectors, in case the data is laid out in arrays, 
 	// and thus requires the number of elements (or vectors of 3 elements) conform each of the arrays

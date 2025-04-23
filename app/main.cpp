@@ -29,7 +29,8 @@ int main(int argc, char** argv)
 	// to use it for the name of the point light gizmo before adding the point light to the engine
 	// (since the creation of the point light gizmo - a Shape - is done in the constructor of the PointLight class)
 	std::string nShapes = std::to_string(engine->GetNShapes());
-	// create a point light object with a name "Point Light n", where n is the current number of point lights in the scene
+	// create a point light object with a name "Point Light n", 
+	// where n is the current number of point lights in the scene
 	auto pointLight1 = std::make_shared<PointLight>("Point Light " + std::to_string(engine->GetNPointLights()),
 													glm::vec3{ 0.1f }, // ambient color (default)
 													glm::vec3{ 0.5f, 0.5f, 0.9f }, // diffuse color (bright blue)
@@ -39,7 +40,8 @@ int main(int argc, char** argv)
 	// get gizmo's shared_ptr from the point light before adding the latter to the engine (as it will be moved)
 	auto pointLightGizmo1 = pointLight1->GetGizmo();
 	engine->AddAsset(std::move(pointLight1)); // add the point light to the engine
-	// concatenate the point light gizmo's name and " (Shape n)", where n is the current number of shapes in the scene
+	// concatenate the name of the point light and " (Shape n)", 
+	// where n is the current number of shapes in the scene
 	pointLightGizmo1->SetName(pointLightGizmo1->GetName() + " (Shape " + nShapes + ")");
 	engine->AddAsset(std::move(pointLightGizmo1)); // add the point light gizmo (a decahedron) to the engine
 
