@@ -11,7 +11,6 @@
 #include <glm/glm.hpp>
 
 #include "Light.h"
-#include "../gizmos/DECAHEDRON.h" // the Point Light gizmo is a decahedron
 
 class PointLight : public Light
 {

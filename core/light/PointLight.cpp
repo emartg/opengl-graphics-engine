@@ -6,6 +6,8 @@
 
 #include "PointLight.h"
 
+#include "../gizmos/HEX_PYRAMID.h" // the Point Light gizmo is a hex pyramid
+
 // Static Private Attributes
 // -------------------------
 GLuint PointLight::nPointLights{}; // initialize the number of point lights in the scene to 0
@@ -25,12 +27,12 @@ PointLight::PointLight(const std::string& name,
 }
 
 // Public Methods  
-// --------------  
+// --------------
 void PointLight::CreateGizmo()
 {
-	// create a decahedron shape for the point light gizmo  
+	// create a hexagonal pyramid shape for the point light gizmo  
 	gizmo = std::make_shared<Shape>(name + " Gizmo",
-									decahedronVerticesVec, decahedronIndicesVec,
+									hexPyramidVerticesVec, hexPyramidIndicesVec,
 									diffuse, // set the color of the gizmo to the light's diffuse color   
 									position); // set the position of the gizmo to the light's position  
 }
