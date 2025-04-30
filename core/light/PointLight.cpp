@@ -6,7 +6,7 @@
 
 #include "PointLight.h"
 
-#include "../gizmos/HEX_PYRAMID.h" // the Point Light gizmo is a hex pyramid
+#include "../gizmos/DECAHEDRON.h" // the Point Light gizmo is a decahedron shape
 
 // Static Private Attributes
 // -------------------------
@@ -30,9 +30,9 @@ PointLight::PointLight(const std::string& name,
 // --------------
 void PointLight::CreateGizmo()
 {
-	// create a hexagonal pyramid shape for the point light gizmo  
+	// create a decahedron shape for the point light gizmo  
 	gizmo = std::make_shared<Shape>(name + " Gizmo",
-									hexPyramidVerticesVec, hexPyramidIndicesVec,
+									decahedronVerticesVec, decahedronIndicesVec,
 									diffuse, // set the color of the gizmo to the light's diffuse color   
 									position); // set the position of the gizmo to the light's position  
 }

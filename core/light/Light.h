@@ -42,6 +42,7 @@ public:
 	glm::vec3 GetDiffuse() const { return diffuse; }
 	glm::vec3 GetSpecular() const { return specular; }
 	std::shared_ptr<Shape>& GetGizmo() { return gizmo; }
+
 	// Setters
 	void SetAmbient(glm::vec3 ambient) { this->ambient = ambient; }
 	void SetDiffuse(glm::vec3 diffuse) { this->diffuse = diffuse; }
