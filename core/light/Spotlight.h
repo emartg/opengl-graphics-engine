@@ -70,11 +70,12 @@ private:
 	GLfloat linear;
 	GLfloat quadratic;
 
-	// Static Constants
-	// ----------------
+	// Private Static Attributes (for default values)
+	// ----------------------------------------------
 	static constexpr glm::vec3 POSITION{ 1.0f, 2.0f, 3.0f }, DIRECTION{ -1.0f, -1.0f, -1.0f };
 	static constexpr glm::vec3 AMBIENT{ 0.1f }, DIFFUSE{ 0.8f }, SPECULAR{ 1.0f };
 	static constexpr GLfloat CONSTANT{ 1.0f }, LINEAR{ 0.09f }, QUADRATIC{ 0.032f };
-    static const GLfloat CUT_OFF, OUTER_CUT_OFF;
+	static const GLfloat CUT_OFF, OUTER_CUT_OFF;
+
 };
 

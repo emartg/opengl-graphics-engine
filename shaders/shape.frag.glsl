@@ -27,7 +27,6 @@ struct Spotlight
     float quadratic;
 
     // spotlight properties
-    vec3 direction;
     float cutOff;       // inner angle of the spotlight cone
     float outerCutOff;  // outer angle of the spotlight cone
 };

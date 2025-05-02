@@ -44,8 +44,8 @@ private:
 	// ---------------
 	static Core* m_instance; // instance of the Core class (Singleton)
 
-	// Static Constants
-	// ----------------
+	// Public Static Attributes
+	// ------------------------
 	static constexpr GLuint SCR_WIDTH{ 1400 }, SCR_HEIGHT{ 1000 }; // screen settings
 
 	// Private Attributes

@@ -19,6 +19,7 @@
 #include "backends/imgui_impl_opengl3.h"
 
 #include "../core/Core.h"
+#include "../core/utils/random/Random.h"
 
 class GUI
 {
@@ -47,6 +48,16 @@ private:
 	// ------------------
 	bool m_showDemoWindow;
 	bool m_showAnotherWindow;
+
 	ImVec4 m_clearColor;
+
+	std::unique_ptr<Random> m_randomizer; // random generator to get random colors, positions, etc.
+
+	// Private Static Attributes (for default values)
+	// ----------------------------------------------
+	static constexpr float MIN_SLIDER_VALUE{ -10.0f }; // default minimum value for sliders
+	static constexpr float MAX_SLIDER_VALUE{ 10.0f }; // default maximum value for sliders
+	static constexpr float MIN_DISTANCE_FROM_CAMERA{ 2.0f }; // default minimum distance from camera
+	static constexpr float MAX_DISTANCE_FROM_CAMERA{ 10.0f }; // default maximum distance from camera
 
 };

@@ -13,6 +13,10 @@
 
 int main(int argc, char** argv)
 {
+	// use the current time as seed for the random number generator 
+	// (to get different positions, colors, etc. each run)
+	srand(static_cast<unsigned int>(time(0)));
+
 	// create pointer to a renderer object
 	Renderer* renderer = new GLFWRenderer();
 

@@ -24,10 +24,10 @@ Spotlight::Spotlight(const std::string& name,
 					 const glm::vec3 position, const glm::vec3 direction,
 					 const GLfloat cutOff, const GLfloat outerCutOff,
 					 const GLfloat constant, const GLfloat linear, const GLfloat quadratic)
-: Light(name, ambient, diffuse, specular),
-position{ position }, direction{ direction },
-cutOff{ cutOff }, outerCutOff{ outerCutOff },
-constant{ constant }, linear{ linear }, quadratic{ quadratic }
+	: Light(name, ambient, diffuse, specular),
+	position{ position }, direction{ direction },
+	cutOff{ cutOff }, outerCutOff{ outerCutOff },
+	constant{ constant }, linear{ linear }, quadratic{ quadratic }
 {
 	CreateGizmo(); // create the gizmo for the spotlight
 	nSpotlights++; // increment the number of spotlights

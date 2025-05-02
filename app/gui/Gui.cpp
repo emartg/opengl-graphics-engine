@@ -181,7 +181,8 @@ void GUI::Setup()
 			// get the position of the light
 			glm::vec3 pos = light->GetPosition();
 			// create a slider for the x, y, and z components of the light's position
-			if (ImGui::SliderFloat3("Position", (float*)&pos, -5.0, 5.0f)) // if the slider is moved
+			if (ImGui::SliderFloat3("Position", (float*)&pos,
+									MIN_SLIDER_VALUE, MAX_SLIDER_VALUE)) // if the slider is moved
 			{
 				light->SetPosition(pos); // set the new position of the light
 				light->SyncGizmoPositionFromLight(); // set the new position of the light's gizmo
@@ -220,8 +221,11 @@ void GUI::Setup()
 				// get the position of the shape
 				glm::vec3 pos = shape->GetPosition();
 				// create a slider for the x, y, and z components of the shape's position
-				if (ImGui::SliderFloat3("Position", (float*)&pos, -5.0, 5.0f)) // if the slider is moved
+				if (ImGui::SliderFloat3("Position", (float*)&pos,
+										MIN_SLIDER_VALUE, MAX_SLIDER_VALUE)) // if the slider is moved
+				{
 					shape->SetPosition(pos); // set the new position of the shape
+				}
 
 				// use PopID to end the unique ID scope
 				ImGui::PopID();
@@ -238,18 +242,10 @@ void GUI::Setup()
 		// button to add a new cube to the scene
 		if (ImGui::Button("Add Cube"))
 		{
-			// use the current time as seed for the random number generator 
-			// (to get different positions and colors each run)
-			srand(static_cast<unsigned int>(time(0)));
-			// declare a random color for the cube
-			glm::vec3 newColor{ (rand() % 100) / 100.0f, (rand() % 100) / 100.0f, (rand() % 100) / 100.0f };
-			// declare a random position for the cube
-			// (within a certain range, ensuring it is neither too close to the camera nor too far away)
-			glm::vec3 newPos;
-			do
-			{
-				newPos = glm::vec3{ (rand() % 10) - 5, (rand() % 10) - 5, (rand() % 10) - 5 };
-			} while (glm::length(newPos - camera->GetPosition()) < 2.0f);
+			// get a random color and a random position for the cube
+			glm::vec3 newColor = m_randomizer->GenerateRandomColor();
+			glm::vec3 newPos = m_randomizer->GenerateRandomPosition(camera->GetPosition(),
+																	MIN_DISTANCE_FROM_CAMERA, MAX_DISTANCE_FROM_CAMERA);
 
 			// get the current number of shapes in the scene
 			std::string nShapes = std::to_string(Core::GetInstance()->GetNShapes());
@@ -268,18 +264,10 @@ void GUI::Setup()
 		// button to add a new point light to the scene
 		if (ImGui::Button("Add Point Light"))
 		{
-			// use the current time as seed for the random number generator 
-			// (to get different positions and colors each run)
-			srand(static_cast<unsigned int>(time(0)));
-			// declare a random color for the point light and its gizmo
-			glm::vec3 newColor{ (rand() % 100) / 100.0f, (rand() % 100) / 100.0f, (rand() % 100) / 100.0f };
-			// declare a random position for the point light and its gizmo
-			// (within a certain range, ensuring it is neither too close to the camera nor too far away)
-			glm::vec3 newPos;
-			do
-			{
-				newPos = glm::vec3{ (rand() % 10) - 5, (rand() % 10) - 5, (rand() % 10) - 5 };
-			} while (glm::length(newPos - camera->GetPosition()) < 2.0f);
+			// get a random color and a random position for the point light and its gizmo
+			glm::vec3 newColor = m_randomizer->GenerateRandomColor();
+			glm::vec3 newPos = m_randomizer->GenerateRandomPosition(camera->GetPosition(),
+																	MIN_DISTANCE_FROM_CAMERA, MAX_DISTANCE_FROM_CAMERA);
 
 			// get the current number of shapes in the scene
 			std::string nShapes = std::to_string(Core::GetInstance()->GetNShapes());
