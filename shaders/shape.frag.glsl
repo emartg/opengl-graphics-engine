@@ -27,8 +27,8 @@ struct Spotlight
     float quadratic;
 
     // spotlight properties
-    float cutOff;       // inner angle of the spotlight cone
-    float outerCutOff;  // outer angle of the spotlight cone
+    float cutOff;       // inner cut-off angle of the spotlight cone
+    float outerCutOff;  // outer cut-off angle of the spotlight cone
 };
 
 struct Material
@@ -41,8 +41,8 @@ struct Material
 #define MAX_N_SPOTLIGHTS 5   // maximum number of spotlights in the scene (same as in the vertex shader)
 
 in vec3 PointLightPos[MAX_N_POINT_LIGHTS];  // statically sized array of point light positions in view space
-in vec3 SpotLightPos[MAX_N_SPOTLIGHTS];     // statically sized array of spotlight positions in view space
-in vec3 SpotLightDir[MAX_N_SPOTLIGHTS];     // statically sized array of spotlight directions in view space
+in vec3 SpotlightPos[MAX_N_SPOTLIGHTS];     // statically sized array of spotlight positions in view space
+in vec3 SpotlightDir[MAX_N_SPOTLIGHTS];     // statically sized array of spotlight directions in view space
 in vec3 FragPos;                            // fragment position already in view space
 in vec3 Normal;                             // normal already in view space
 in vec2 TexCoords;
@@ -55,11 +55,11 @@ uniform Material material;
 
 // calculates the color of a single point light given the light properties (including the position),
 // the fragment position, the normal and the view direction (all in view space)
-vec3 computePointLightColor(PointLight light, vec3 lightPos, vec3 normal, vec3 fragPos, vec3 viewDir);
+vec3 computePointLightColor(PointLight light, vec3 pointLightPos, vec3 normal, vec3 fragPos, vec3 viewDir);
 
 // canculates the color of a single spotlight given the light properties (including the position and direction),
 // the fragment position, the normal and the view direction (all in view space)
-vec3 computeSpotlightColor(Spotlight light, vec3 lightPos, vec3 lightDir, vec3 normal, vec3 fragPos, vec3 viewDir)
+vec3 computeSpotlightColor(Spotlight light, vec3 spotlightPos, vec3 spotlightDir, vec3 normal, vec3 fragPos, vec3 viewDir);
 
 void main()
 {
@@ -76,15 +76,15 @@ void main()
 
     // loop through all spotlights
     for (int i = 0; i < nSpotlights; i++)
-        result  += computeSpotlightColor(spotlights[i], SpotLightPos[i], SpotLightDir[i], normal, FragPos, viewDir);
+        result  += computeSpotlightColor(spotlights[i], SpotlightPos[i], SpotlightDir[i], normal, FragPos, viewDir);
 
     // set the fragment color
     FragColor   = vec4(result, 1.0);
 }
 
-vec3 computePointLightColor(PointLight light, vec3 lightPos, vec3 normal, vec3 fragPos, vec3 viewDir)
+vec3 computePointLightColor(PointLight light, vec3 pointLightPos, vec3 normal, vec3 fragPos, vec3 viewDir)
 {
-    vec3 lightDir = normalize(lightPos - fragPos);
+    vec3 lightDir = normalize(pointLightPos - fragPos);
 
     // diffuse shading
     float diff = max(dot(normal, lightDir), 0.0);
@@ -94,7 +94,7 @@ vec3 computePointLightColor(PointLight light, vec3 lightPos, vec3 normal, vec3 f
     float spec      = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
 
     // attenuation
-    float distance      = length(lightPos - fragPos);
+    float distance      = length(pointLightPos - fragPos);
     float attenuation   = 1.0 / (light.constant + light.linear * distance + light.quadratic * (distance * distance));
 
     // combine results
@@ -107,9 +107,9 @@ vec3 computePointLightColor(PointLight light, vec3 lightPos, vec3 normal, vec3 f
     return (ambient + diffuse + specular);
 }
 
-vec3 computeSpotlightColor(Spotlight light, vec3 lightPos, vec3 lightDir, vec3 normal, vec3 fragPos, vec3 viewDir)
+vec3 computeSpotlightColor(Spotlight light, vec3 spotlightPos, vec3 spotlightDir, vec3 normal, vec3 fragPos, vec3 viewDir)
 {
-    vec3 lightDir = normalize(lightPos - fragPos);
+    vec3 lightDir = normalize(spotlightPos - fragPos);
 
     // diffuse shading
     float diff  = max(dot(normal, lightDir), 0.0);
@@ -119,11 +119,11 @@ vec3 computeSpotlightColor(Spotlight light, vec3 lightPos, vec3 lightDir, vec3 n
     float spec      = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
 
     // attenuation
-    float distance      = length(lightPos - fragPos);
+    float distance      = length(spotlightPos - fragPos);
     float attenuation   = 1.0 / (light.constant + light.linear * distance + light.quadratic * (distance * distance));
 
     // spotlight intensity
-    float theta     = dot(lightDir, normalize(-lightDir));
+    float theta     = dot(lightDir, normalize(-spotlightDir));
     float epsilon   = light.cutOff - light.outerCutOff;
     float intensity = clamp((theta - light.outerCutOff) / epsilon, 0.0, 1.0);
 

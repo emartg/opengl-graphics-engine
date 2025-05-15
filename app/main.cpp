@@ -35,34 +35,39 @@ int main(int argc, char** argv)
 	std::string nShapes = std::to_string(engine->GetNShapes());
 	// create a point light object with a name "Point Light n", 
 	// where n is the current number of point lights in the scene
-	auto pointLight1 = std::make_shared<PointLight>("Point Light " + std::to_string(engine->GetNPointLights()),
-													glm::vec3{ 0.1f }, // ambient color (default)
-													glm::vec3{ 0.5f, 0.5f, 0.9f }, // diffuse color (bright blue)
-													glm::vec3{ 1.0f }, // specular color (default)
-													glm::vec3{ 1.8f, 1.8f, 4.5f } // position
+	auto pointLight = std::make_shared<PointLight>("Point Light " + std::to_string(engine->GetNPointLights()),
+												   glm::vec3{ 0.1f }, // ambient color (default)
+												   glm::vec3{ 0.5f, 0.5f, 0.9f }, // diffuse color (bright blue)
+												   glm::vec3{ 1.0f }, // specular color (default)
+												   glm::vec3{ 1.8f, 1.8f, 4.5f } // position
 	);
 	// get gizmo's shared_ptr from the point light before adding the latter to the engine (as it will be moved)
-	auto pointLightGizmo1 = pointLight1->GetGizmo();
-	engine->AddAsset(std::move(pointLight1)); // add the point light to the engine
+	auto pointLightGizmo = pointLight->GetGizmo();
+	engine->AddAsset(std::move(pointLight)); // add the point light to the engine
 	// concatenate the name of the point light and " (Shape n)", 
 	// where n is the current number of shapes in the scene
-	pointLightGizmo1->SetName(pointLightGizmo1->GetName() + " (Shape " + nShapes + ")");
-	engine->AddAsset(std::move(pointLightGizmo1)); // add the point light gizmo (a decahedron) to the engine
+	pointLightGizmo->SetName(pointLightGizmo->GetName() + " (Shape " + nShapes + ")");
+	engine->AddAsset(std::move(pointLightGizmo)); // add the point light gizmo (a decahedron) to the engine
 
 	// update the number of shapes in the scene 
 	// (which should be 1 at this point, as one shape has been added - the first light gizmo -)
 	nShapes = std::to_string(engine->GetNShapes());
-	// create another point light, at a different position and with a different color (full constructor)
-	auto pointLight2 = std::make_shared<PointLight>("Point Light " + std::to_string(engine->GetNPointLights()),
-													glm::vec3{ 0.1f }, // ambient color (default)
-													glm::vec3{ 0.9f, 0.5f, 0.5f }, // diffuse color (bright red)
-													glm::vec3{ 1.0f }, // specular color (default)
-													glm::vec3{ 4.0f, 3.0f, 2.0f } // position
+	// create a spotlight object with a name "Spotlight n",
+	// where n is the current number of spotlights in the scene
+	auto spotlight = std::make_shared<Spotlight>("Spotlight " + std::to_string(engine->GetNSpotlights()),
+												 glm::vec3{ 0.1f }, // ambient color (default)
+												 glm::vec3{ 0.9f, 0.5f, 0.5f }, // diffuse color (bright red)
+												 glm::vec3{ 1.0f }, // specular color (default)
+												 glm::vec3{ 0.0f, 4.5f, 0.0f }, // position (a bit above the origin)
+												 glm::vec3{ 0.0f, -1.0f, 0.0f } // direction (directly downward)
 	);
-	auto pointLightGizmo2 = pointLight2->GetGizmo();
-	engine->AddAsset(std::move(pointLight2));
-	pointLightGizmo2->SetName(pointLightGizmo2->GetName() + " (Shape " + nShapes + ")");
-	engine->AddAsset(std::move(pointLightGizmo2));
+	// get gizmo's shared_ptr from the spotlight before adding the latter to the engine (as it will be moved)
+	auto spotlightGizmo = spotlight->GetGizmo();
+	engine->AddAsset(std::move(spotlight)); // add the spotlight to the engine
+	// concatenate the name of the spotlight and " (Shape n)",
+	// where n is the current number of shapes in the scene
+	spotlightGizmo->SetName(spotlightGizmo->GetName() + " (Shape " + nShapes + ")");
+	engine->AddAsset(std::move(spotlightGizmo)); // add the spotlight gizmo (a hexagonal pyramid) to the engine
 
 	// update the number of shapes in the scene 
 	// (which should be 2 at this point, as two shapes have been added - the lights' gizmos -)
@@ -76,9 +81,9 @@ int main(int argc, char** argv)
 	engine->AddAsset(std::move(cubeShape)); // add the cube shape to the engine
 
 	// define shader names and paths and compile the shaders
-	std::vector<std::string> shaderNames{ "Cube Shape Shader Program", "Point Light Gizmo Shader Program" };
-	std::vector<std::string> vertexShaderPaths{ "shaders/shape.vert.glsl" , "shaders/point_light.vert.glsl" };
-	std::vector<std::string> fragmentShaderPaths{ "shaders/shape.frag.glsl", "shaders/point_light.frag.glsl" };
+	std::vector<std::string> shaderNames{ "Cube Shape Shader Program", "Light Gizmo Shader Program" };
+	std::vector<std::string> vertexShaderPaths{ "shaders/shape.vert.glsl" , "shaders/light_gizmo.vert.glsl" };
+	std::vector<std::string> fragmentShaderPaths{ "shaders/shape.frag.glsl", "shaders/light_gizmo.frag.glsl" };
 	engine->CompileShaders(shaderNames, vertexShaderPaths, fragmentShaderPaths);
 
 	// run the main loop of the engine

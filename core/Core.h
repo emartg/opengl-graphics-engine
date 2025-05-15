@@ -23,6 +23,7 @@
 #include "camera/Camera.h"
 #include "light/Light.h"
 #include "light/PointLight.h"
+#include "light/Spotlight.h"
 #include "model/Model.h"
 #include "model/Shape.h"
 #include "shader/Shader.h"
@@ -94,6 +95,8 @@ public:
 	const GLuint GetNLights() const { return Light::GetNLights(); }
 	// get number of point lights in the scene
 	const GLuint GetNPointLights() const { return PointLight::GetNPointLights(); }
+	// get number of spotlights in the scene
+	const GLuint GetNSpotlights() const { return Spotlight::GetNSpotlights(); }
 	// get number of models in the scene
 	const GLuint GetNModels() const { return Model::GetNModels(); }
 	// get number of shapes in the scene

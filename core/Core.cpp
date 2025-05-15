@@ -161,7 +161,6 @@ void Core::MainLoop()
 	auto shaders = std::vector<Shader*>();
 	for (const auto& asset : m_assets["SHADER"])
 		shaders.push_back(dynamic_cast<Shader*>(asset.get()));
-	auto light = dynamic_cast<PointLight*>(m_assets["LIGHT"].front().get());
 
 	// Set the main camera
 	// -------------------
@@ -213,29 +212,61 @@ void Core::MainLoop()
 		shaders[0]->SetMat4("view", view);
 
 		// set the properties of the point lights iterating over the vector of assets of type "LIGHT"
-		GLuint pointLightIdx{}; // indicates the point light whose properties are to be set
+		GLuint pointLightIdx{}, spotlightIdx{}; // indices for lights whose properties are to be set
 		std::for_each(m_assets["LIGHT"].begin(), m_assets["LIGHT"].end(),
 					  [&](const std::shared_ptr<Asset>& asset)
 		{
-			auto light = dynamic_cast<PointLight*>(asset.get());
+			std::string assetName = asset->GetName(); // determine the type of the shape by its name (provisional)
+			if (assetName.find("Point Light") != std::string::npos) // if the asset is a Point Light
+			{
+				auto light = dynamic_cast<PointLight*>(asset.get());
 
-			// vertex shader uniforms
-			shaders[0]->SetVec3("pointLightPos[" + std::to_string(pointLightIdx) + "]", light->GetPosition());
+				// vertex shader uniforms
+				shaders[0]->SetVec3("pointLightPos[" + std::to_string(pointLightIdx) + "]", light->GetPosition());
 
-			// fragment shader uniforms
-			std::string prefix = "pointLights[" + std::to_string(pointLightIdx) + "].";
-			shaders[0]->SetVec3(prefix + "ambient", light->GetAmbient());
-			shaders[0]->SetVec3(prefix + "diffuse", light->GetDiffuse());
-			shaders[0]->SetVec3(prefix + "specular", light->GetSpecular());
-			shaders[0]->SetFloat(prefix + "constant", light->GetConstant());
-			shaders[0]->SetFloat(prefix + "linear", light->GetLinear());
-			shaders[0]->SetFloat(prefix + "quadratic", light->GetQuadratic());
+				// fragment shader uniforms
+				std::string prefix = "pointLights[" + std::to_string(pointLightIdx) + "].";
+				shaders[0]->SetVec3(prefix + "ambient", light->GetAmbient());
+				shaders[0]->SetVec3(prefix + "diffuse", light->GetDiffuse());
+				shaders[0]->SetVec3(prefix + "specular", light->GetSpecular());
+				shaders[0]->SetFloat(prefix + "constant", light->GetConstant());
+				shaders[0]->SetFloat(prefix + "linear", light->GetLinear());
+				shaders[0]->SetFloat(prefix + "quadratic", light->GetQuadratic());
 
-			pointLightIdx++; // increment the point light index for the next iteration
+				pointLightIdx++; // increment the point light index for the next iteration
+			}
+			else if (assetName.find("Spotlight") != std::string::npos) // if the asset is a Spotlight
+			{
+				auto light = dynamic_cast<Spotlight*>(asset.get());
+
+				// vertex shader uniforms
+				shaders[0]->SetVec3("spotlightPos[" + std::to_string(spotlightIdx) + "]", light->GetPosition());
+				shaders[0]->SetVec3("spotlightDir[" + std::to_string(spotlightIdx) + "]", light->GetDirection());
+
+				// fragment shader uniforms
+				std::string prefix = "spotlights[" + std::to_string(spotlightIdx) + "].";
+				shaders[0]->SetVec3(prefix + "ambient", light->GetAmbient());
+				shaders[0]->SetVec3(prefix + "diffuse", light->GetDiffuse());
+				shaders[0]->SetVec3(prefix + "specular", light->GetSpecular());
+				shaders[0]->SetFloat(prefix + "constant", light->GetConstant());
+				shaders[0]->SetFloat(prefix + "linear", light->GetLinear());
+				shaders[0]->SetFloat(prefix + "quadratic", light->GetQuadratic());
+				shaders[0]->SetFloat(prefix + "cutOff", light->GetCutOff());
+				shaders[0]->SetFloat(prefix + "outerCutOff", light->GetOuterCutOff());
+
+				spotlightIdx++; // increment the spotlight index for the next iteration
+			}
+			else
+			{
+				std::cerr << "Unknown light type: " << assetName << std::endl;
+				return;
+			}
 		});
 
 		// set the current number of point lights
 		shaders[0]->SetInt("nPointLights", static_cast<GLint>(pointLightIdx));
+		// set the current number of spotlights
+		shaders[0]->SetInt("nSpotlights", static_cast<GLint>(spotlightIdx));
 
 		// activate point Light shader program
 		shaders[1]->Use();
@@ -253,9 +284,10 @@ void Core::MainLoop()
 
 			GLuint shaderIdx = 0; // default shader index for cube shader program
 
-			if (shape->GetName().find("Cube") != std::string::npos) // if the shape is a Cube
+			std::string assetName = shape->GetName(); // determine the type of the shape by its name (provisional)
+			if (assetName.find("Cube") != std::string::npos) // if the shape is a Cube
 			{
-				shaderIdx = 0; // set the shader index to 0 for cube shader program
+				shaderIdx = 0; // set the shader index to 0 for cube shader programD
 
 				// activate the shader program for cubes
 				shaders[shaderIdx]->Use();
@@ -268,7 +300,7 @@ void Core::MainLoop()
 				model = glm::translate(model, shape->GetPosition());
 				shaders[shaderIdx]->SetMat4("model", model);
 			}
-			else if (shape->GetName().find("Point Light") != std::string::npos) // if the shape is a Point Light
+			else if (assetName.find("Point Light") != std::string::npos) // if the shape is a Point Light
 			{
 				shaderIdx = 1; // set the shader index to 1 for point light shader program
 
@@ -284,18 +316,36 @@ void Core::MainLoop()
 				model = glm::scale(model, glm::vec3(0.2f)); // scale the shape to make it smaller
 				shaders[shaderIdx]->SetMat4("model", model);
 			}
+			else if (assetName.find("Spotlight") != std::string::npos) // if the shape is a Spotlight
+			{
+				shaderIdx = 1; // set the shader index to 1 for point light shader program
+
+				// activate the shader program for spotlights
+				shaders[shaderIdx]->Use();
+
+				// set the color of the light's shape based on the GUI input
+				shaders[shaderIdx]->SetVec3("albedo", shape->GetAlbedo());
+
+				// set the postion of the light's shape based on the GUI input
+				glm::mat4 model{ 1.0f };
+				model = glm::translate(model, shape->GetPosition());
+				model = glm::scale(model, glm::vec3(0.2f)); // scale the shape to make it smaller
+				shaders[shaderIdx]->SetMat4("model", model);
+			}
 			else
 			{
-				std::cerr << "Unknown shape type: " << shape->GetName() << std::endl;
+				std::cerr << "Unknown shape type: " << assetName << std::endl;
 				return;
 			}
 
-			// render the shape (if the shape is a Point Light, draw in wireframe mode)
-			if (shape->GetName().find("Point Light") != std::string::npos)
+			// if the shape is a Light, use wireframe mode
+			if (assetName.find("Point Light") != std::string::npos ||
+				assetName.find("Spotlight") != std::string::npos)
 				glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); // set wireframe mode
 			else
 				glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); // set fill mode
 
+			// render the shape
 			shape->Draw(*shaders[shaderIdx]);
 		});
 
