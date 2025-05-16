@@ -216,11 +216,8 @@ void Core::MainLoop()
 		std::for_each(m_assets["LIGHT"].begin(), m_assets["LIGHT"].end(),
 					  [&](const std::shared_ptr<Asset>& asset)
 		{
-			std::string assetName = asset->GetName(); // determine the type of the shape by its name (provisional)
-			if (assetName.find("Point Light") != std::string::npos) // if the asset is a Point Light
+			if (auto light = dynamic_cast<PointLight*>(asset.get())) // if the asset is a Point Light
 			{
-				auto light = dynamic_cast<PointLight*>(asset.get());
-
 				// vertex shader uniforms
 				shaders[0]->SetVec3("pointLightPos[" + std::to_string(pointLightIdx) + "]", light->GetPosition());
 
@@ -235,10 +232,8 @@ void Core::MainLoop()
 
 				pointLightIdx++; // increment the point light index for the next iteration
 			}
-			else if (assetName.find("Spotlight") != std::string::npos) // if the asset is a Spotlight
+			else if (auto light = dynamic_cast<Spotlight*>(asset.get())) // if the asset is a Spotlight
 			{
-				auto light = dynamic_cast<Spotlight*>(asset.get());
-
 				// vertex shader uniforms
 				shaders[0]->SetVec3("spotlightPos[" + std::to_string(spotlightIdx) + "]", light->GetPosition());
 				shaders[0]->SetVec3("spotlightDir[" + std::to_string(spotlightIdx) + "]", light->GetDirection());
@@ -258,7 +253,7 @@ void Core::MainLoop()
 			}
 			else
 			{
-				std::cerr << "Unknown light type: " << assetName << std::endl;
+				std::cerr << "Unknown light type: " << asset->GetName() << std::endl;
 				return;
 			}
 		});
@@ -284,8 +279,7 @@ void Core::MainLoop()
 
 			GLuint shaderIdx = 0; // default shader index for cube shader program
 
-			std::string assetName = shape->GetName(); // determine the type of the shape by its name (provisional)
-			if (assetName.find("Cube") != std::string::npos) // if the shape is a Cube
+			if (!shape->IsGizmo()) // if the shape is not a gizmo
 			{
 				shaderIdx = 0; // set the shader index to 0 for cube shader programD
 
@@ -300,47 +294,51 @@ void Core::MainLoop()
 				model = glm::translate(model, shape->GetPosition());
 				shaders[shaderIdx]->SetMat4("model", model);
 			}
-			else if (assetName.find("Point Light") != std::string::npos) // if the shape is a Point Light
-			{
-				shaderIdx = 1; // set the shader index to 1 for point light shader program
-
-				// activate the shader program for point lights
-				shaders[shaderIdx]->Use();
-
-				// set the color of the light's shape based on the GUI input
-				shaders[shaderIdx]->SetVec3("albedo", shape->GetAlbedo());
-
-				// set the postion of the light's shape based on the GUI input
-				glm::mat4 model{ 1.0f };
-				model = glm::translate(model, shape->GetPosition());
-				model = glm::scale(model, glm::vec3(0.2f)); // scale the shape to make it smaller
-				shaders[shaderIdx]->SetMat4("model", model);
-			}
-			else if (assetName.find("Spotlight") != std::string::npos) // if the shape is a Spotlight
-			{
-				shaderIdx = 1; // set the shader index to 1 for point light shader program
-
-				// activate the shader program for spotlights
-				shaders[shaderIdx]->Use();
-
-				// set the color of the light's shape based on the GUI input
-				shaders[shaderIdx]->SetVec3("albedo", shape->GetAlbedo());
-
-				// set the postion of the light's shape based on the GUI input
-				glm::mat4 model{ 1.0f };
-				model = glm::translate(model, shape->GetPosition());
-				model = glm::scale(model, glm::vec3(0.2f)); // scale the shape to make it smaller
-				shaders[shaderIdx]->SetMat4("model", model);
-			}
 			else
 			{
-				std::cerr << "Unknown shape type: " << assetName << std::endl;
-				return;
-			}
+				std::string assetName = asset->GetName(); // get the name of the asset
+				if (assetName.find("Point Light") != std::string::npos) // if the shape is a Point Light
+				{
+					shaderIdx = 1; // set the shader index to 1 for point light shader program
 
-			// if the shape is a Light, use wireframe mode
-			if (assetName.find("Point Light") != std::string::npos ||
-				assetName.find("Spotlight") != std::string::npos)
+					// activate the shader program for point lights
+					shaders[shaderIdx]->Use();
+
+					// set the color of the light's shape based on the GUI input
+					shaders[shaderIdx]->SetVec3("albedo", shape->GetAlbedo());
+
+					// set the postion of the light's shape based on the GUI input
+					glm::mat4 model{ 1.0f };
+					model = glm::translate(model, shape->GetPosition());
+					model = glm::scale(model, glm::vec3(0.2f)); // scale the shape to make it smaller
+					shaders[shaderIdx]->SetMat4("model", model);
+				}
+				else if (assetName.find("Spotlight") != std::string::npos) // if the shape is a Spotlight
+				{
+					shaderIdx = 1; // set the shader index to 1 for point light shader program
+
+					// activate the shader program for spotlights
+					shaders[shaderIdx]->Use();
+
+					// set the color of the light's shape based on the GUI input
+					shaders[shaderIdx]->SetVec3("albedo", shape->GetAlbedo());
+
+					// set the postion of the light's shape based on the GUI input
+					glm::mat4 model{ 1.0f };
+					model = glm::translate(model, shape->GetPosition());
+					model = glm::scale(model, glm::vec3(0.2f)); // scale the shape to make it smaller
+					shaders[shaderIdx]->SetMat4("model", model);
+				}
+				else
+				{
+					std::cerr << "Unknown shape type: " << asset->GetName() << std::endl;
+					return;
+				}
+			}
+			
+
+			// if the shape is a gizmo, use wirefame mode for rendering
+			if (shape->IsGizmo())
 				glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); // set wireframe mode
 			else
 				glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); // set fill mode

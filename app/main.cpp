@@ -42,7 +42,7 @@ int main(int argc, char** argv)
 												   glm::vec3{ 1.8f, 1.8f, 4.5f } // position
 	);
 	// get gizmo's shared_ptr from the point light before adding the latter to the engine (as it will be moved)
-	auto pointLightGizmo = pointLight->GetGizmo();
+	auto pointLightGizmo = pointLight->GetGizmoShape();
 	engine->AddAsset(std::move(pointLight)); // add the point light to the engine
 	// concatenate the name of the point light and " (Shape n)", 
 	// where n is the current number of shapes in the scene
@@ -62,7 +62,7 @@ int main(int argc, char** argv)
 												 glm::vec3{ 0.0f, -1.0f, 0.0f } // direction (directly downward)
 	);
 	// get gizmo's shared_ptr from the spotlight before adding the latter to the engine (as it will be moved)
-	auto spotlightGizmo = spotlight->GetGizmo();
+	auto spotlightGizmo = spotlight->GetGizmoShape();
 	engine->AddAsset(std::move(spotlight)); // add the spotlight to the engine
 	// concatenate the name of the spotlight and " (Shape n)",
 	// where n is the current number of shapes in the scene

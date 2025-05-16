@@ -65,10 +65,12 @@ public:
 	// Getters
 	const glm::vec3& GetAlbedo() const { return albedo; }
 	const glm::vec3& GetPosition() const { return translation; }
+	const GLboolean IsGizmo() const { return isGizmo; }
 
 	// Setters
 	void SetAlbedo(const glm::vec3& albedo) { this->albedo = albedo; }
 	void SetPosition(const glm::vec3& translation) { this->translation = translation; }
+	void SetGizmo(const GLboolean isGizmo) { this->isGizmo = isGizmo; }
 
 	// Adds texture data to the shape
 	void AddTextureData(const Texture* textures, const GLuint nTextures);
@@ -90,6 +92,8 @@ private:
 	std::vector<Texture> textures;
 	glm::vec3 albedo; // color of the shape in case no textures are used
 	glm::vec3 translation; // translation vector for the shape in the scene
+
+	GLboolean isGizmo{ false }; // flag to indicate if the shape is a gizmo
 
 	// Private Methods
 	// ---------------

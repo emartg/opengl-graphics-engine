@@ -227,6 +227,7 @@ void GUI::Setup()
 
 				ImGui::Separator(); // add a separator between lights
 			}
+			// if the Light is a Spotlight, get the Spotlight object
 			else if (auto spotlight = dynamic_cast<Spotlight*>(Core::GetInstance()->GetAssets("LIGHT")[i].get()))
 			{
 				// use PushID to create a unique ID for each spotlight (to avoid conflicts with the GUI)
@@ -271,11 +272,8 @@ void GUI::Setup()
 			// get the shape object
 			auto shape = dynamic_cast<Shape*>(Core::GetInstance()->GetAssets("MODEL")[i].get());
 
-			// if the shape is not a light source gizmo, then proceed, otherwise skip it 
-			// (as the light sources' gizmos are already handled in the loop above)
-			std::string assetName = shape->GetName(); // determine the type of the shape by its name (provisional)
-			if (assetName.find("Point Light") == std::string::npos &&
-				assetName.find("Spotlight") == std::string::npos)
+			// if the shape is not a gizmo, then proceed, otherwise skip it (as gizmos are already handled in above)
+			if (!shape->IsGizmo())
 			{
 				// use PushID to create a unique ID for each shape (to avoid conflicts with the GUI)
 				ImGui::PushID(shape->GetName().c_str());
@@ -350,7 +348,7 @@ void GUI::Setup()
 															  newPos // position (random)
 			);
 			// get gizmo's shared_ptr from the new point light before adding the latter to the engine
-			auto newPointLightGizmo = newPointLight->GetGizmo();
+			auto newPointLightGizmo = newPointLight->GetGizmoShape();
 			Core::GetInstance()->AddAsset(std::move(newPointLight)); // add the new point light to the engine
 			// concatenate the name of the new point light and " (Shape n)", 
 			// where n is the current number of shapes in the scene

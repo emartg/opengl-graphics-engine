@@ -48,7 +48,7 @@ public:
 	// Create the gizmo for the spotlight
 	void CreateGizmo() override;
 	// Syncronize gizmo's position with the light's position
-	void SyncGizmoPositionFromLight() { if (gizmo) gizmo->SetPosition(position); }
+	void SyncGizmoPositionFromLight() { if (gizmoShape) gizmoShape->SetPosition(position); }
 	// Syncronize gizmo's direction with the light's direction
 	//void SyncGizmoDirectionFromLight() { if (gizmo) gizmo->SetDirection(direction); }
 
@@ -73,7 +73,8 @@ private:
 
 	// Private Static Attributes (for default values)
 	// ----------------------------------------------
-	static constexpr glm::vec3 POSITION{ 4.0f, 3.0f, 2.0f }, DIRECTION{ -1.0f, -1.0f, -1.0f }; // the default direction is towards the origin
+	static constexpr glm::vec3 POSITION{ 4.0f, 3.0f, 2.0f };
+	static constexpr glm::vec3 DIRECTION{ -1.0f, -1.0f, -1.0f }; // the default direction is towards the origin
 	static constexpr glm::vec3 AMBIENT{ 0.1f }, DIFFUSE{ 0.8f }, SPECULAR{ 1.0f };
 	static constexpr GLfloat CONSTANT{ 1.0f }, LINEAR{ 0.09f }, QUADRATIC{ 0.032f };
 	static const GLfloat CUT_OFF, OUTER_CUT_OFF;

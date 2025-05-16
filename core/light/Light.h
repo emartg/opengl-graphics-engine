@@ -41,18 +41,18 @@ public:
 	glm::vec3 GetAmbient() const { return ambient; }
 	glm::vec3 GetDiffuse() const { return diffuse; }
 	glm::vec3 GetSpecular() const { return specular; }
-	std::shared_ptr<Shape>& GetGizmo() { return gizmo; }
+	std::shared_ptr<Shape>& GetGizmoShape() { return gizmoShape; }
 
 	// Setters
 	void SetAmbient(glm::vec3 ambient) { this->ambient = ambient; }
 	void SetDiffuse(glm::vec3 diffuse) { this->diffuse = diffuse; }
 	void SetSpecular(glm::vec3 specular) { this->specular = specular; }
-	void SetGizmo(std::shared_ptr<Shape> gizmo) { this->gizmo = gizmo; }
+	void SetGizmoShape(std::shared_ptr<Shape> gizmo) { this->gizmoShape = gizmo; }
 
 	// Create the gizmo for the light
 	virtual void CreateGizmo() = 0;
 	// Syncronize gizmo's diffuse color with the light's diffuse color
-	void SyncGizmoColorFromLight() { if (gizmo) gizmo->SetAlbedo(diffuse); }
+	void SyncGizmoColorFromLight() { if (gizmoShape) gizmoShape->SetAlbedo(diffuse); }
 
 	// Static Public Functions
 	// -----------------------
@@ -69,6 +69,6 @@ protected:
 	glm::vec3 diffuse;
 	glm::vec3 specular;
 
-	std::shared_ptr<Shape> gizmo; // the shape used to represent the light in the scene
+	std::shared_ptr<Shape> gizmoShape; // the shape used to represent the light in the scene
 
 };

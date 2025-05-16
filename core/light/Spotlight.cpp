@@ -38,8 +38,9 @@ Spotlight::Spotlight(const std::string& name,
 void Spotlight::CreateGizmo()
 {
 	// create a hexagonal pyramid shape for the spotlight gizmo
-	gizmo = std::make_shared<Shape>(name + " Gizmo",
+	gizmoShape = std::make_shared<Shape>(name + " Gizmo",
 									hexPyramidVerticesVec, hexPyramidIndicesVec,
 									diffuse, // set the color of the gizmo to the light's diffuse color
 									position); // set the position of the gizmo to the light's position
+	gizmoShape->SetGizmo(true); // set the gizmo flag to true to indicate that this is a gizmo shape (isGizmo = true)
 }
