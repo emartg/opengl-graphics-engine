@@ -17,13 +17,16 @@
 #include "../Asset.h"
 #include "../model/Shape.h"	// in order for the Light class to be able to have a shape as a gizmo
 
+enum class LightType { DIRECTIONAL_LIGHT, POINT_LIGHT, SPOTLIGHT, UNDEFINED };
+
 class Light : public Asset
 {
 public:
 	// Constructors
 	// ------------
 	Light(const std::string& name,
-		  const glm::vec3 ambient, const glm::vec3 diffuse, const glm::vec3 specular);
+		  const glm::vec3 ambient, const glm::vec3 diffuse, const glm::vec3 specular,
+		  const LightType type = LightType::UNDEFINED);
 
 	// Virtual destructor (ensures that derived classes can be deleted properly - polymorphism)
 	// ---------------------------------------------------------------------------------------
@@ -41,6 +44,7 @@ public:
 	glm::vec3 GetAmbient() const { return ambient; }
 	glm::vec3 GetDiffuse() const { return diffuse; }
 	glm::vec3 GetSpecular() const { return specular; }
+	LightType GetLightType() const { return lightType; }
 	std::shared_ptr<Shape>& GetGizmoShape() { return gizmoShape; }
 
 	// Setters
@@ -68,6 +72,8 @@ protected:
 	glm::vec3 ambient;
 	glm::vec3 diffuse;
 	glm::vec3 specular;
+
+	LightType lightType; // type of the light (directional, point, spotlight, etc.)
 
 	std::shared_ptr<Shape> gizmoShape; // the shape used to represent the light in the scene
 

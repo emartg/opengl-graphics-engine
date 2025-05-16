@@ -24,7 +24,8 @@ Spotlight::Spotlight(const std::string& name,
 					 const glm::vec3 position, const glm::vec3 direction,
 					 const GLfloat cutOff, const GLfloat outerCutOff,
 					 const GLfloat constant, const GLfloat linear, const GLfloat quadratic)
-	: Light(name, ambient, diffuse, specular),
+	: Light(name, ambient, diffuse, specular,
+			LightType::SPOTLIGHT), // set the light type to spotlight
 	position{ position }, direction{ direction },
 	cutOff{ cutOff }, outerCutOff{ outerCutOff },
 	constant{ constant }, linear{ linear }, quadratic{ quadratic }
@@ -39,8 +40,8 @@ void Spotlight::CreateGizmo()
 {
 	// create a hexagonal pyramid shape for the spotlight gizmo
 	gizmoShape = std::make_shared<Shape>(name + " Gizmo",
-									hexPyramidVerticesVec, hexPyramidIndicesVec,
-									diffuse, // set the color of the gizmo to the light's diffuse color
-									position); // set the position of the gizmo to the light's position
+										 hexPyramidVerticesVec, hexPyramidIndicesVec,
+										 diffuse, // set the color of the gizmo to the light's diffuse color
+										 position); // set the position of the gizmo to the light's position
 	gizmoShape->SetGizmo(true); // set the gizmo flag to true to indicate that this is a gizmo shape (isGizmo = true)
 }

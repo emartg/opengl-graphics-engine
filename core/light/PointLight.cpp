@@ -18,7 +18,8 @@ PointLight::PointLight(const std::string& name,
 					   const glm::vec3 ambient, const glm::vec3 diffuse, const glm::vec3 specular,
 					   const glm::vec3 position,
 					   const GLfloat constant, const GLfloat linear, const GLfloat quadratic)
-	: Light(name, ambient, diffuse, specular),
+	: Light(name, ambient, diffuse, specular,
+			LightType::POINT_LIGHT), // set the light type to point light
 	position{ position },
 	constant{ constant }, linear{ linear }, quadratic{ quadratic }
 {
@@ -32,8 +33,8 @@ void PointLight::CreateGizmo()
 {
 	// create a decahedron shape for the point light gizmo  
 	gizmoShape = std::make_shared<Shape>(name + " Gizmo",
-									decahedronVerticesVec, decahedronIndicesVec,
-									diffuse, // set the color of the gizmo to the light's diffuse color   
-									position); // set the position of the gizmo to the light's position
+										 decahedronVerticesVec, decahedronIndicesVec,
+										 diffuse, // set the color of the gizmo to the light's diffuse color   
+										 position); // set the position of the gizmo to the light's position
 	gizmoShape->SetGizmo(true); // set the gizmo flag to true to indicate that this is a gizmo shape (isGizmo = true)
 }

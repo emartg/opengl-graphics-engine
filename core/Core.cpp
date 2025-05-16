@@ -216,44 +216,52 @@ void Core::MainLoop()
 		std::for_each(m_assets["LIGHT"].begin(), m_assets["LIGHT"].end(),
 					  [&](const std::shared_ptr<Asset>& asset)
 		{
-			if (auto light = dynamic_cast<PointLight*>(asset.get())) // if the asset is a Point Light
+			// dynamically cast the asset to a Light object and get its type
+			auto light = dynamic_cast<Light*>(asset.get());
+			LightType lightType = light->GetLightType();
+
+			if (lightType == LightType::POINT_LIGHT) // if the Light is a Point Light
 			{
+				auto pointLight = dynamic_cast<PointLight*>(light); // get the PointLight object
+
 				// vertex shader uniforms
-				shaders[0]->SetVec3("pointLightPos[" + std::to_string(pointLightIdx) + "]", light->GetPosition());
+				shaders[0]->SetVec3("pointLightPos[" + std::to_string(pointLightIdx) + "]", pointLight->GetPosition());
 
 				// fragment shader uniforms
 				std::string prefix = "pointLights[" + std::to_string(pointLightIdx) + "].";
-				shaders[0]->SetVec3(prefix + "ambient", light->GetAmbient());
-				shaders[0]->SetVec3(prefix + "diffuse", light->GetDiffuse());
-				shaders[0]->SetVec3(prefix + "specular", light->GetSpecular());
-				shaders[0]->SetFloat(prefix + "constant", light->GetConstant());
-				shaders[0]->SetFloat(prefix + "linear", light->GetLinear());
-				shaders[0]->SetFloat(prefix + "quadratic", light->GetQuadratic());
+				shaders[0]->SetVec3(prefix + "ambient", pointLight->GetAmbient());
+				shaders[0]->SetVec3(prefix + "diffuse", pointLight->GetDiffuse());
+				shaders[0]->SetVec3(prefix + "specular", pointLight->GetSpecular());
+				shaders[0]->SetFloat(prefix + "constant", pointLight->GetConstant());
+				shaders[0]->SetFloat(prefix + "linear", pointLight->GetLinear());
+				shaders[0]->SetFloat(prefix + "quadratic", pointLight->GetQuadratic());
 
 				pointLightIdx++; // increment the point light index for the next iteration
 			}
-			else if (auto light = dynamic_cast<Spotlight*>(asset.get())) // if the asset is a Spotlight
+			else if (lightType == LightType::SPOTLIGHT) // if the Light is a Spotlight
 			{
+				auto spotlight = dynamic_cast<Spotlight*>(light); // get the Spotlight object
+
 				// vertex shader uniforms
-				shaders[0]->SetVec3("spotlightPos[" + std::to_string(spotlightIdx) + "]", light->GetPosition());
-				shaders[0]->SetVec3("spotlightDir[" + std::to_string(spotlightIdx) + "]", light->GetDirection());
+				shaders[0]->SetVec3("spotlightPos[" + std::to_string(spotlightIdx) + "]", spotlight->GetPosition());
+				shaders[0]->SetVec3("spotlightDir[" + std::to_string(spotlightIdx) + "]", spotlight->GetDirection());
 
 				// fragment shader uniforms
 				std::string prefix = "spotlights[" + std::to_string(spotlightIdx) + "].";
-				shaders[0]->SetVec3(prefix + "ambient", light->GetAmbient());
-				shaders[0]->SetVec3(prefix + "diffuse", light->GetDiffuse());
-				shaders[0]->SetVec3(prefix + "specular", light->GetSpecular());
-				shaders[0]->SetFloat(prefix + "constant", light->GetConstant());
-				shaders[0]->SetFloat(prefix + "linear", light->GetLinear());
-				shaders[0]->SetFloat(prefix + "quadratic", light->GetQuadratic());
-				shaders[0]->SetFloat(prefix + "cutOff", light->GetCutOff());
-				shaders[0]->SetFloat(prefix + "outerCutOff", light->GetOuterCutOff());
+				shaders[0]->SetVec3(prefix + "ambient", spotlight->GetAmbient());
+				shaders[0]->SetVec3(prefix + "diffuse", spotlight->GetDiffuse());
+				shaders[0]->SetVec3(prefix + "specular", spotlight->GetSpecular());
+				shaders[0]->SetFloat(prefix + "constant", spotlight->GetConstant());
+				shaders[0]->SetFloat(prefix + "linear", spotlight->GetLinear());
+				shaders[0]->SetFloat(prefix + "quadratic", spotlight->GetQuadratic());
+				shaders[0]->SetFloat(prefix + "cutOff", spotlight->GetCutOff());
+				shaders[0]->SetFloat(prefix + "outerCutOff", spotlight->GetOuterCutOff());
 
 				spotlightIdx++; // increment the spotlight index for the next iteration
 			}
 			else
 			{
-				std::cerr << "Unknown light type: " << asset->GetName() << std::endl;
+				std::cerr << "Unknown light type: " << light->GetName() << std::endl;
 				return;
 			}
 		});
@@ -296,6 +304,9 @@ void Core::MainLoop()
 			}
 			else
 			{
+				// to determine the type of light, provisionally, the name of the asset is used
+				// TODO: add a reference or pointer from the gizmo Shape back to its parent Light,
+				// this way the type of light could be determined without relying on the name of the asset
 				std::string assetName = asset->GetName(); // get the name of the asset
 				if (assetName.find("Point Light") != std::string::npos) // if the shape is a Point Light
 				{
@@ -335,7 +346,7 @@ void Core::MainLoop()
 					return;
 				}
 			}
-			
+
 
 			// if the shape is a gizmo, use wirefame mode for rendering
 			if (shape->IsGizmo())
