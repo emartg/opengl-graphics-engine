@@ -56,10 +56,7 @@ int main(int argc, char** argv)
 	// where n is the current number of spotlights in the scene
 	auto spotlight = std::make_shared<Spotlight>("Spotlight " + std::to_string(engine->GetNSpotlights()),
 												 glm::vec3{ 0.1f }, // ambient color (default)
-												 glm::vec3{ 0.9f, 0.5f, 0.5f }, // diffuse color (bright red)
-												 glm::vec3{ 1.0f }, // specular color (default)
-												 glm::vec3{ 0.0f, 4.5f, 0.0f }, // position (a bit above the origin)
-												 glm::vec3{ 0.0f, -1.0f, 0.0f } // direction (directly downward)
+												 glm::vec3{ 0.9f, 0.5f, 0.5f } // diffuse color (bright red)
 	);
 	// get gizmo's shared_ptr from the spotlight before adding the latter to the engine (as it will be moved)
 	auto spotlightGizmo = spotlight->GetGizmoShape();

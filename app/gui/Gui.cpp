@@ -227,7 +227,7 @@ void GUI::Setup()
 				glm::vec3 pos = pointLight->GetPosition();
 				// create a slider for the x, y, and z components of the light's position
 				if (ImGui::SliderFloat3("Position", (float*)&pos,
-										MIN_SLIDER_VALUE, MAX_SLIDER_VALUE)) // if the slider is moved
+										MIN_POSITION_SLIDER_VALUE, MAX_POSITION_SLIDER_VALUE)) // if the slider is moved
 				{
 					pointLight->SetPosition(pos); // set the new position of the light
 					pointLight->SyncGizmoPositionFromLight(); // set the new position of the light's gizmo
@@ -259,10 +259,20 @@ void GUI::Setup()
 				glm::vec3 pos = spotlight->GetPosition();
 				// create a slider for the x, y, and z components of the spotlight's position
 				if (ImGui::SliderFloat3("Position", (float*)&pos,
-										MIN_SLIDER_VALUE, MAX_SLIDER_VALUE)) // if the slider is moved
+										MIN_POSITION_SLIDER_VALUE, MAX_POSITION_SLIDER_VALUE)) // if the slider is moved
 				{
 					spotlight->SetPosition(pos); // set the new position of the spotlight
 					spotlight->SyncGizmoPositionFromLight(); // set the new position of the spotlight's gizmo
+				}
+				// get the direction of the spotlight
+				glm::vec3 dir = spotlight->GetDirection();
+				// create a slider for the x, y, and z components of the spotlight's direction
+				if (ImGui::SliderFloat3("Direction", (float*)&dir,
+										MIN_DIRECTION_SLIDER_VALUE, MAX_DIRECTION_SLIDER_VALUE)) // if the slider is moved
+				{
+					dir = glm::normalize(dir); // normalize the direction vector to avoid issues with the spotlight's direction
+					spotlight->SetDirection(dir); // set the new direction of the spotlight
+					spotlight->SyncGizmoDirectionFromLight(); // set the new direction of the spotlight's gizmo
 				}
 
 				// use PopID to end the unique ID scope
@@ -303,7 +313,7 @@ void GUI::Setup()
 				glm::vec3 pos = shape->GetPosition();
 				// create a slider for the x, y, and z components of the shape's position
 				if (ImGui::SliderFloat3("Position", (float*)&pos,
-										MIN_SLIDER_VALUE, MAX_SLIDER_VALUE)) // if the slider is moved
+										MIN_POSITION_SLIDER_VALUE, MAX_POSITION_SLIDER_VALUE)) // if the slider is moved
 				{
 					shape->SetPosition(pos); // set the new position of the shape
 				}
@@ -367,6 +377,38 @@ void GUI::Setup()
 			newPointLightGizmo->SetName(newPointLightGizmo->GetName() + " (Shape " + nShapes + ")");
 			// add the point light gizmo (a decahedron) to the engine
 			Core::GetInstance()->AddAsset(std::move(newPointLightGizmo));
+		}
+
+		// button to add a new spotlight to the scene
+		if (ImGui::Button("Add Spotlight"))
+		{
+			// get a random color, a random position, and a random direction for the spotlight and its gizmo
+			glm::vec3 newColor = m_randomizer->GenerateRandomColor();
+			glm::vec3 newPos = m_randomizer->GenerateRandomPosition(glm::vec3(0.0f), // origin
+																	MIN_DISTANCE_FROM_ORIGIN, MAX_DISTANCE_FROM_ORIGIN);
+			glm::vec3 newDir = m_randomizer->GenerateRandomDirection();
+
+			// get the current number of shapes in the scene
+			std::string nShapes = std::to_string(Core::GetInstance()->GetNShapes());
+			// get the current number of spotlights in the scene
+			std::string nSpotlights = std::to_string(Core::GetInstance()->GetNSpotlights());
+			// create a new spotlight called "Spotlight n",
+			// where n is the current number of spotlights in the scene
+			auto newSpotlight = std::make_shared<Spotlight>("Spotlight " + nSpotlights,
+															glm::vec3{ 0.1f }, // ambient color (default)
+															newColor, // diffuse color (random)
+															glm::vec3{ 1.0f }, // specular color (default)
+															newPos, // position (random)
+															newDir // direction (random)
+			);
+			// get gizmo's shared_ptr from the new spotlight before adding the latter to the engine
+			auto newSpotlightGizmo = newSpotlight->GetGizmoShape();
+			Core::GetInstance()->AddAsset(std::move(newSpotlight)); // add the new spotlight to the engine
+			// concatenate the name of the new spotlight and " (Shape n)",
+			// where n is the current number of shapes in the scene
+			newSpotlightGizmo->SetName(newSpotlightGizmo->GetName() + " (Shape " + nShapes + ")");
+			// add the spotlight gizmo (a decahedron) to the engine
+			Core::GetInstance()->AddAsset(std::move(newSpotlightGizmo));
 		}
 
 		ImGui::End();

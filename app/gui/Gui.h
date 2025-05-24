@@ -55,8 +55,10 @@ private:
 
 	// Private Static Attributes (for default values)
 	// ----------------------------------------------
-	static constexpr float MIN_SLIDER_VALUE{ -15.0f }; // default minimum value for sliders
-	static constexpr float MAX_SLIDER_VALUE{ 15.0f }; // default maximum value for sliders
+	static constexpr float MIN_POSITION_SLIDER_VALUE{ -15.0f }; // default minimum value for position sliders
+	static constexpr float MAX_POSITION_SLIDER_VALUE{ 15.0f }; // default maximum value for position sliders
+	static constexpr float MIN_DIRECTION_SLIDER_VALUE{ -1.0f }; // default minimum value for direction sliders
+	static constexpr float MAX_DIRECTION_SLIDER_VALUE{ 1.0f }; // default maximum value for direction sliders
 	static constexpr float MIN_DISTANCE_FROM_ORIGIN{ 4.0f }; // default minimum distance from origin
 	static constexpr float MAX_DISTANCE_FROM_ORIGIN{ 15.0f }; // default maximum distance from origin
 

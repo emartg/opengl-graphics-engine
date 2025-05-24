@@ -42,6 +42,11 @@ void Spotlight::CreateGizmo()
 	gizmoShape = std::make_shared<Shape>(name + " Gizmo",
 										 hexPyramidVerticesVec, hexPyramidIndicesVec,
 										 diffuse, // set the color of the gizmo to the light's diffuse color
-										 position); // set the position of the gizmo to the light's position
-	gizmoShape->SetGizmo(true); // set the gizmo flag to true to indicate that this is a gizmo shape (isGizmo = true)
+										 position, // set the position of the gizmo to the light's position
+										 direction // set the direction of the gizmo to the light's direction
+	);
+	// set the default direction to the axis the mesh points to (the negative y-axis)
+	gizmoShape->SetDefaultDirection(glm::vec3(DIRECTION));
+	// set the gizmo flag to true to indicate that this is a gizmo shape (isGizmo = true)
+	gizmoShape->SetGizmo(true);
 }

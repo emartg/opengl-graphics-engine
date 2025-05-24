@@ -33,8 +33,11 @@ public:
 	// Public Methods
 	// --------------
 	// Generate a random color
-	glm::vec3 GenerateRandomColor() const;
+	const glm::vec3 GenerateRandomColor() const;
 
 	// Generate a random position within a certain range with respect to a target
-	glm::vec3 GenerateRandomPosition(glm::vec3 target, float minDistanceFromTarget, float maxDistanceFromTarget) const;
+	const glm::vec3 GenerateRandomPosition(glm::vec3 target, float minDistanceFromTarget, float maxDistanceFromTarget) const;
+	// Generate a random direction (unit vector)
+	const glm::vec3 GenerateRandomDirection() const;
+
 };

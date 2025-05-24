@@ -18,42 +18,46 @@ public:
 	// ------------
 	// Constructor that creates a shape from interleaved position, normal and texture coordinate data, 
 	// and index data. Two optional arguments can be specified for the shape: the albedo color (default is grey)
-	// and the translation vector (default is the zero vector)
+	// and the position vector (default is the zero vector)
 	Shape(const std::string& name,
 		  const std::vector<GLfloat> vertices, const std::vector<GLuint> indices,
-		  const glm::vec3 albedo = glm::vec3(0.5f), const glm::vec3 translation = glm::vec3(0.0f)
+		  const glm::vec3 albedo = glm::vec3(0.5f),
+		  const glm::vec3 position = glm::vec3(0.0f), glm::vec3 direction = glm::vec3(0.0f)
 	);
 
 	// Constructor that creates a shape from separate position, normal, and texture coordinate data,
 	// and index data. Two optional arguments can be specified for the shape: the albedo color (default is grey)
-	// and the translation vector (default is the zero vector)
+	// and the position vector (default is the zero vector)
 	Shape(const std::string& name,
 		  const std::vector<GLfloat> positions, const std::vector<GLfloat> normals,
 		  const std::vector<GLfloat> texCoords, const std::vector<GLuint> indices,
-		  const glm::vec3 albedo = glm::vec3(0.5f), const glm::vec3 translation = glm::vec3(0.0f)
+		  const glm::vec3 albedo = glm::vec3(0.5f),
+		  const glm::vec3 position = glm::vec3(0.0f), glm::vec3 direction = glm::vec3(0.0f)
 	);
 
 	// Constructor that creates a shape from interleaved position, normal and texture coordinate data, 
 	// and index data. Two optional arguments can be specified for the shape: the albedo color (default is grey)
-	// and the translation vector (default is the zero vector)
+	// and the position vector (default is the zero vector)
 	// This variant takes arrays as arguments instead of vectors, in case the data is laid out in arrays,
 	// and thus requires the number of elements (or vectors of 3 elements) conform each of the arrays
 	Shape(const std::string& name,
 		  const GLfloat* vertices, const GLuint nVertices,
 		  const GLuint* indices, const GLuint nIndices,
-		  const glm::vec3 albedo = glm::vec3(0.5f), const glm::vec3 translation = glm::vec3(0.0f)
+		  const glm::vec3 albedo = glm::vec3(0.5f),
+		  const glm::vec3 position = glm::vec3(0.0f), glm::vec3 direction = glm::vec3(0.0f)
 	);
 
 	// Constructor that creates a shape from separate position, normal, and texture coordinate data,
 	// and index data. Two optional arguments can be specified for the shape: the albedo color (default is grey)
-	// and the translation vector (default is the zero vector)
+	// and the position vector (default is the zero vector)
 	// This variant takes arrays as arguments instead of vectors, in case the data is laid out in arrays, 
 	// and thus requires the number of elements (or vectors of 3 elements) conform each of the arrays
 	Shape(const std::string& name,
 		  const GLfloat* positions, const GLfloat* normals,
 		  const GLfloat* texCoords, const GLuint nVertices,
 		  const GLuint* indices, const GLuint nIndices,
-		  const glm::vec3 albedo = glm::vec3(0.5f), const glm::vec3 translation = glm::vec3(0.0f)
+		  const glm::vec3 albedo = glm::vec3(0.5f),
+		  const glm::vec3 position = glm::vec3(0.0f), glm::vec3 direction = glm::vec3(0.0f)
 	);
 
 	// Destructor
@@ -64,12 +68,16 @@ public:
 	// --------------
 	// Getters
 	const glm::vec3& GetAlbedo() const { return albedo; }
-	const glm::vec3& GetPosition() const { return translation; }
+	const glm::vec3& GetPosition() const { return position; }
+	const glm::vec3& GetDefaultDirection() const { return defaultDirection; }
+	const glm::vec3& GetDirection() const { return direction; }
 	const GLboolean IsGizmo() const { return isGizmo; }
 
 	// Setters
 	void SetAlbedo(const glm::vec3& albedo) { this->albedo = albedo; }
-	void SetPosition(const glm::vec3& translation) { this->translation = translation; }
+	void SetPosition(const glm::vec3& position) { this->position = position; }
+	void SetDefaultDirection(const glm::vec3& defaultDirection) { this->defaultDirection = defaultDirection; }
+	void SetDirection(const glm::vec3& direction) { this->direction = direction; }
 	void SetGizmo(const GLboolean isGizmo) { this->isGizmo = isGizmo; }
 
 	// Adds texture data to the shape
@@ -91,7 +99,9 @@ private:
 	std::vector<GLuint> indices;
 	std::vector<Texture> textures;
 	glm::vec3 albedo; // color of the shape in case no textures are used
-	glm::vec3 translation; // translation vector for the shape in the scene
+	glm::vec3 position; // position vector for the shape in the scene
+	glm::vec3 defaultDirection; // direction used to create the shape
+	glm::vec3 direction; // direction vector for the shape in the scene
 
 	GLboolean isGizmo{ false }; // flag to indicate if the shape is a gizmo
 

@@ -8,16 +8,22 @@
 
 // Private Methods
 // ---------------
-glm::vec3 Random::GenerateRandomColor() const
+const glm::vec3 Random::GenerateRandomColor() const
 {
 	glm::vec3 newColor{ (rand() % 100) / 100.0f, (rand() % 100) / 100.0f, (rand() % 100) / 100.0f };
 	return newColor;
 }
 
-glm::vec3 Random::GenerateRandomPosition(glm::vec3 target, float minDistanceFromTarget, float maxDistanceFromTarget) const
+const glm::vec3 Random::GenerateRandomPosition(glm::vec3 target, float minDistanceFromTarget, float maxDistanceFromTarget) const
 {
 	glm::vec3 newPos{ target.x + (rand() % 100) / 100.0f * (maxDistanceFromTarget - minDistanceFromTarget),
 					  target.y + (rand() % 100) / 100.0f * (maxDistanceFromTarget - minDistanceFromTarget),
 					  target.z + (rand() % 100) / 100.0f * (maxDistanceFromTarget - minDistanceFromTarget) };
 	return newPos;
+}
+
+const glm::vec3 Random::GenerateRandomDirection() const
+{
+	glm::vec3 newDir{ (rand() % 100) / 100.0f, (rand() % 100) / 100.0f, (rand() % 100) / 100.0f };
+	return glm::normalize(newDir);
 }

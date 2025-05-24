@@ -17,10 +17,11 @@ GLuint Shape::nShapes{}; // initialize the number of shapes in the scene to 0
 // ------------
 Shape::Shape(const std::string& name,
 			 const std::vector<GLfloat> vertices, const std::vector<GLuint> indices,
-			 const glm::vec3 albedo, const glm::vec3 translation)
+			 const glm::vec3 albedo,
+			 const glm::vec3 position, const glm::vec3 direction)
 	: Model(name),
 	vertices{ processVertexData(vertices) }, indices{ indices },
-	albedo{ albedo }, translation{ translation }
+	albedo{ albedo }, position{ position }, direction{ direction }
 {
 	createMesh();
 	nShapes++; // increments the number of shapes
@@ -29,10 +30,11 @@ Shape::Shape(const std::string& name,
 Shape::Shape(const std::string& name,
 			 const std::vector<GLfloat> positions, const std::vector<GLfloat> normals,
 			 const std::vector<GLfloat> texCoords, const std::vector<GLuint> indices,
-			 const glm::vec3 albedo, const glm::vec3 translation)
+			 const glm::vec3 albedo,
+			 const glm::vec3 position, const glm::vec3 direction)
 	: Model(name),
 	vertices{ processVertexData(positions, normals, texCoords) }, indices{ indices },
-	albedo{ albedo }, translation{ translation }
+	albedo{ albedo }, position{ position }, direction{ direction }
 {
 	createMesh();
 	nShapes++; // increments the number of shapes
@@ -41,8 +43,10 @@ Shape::Shape(const std::string& name,
 Shape::Shape(const std::string& name,
 			 const GLfloat* vertices, const GLuint nVertices,
 			 const GLuint* indices, const GLuint nIndices,
-			 const glm::vec3 albedo, const glm::vec3 translation)
-	: Model(name), albedo{ albedo }, translation{ translation }
+			 const glm::vec3 albedo,
+			 const glm::vec3 position, const glm::vec3 direction)
+	: Model(name),
+	albedo{ albedo }, position{ position }, direction{ direction }
 {
 	std::vector<GLfloat> vertexData{ vertices, vertices + nVertices * 8 };
 	std::vector<GLuint> indexData{ indices, indices + nIndices };
@@ -57,8 +61,10 @@ Shape::Shape(const std::string& name,
 			 const GLfloat* positions, const GLfloat* normals,
 			 const GLfloat* texCoords, const GLuint nVertices,
 			 const GLuint* indices, const GLuint nIndices,
-			 const glm::vec3 albedo, const glm::vec3 translation)
-	: Model(name), albedo{ albedo }, translation{ translation }
+			 const glm::vec3 albedo,
+			 const glm::vec3 position, const glm::vec3 direction)
+	: Model(name),
+	albedo{ albedo }, position{ position }, direction{ direction }
 {
 	std::vector<GLfloat> positionData{ positions, positions + nVertices * 3 };
 	std::vector<GLfloat> normalData{ normals, normals + nVertices * 3 };

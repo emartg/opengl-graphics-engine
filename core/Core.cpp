@@ -318,10 +318,14 @@ void Core::MainLoop()
 					// set the color of the light's shape based on the GUI input
 					shaders[shaderIdx]->SetVec3("albedo", shape->GetAlbedo());
 
-					// set the postion of the light's shape based on the GUI input
+					// set the position of the light's shape based on the GUI input
 					glm::mat4 model{ 1.0f };
 					model = glm::translate(model, shape->GetPosition());
-					model = glm::scale(model, glm::vec3(0.2f)); // scale the shape to make it smaller
+
+					// scale the shape to make it smaller
+					model = glm::scale(model, glm::vec3(0.2f));
+
+					// set the model matrix for the light's shape
 					shaders[shaderIdx]->SetMat4("model", model);
 				}
 				else if (assetName.find("Spotlight") != std::string::npos) // if the shape is a Spotlight
@@ -334,10 +338,41 @@ void Core::MainLoop()
 					// set the color of the light's shape based on the GUI input
 					shaders[shaderIdx]->SetVec3("albedo", shape->GetAlbedo());
 
-					// set the postion of the light's shape based on the GUI input
+					// set the position of the light's shape based on the GUI input
 					glm::mat4 model{ 1.0f };
 					model = glm::translate(model, shape->GetPosition());
-					model = glm::scale(model, glm::vec3(0.2f)); // scale the shape to make it smaller
+
+					// set the direction of the light's shape based on the GUI input
+					glm::vec3 defaultDirection = glm::normalize(shape->GetDefaultDirection()); // normalize just in case
+					glm::vec3 targetDirection = glm::normalize(shape->GetDirection()); // normalize just in case
+					if (glm::length(targetDirection) > 0.0001f) // avoid NaN if direction is zero
+					{
+						// calculate the rotation angle and axis to align the shape with the light's direction
+						float angle = acos(glm::clamp(glm::dot(defaultDirection, targetDirection), -1.0f, 1.0f));
+						glm::vec3 rotationAxis = glm::cross(defaultDirection, targetDirection);
+						if (glm::length(rotationAxis) > 0.0001f) // avoid NaN if rotation axis is zero
+						{
+							rotationAxis = glm::normalize(rotationAxis); // normalize just in case
+							// rotate the shape around the rotation axis by the calculated angle
+							model = glm::rotate(model, angle, rotationAxis);
+						}
+						// if angle is 0 or 180 degrees, cross product is zero; handle 180 deg flip if needed
+						else if (angle > 3.13f) // ~pi
+						{
+							// pick any axis perpendicular to defaultDirection
+							glm::vec3 perp = glm::vec3(1.0f, 0.0f, 0.0f);
+							// if defaultDirection is close to perp, pick another axis
+							if (fabs(glm::dot(defaultDirection, perp)) > 0.99f)
+								perp = glm::vec3(0.0f, 0.0f, 1.0f);
+							// rotate around the perpendicular axis
+							model = glm::rotate(model, angle, perp);
+						}
+					}
+
+					// scale the shape to make it smaller
+					model = glm::scale(model, glm::vec3(0.2f));
+
+					// set the model matrix for the light's shape
 					shaders[shaderIdx]->SetMat4("model", model);
 				}
 				else

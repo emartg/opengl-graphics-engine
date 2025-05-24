@@ -22,9 +22,11 @@ public:
 			  const glm::vec3 position = POSITION, const glm::vec3 direction = DIRECTION,
 			  const GLfloat cutOff = CUT_OFF, const GLfloat outerCutOff = OUTER_CUT_OFF,
 			  const GLfloat constant = CONSTANT, const GLfloat linear = LINEAR, const GLfloat quadratic = QUADRATIC);
+
 	// Destructor
 	// ----------
 	~Spotlight() { nSpotlights--; } // decrements the number of spotlights
+
 	// Public Methods
 	// --------------
 	// Getters
@@ -38,7 +40,7 @@ public:
 
 	// Setters
 	void SetPosition(glm::vec3 position) { this->position = position; }
-	void SetDirection(glm::vec3 direction) { this->direction = direction; }
+	void SetDirection(glm::vec3 direction) { this->direction = glm::normalize(direction); }
 	void SetCutOff(GLfloat cutOff) { this->cutOff = cutOff; }
 	void SetOuterCutOff(GLfloat outerCutOff) { this->outerCutOff = outerCutOff; }
 	void SetConstant(GLfloat constant) { this->constant = constant; }
@@ -50,7 +52,7 @@ public:
 	// Syncronize gizmo's position with the light's position
 	void SyncGizmoPositionFromLight() { if (gizmoShape) gizmoShape->SetPosition(position); }
 	// Syncronize gizmo's direction with the light's direction
-	//void SyncGizmoDirectionFromLight() { if (gizmo) gizmo->SetDirection(direction); }
+	void SyncGizmoDirectionFromLight() { if (gizmoShape) gizmoShape->SetDirection(direction); }
 
 	// Static Public Functions
 	// -----------------------
@@ -73,8 +75,8 @@ private:
 
 	// Private Static Attributes (for default values)
 	// ----------------------------------------------
-	static constexpr glm::vec3 POSITION{ 4.0f, 3.0f, 2.0f };
-	static constexpr glm::vec3 DIRECTION{ -1.0f, -1.0f, -1.0f }; // the default direction is towards the origin
+	static constexpr glm::vec3 POSITION{ 1.0f , 4.5f , -0.5f };
+	static constexpr glm::vec3 DIRECTION{ 0.0f, -1.0f, 0.0f }; // default direction is -Y axis
 	static constexpr glm::vec3 AMBIENT{ 0.1f }, DIFFUSE{ 0.8f }, SPECULAR{ 1.0f };
 	static constexpr GLfloat CONSTANT{ 1.0f }, LINEAR{ 0.09f }, QUADRATIC{ 0.032f };
 	static const GLfloat CUT_OFF, OUTER_CUT_OFF;
