@@ -27,7 +27,7 @@ struct Spotlight
     float quadratic;
 
     // spotlight properties
-    float cutOff;       // inner cut-off angle of the spotlight cone
+    float innerCutOff;  // inner cut-off angle of the spotlight cone
     float outerCutOff;  // outer cut-off angle of the spotlight cone
 };
 
@@ -124,7 +124,7 @@ vec3 computeSpotlightColor(Spotlight light, vec3 spotlightPos, vec3 spotlightDir
 
     // spotlight intensity
     float theta     = dot(lightDir, normalize(-spotlightDir));
-    float epsilon   = light.cutOff - light.outerCutOff;
+    float epsilon   = light.innerCutOff - light.outerCutOff;
     float intensity = clamp((theta - light.outerCutOff) / epsilon, 0.0, 1.0);
 
     // combine results

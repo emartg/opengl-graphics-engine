@@ -20,7 +20,7 @@ public:
 	Spotlight(const std::string& name,
 			  const glm::vec3 ambient = AMBIENT, const glm::vec3 diffuse = DIFFUSE, const glm::vec3 specular = SPECULAR,
 			  const glm::vec3 position = POSITION, const glm::vec3 direction = DIRECTION,
-			  const GLfloat cutOff = CUT_OFF, const GLfloat outerCutOff = OUTER_CUT_OFF,
+			  const GLfloat innerCutOff = INNER_CUTOFF, const GLfloat outerCutOff = OUTER_CUTOFF,
 			  const GLfloat constant = CONSTANT, const GLfloat linear = LINEAR, const GLfloat quadratic = QUADRATIC);
 
 	// Destructor
@@ -32,7 +32,7 @@ public:
 	// Getters
 	glm::vec3 GetPosition() const { return position; }
 	glm::vec3 GetDirection() const { return direction; }
-	GLfloat GetCutOff() const { return cutOff; }
+	GLfloat GetInnerCutOff() const { return innerCutOff; }
 	GLfloat GetOuterCutOff() const { return outerCutOff; }
 	GLfloat GetConstant() const { return constant; }
 	GLfloat GetLinear() const { return linear; }
@@ -41,7 +41,7 @@ public:
 	// Setters
 	void SetPosition(glm::vec3 position) { this->position = position; }
 	void SetDirection(glm::vec3 direction) { this->direction = glm::normalize(direction); }
-	void SetCutOff(GLfloat cutOff) { this->cutOff = cutOff; }
+	void SetInnerCutOff(GLfloat innerCutOff) { this->innerCutOff = innerCutOff; }
 	void SetOuterCutOff(GLfloat outerCutOff) { this->outerCutOff = outerCutOff; }
 	void SetConstant(GLfloat constant) { this->constant = constant; }
 	void SetLinear(GLfloat linear) { this->linear = linear; }
@@ -53,6 +53,10 @@ public:
 	void SyncGizmoPositionFromLight() { if (gizmoShape) gizmoShape->SetPosition(position); }
 	// Syncronize gizmo's direction with the light's direction
 	void SyncGizmoDirectionFromLight() { if (gizmoShape) gizmoShape->SetDirection(direction); }
+	//// Syncronize the gizmo's hex pyramid height with the light's inner cut-off angle
+	//void SyncGizmoInnerCutOffFromLight() { if (gizmoShape) gizmoShape->SetInnerCutOff(cutOff); }
+	//// Syncronize the gizmo's hex pyramid base area with the light's outer cut-off angle
+	//void SyncGizmoOuterCutOffFromLight() { if (gizmoShape) gizmoShape->SetOuterCutOff(outerCutOff); }
 
 	// Static Public Functions
 	// -----------------------
@@ -67,7 +71,7 @@ private:
 	// ------------------
 	glm::vec3 position;
 	glm::vec3 direction;
-	GLfloat cutOff;
+	GLfloat innerCutOff;
 	GLfloat outerCutOff;
 	GLfloat constant;
 	GLfloat linear;
@@ -79,7 +83,7 @@ private:
 	static constexpr glm::vec3 DIRECTION{ 0.0f, -1.0f, 0.0f }; // default direction is -Y axis
 	static constexpr glm::vec3 AMBIENT{ 0.1f }, DIFFUSE{ 0.8f }, SPECULAR{ 1.0f };
 	static constexpr GLfloat CONSTANT{ 1.0f }, LINEAR{ 0.09f }, QUADRATIC{ 0.032f };
-	static const GLfloat CUT_OFF, OUTER_CUT_OFF;
+	static const GLfloat INNER_CUTOFF, OUTER_CUTOFF;
 
 };
 

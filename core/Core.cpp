@@ -254,7 +254,7 @@ void Core::MainLoop()
 				shaders[0]->SetFloat(prefix + "constant", spotlight->GetConstant());
 				shaders[0]->SetFloat(prefix + "linear", spotlight->GetLinear());
 				shaders[0]->SetFloat(prefix + "quadratic", spotlight->GetQuadratic());
-				shaders[0]->SetFloat(prefix + "cutOff", spotlight->GetCutOff());
+				shaders[0]->SetFloat(prefix + "innerCutOff", spotlight->GetInnerCutOff());
 				shaders[0]->SetFloat(prefix + "outerCutOff", spotlight->GetOuterCutOff());
 
 				spotlightIdx++; // increment the spotlight index for the next iteration

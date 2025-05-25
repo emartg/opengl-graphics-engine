@@ -102,6 +102,8 @@ private:
 	glm::vec3 position; // position vector for the shape in the scene
 	glm::vec3 defaultDirection; // direction used to create the shape
 	glm::vec3 direction; // direction vector for the shape in the scene
+	//glm::vec3 height; // hex pyramid height (represents the inner cut-off angle for spotlights)
+	//GLfloat baseArea{ 0.0f }; // hex pyramid base area (represents the outer cut-off angle for spotlights)
 
 	GLboolean isGizmo{ false }; // flag to indicate if the shape is a gizmo
 

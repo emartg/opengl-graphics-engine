@@ -129,9 +129,9 @@ void GUI::Setup()
 				// display the direction of the spotlight
 				ImGui::Text("Direction: (%.2f, %.2f, %.2f)",
 							spotlight->GetDirection().x, spotlight->GetDirection().y, spotlight->GetDirection().z);
-				// display the cut-off angles of the spotlight
-				ImGui::Text("Inner cut-off: %.2f", spotlight->GetCutOff());
-				ImGui::Text("Outer cut-off: %.2f", spotlight->GetOuterCutOff());
+				// display the cut-off angles of the spotlight (in degrees)
+				ImGui::Text("Inner cut-off: %.2f", glm::degrees(glm::acos(spotlight->GetInnerCutOff())));
+				ImGui::Text("Outer cut-off: %.2f", glm::degrees(glm::acos(spotlight->GetOuterCutOff())));
 
 				// use PopID to end the unique ID scope
 				ImGui::PopID();
@@ -247,6 +247,7 @@ void GUI::Setup()
 
 				// display the name of the spotlight
 				ImGui::Text("%s", spotlight->GetName().c_str());
+
 				// get the color of the spotlight
 				glm::vec3 color = spotlight->GetDiffuse();
 				// create a color picker for the spotlight's color
@@ -255,6 +256,7 @@ void GUI::Setup()
 					spotlight->SetDiffuse(color); // set the new color of the spotlight
 					spotlight->SyncGizmoColorFromLight(); // set the new color of the spotlight's gizmo
 				}
+
 				// get the position of the spotlight
 				glm::vec3 pos = spotlight->GetPosition();
 				// create a slider for the x, y, and z components of the spotlight's position
@@ -264,6 +266,7 @@ void GUI::Setup()
 					spotlight->SetPosition(pos); // set the new position of the spotlight
 					spotlight->SyncGizmoPositionFromLight(); // set the new position of the spotlight's gizmo
 				}
+
 				// get the direction of the spotlight
 				glm::vec3 dir = spotlight->GetDirection();
 				// create a slider for the x, y, and z components of the spotlight's direction
@@ -273,6 +276,34 @@ void GUI::Setup()
 					dir = glm::normalize(dir); // normalize the direction vector to avoid issues with the spotlight's direction
 					spotlight->SetDirection(dir); // set the new direction of the spotlight
 					spotlight->SyncGizmoDirectionFromLight(); // set the new direction of the spotlight's gizmo
+				}
+
+				// get the inner and outer cut-off angles of the spotlight 
+				// and convert them from radians (cosine) to degrees for the sliders
+				float innerCutOff = glm::degrees(glm::acos(spotlight->GetInnerCutOff()));
+				float outerCutOff = glm::degrees(glm::acos(spotlight->GetOuterCutOff()));
+				// clamp the maximum value of the inner cut-off angle slider so that it does not exceed the outer cut-off angle
+				// (the inner cut-off angle must be less than or equal to the outer cut-off angle)
+				float currentInnerMaxCutOffSliderValue = std::min(MAX_INNER_CUTOFF_SLIDER_VALUE, outerCutOff);
+				// create a slider for the inner cut-off angle of the spotlight
+				if (ImGui::SliderFloat("Inner Cut-off", &innerCutOff,
+									   MIN_INNER_CUTOFF_SLIDER_VALUE, currentInnerMaxCutOffSliderValue)) // max is outerCutOff
+				{
+					// clamp to avoid going above outerCutOff
+					// (the inner cut-off angle must be less than or equal to the outer cut-off angle)
+					if (innerCutOff > outerCutOff) innerCutOff = outerCutOff;
+					// convert back to radians and cosine and set the new inner cut-off angle for the spotlight
+					spotlight->SetInnerCutOff(glm::cos(glm::radians(innerCutOff)));
+				}
+				// create a slider for the outer cut-off angle of the spotlight
+				if (ImGui::SliderFloat("Outer Cut-off", &outerCutOff,
+									   MIN_OUTER_CUTOFF_SLIDER_VALUE, MAX_OUTER_CUTOFF_SLIDER_VALUE))
+				{
+					// clamp to avoid going below innerCutOff 
+					// (the inner cut-off angle must be less than or equal to the outer cut-off angle)
+					if (outerCutOff < innerCutOff) outerCutOff = innerCutOff;
+					// convert back to radians and cosine and set the new outer cut-off angle for the spotlight
+					spotlight->SetOuterCutOff(glm::cos(glm::radians(outerCutOff)));
 				}
 
 				// use PopID to end the unique ID scope

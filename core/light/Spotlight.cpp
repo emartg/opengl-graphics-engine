@@ -14,20 +14,20 @@ GLuint Spotlight::nSpotlights{}; // initialize the number of spotlights in the s
 
 // initial values for the spotlight cut-off angles (they cannot be set directly in the .h file since 
 // they are not constexpr - they are const instead of constexpr because they are not known at compile time)
-const GLfloat Spotlight::CUT_OFF = glm::cos(glm::radians(12.5f));
-const GLfloat Spotlight::OUTER_CUT_OFF = glm::cos(glm::radians(15.0f));
+const GLfloat Spotlight::INNER_CUTOFF = glm::cos(glm::radians(12.5f));
+const GLfloat Spotlight::OUTER_CUTOFF = glm::cos(glm::radians(15.0f));
 
 // Constructors
 // ------------
 Spotlight::Spotlight(const std::string& name,
 					 const glm::vec3 ambient, const glm::vec3 diffuse, const glm::vec3 specular,
 					 const glm::vec3 position, const glm::vec3 direction,
-					 const GLfloat cutOff, const GLfloat outerCutOff,
+					 const GLfloat innerCutOff, const GLfloat outerCutOff,
 					 const GLfloat constant, const GLfloat linear, const GLfloat quadratic)
 	: Light(name, ambient, diffuse, specular,
 			LightType::SPOTLIGHT), // set the light type to spotlight
 	position{ position }, direction{ direction },
-	cutOff{ cutOff }, outerCutOff{ outerCutOff },
+	innerCutOff{ innerCutOff }, outerCutOff{ outerCutOff },
 	constant{ constant }, linear{ linear }, quadratic{ quadratic }
 {
 	CreateGizmo(); // create the gizmo for the spotlight
