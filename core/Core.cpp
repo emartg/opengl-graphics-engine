@@ -287,28 +287,27 @@ void Core::MainLoop()
 
 			GLuint shaderIdx = 0; // default shader index for cube shader program
 
-			if (!shape->IsGizmo()) // if the shape is not a gizmo
+			GizmoShapeType gizmoShapeType = shape->GetGizmoShapeType(); // get the gizmo type of the shape
+
+			switch (gizmoShapeType) // switch based on the gizmo type
 			{
-				shaderIdx = 0; // set the shader index to 0 for cube shader programD
+				case GizmoShapeType::NONE: // if the shape is not a gizmo
+				{
+					shaderIdx = 0; // set the shader index to 0 for cube shader programD
 
-				// activate the shader program for cubes
-				shaders[shaderIdx]->Use();
+					// activate the shader program for cubes
+					shaders[shaderIdx]->Use();
 
-				// set the color of the cube's shape based on the GUI input
-				shaders[shaderIdx]->SetVec3("material.albedo", shape->GetAlbedo());
+					// set the color of the cube's shape based on the GUI input
+					shaders[shaderIdx]->SetVec3("material.albedo", shape->GetAlbedo());
 
-				// set the position of the cube's shape based on the GUI input
-				glm::mat4 model{ 1.0f };
-				model = glm::translate(model, shape->GetPosition());
-				shaders[shaderIdx]->SetMat4("model", model);
-			}
-			else
-			{
-				// to determine the type of light, provisionally, the name of the asset is used
-				// TODO: add a reference or pointer from the gizmo Shape back to its parent Light,
-				// this way the type of light could be determined without relying on the name of the asset
-				std::string assetName = asset->GetName(); // get the name of the asset
-				if (assetName.find("Point Light") != std::string::npos) // if the shape is a Point Light
+					// set the position of the cube's shape based on the GUI input
+					glm::mat4 model{ 1.0f };
+					model = glm::translate(model, shape->GetPosition());
+					shaders[shaderIdx]->SetMat4("model", model);
+				}
+				break;
+				case GizmoShapeType::POINT_LIGHT: // if the shape is a Point Light
 				{
 					shaderIdx = 1; // set the shader index to 1 for point light shader program
 
@@ -328,7 +327,8 @@ void Core::MainLoop()
 					// set the model matrix for the light's shape
 					shaders[shaderIdx]->SetMat4("model", model);
 				}
-				else if (assetName.find("Spotlight") != std::string::npos) // if the shape is a Spotlight
+				break;
+				case GizmoShapeType::SPOTLIGHT: // if the shape is a Spotlight
 				{
 					shaderIdx = 1; // set the shader index to 1 for point light shader program
 
@@ -343,8 +343,8 @@ void Core::MainLoop()
 					model = glm::translate(model, shape->GetPosition());
 
 					// set the direction of the light's shape based on the GUI input
-					glm::vec3 defaultDirection = glm::normalize(shape->GetDefaultDirection()); // normalize just in case
-					glm::vec3 targetDirection = glm::normalize(shape->GetDirection()); // normalize just in case
+					glm::vec3 defaultDirection = glm::normalize(shape->GetDefaultDirection());
+					glm::vec3 targetDirection = glm::normalize(shape->GetDirection());
 					if (glm::length(targetDirection) > 0.0001f) // avoid NaN if direction is zero
 					{
 						// calculate the rotation angle and axis to align the shape with the light's direction
@@ -352,7 +352,7 @@ void Core::MainLoop()
 						glm::vec3 rotationAxis = glm::cross(defaultDirection, targetDirection);
 						if (glm::length(rotationAxis) > 0.0001f) // avoid NaN if rotation axis is zero
 						{
-							rotationAxis = glm::normalize(rotationAxis); // normalize just in case
+							rotationAxis = glm::normalize(rotationAxis);
 							// rotate the shape around the rotation axis by the calculated angle
 							model = glm::rotate(model, angle, rotationAxis);
 						}
@@ -375,16 +375,14 @@ void Core::MainLoop()
 					// set the model matrix for the light's shape
 					shaders[shaderIdx]->SetMat4("model", model);
 				}
-				else
-				{
-					std::cerr << "Unknown shape type: " << asset->GetName() << std::endl;
+				break;
+				default:
+					std::cerr << "Unknown gizmo shape type: " << asset->GetName() << std::endl;
 					return;
-				}
 			}
 
-
 			// if the shape is a gizmo, use wirefame mode for rendering
-			if (shape->IsGizmo())
+			if (shape->GetGizmoShapeType() != GizmoShapeType::NONE)
 				glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); // set wireframe mode
 			else
 				glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); // set fill mode

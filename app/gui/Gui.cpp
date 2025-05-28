@@ -326,7 +326,7 @@ void GUI::Setup()
 			auto shape = dynamic_cast<Shape*>(Core::GetInstance()->GetAssets("MODEL")[i].get());
 
 			// if the shape is not a gizmo, then proceed, otherwise skip it (as gizmos are already handled in above)
-			if (!shape->IsGizmo())
+			if (shape->GetGizmoShapeType() == GizmoShapeType::NONE)
 			{
 				// use PushID to create a unique ID for each shape (to avoid conflicts with the GUI)
 				ImGui::PushID(shape->GetName().c_str());

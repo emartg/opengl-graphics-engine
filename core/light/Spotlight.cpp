@@ -47,6 +47,6 @@ void Spotlight::CreateGizmo()
 	);
 	// set the default direction to the axis the mesh points to (the negative y-axis)
 	gizmoShape->SetDefaultDirection(glm::vec3(DIRECTION));
-	// set the gizmo flag to true to indicate that this is a gizmo shape (isGizmo = true)
-	gizmoShape->SetGizmo(true);
+	// set the gizmo type to SPOTLIGHT (used for rendering and interaction purposes)
+	gizmoShape->SetGizmoShapeType(GizmoShapeType::SPOTLIGHT);
 }

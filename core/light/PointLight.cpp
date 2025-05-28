@@ -36,5 +36,6 @@ void PointLight::CreateGizmo()
 										 decahedronVerticesVec, decahedronIndicesVec,
 										 diffuse, // set the color of the gizmo to the light's diffuse color   
 										 position); // set the position of the gizmo to the light's position
-	gizmoShape->SetGizmo(true); // set the gizmo flag to true to indicate that this is a gizmo shape (isGizmo = true)
+	// set the gizmo shape's type to POINT_LIGHT (used for rendering and interaction purposes)
+	gizmoShape->SetGizmoShapeType(GizmoShapeType::POINT_LIGHT);
 }

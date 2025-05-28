@@ -11,6 +11,10 @@
 
 #include "Model.h"
 
+// enumeration class that allows to disriminate between different types of gizmos 
+// and also indicate that the shape is not a gizmo without a boolean flag
+enum class GizmoShapeType { DIRECTIONAL_LIGHT, POINT_LIGHT, SPOTLIGHT, NONE };
+
 class Shape : public Model
 {
 public:
@@ -71,14 +75,14 @@ public:
 	const glm::vec3& GetPosition() const { return position; }
 	const glm::vec3& GetDefaultDirection() const { return defaultDirection; }
 	const glm::vec3& GetDirection() const { return direction; }
-	const GLboolean IsGizmo() const { return isGizmo; }
+	const GizmoShapeType GetGizmoShapeType() const { return gizmoShapeType; }
 
 	// Setters
 	void SetAlbedo(const glm::vec3& albedo) { this->albedo = albedo; }
 	void SetPosition(const glm::vec3& position) { this->position = position; }
 	void SetDefaultDirection(const glm::vec3& defaultDirection) { this->defaultDirection = defaultDirection; }
 	void SetDirection(const glm::vec3& direction) { this->direction = direction; }
-	void SetGizmo(const GLboolean isGizmo) { this->isGizmo = isGizmo; }
+	void SetGizmoShapeType(const GizmoShapeType gizmoShapeType) { this->gizmoShapeType = gizmoShapeType; }
 
 	// Adds texture data to the shape
 	void AddTextureData(const Texture* textures, const GLuint nTextures);
@@ -105,7 +109,7 @@ private:
 	//glm::vec3 height; // hex pyramid height (represents the inner cut-off angle for spotlights)
 	//GLfloat baseArea{ 0.0f }; // hex pyramid base area (represents the outer cut-off angle for spotlights)
 
-	GLboolean isGizmo{ false }; // flag to indicate if the shape is a gizmo
+	GizmoShapeType gizmoShapeType{ GizmoShapeType::NONE }; // type of the gizmo, default is NONE (i.e, the shape wouldn't be a gizmo)
 
 	// Private Methods
 	// ---------------

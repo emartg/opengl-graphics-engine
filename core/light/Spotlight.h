@@ -40,7 +40,7 @@ public:
 
 	// Setters
 	void SetPosition(glm::vec3 position) { this->position = position; }
-	void SetDirection(glm::vec3 direction) { this->direction = glm::normalize(direction); }
+	void SetDirection(glm::vec3 direction) { this->direction = direction; }
 	void SetInnerCutOff(GLfloat innerCutOff) { this->innerCutOff = innerCutOff; }
 	void SetOuterCutOff(GLfloat outerCutOff) { this->outerCutOff = outerCutOff; }
 	void SetConstant(GLfloat constant) { this->constant = constant; }
