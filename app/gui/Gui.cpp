@@ -171,10 +171,10 @@ void GUI::Setup()
 				}
 				break;
 				case LightType::UNDEFINED: // if the Light is of an undefined type
-					std::cerr << "Light type is undefined for light: " << light->GetName() << std::endl;
+					std::cerr << "UNDEFINED light type for light: " << light->GetName() << std::endl;
 					return;
 				default: // if the Light is of an unknown type
-					std::cerr << "Light type is unknown for light: " << light->GetName() << std::endl;
+					std::cerr << "Unknown light type for light: " << light->GetName() << std::endl;
 					return;
 			}
 		}
@@ -210,6 +210,26 @@ void GUI::Setup()
 			// display the position of the shape
 			ImGui::Text("Position: (%.2f, %.2f, %.2f)",
 						shape->GetPosition().x, shape->GetPosition().y, shape->GetPosition().z);
+
+			// display additional information based on the shape's gizmo type
+			GizmoShapeType gizmoShapeType = shape->GetGizmoShapeType(); // get the type of the shape's gizmo
+
+			switch (gizmoShapeType) // switch based on the type of the shape's gizmo
+			{
+				case GizmoShapeType::NONE: // if the shape has no gizmo
+					break;
+				case GizmoShapeType::DIRECTIONAL_LIGHT:
+				case GizmoShapeType::SPOTLIGHT: // if the shape is a DirectionalLight or a Spotlight gizmo
+					// diplay the direction of the shape
+					ImGui::Text("Direction: (%.2f, %.2f, %.2f)",
+								shape->GetDirection().x, shape->GetDirection().y, shape->GetDirection().z);
+					break;
+				case GizmoShapeType::POINT_LIGHT: // if the shape is a PointLight gizmo
+					break;
+				default: // if the shape has an unknown gizmo type
+					std::cerr << "Unknown gizmo shape type for shape: " << shape->GetName() << std::endl;
+					return;
+			}
 
 			// use PopID to end the unique ID scope
 			ImGui::PopID();
@@ -404,10 +424,10 @@ void GUI::Setup()
 				}
 				break;
 				case LightType::UNDEFINED: // if the Light is of an undefined type
-					std::cerr << "Light type is UNDEFINED for light: " << light->GetName() << std::endl;
+					std::cerr << "UNDEFINED light type for light: " << light->GetName() << std::endl;
 					return;
 				default: // if the Light is of an unknown type
-					std::cerr << "Light type is unknown for light: " << light->GetName() << std::endl;
+					std::cerr << "Unknown light type for light: " << light->GetName() << std::endl;
 					return;
 			}
 		}

@@ -227,7 +227,7 @@ void Core::MainLoop()
 					auto directionalLight = dynamic_cast<DirectionalLight*>(light);
 
 					// vertex shader uniforms
-					shaders[0]->SetVec3("directionalLightDir[" + std::to_string(directionalLightIdx) + "]", 
+					shaders[0]->SetVec3("directionalLightDir[" + std::to_string(directionalLightIdx) + "]",
 										directionalLight->GetDirection());
 
 					// fragment shader uniforms
@@ -244,7 +244,7 @@ void Core::MainLoop()
 					auto pointLight = dynamic_cast<PointLight*>(light); // get the PointLight object
 
 					// vertex shader uniforms
-					shaders[0]->SetVec3("pointLightPos[" + std::to_string(pointLightIdx) + "]", 
+					shaders[0]->SetVec3("pointLightPos[" + std::to_string(pointLightIdx) + "]",
 										pointLight->GetPosition());
 
 					// fragment shader uniforms
@@ -264,9 +264,9 @@ void Core::MainLoop()
 					auto spotlight = dynamic_cast<Spotlight*>(light);
 
 					// vertex shader uniforms
-					shaders[0]->SetVec3("spotlightPos[" + std::to_string(spotlightIdx) + "]", 
+					shaders[0]->SetVec3("spotlightPos[" + std::to_string(spotlightIdx) + "]",
 										spotlight->GetPosition());
-					shaders[0]->SetVec3("spotlightDir[" + std::to_string(spotlightIdx) + "]", 
+					shaders[0]->SetVec3("spotlightDir[" + std::to_string(spotlightIdx) + "]",
 										spotlight->GetDirection());
 
 					// fragment shader uniforms
@@ -284,10 +284,10 @@ void Core::MainLoop()
 				}
 				break;
 				case LightType::UNDEFINED: // if the Light is of an undefined type
-					std::cerr << "Light type is undefined: " << light->GetName() << std::endl;
+					std::cerr << "UNDEFINED light type for light: " << light->GetName() << std::endl;
 					return;
 				default: // if the Light is of an unknown type
-					std::cerr << "Light type is unknown for light: " << light->GetName() << std::endl;
+					std::cerr << "Unknown light type for light: " << light->GetName() << std::endl;
 					return;
 			}
 		});
@@ -315,7 +315,7 @@ void Core::MainLoop()
 
 			GLuint shaderIdx = 0; // default shader index for cube shader program
 
-			GizmoShapeType gizmoShapeType = shape->GetGizmoShapeType(); // get the gizmo type of the shape
+			GizmoShapeType gizmoShapeType = shape->GetGizmoShapeType(); // get the type of the shape's gizmo
 
 			switch (gizmoShapeType) // switch based on the gizmo type
 			{
@@ -335,7 +335,7 @@ void Core::MainLoop()
 					shaders[shaderIdx]->SetMat4("model", model);
 				}
 				break;
-				case GizmoShapeType::DIRECTIONAL_LIGHT: // if the shape is a Directional Light gizmo
+				case GizmoShapeType::DIRECTIONAL_LIGHT: // if the shape is a DirectionalLight gizmo
 				{
 					shaderIdx = 1; // set the shader index to 1 for point light shader program
 
@@ -383,7 +383,7 @@ void Core::MainLoop()
 					shaders[shaderIdx]->SetMat4("model", model);
 				}
 				break;
-				case GizmoShapeType::POINT_LIGHT: // if the shape is a Point Light gizmo
+				case GizmoShapeType::POINT_LIGHT: // if the shape is a PointLight gizmo
 				{
 					shaderIdx = 1; // set the shader index to 1 for point light shader program
 
@@ -452,8 +452,8 @@ void Core::MainLoop()
 					shaders[shaderIdx]->SetMat4("model", model);
 				}
 				break;
-				default:
-					std::cerr << "Unknown gizmo shape type: " << asset->GetName() << std::endl;
+				default: // if the shape is of an unknown gizmo type
+					std::cerr << "Unknown gizmo shape type for shape: " << shape->GetName() << std::endl;
 					return;
 			}
 

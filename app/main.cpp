@@ -38,7 +38,10 @@ int main(int argc, char** argv)
 	auto directionalLight = std::make_shared<DirectionalLight>("Directional Light "
 															   + std::to_string(engine->GetNDirectionalLights()),
 															   glm::vec3{ 0.1f }, // ambient color (default)
-															   glm::vec3{ 1.0f, 1.0f, 0.7f } // diffuse color (sunlight yellow)
+															   glm::vec3{ 1.0f, 1.0f, 0.7f }, // diffuse color (sunlight yellow)
+															   glm::vec3{ 1.0f }, // specular color (default)
+															   glm::vec3{ -3.5f, 7.0f, 0.0f }, // position (default)
+															   glm::vec3{ 0.18f, -0.9f, -0.45f } // direction (pointing downwards and to the right)
 	);
 	// get gizmo's shared_ptr from the directional light before adding the latter to the engine (as it will be moved)
 	auto directionalLightGizmo = directionalLight->GetGizmoShape();
@@ -55,7 +58,7 @@ int main(int argc, char** argv)
 	// where n is the current number of point lights in the scene
 	auto pointLight = std::make_shared<PointLight>("Point Light " + std::to_string(engine->GetNPointLights()),
 												   glm::vec3{ 0.1f }, // ambient color (default)
-												   glm::vec3{ 0.5f, 0.5f, 0.9f }, // diffuse color (bright blue)
+												   glm::vec3{ 0.25f, 0.7f, 1.0f }, // diffuse color (blue)
 												   glm::vec3{ 1.0f }, // specular color (default)
 												   glm::vec3{ 1.8f, 1.8f, 4.5f } // position
 	);
@@ -74,7 +77,10 @@ int main(int argc, char** argv)
 	// where n is the current number of spotlights in the scene
 	auto spotlight = std::make_shared<Spotlight>("Spotlight " + std::to_string(engine->GetNSpotlights()),
 												 glm::vec3{ 0.1f }, // ambient color (default)
-												 glm::vec3{ 0.9f, 0.5f, 0.5f } // diffuse color (bright red)
+												 glm::vec3{ 1.0f, 0.25f, 0.25f }, // diffuse color (red)
+												 glm::vec3{ 1.0f }, // specular color (default)
+												 glm::vec3{ 3.0f, -0.3f, -0.9f }, // position
+												 glm::vec3{ -0.75f, 0.33f, 0.56f } // direction
 	);
 	// get gizmo's shared_ptr from the spotlight before adding the latter to the engine (as it will be moved)
 	auto spotlightGizmo = spotlight->GetGizmoShape();
