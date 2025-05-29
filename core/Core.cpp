@@ -212,7 +212,7 @@ void Core::MainLoop()
 		shaders[0]->SetMat4("view", view);
 
 		// set the properties of the point lights iterating over the vector of assets of type "LIGHT"
-		GLuint pointLightIdx{}, spotlightIdx{}; // indices for lights whose properties are to be set
+		GLuint pointLightIdx{}, spotlightIdx{}, directionalLightIdx{}; // indices for lights whose properties are to be set
 		std::for_each(m_assets["LIGHT"].begin(), m_assets["LIGHT"].end(),
 					  [&](const std::shared_ptr<Asset>& asset)
 		{
@@ -220,49 +220,75 @@ void Core::MainLoop()
 			auto light = dynamic_cast<Light*>(asset.get());
 			LightType lightType = light->GetLightType();
 
-			if (lightType == LightType::POINT_LIGHT) // if the Light is a Point Light
+			switch (lightType)
 			{
-				auto pointLight = dynamic_cast<PointLight*>(light); // get the PointLight object
+				case LightType::DIRECTIONAL_LIGHT:
+				{
+					auto directionalLight = dynamic_cast<DirectionalLight*>(light);
 
-				// vertex shader uniforms
-				shaders[0]->SetVec3("pointLightPos[" + std::to_string(pointLightIdx) + "]", pointLight->GetPosition());
+					// vertex shader uniforms
+					shaders[0]->SetVec3("directionalLightDir[" + std::to_string(directionalLightIdx) + "]", 
+										directionalLight->GetDirection());
 
-				// fragment shader uniforms
-				std::string prefix = "pointLights[" + std::to_string(pointLightIdx) + "].";
-				shaders[0]->SetVec3(prefix + "ambient", pointLight->GetAmbient());
-				shaders[0]->SetVec3(prefix + "diffuse", pointLight->GetDiffuse());
-				shaders[0]->SetVec3(prefix + "specular", pointLight->GetSpecular());
-				shaders[0]->SetFloat(prefix + "constant", pointLight->GetConstant());
-				shaders[0]->SetFloat(prefix + "linear", pointLight->GetLinear());
-				shaders[0]->SetFloat(prefix + "quadratic", pointLight->GetQuadratic());
+					// fragment shader uniforms
+					std::string prefix = "directionalLights[" + std::to_string(directionalLightIdx) + "].";
+					shaders[0]->SetVec3(prefix + "ambient", directionalLight->GetAmbient());
+					shaders[0]->SetVec3(prefix + "diffuse", directionalLight->GetDiffuse());
+					shaders[0]->SetVec3(prefix + "specular", directionalLight->GetSpecular());
 
-				pointLightIdx++; // increment the point light index for the next iteration
-			}
-			else if (lightType == LightType::SPOTLIGHT) // if the Light is a Spotlight
-			{
-				auto spotlight = dynamic_cast<Spotlight*>(light); // get the Spotlight object
+					directionalLightIdx++; // increment the directional light index for the next iteration
+				}
+				break;
+				case LightType::POINT_LIGHT:
+				{
+					auto pointLight = dynamic_cast<PointLight*>(light); // get the PointLight object
 
-				// vertex shader uniforms
-				shaders[0]->SetVec3("spotlightPos[" + std::to_string(spotlightIdx) + "]", spotlight->GetPosition());
-				shaders[0]->SetVec3("spotlightDir[" + std::to_string(spotlightIdx) + "]", spotlight->GetDirection());
+					// vertex shader uniforms
+					shaders[0]->SetVec3("pointLightPos[" + std::to_string(pointLightIdx) + "]", 
+										pointLight->GetPosition());
 
-				// fragment shader uniforms
-				std::string prefix = "spotlights[" + std::to_string(spotlightIdx) + "].";
-				shaders[0]->SetVec3(prefix + "ambient", spotlight->GetAmbient());
-				shaders[0]->SetVec3(prefix + "diffuse", spotlight->GetDiffuse());
-				shaders[0]->SetVec3(prefix + "specular", spotlight->GetSpecular());
-				shaders[0]->SetFloat(prefix + "constant", spotlight->GetConstant());
-				shaders[0]->SetFloat(prefix + "linear", spotlight->GetLinear());
-				shaders[0]->SetFloat(prefix + "quadratic", spotlight->GetQuadratic());
-				shaders[0]->SetFloat(prefix + "innerCutOff", spotlight->GetInnerCutOff());
-				shaders[0]->SetFloat(prefix + "outerCutOff", spotlight->GetOuterCutOff());
+					// fragment shader uniforms
+					std::string prefix = "pointLights[" + std::to_string(pointLightIdx) + "].";
+					shaders[0]->SetVec3(prefix + "ambient", pointLight->GetAmbient());
+					shaders[0]->SetVec3(prefix + "diffuse", pointLight->GetDiffuse());
+					shaders[0]->SetVec3(prefix + "specular", pointLight->GetSpecular());
+					shaders[0]->SetFloat(prefix + "constant", pointLight->GetConstant());
+					shaders[0]->SetFloat(prefix + "linear", pointLight->GetLinear());
+					shaders[0]->SetFloat(prefix + "quadratic", pointLight->GetQuadratic());
 
-				spotlightIdx++; // increment the spotlight index for the next iteration
-			}
-			else
-			{
-				std::cerr << "Unknown light type: " << light->GetName() << std::endl;
-				return;
+					pointLightIdx++; // increment the point light index for the next iteration
+				}
+				break;
+				case LightType::SPOTLIGHT:
+				{
+					auto spotlight = dynamic_cast<Spotlight*>(light);
+
+					// vertex shader uniforms
+					shaders[0]->SetVec3("spotlightPos[" + std::to_string(spotlightIdx) + "]", 
+										spotlight->GetPosition());
+					shaders[0]->SetVec3("spotlightDir[" + std::to_string(spotlightIdx) + "]", 
+										spotlight->GetDirection());
+
+					// fragment shader uniforms
+					std::string prefix = "spotlights[" + std::to_string(spotlightIdx) + "].";
+					shaders[0]->SetVec3(prefix + "ambient", spotlight->GetAmbient());
+					shaders[0]->SetVec3(prefix + "diffuse", spotlight->GetDiffuse());
+					shaders[0]->SetVec3(prefix + "specular", spotlight->GetSpecular());
+					shaders[0]->SetFloat(prefix + "constant", spotlight->GetConstant());
+					shaders[0]->SetFloat(prefix + "linear", spotlight->GetLinear());
+					shaders[0]->SetFloat(prefix + "quadratic", spotlight->GetQuadratic());
+					shaders[0]->SetFloat(prefix + "innerCutOff", spotlight->GetInnerCutOff());
+					shaders[0]->SetFloat(prefix + "outerCutOff", spotlight->GetOuterCutOff());
+
+					spotlightIdx++; // increment the spotlight index for the next iteration
+				}
+				break;
+				case LightType::UNDEFINED: // if the Light is of an undefined type
+					std::cerr << "Light type is undefined: " << light->GetName() << std::endl;
+					return;
+				default: // if the Light is of an unknown type
+					std::cerr << "Light type is unknown for light: " << light->GetName() << std::endl;
+					return;
 			}
 		});
 
@@ -270,6 +296,8 @@ void Core::MainLoop()
 		shaders[0]->SetInt("nPointLights", static_cast<GLint>(pointLightIdx));
 		// set the current number of spotlights
 		shaders[0]->SetInt("nSpotlights", static_cast<GLint>(spotlightIdx));
+		// set the current number of directional lights
+		shaders[0]->SetInt("nDirectionalLights", static_cast<GLint>(directionalLightIdx));
 
 		// activate point Light shader program
 		shaders[1]->Use();
@@ -307,28 +335,7 @@ void Core::MainLoop()
 					shaders[shaderIdx]->SetMat4("model", model);
 				}
 				break;
-				case GizmoShapeType::POINT_LIGHT: // if the shape is a Point Light
-				{
-					shaderIdx = 1; // set the shader index to 1 for point light shader program
-
-					// activate the shader program for point lights
-					shaders[shaderIdx]->Use();
-
-					// set the color of the light's shape based on the GUI input
-					shaders[shaderIdx]->SetVec3("albedo", shape->GetAlbedo());
-
-					// set the position of the light's shape based on the GUI input
-					glm::mat4 model{ 1.0f };
-					model = glm::translate(model, shape->GetPosition());
-
-					// scale the shape to make it smaller
-					model = glm::scale(model, glm::vec3(0.2f));
-
-					// set the model matrix for the light's shape
-					shaders[shaderIdx]->SetMat4("model", model);
-				}
-				break;
-				case GizmoShapeType::SPOTLIGHT: // if the shape is a Spotlight
+				case GizmoShapeType::DIRECTIONAL_LIGHT: // if the shape is a Directional Light gizmo
 				{
 					shaderIdx = 1; // set the shader index to 1 for point light shader program
 
@@ -370,7 +377,76 @@ void Core::MainLoop()
 					}
 
 					// scale the shape to make it smaller
-					model = glm::scale(model, glm::vec3(0.2f));
+					model = glm::scale(model, glm::vec3(0.4f));
+
+					// set the model matrix for the light's shape
+					shaders[shaderIdx]->SetMat4("model", model);
+				}
+				break;
+				case GizmoShapeType::POINT_LIGHT: // if the shape is a Point Light gizmo
+				{
+					shaderIdx = 1; // set the shader index to 1 for point light shader program
+
+					// activate the shader program for point lights
+					shaders[shaderIdx]->Use();
+
+					// set the color of the light's shape based on the GUI input
+					shaders[shaderIdx]->SetVec3("albedo", shape->GetAlbedo());
+
+					// set the position of the light's shape based on the GUI input
+					glm::mat4 model{ 1.0f };
+					model = glm::translate(model, shape->GetPosition());
+
+					// scale the shape to make it smaller
+					model = glm::scale(model, glm::vec3(0.3f));
+
+					// set the model matrix for the light's shape
+					shaders[shaderIdx]->SetMat4("model", model);
+				}
+				break;
+				case GizmoShapeType::SPOTLIGHT: // if the shape is a Spotlight gizmo
+				{
+					shaderIdx = 1; // set the shader index to 1 for point light shader program
+
+					// activate the shader program for spotlights
+					shaders[shaderIdx]->Use();
+
+					// set the color of the light's shape based on the GUI input
+					shaders[shaderIdx]->SetVec3("albedo", shape->GetAlbedo());
+
+					// set the position of the light's shape based on the GUI input
+					glm::mat4 model{ 1.0f };
+					model = glm::translate(model, shape->GetPosition());
+
+					// set the direction of the light's shape based on the GUI input
+					glm::vec3 defaultDirection = glm::normalize(shape->GetDefaultDirection());
+					glm::vec3 targetDirection = glm::normalize(shape->GetDirection());
+					if (glm::length(targetDirection) > 0.0001f) // avoid NaN if direction is zero
+					{
+						// calculate the rotation angle and axis to align the shape with the light's direction
+						float angle = acos(glm::clamp(glm::dot(defaultDirection, targetDirection), -1.0f, 1.0f));
+						glm::vec3 rotationAxis = glm::cross(defaultDirection, targetDirection);
+						if (glm::length(rotationAxis) > 0.0001f) // avoid NaN if rotation axis is zero
+						{
+							rotationAxis = glm::normalize(rotationAxis);
+							// rotate the shape around the rotation axis by the calculated angle
+							model = glm::rotate(model, angle, rotationAxis);
+						}
+						// if angle is 0 or 180 degrees, cross product is zero; handle 180 deg flip if needed
+						else if (angle > 3.13f) // ~pi
+						{
+							// pick any axis perpendicular to defaultDirection
+							glm::vec3 perp = glm::vec3(1.0f, 0.0f, 0.0f);
+							// if defaultDirection is close to perp, pick another axis
+							if (fabs(glm::dot(defaultDirection, perp)) > 0.99f)
+								perp = glm::vec3(0.0f, 0.0f, 1.0f);
+							// rotate around the perpendicular axis
+							model = glm::rotate(model, angle, perp);
+						}
+					}
+
+					// scale the shape to make it smaller
+					model = glm::scale(model, glm::vec3(0.3f));
 
 					// set the model matrix for the light's shape
 					shaders[shaderIdx]->SetMat4("model", model);

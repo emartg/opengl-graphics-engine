@@ -1,6 +1,14 @@
 #version 420 core
 out vec4 FragColor;
 
+struct DirectionalLight
+{
+    // lighting components
+    vec3 ambient;
+    vec3 diffuse;
+    vec3 specular;
+};
+
 struct PointLight
 {
 	// lighting components
@@ -37,21 +45,29 @@ struct Material
 	float shininess;
 };
 
-#define MAX_N_POINT_LIGHTS 5 // maximum number of point lights in the scene (same as in the vertex shader)
-#define MAX_N_SPOTLIGHTS 5   // maximum number of spotlights in the scene (same as in the vertex shader)
+#define MAX_N_DIR_LIGHTS 3      // maximum number of directional lights in the scene (same as in the vertex shader)
+#define MAX_N_POINT_LIGHTS 3    // maximum number of point lights in the scene (same as in the vertex shader)
+#define MAX_N_SPOTLIGHTS 3      // maximum number of spotlights in the scene (same as in the vertex shader)
 
-in vec3 PointLightPos[MAX_N_POINT_LIGHTS];  // statically sized array of point light positions in view space
-in vec3 SpotlightPos[MAX_N_SPOTLIGHTS];     // statically sized array of spotlight positions in view space
-in vec3 SpotlightDir[MAX_N_SPOTLIGHTS];     // statically sized array of spotlight directions in view space
-in vec3 FragPos;                            // fragment position already in view space
-in vec3 Normal;                             // normal already in view space
+in vec3 DirectionalLightDir[MAX_N_DIR_LIGHTS]; // statically sized array of directional light directions in view space
+in vec3 PointLightPos[MAX_N_POINT_LIGHTS];      // statically sized array of point light positions in view space
+in vec3 SpotlightPos[MAX_N_SPOTLIGHTS];         // statically sized array of spotlight positions in view space
+in vec3 SpotlightDir[MAX_N_SPOTLIGHTS];         // statically sized array of spotlight directions in view space
+in vec3 FragPos;                                // fragment position already in view space
+in vec3 Normal;                                 // normal already in view space
 in vec2 TexCoords;
 
-uniform PointLight pointLights[MAX_N_POINT_LIGHTS]; // statically sized array of point light structs
-uniform Spotlight spotlights[MAX_N_SPOTLIGHTS];     // statically sized array of spotlight structs
-uniform int nPointLights;			                // actual number of point lights currently in the scene
-uniform int nSpotlights;			                // actual number of spotlights currently in the scene
+uniform DirectionalLight directionalLights[MAX_N_DIR_LIGHTS];   // statically sized array of directional light structs
+uniform PointLight pointLights[MAX_N_POINT_LIGHTS];             // statically sized array of point light structs
+uniform Spotlight spotlights[MAX_N_SPOTLIGHTS];                 // statically sized array of spotlight structs
+uniform int nDirectionalLights;			                        // actual number of directional lights currently in the scene
+uniform int nPointLights;			                            // actual number of point lights currently in the scene
+uniform int nSpotlights;			                            // actual number of spotlights currently in the scene
 uniform Material material;
+
+// calculates the color of a single directional light given the light properties (including the direction),
+// the normal and the view direction (all in view space)
+vec3 computeDirectionalLightColor(DirectionalLight light, vec3 directionalLightDir, vec3 normal, vec3 viewDir);
 
 // calculates the color of a single point light given the light properties (including the position),
 // the fragment position, the normal and the view direction (all in view space)
@@ -70,16 +86,38 @@ void main()
     // initialize fragment color
     vec3 result = vec3(0.0);
 
-    // loop through all point lights
+    // loop through all directional lights and accumulate their contributions
+    for (int i = 0; i < nDirectionalLights; i++)
+        result  += computeDirectionalLightColor(directionalLights[i], DirectionalLightDir[i], normal, viewDir);
+
+    // loop through all point lights and accumulate their contributions
     for (int i = 0; i < nPointLights; i++)
         result  += computePointLightColor(pointLights[i], PointLightPos[i], normal, FragPos, viewDir);
 
-    // loop through all spotlights
+    // loop through all spotlights and accumulate their contributions
     for (int i = 0; i < nSpotlights; i++)
         result  += computeSpotlightColor(spotlights[i], SpotlightPos[i], SpotlightDir[i], normal, FragPos, viewDir);
 
     // set the fragment color
     FragColor   = vec4(result, 1.0);
+}
+
+vec3 computeDirectionalLightColor(DirectionalLight light, vec3 directionalLightDir, vec3 normal, vec3 viewDir)
+{
+    vec3 lightDir = normalize(-directionalLightDir);
+
+    // diffuse shading
+    float diff = max(dot(normal, lightDir), 0.0);
+
+    // specular shading
+    vec3 reflectDir = reflect(-lightDir, normal);
+    float spec      = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
+    
+    // combine results
+    vec3 ambient    = light.ambient * material.albedo;
+    vec3 diffuse    = light.diffuse * diff * material.albedo;
+    vec3 specular   = light.specular * spec; // the object is completely shiny since there is no specular map
+    return (ambient + diffuse + specular);
 }
 
 vec3 computePointLightColor(PointLight light, vec3 pointLightPos, vec3 normal, vec3 fragPos, vec3 viewDir)
@@ -100,7 +138,7 @@ vec3 computePointLightColor(PointLight light, vec3 pointLightPos, vec3 normal, v
     // combine results
     vec3 ambient    = light.ambient * material.albedo;
     vec3 diffuse    = light.diffuse * diff * material.albedo;
-    vec3 specular   = light.specular * spec;    // the object is completely shiny since there is no specular map
+    vec3 specular   = light.specular * spec; // the object is completely shiny since there is no specular map
     ambient         *= attenuation;
     diffuse         *= attenuation;
     specular        *= attenuation;
@@ -130,7 +168,7 @@ vec3 computeSpotlightColor(Spotlight light, vec3 spotlightPos, vec3 spotlightDir
     // combine results
     vec3 ambient    = light.ambient * material.albedo;
     vec3 diffuse    = light.diffuse * diff * material.albedo;
-    vec3 specular   = light.specular * spec;    // the object is completely shiny since there is no specular map
+    vec3 specular   = light.specular * spec; // the object is completely shiny since there is no specular map
     ambient         *= attenuation * intensity;
     diffuse         *= attenuation * intensity;
     specular        *= attenuation * intensity;

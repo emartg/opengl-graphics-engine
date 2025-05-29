@@ -49,12 +49,12 @@ const GLfloat hexPyramidPositionsArr[] = {
 
 // Hexagonal pyramid normal data (flat normals for each triangle face)
 const GLfloat hexPyramidNormalsArr[] = {
-	 0.0f,		0.5f,	-0.866f,		 0.0f,		0.5f,	-0.866f,			 0.0f,		0.5f,	-0.866f,
-	-0.866f,	0.5f,	-0.5f,			-0.866f,	0.5f,	-0.5f,				-0.866f,	0.5f,	-0.5f,
-	-1.0f,		0.5f,    0.0f,			-1.0f,		0.5f,	0.0f,				-1.0f,		0.5f,   0.0f,
-	-0.866f,	0.5f,    0.5f,			-0.866f,	0.5f,	0.5f,				-0.866f,	0.5f,   0.5f,
-	 0.0f,		0.5f,    0.866f,		 0.0f,		0.5f,	0.866f,				 0.0f,		0.5f,   0.866f,
-	 0.866f,	0.5f,	 0.5f,			 0.866f,	0.5f,	0.5f,				 0.866f,	0.5f,   0.5f
+	 0.0f,		0.5f,	-0.866f,		 0.0f,		0.5f,	-0.866f,		 0.0f,		0.5f,	-0.866f,
+	-0.866f,	0.5f,	-0.5f,			-0.866f,	0.5f,	-0.5f,			-0.866f,	0.5f,	-0.5f,
+	-1.0f,		0.5f,    0.0f,			-1.0f,		0.5f,	0.0f,			-1.0f,		0.5f,   0.0f,
+	-0.866f,	0.5f,    0.5f,			-0.866f,	0.5f,	0.5f,			-0.866f,	0.5f,   0.5f,
+	 0.0f,		0.5f,    0.866f,		 0.0f,		0.5f,	0.866f,			 0.0f,		0.5f,   0.866f,
+	 0.866f,	0.5f,	 0.5f,			 0.866f,	0.5f,	0.5f,			 0.866f,	0.5f,   0.5f
 };
 
 // Hexagonal pyramid texture coordinate data (simple triangle layout)

@@ -30,9 +30,27 @@ int main(int argc, char** argv)
 	engine->AddAsset(std::move(camera)); // add the camera to the engine
 
 	// get the number of shapes in the scene (which is 0 at this point, as no shapes have been added yet)
-	// to use it for the name of the point light gizmo before adding the point light to the engine
-	// (since the creation of the point light gizmo - a Shape - is done in the constructor of the PointLight class)
+	// to use it for the name of the directional light gizmo before adding the directional light to the engine
+	// (since the creation of the directional light gizmo - a Shape - is done in the constructor of the Directional Light class)
 	std::string nShapes = std::to_string(engine->GetNShapes());
+	// create a directional light object with a name "Directional Light n",
+	// where n is the current number of directional lights in the scene
+	auto directionalLight = std::make_shared<DirectionalLight>("Directional Light "
+															   + std::to_string(engine->GetNDirectionalLights()),
+															   glm::vec3{ 0.1f }, // ambient color (default)
+															   glm::vec3{ 1.0f, 1.0f, 0.7f } // diffuse color (sunlight yellow)
+	);
+	// get gizmo's shared_ptr from the directional light before adding the latter to the engine (as it will be moved)
+	auto directionalLightGizmo = directionalLight->GetGizmoShape();
+	engine->AddAsset(std::move(directionalLight)); // add the directional light to the engine
+	// concatenate the name of the directional light and " (Shape n)",
+	// where n is the current number of shapes in the scene
+	directionalLightGizmo->SetName(directionalLightGizmo->GetName() + " (Shape " + nShapes + ")");
+	engine->AddAsset(std::move(directionalLightGizmo)); // add the directional light gizmo (a rectangular plane) to the engine
+
+	// update the number of shapes in the scene
+	// (which should be 1 at this point, as three shapes have been added - the first light's gizmo -)
+	nShapes = std::to_string(engine->GetNShapes());
 	// create a point light object with a name "Point Light n", 
 	// where n is the current number of point lights in the scene
 	auto pointLight = std::make_shared<PointLight>("Point Light " + std::to_string(engine->GetNPointLights()),
@@ -49,8 +67,8 @@ int main(int argc, char** argv)
 	pointLightGizmo->SetName(pointLightGizmo->GetName() + " (Shape " + nShapes + ")");
 	engine->AddAsset(std::move(pointLightGizmo)); // add the point light gizmo (a decahedron) to the engine
 
-	// update the number of shapes in the scene 
-	// (which should be 1 at this point, as one shape has been added - the first light gizmo -)
+	// update the number of shapes in the scene
+	// (which should be 2 at this point, as three shapes have been added - the other two lights' gizmos -)
 	nShapes = std::to_string(engine->GetNShapes());
 	// create a spotlight object with a name "Spotlight n",
 	// where n is the current number of spotlights in the scene
@@ -67,7 +85,7 @@ int main(int argc, char** argv)
 	engine->AddAsset(std::move(spotlightGizmo)); // add the spotlight gizmo (a hexagonal pyramid) to the engine
 
 	// update the number of shapes in the scene 
-	// (which should be 2 at this point, as two shapes have been added - the lights' gizmos -)
+	// (which should be 3 at this point, as two shapes have been added - the lights' gizmos -)
 	nShapes = std::to_string(engine->GetNShapes());
 	// set the cube's name to "Cube (Shape n)", where n is the current number of shapes in the scene
 	std::string cubeName = "Cube (Shape " + nShapes + ")";
