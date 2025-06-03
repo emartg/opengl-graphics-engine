@@ -49,7 +49,7 @@ struct Material
 #define MAX_N_POINT_LIGHTS 3    // maximum number of point lights in the scene (same as in the vertex shader)
 #define MAX_N_SPOTLIGHTS 3      // maximum number of spotlights in the scene (same as in the vertex shader)
 
-in vec3 DirectionalLightDir[MAX_N_DIR_LIGHTS]; // statically sized array of directional light directions in view space
+in vec3 DirectionalLightDir[MAX_N_DIR_LIGHTS];  // statically sized array of directional light directions in view space
 in vec3 PointLightPos[MAX_N_POINT_LIGHTS];      // statically sized array of point light positions in view space
 in vec3 SpotlightPos[MAX_N_SPOTLIGHTS];         // statically sized array of spotlight positions in view space
 in vec3 SpotlightDir[MAX_N_SPOTLIGHTS];         // statically sized array of spotlight directions in view space

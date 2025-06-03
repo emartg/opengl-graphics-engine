@@ -47,15 +47,15 @@ public:
 	void SetLinear(GLfloat linear) { this->linear = linear; }
 	void SetQuadratic(GLfloat quadratic) { this->quadratic = quadratic; }
 
-	// Create the gizmo for the spotlight
+	// Creates the gizmo for the spotlight
 	void CreateGizmo() override;
-	// Syncronize gizmo's position with the light's position
+	// Syncronizes gizmo's position with the light's position
 	void SyncGizmoPositionFromLight() { if (gizmoShape) gizmoShape->SetPosition(position); }
-	// Syncronize gizmo's direction with the light's direction
+	// Syncronizes gizmo's direction with the light's direction
 	void SyncGizmoDirectionFromLight() { if (gizmoShape) gizmoShape->SetDirection(direction); }
-	//// Syncronize the gizmo's hex pyramid height with the light's inner cut-off angle
+	//// Syncronizes the gizmo's hex pyramid height with the light's inner cut-off angle
 	//void SyncGizmoInnerCutOffFromLight() { if (gizmoShape) gizmoShape->SetInnerCutOff(cutOff); }
-	//// Syncronize the gizmo's hex pyramid base area with the light's outer cut-off angle
+	//// Syncronizes the gizmo's hex pyramid base area with the light's outer cut-off angle
 	//void SyncGizmoOuterCutOffFromLight() { if (gizmoShape) gizmoShape->SetOuterCutOff(outerCutOff); }
 
 	// Static Public Functions

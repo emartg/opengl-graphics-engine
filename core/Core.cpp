@@ -11,6 +11,8 @@
 #include <algorithm> // for std::for_each
 
 #include "Core.h"
+#include "gizmos/Line.h" // for directional light gizmo rendering
+#include "gizmos/RECTANGULAR_PLANE.h" // for directional light gizmo rendering
 
 // Constructors
 // ------------
@@ -168,7 +170,7 @@ void Core::MainLoop()
 
 	// Shader configuration
 	// --------------------
-	// cube shader configuration
+	// shape shader configuration
 	shaders[0]->Use();
 	// fragment shader constant uniforms
 	shaders[0]->SetFloat("material.shininess", 32.0f);
@@ -200,7 +202,7 @@ void Core::MainLoop()
 		m_renderer->SetClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 		m_renderer->ClearBuffers();
 
-		// activate cube shader program
+		// activate the shader program for shapes
 		shaders[0]->Use();
 
 		// view/projection transformations
@@ -211,7 +213,7 @@ void Core::MainLoop()
 		shaders[0]->SetMat4("projection", projection);
 		shaders[0]->SetMat4("view", view);
 
-		// set the properties of the point lights iterating over the vector of assets of type "LIGHT"
+		// set the properties of the point lights iterate over the vector of assets of type "LIGHT"
 		GLuint pointLightIdx{}, spotlightIdx{}, directionalLightIdx{}; // indices for lights whose properties are to be set
 		std::for_each(m_assets["LIGHT"].begin(), m_assets["LIGHT"].end(),
 					  [&](const std::shared_ptr<Asset>& asset)
@@ -299,21 +301,21 @@ void Core::MainLoop()
 		// set the current number of directional lights
 		shaders[0]->SetInt("nDirectionalLights", static_cast<GLint>(directionalLightIdx));
 
-		// activate point Light shader program
+		// activate the shader program for gizmo shapes
 		shaders[1]->Use();
 
 		// view/projection transformations
 		shaders[1]->SetMat4("projection", projection);
 		shaders[1]->SetMat4("view", view);
 
-		// render the shapes using an algorithm to iterating over the vector of assets of type "MODEL"
+		// render the shapes using an algorithm to iterate over the vector of assets of type "MODEL"
 		std::for_each(m_assets["MODEL"].begin(), m_assets["MODEL"].end(),
 					  [&](const std::shared_ptr<Asset>& asset)
 		{
 			// dynamically cast the asset to a Shape object
 			auto shape = dynamic_cast<Shape*>(asset.get());
 
-			GLuint shaderIdx = 0; // default shader index for cube shader program
+			GLuint shaderIdx = 0; // default shader index for shape shader program
 
 			GizmoShapeType gizmoShapeType = shape->GetGizmoShapeType(); // get the type of the shape's gizmo
 
@@ -321,9 +323,9 @@ void Core::MainLoop()
 			{
 				case GizmoShapeType::NONE: // if the shape is not a gizmo
 				{
-					shaderIdx = 0; // set the shader index to 0 for cube shader programD
+					shaderIdx = 0; // set the shader index to 0 (shape shader program)
 
-					// activate the shader program for cubes
+					// activate the shader program
 					shaders[shaderIdx]->Use();
 
 					// set the color of the cube's shape based on the GUI input
@@ -337,9 +339,9 @@ void Core::MainLoop()
 				break;
 				case GizmoShapeType::DIRECTIONAL_LIGHT: // if the shape is a DirectionalLight gizmo
 				{
-					shaderIdx = 1; // set the shader index to 1 for point light shader program
+					shaderIdx = 1; // set the shader index to 1 (gizmo shader program)
 
-					// activate the shader program for spotlights
+					// activate the shader program
 					shaders[shaderIdx]->Use();
 
 					// set the color of the light's shape based on the GUI input
@@ -385,9 +387,9 @@ void Core::MainLoop()
 				break;
 				case GizmoShapeType::POINT_LIGHT: // if the shape is a PointLight gizmo
 				{
-					shaderIdx = 1; // set the shader index to 1 for point light shader program
+					shaderIdx = 1; // set the shader index to 1 (gizmo shader program)
 
-					// activate the shader program for point lights
+					// activate the shader program
 					shaders[shaderIdx]->Use();
 
 					// set the color of the light's shape based on the GUI input
@@ -406,9 +408,9 @@ void Core::MainLoop()
 				break;
 				case GizmoShapeType::SPOTLIGHT: // if the shape is a Spotlight gizmo
 				{
-					shaderIdx = 1; // set the shader index to 1 for point light shader program
+					shaderIdx = 1; // set the shader index to 1 (gizmo shader program)
 
-					// activate the shader program for spotlights
+					// activate the shader program
 					shaders[shaderIdx]->Use();
 
 					// set the color of the light's shape based on the GUI input
@@ -463,8 +465,46 @@ void Core::MainLoop()
 			else
 				glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); // set fill mode
 
-			// render the shape
+			// draw the shape or gizmo shape using the corresponding shader program
 			shape->Draw(*shaders[shaderIdx]);
+
+		});
+
+		// render additional gizmos using an algorithm to iterate over the vector of assets of type "LIGHT" again
+		// (this includes directional light gizmos, which are rendered as lines)
+		std::for_each(m_assets["LIGHT"].begin(), m_assets["LIGHT"].end(),
+					  [&](const std::shared_ptr<Asset>& asset)
+		{
+			auto light = dynamic_cast<Light*>(asset.get());
+			if (light->GetLightType() == LightType::DIRECTIONAL_LIGHT)
+			{
+				auto dirLight = dynamic_cast<DirectionalLight*>(light);
+
+				// update the line's vertices to match the light's position and direction
+				glm::vec3 start = dirLight->GetPosition();
+				glm::vec3 end = start + glm::normalize(dirLight->GetDirection()) * 1.5f; // 1.5f is the length of the line
+				std::vector<GLfloat> lineVertices = {
+					start.x, start.y, start.z,
+					end.x,   end.y,   end.z
+				};
+				dirLight->SetGizmoDirectionLine(std::make_shared<Line>(lineVertices));
+
+				// retrieve the line from the directional light
+				auto& line = dirLight->GetGizmoDirectionLine();
+				// use the gizmo shader program for rendering the line
+				shaders[1]->Use();
+				// set the projection and view matrices for the line						
+				shaders[1]->SetMat4("projection", projection);
+				shaders[1]->SetMat4("view", view);
+				// the model matrix is not used for lines, but we set it to identity for consistency
+				// (the line is drawn in world space, so it doesn't need a model matrix transformation)
+				glm::mat4 model{ 1.0f };
+				shaders[1]->SetMat4("model", model);
+				// set the color of the line
+				shaders[1]->SetVec3("albedo", dirLight->GetDiffuse());
+				// render the directional light gizmo line with its bespoke Draw method
+				line->Draw();
+			}
 		});
 
 		// render the GUI

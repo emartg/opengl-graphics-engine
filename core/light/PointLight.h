@@ -40,9 +40,9 @@ public:
 	void SetLinear(GLfloat linear) { this->linear = linear; }
 	void SetQuadratic(GLfloat quadratic) { this->quadratic = quadratic; }
 
-	// Create the gizmo for the point light
+	// Creates the gizmo for the point light
 	void CreateGizmo() override;
-	// Syncronize gizmo's position with the light's position
+	// Syncronizes gizmo's position with the light's position
 	void SyncGizmoPositionFromLight() { if (gizmoShape) gizmoShape->SetPosition(position); }
 
 	// Static Public Functions

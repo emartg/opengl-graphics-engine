@@ -29,7 +29,7 @@ public:
 		  const LightType type = LightType::UNDEFINED);
 
 	// Virtual destructor (ensures that derived classes can be deleted properly - polymorphism)
-	// ---------------------------------------------------------------------------------------
+	// ----------------------------------------------------------------------------------------
 	virtual ~Light() { nLights--; } // decrements the number of lights
 
 	// Public Methods

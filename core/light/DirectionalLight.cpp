@@ -19,7 +19,8 @@ DirectionalLight::DirectionalLight(const std::string& name,
 								   const glm::vec3 position, const glm::vec3 direction)
 	: Light(name, ambient, diffuse, specular,
 			LightType::DIRECTIONAL_LIGHT), // set the light type to directional light
-	position{ position }, direction{ direction }
+	position{ position }, direction{ direction },
+	gizmoDirectionLine{ nullptr }
 {
 	CreateGizmo(); // create the gizmo for the spotlight
 	nDirectionalLights++; // increment the number of directional lights
@@ -40,4 +41,22 @@ void DirectionalLight::CreateGizmo()
 	gizmoShape->SetDefaultDirection(glm::vec3(DIRECTION));
 	// set the gizmo type to DIRECTIONAL_LIGHT (used for rendering and interaction purposes)
 	gizmoShape->SetGizmoShapeType(GizmoShapeType::DIRECTIONAL_LIGHT);
+
+	// create the line that represents the direction of the light
+	gizmoDirectionLine = std::make_shared<Line>(rectangularPlaneDirectionLineVec);
+}
+
+void DirectionalLight::SyncGizmoDirectionFromLight()
+{
+	if (gizmoShape) gizmoShape->SetDirection(direction);
+	if (gizmoDirectionLine)
+	{
+		glm::vec3 start = position;
+		glm::vec3 end = position + glm::normalize(direction) * 2.0f; // 2.0f is the line length
+		std::vector<GLfloat> lineVertices = {
+			start.x, start.y, start.z,
+			end.x,   end.y,   end.z
+		};
+		gizmoDirectionLine = std::make_shared<Line>(lineVertices);
+	}
 }

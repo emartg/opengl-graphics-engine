@@ -70,3 +70,12 @@ const std::vector<GLfloat> rectangularPlaneNormalsVec{ std::begin(rectangularPla
 const std::vector<GLfloat> rectangularPlaneTexCoordsVec{ std::begin(rectangularPlaneTexCoordsArr), std::end(rectangularPlaneTexCoordsArr) };
 const std::vector<GLuint> rectangularPlaneIndicesVec{ std::begin(rectangularPlaneIndicesArr), std::end(rectangularPlaneIndicesArr) };
 const std::vector<GLfloat> rectangularPlaneVerticesVec{ std::begin(rectangularPlaneVerticesArr), std::end(rectangularPlaneVerticesArr) };
+
+// Rectangular plane direction line data (the normal direction)
+const GLfloat rectangularPlaneDirectionLineArr[] = {
+	0.0f,	0.0f,	0.0f,   // start: center
+	0.0f,	1.0f,	0.0f    // end:	1 unit along +Y (normal)
+};
+
+// Rectangular plane direction line data in vector form
+const std::vector<GLfloat> rectangularPlaneDirectionLineVec{ std::begin(rectangularPlaneDirectionLineArr), std::end(rectangularPlaneDirectionLineArr) };

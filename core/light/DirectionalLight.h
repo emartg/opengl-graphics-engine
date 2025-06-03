@@ -11,6 +11,7 @@
 #include <glm/glm.hpp>
 
 #include "Light.h"
+#include "../gizmos/Line.h"
 
 class DirectionalLight : public Light
 {
@@ -30,17 +31,19 @@ public:
 	// Getters
 	glm::vec3 GetPosition() const { return position; }
 	glm::vec3 GetDirection() const { return direction; }
+	std::shared_ptr<Line>& GetGizmoDirectionLine() { return gizmoDirectionLine; }
 
 	// Setters
 	void SetPosition(glm::vec3 position) { this->position = position; }
 	void SetDirection(glm::vec3 direction) { this->direction = direction; }
+	void SetGizmoDirectionLine(std::shared_ptr<Line> gizmoDirectionLine) { this->gizmoDirectionLine = gizmoDirectionLine; }
 
-	// Create the gizmo for the directional light
+	// Creates the gizmo for the directional light
 	void CreateGizmo() override;
-	// Syncronize gizmo's position with the light's position
+	// Syncronizes gizmo's position with the light's position
 	void SyncGizmoPositionFromLight() { if (gizmoShape) gizmoShape->SetPosition(position); }
-	// Syncronize gizmo's direction with the light's direction
-	void SyncGizmoDirectionFromLight() { if (gizmoShape) gizmoShape->SetDirection(direction); }
+	// Syncronizes gizmo's direction with the light's direction
+	void SyncGizmoDirectionFromLight();
 
 	// Static Public Functions
 	// -----------------------
@@ -56,10 +59,12 @@ private:
 	glm::vec3 position; // for directional lights, position is used just for the gizmo (no lighting impact)
 	glm::vec3 direction;
 
+	std::shared_ptr<Line> gizmoDirectionLine; // the gizmo representing the direction of the light
+
 	// Private Static Attributes (for default values)
 	// ----------------------------------------------
 	static constexpr glm::vec3 POSITION{ -3.5f, 7.0f, 0.0f };
-	static constexpr glm::vec3 DIRECTION{ 0.0f, -1.0f, 0.0f }; // default direction is -Y axis
+	static constexpr glm::vec3 DIRECTION{ 0.0f, 1.0f, 0.0f }; // default direction is +Y axis
 	static constexpr glm::vec3 AMBIENT{ 0.1f }, DIFFUSE{ 0.8f }, SPECULAR{ 1.0f };
 
 };
