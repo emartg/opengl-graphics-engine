@@ -19,6 +19,9 @@ const GLuint nHexPyramidVertices = 18, nHexPyramidIndices = 18;
 constexpr float HEX_RADIUS = 1.0f;
 constexpr float HEX_HEIGHT = 1.0f;
 
+// Forward direction of the hexagonal pyramid defined below
+constexpr glm::vec3 HEX_PYRAMID_FORWARD{ 0.0f, -1.0f, 0.0f }; // facing down along the negative Y-axis
+
 // Hexagonal base vertices (duplicated per face with apex)
 const GLfloat hexPyramidPositionsArr[] = {
 	// 6 triangle sides (apex and base vertices)

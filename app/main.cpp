@@ -102,9 +102,9 @@ int main(int argc, char** argv)
 	engine->AddAsset(std::move(cubeShape)); // add the cube shape to the engine
 
 	// define shader names and paths and compile the shaders
-	std::vector<std::string> shaderNames{ "Shape Shader Program", "Light Gizmo Shader Program" };
-	std::vector<std::string> vertexShaderPaths{ "shaders/shape.vert.glsl" , "shaders/gizmo.vert.glsl" };
-	std::vector<std::string> fragmentShaderPaths{ "shaders/shape.frag.glsl", "shaders/gizmo.frag.glsl" };
+	std::vector<std::string> shaderNames{ "Shape Shader Program", "Gizmo Shape Shader Program" };
+	std::vector<std::string> vertexShaderPaths{ "shaders/shape.vert.glsl" , "shaders/gizmo_shape.vert.glsl" };
+	std::vector<std::string> fragmentShaderPaths{ "shaders/shape.frag.glsl", "shaders/gizmo_shape.frag.glsl" };
 	engine->CompileShaders(shaderNames, vertexShaderPaths, fragmentShaderPaths);
 
 	// run the main loop of the engine

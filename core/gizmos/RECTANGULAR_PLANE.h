@@ -18,6 +18,9 @@ const GLuint nRectangularPlaneVertices = 6, nRectangularPlaneIndices = 12;
 constexpr float PLANE_WIDTH = 2.0f;
 constexpr float PLANE_HEIGHT = 2.0f;
 
+// Forward direction of the rectangular plane defined below
+constexpr glm::vec3 RECTANGULAR_PLANE_FORWARD{ 0.0f, 1.0f, 0.0f }; // facing up along the Y-axis
+
 // Rectangular plane vertices
 const GLfloat rectangularPlanePositionsArr[] = {
 	-PLANE_WIDTH / 2,	0.0f,	-PLANE_HEIGHT / 2,	// bottom-left
