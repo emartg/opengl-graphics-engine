@@ -8,11 +8,11 @@
 
 #include <string>
 
-#include <glad/glad.h>
-
-enum class TextureType { DIFFUSE, SPECULAR };
+#include <glad/glad.h> // holds the OpenGL function pointers
 
 #include "../Asset.h"
+
+enum class TextureType { DIFFUSE, SPECULAR };
 
 class Texture : public Asset
 {

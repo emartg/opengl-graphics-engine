@@ -12,24 +12,11 @@
 // ------------
 Line::Line(const std::vector<GLfloat>& vertices)
 {
-	if (vertices.size() != 6) // check if the vector has exactly 6 elements (3 floats for each endpoint)
-		throw std::invalid_argument("Line constructor requires exactly 6 float values for two endpoints.");
+	// check if the vector is empty or has the correct size (empty vector allows for deferred update)
+	if (vertices.size() != 6 && !vertices.empty())
+		throw std::invalid_argument("Line constructor requires 6 float values for two endpoints, or be empty for deferred update.");
 
-	this->vertices = vertices;
-	setupLine();
-}
-
-Line::Line(const GLfloat* vertices)
-{
-	if (vertices == nullptr) // check if the pointer is valid
-		throw std::invalid_argument("Line constructor requires a valid pointer to an array of 6 float values.");
-
-	// assume the pointer points to an array of 6 floats (3 for each endpoint),
-	// i.e., that the caller has ensured that the array is of the correct size,
-	// this way we can avoid explicitly checking the size here
-
-	this->vertices.assign(vertices, vertices + 6);
-	setupLine();
+	setupLine(vertices);
 }
 
 // Public Methods
@@ -39,10 +26,23 @@ void Line::Draw() const
 	// bind the VAO and draw the line
 	glBindVertexArray(VAO);
 	glDrawArrays(GL_LINES, 0, 2);
-	glBindVertexArray(0);
 
 	// unbind the the VAO
 	glBindVertexArray(0);
+}
+
+void Line::UpdateVertices(const std::vector<GLfloat>& vertices)
+{
+	// check if the new vector has the correct size
+	if (vertices.size() != 6)
+		throw std::invalid_argument("Line::UpdateVertices requires 6 float values for two endpoints.");
+
+	// bind the VBO and update the vertices with the new data
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, vertices.size() * sizeof(GLfloat), vertices.data());
+
+	// unbind the VBO
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
 void Line::DeallocateResources()
@@ -53,7 +53,7 @@ void Line::DeallocateResources()
 
 // Private Methods
 // ---------------
-void Line::setupLine()
+void Line::setupLine(const std::vector<GLfloat>& vertices)
 {
 	// create buffers/arrays
 	glGenVertexArrays(1, &VAO);
@@ -64,7 +64,15 @@ void Line::setupLine()
 
 	// bind the VBO and send the vertices to the GPU
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices.data(), GL_STATIC_DRAW);
+	// use GL_DYNAMIC_DRAW to allow for dynamic updates of the vertex data 
+	// (this is useful for lines that may change frequently), and ensure
+	// that, if the vector is empty, there is still space reserved for two points,
+	// which is 6 floats (2 points * 3 coordinates each)
+	if (!vertices.empty())
+		glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * vertices.size(), vertices.data(), GL_DYNAMIC_DRAW);
+	else
+		// if the vector is empty, reserve space for two points (6 floats)
+		glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * 6, nullptr, GL_DYNAMIC_DRAW);
 
 	// set the vertex attribute pointers
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);

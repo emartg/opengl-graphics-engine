@@ -57,8 +57,10 @@ private:
 	// ----------------------------------------------
 	static constexpr float MIN_POSITION_SLIDER_VALUE{ -15.0f }; // default minimum value for position sliders
 	static constexpr float MAX_POSITION_SLIDER_VALUE{ 15.0f }; // default maximum value for position sliders
-	static constexpr float MIN_DIRECTION_SLIDER_VALUE{ -1.0f }; // default minimum value for direction sliders
-	static constexpr float MAX_DIRECTION_SLIDER_VALUE{ 1.0f }; // default maximum value for direction sliders
+	static constexpr float MIN_ROTATION_SLIDER_VALUE{ -360.0f }; // default minimum value for rotation sliders
+	static constexpr float MAX_ROTATION_SLIDER_VALUE{ 360.0f }; // default maximum value for rotation sliders
+	static constexpr float MIN_SCALE_SLIDER_VALUE{ 0.1f }; // default minimum value for scale sliders
+	static constexpr float MAX_SCALE_SLIDER_VALUE{ 5.0f }; // default maximum value for scale sliders
 	static constexpr float MIN_INNER_CUTOFF_SLIDER_VALUE{ 0.0f }; // default minimum value for inner cutoff sliders
 	static constexpr float MAX_INNER_CUTOFF_SLIDER_VALUE{ 45.0f }; // default maximum value for inner cutoff sliders
 	static constexpr float MIN_OUTER_CUTOFF_SLIDER_VALUE{ 0.0f }; // default minimum value for outer cutoff sliders

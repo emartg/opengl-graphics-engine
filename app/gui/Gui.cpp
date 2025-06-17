@@ -210,6 +210,10 @@ void GUI::Setup()
 			// display the position of the shape
 			ImGui::Text("Position: (%.2f, %.2f, %.2f)",
 						shape->GetPosition().x, shape->GetPosition().y, shape->GetPosition().z);
+			ImGui::Text("Rotation: (%.2f, %.2f, %.2f)",
+						shape->GetRotationInEulerAngles().x, shape->GetRotationInEulerAngles().y, shape->GetRotationInEulerAngles().z);
+			ImGui::Text("Scale: (%.2f, %.2f, %.2f)",
+						shape->GetScale().x, shape->GetScale().y, shape->GetScale().z);
 
 			// display additional information based on the shape's gizmo type
 			GizmoShapeType gizmoShapeType = shape->GetGizmoShapeType(); // get the type of the shape's gizmo
@@ -220,9 +224,9 @@ void GUI::Setup()
 					break;
 				case GizmoShapeType::DIRECTIONAL_LIGHT:
 				case GizmoShapeType::SPOTLIGHT: // if the shape is a DirectionalLight or a Spotlight gizmo
-					// diplay the direction of the shape
+					// diplay the direction of the shape (i.e. the forward vector of the gizmo in world space)
 					ImGui::Text("Direction: (%.2f, %.2f, %.2f)",
-								shape->GetDirection().x, shape->GetDirection().y, shape->GetDirection().z);
+								shape->GetForward().x, shape->GetForward().y, shape->GetForward().z);
 					break;
 				case GizmoShapeType::POINT_LIGHT: // if the shape is a PointLight gizmo
 					break;
@@ -268,40 +272,43 @@ void GUI::Setup()
 					// get the DirectionalLight object
 					auto directionalLight = dynamic_cast<DirectionalLight*>(light);
 
-					// use PushID to create a unique ID for each light (to avoid conflicts with the GUI)
+					// use PushID to create a unique ID for each directional light (to avoid conflicts with the GUI)
 					ImGui::PushID(directionalLight->GetName().c_str());
 
-					// display the name of the light
+					// display the name of the directional light
 					ImGui::Text("%s", directionalLight->GetName().c_str());
 
-					// get the color of the light
+					// get the color of the directional light
 					glm::vec3 color = directionalLight->GetDiffuse();
-					// create a color picker for the light's color
+					// create a color picker for the directional light's color
 					if (ImGui::ColorEdit3("Color", (float*)&color)) // if the color picker is used
 					{
-						directionalLight->SetDiffuse(color); // set the new color of the light
-						directionalLight->SyncGizmoColorFromLight(); // set the new color of the light's gizmo
+						directionalLight->SetDiffuse(color); // set the new color of the directional light
+						directionalLight->SyncGizmoColorFromLight(); // set the new color of the directional light's gizmo
 					}
 
-					// get the position of the light (so that the user can see it, but it is not used for directional lights)
+					// get the position of the directional light (so that the user can see it, but it is not used for directional lights)
 					glm::vec3 pos = directionalLight->GetPosition();
-					// create a slider for the x, y, and z components of the light's position
+					// create a slider for the x, y, and z components of the directional light's position
 					if (ImGui::SliderFloat3("Position", (float*)&pos,
 											MIN_POSITION_SLIDER_VALUE, MAX_POSITION_SLIDER_VALUE)) // if the slider is moved
 					{
-						directionalLight->SetPosition(pos); // set the new position of the light
-						directionalLight->SyncGizmoPositionFromLight(); // set the new position of the light's gizmo
+						directionalLight->SetPosition(pos); // set the new position of the directional light
+						directionalLight->SyncGizmoPositionFromLight(); // set the new position of the directional light's gizmo
 					}
 
-					// get the direction of the light
-					glm::vec3 dir = directionalLight->GetDirection();
-					// create a slider for the x, y, and z components of the light's direction
-					if (ImGui::SliderFloat3("Direction", (float*)&dir,
-											MIN_DIRECTION_SLIDER_VALUE, MAX_DIRECTION_SLIDER_VALUE)) // if the slider is moved
+					// get a reference to the gizmo shape of the directional light and its rotation in Euler angles
+					auto gizmoShape = directionalLight->GetGizmoShape();
+					glm::vec3 rotDegrees = gizmoShape->GetRotationInEulerAngles();
+					// create a slider for the x, y, and z components of the directionalLight's rotation
+					if (ImGui::SliderFloat3("Rotation", (float*)&rotDegrees,
+											MIN_ROTATION_SLIDER_VALUE, MAX_ROTATION_SLIDER_VALUE)) // if the slider is moved
 					{
-						dir = glm::normalize(dir); // normalize the direction vector to avoid issues with the directional light's direction
-						directionalLight->SetDirection(dir); // set the new direction of the light
-						directionalLight->SyncGizmoDirectionFromLight(); // set the new direction of the light's gizmo
+						// set the new rotation of the directional light's gizmo
+						gizmoShape->SetRotationInEulerAngles(rotDegrees);
+						// update the light's direction based on the gizmo's new forward vector,
+						// without causing the gizmo to be re-oriented by SetForward() again
+						directionalLight->SetDirectionOnly(gizmoShape->GetForward());
 					}
 
 					// use PopID to end the unique ID scope
@@ -315,29 +322,29 @@ void GUI::Setup()
 					// get the PointLight object
 					auto pointLight = dynamic_cast<PointLight*>(light);
 
-					// use PushID to create a unique ID for each light (to avoid conflicts with the GUI)
+					// use PushID to create a unique ID for each point light (to avoid conflicts with the GUI)
 					ImGui::PushID(pointLight->GetName().c_str());
 
-					// display the name of the light
+					// display the name of the point light
 					ImGui::Text("%s", pointLight->GetName().c_str());
 
-					// get the color of the light
+					// get the color of the point light
 					glm::vec3 color = pointLight->GetDiffuse();
-					// create a color picker for the light's color
+					// create a color picker for the point light's color
 					if (ImGui::ColorEdit3("Color", (float*)&color)) // if the color picker is used
 					{
-						pointLight->SetDiffuse(color); // set the new color of the light
-						pointLight->SyncGizmoColorFromLight(); // set the new color of the light's gizmo
+						pointLight->SetDiffuse(color); // set the new color of the point light
+						pointLight->SyncGizmoColorFromLight(); // set the new color of the point light's gizmo
 					}
 
-					// get the position of the light
+					// get the position of the point light
 					glm::vec3 pos = pointLight->GetPosition();
-					// create a slider for the x, y, and z components of the light's position
+					// create a slider for the x, y, and z components of the point light's position
 					if (ImGui::SliderFloat3("Position", (float*)&pos,
 											MIN_POSITION_SLIDER_VALUE, MAX_POSITION_SLIDER_VALUE)) // if the slider is moved
 					{
-						pointLight->SetPosition(pos); // set the new position of the light
-						pointLight->SyncGizmoPositionFromLight(); // set the new position of the light's gizmo
+						pointLight->SetPosition(pos); // set the new position of the point light
+						pointLight->SyncGizmoPositionFromLight(); // set the new position of the point light's gizmo
 					}
 
 					// use PopID to end the unique ID scope
@@ -377,15 +384,18 @@ void GUI::Setup()
 						spotlight->SyncGizmoPositionFromLight(); // set the new position of the spotlight's gizmo
 					}
 
-					// get the direction of the spotlight
-					glm::vec3 dir = spotlight->GetDirection();
-					// create a slider for the x, y, and z components of the spotlight's direction
-					if (ImGui::SliderFloat3("Direction", (float*)&dir,
-											MIN_DIRECTION_SLIDER_VALUE, MAX_DIRECTION_SLIDER_VALUE)) // if the slider is moved
+					// get a reference to the gizmo shape of the spotlight and its rotation in Euler angles
+					auto gizmoShape = spotlight->GetGizmoShape();
+					glm::vec3 rotDegrees = gizmoShape->GetRotationInEulerAngles();
+					// create a slider for the x, y, and z components of the spotlight's rotation
+					if (ImGui::SliderFloat3("Rotation", (float*)&rotDegrees,
+											MIN_ROTATION_SLIDER_VALUE, MAX_ROTATION_SLIDER_VALUE)) // if the slider is moved
 					{
-						dir = glm::normalize(dir); // normalize the direction vector to avoid issues with the spotlight's direction
-						spotlight->SetDirection(dir); // set the new direction of the spotlight
-						spotlight->SyncGizmoDirectionFromLight(); // set the new direction of the spotlight's gizmo
+						// set the new rotation of the spotlight's gizmo
+						gizmoShape->SetRotationInEulerAngles(rotDegrees);
+						// update the light's direction based on the gizmo's new forward vector,
+						// without causing the gizmo to be re-oriented by SetForward() again
+						spotlight->SetDirectionOnly(gizmoShape->GetForward());
 					}
 
 					// get the inner and outer cut-off angles of the spotlight 
@@ -462,6 +472,24 @@ void GUI::Setup()
 										MIN_POSITION_SLIDER_VALUE, MAX_POSITION_SLIDER_VALUE)) // if the slider is moved
 				{
 					shape->SetPosition(pos); // set the new position of the shape
+				}
+
+				// get the rotation of the shape in Euler angles
+				glm::vec3 rotDegrees = shape->GetRotationInEulerAngles();
+				// create a slider for the x, y, and z components of the shape's rotation
+				if (ImGui::SliderFloat3("Rotation", (float*)&rotDegrees,
+										MIN_ROTATION_SLIDER_VALUE, MAX_ROTATION_SLIDER_VALUE)) // if the slider is moved
+				{
+					shape->SetRotationInEulerAngles(rotDegrees); // set the new rotation of the shape
+				}
+
+				// get the scale of the shape
+				glm::vec3 scale = shape->GetScale();
+				// create a slider for the x, y, and z components of the shape's scale
+				if (ImGui::SliderFloat3("Scale", (float*)&scale,
+										MIN_SCALE_SLIDER_VALUE, MAX_SCALE_SLIDER_VALUE)) // if the slider is moved
+				{
+					shape->SetScale(scale); // set the new scale of the shape
 				}
 
 				// use PopID to end the unique ID scope

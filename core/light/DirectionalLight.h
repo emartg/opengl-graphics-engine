@@ -9,6 +9,8 @@
 #include <glad/glad.h> // holds all OpenGL type declarations
 
 #include <glm/glm.hpp>
+#include <glm/gtc/constants.hpp> // for glm::pi
+#include <glm/gtc/quaternion.hpp>
 
 #include "Light.h"
 #include "../gizmos/Line.h"
@@ -32,18 +34,32 @@ public:
 	glm::vec3 GetPosition() const { return position; }
 	glm::vec3 GetDirection() const { return direction; }
 	std::shared_ptr<Line>& GetGizmoDirectionLine() { return gizmoDirectionLine; }
+	GLfloat GetGizmoDirectionLineLength(const GLfloat length) { return gizmoDirectionLineLength; }
 
 	// Setters
-	void SetPosition(glm::vec3 position) { this->position = position; }
-	void SetDirection(glm::vec3 direction) { this->direction = direction; }
+	// Sets the position of the light and updates the gizmo's position accordingly.
+	// This method also ensures the gizmo's direction line is updated if there are position changes
+	void SetPosition(glm::vec3 position);
+	// Sets the direction of the light without aligning the gizmo (only updates the light's direction).
+	// This is useful when the gizmo's rotation is changed (e.g., by the GUI), and the light's direction
+	// needs to be updated based on the gizmo's new orientation, without causing gizmoShape->SetForward() 
+	// to be called again, which would create a conflict.
+	// This method also ensures the gizmo's direction line is updated if there are direction changes
+	void SetDirectionOnly(const glm::vec3& direction);
+	// Sets the direction of the light and aligns the gizmo with the new direction.
+	// This is useful when the light's direction is changed programmatically, 
+	// and the visual gizmo needs to update its orientation to match.
+	// This method also ensures the gizmo's direction line is updated if there are direction changes
+	void SetDirectionAndAlignGizmo(const glm::vec3& direction);
 	void SetGizmoDirectionLine(std::shared_ptr<Line> gizmoDirectionLine) { this->gizmoDirectionLine = gizmoDirectionLine; }
+	void SetGizmoDirectionLineLength(const GLfloat length) { gizmoDirectionLineLength = length; }
 
 	// Creates the gizmo for the directional light
 	void CreateGizmo() override;
 	// Syncronizes gizmo's position with the light's position
-	void SyncGizmoPositionFromLight() { if (gizmoShape) gizmoShape->SetPosition(position); }
-	// Syncronizes gizmo's direction with the light's direction
-	void SyncGizmoDirectionFromLight();
+	void SyncGizmoPositionFromLight() { gizmoShape->SetPosition(position); }
+	// Updates the vertices of the gizmo's direction line based on the light's current position and direction
+	void UpdateGizmoDirectionLine();
 
 	// Static Public Functions
 	// -----------------------
@@ -60,12 +76,14 @@ private:
 	glm::vec3 direction;
 
 	std::shared_ptr<Line> gizmoDirectionLine; // the gizmo representing the direction of the light
+	GLfloat gizmoDirectionLineLength{ 1.5f };
 
 	// Private Static Attributes (for default values)
 	// ----------------------------------------------
 	static constexpr glm::vec3 POSITION{ -3.5f, 7.0f, 0.0f };
 	static constexpr glm::vec3 DIRECTION{ 0.0f, 1.0f, 0.0f }; // default direction is +Y axis
 	static constexpr glm::vec3 AMBIENT{ 0.1f }, DIFFUSE{ 0.8f }, SPECULAR{ 1.0f };
+	static constexpr glm::vec3 GIZMO_SCALE{ 0.4f }; // default scale for the gizmo
 
 };
 

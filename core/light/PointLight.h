@@ -66,5 +66,6 @@ private:
 	static constexpr glm::vec3 POSITION{ 1.0f, 2.0f, 3.0f };
 	static constexpr glm::vec3 AMBIENT{ 0.1f }, DIFFUSE{ 0.8f }, SPECULAR{ 1.0f };
 	static constexpr GLfloat CONSTANT{ 1.0f }, LINEAR{ 0.09f }, QUADRATIC{ 0.032f };
+	static constexpr glm::vec3 GIZMO_SCALE{ 0.3f }; // default scale for the gizmo
 
 };

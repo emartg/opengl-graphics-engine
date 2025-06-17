@@ -315,155 +315,54 @@ void Core::MainLoop()
 			// dynamically cast the asset to a Shape object
 			auto shape = dynamic_cast<Shape*>(asset.get());
 
-			GLuint shaderIdx = 0; // default shader index for shape shader program
+			GLuint shaderIdx = 0; // default shader index to select a shader program (shape shader program)
 
 			GizmoShapeType gizmoShapeType = shape->GetGizmoShapeType(); // get the type of the shape's gizmo
 
 			switch (gizmoShapeType) // switch based on the gizmo type
 			{
-				case GizmoShapeType::NONE: // if the shape is not a gizmo
+				// if the shape is not a gizmo
+				case GizmoShapeType::NONE:
 				{
 					shaderIdx = 0; // set the shader index to 0 (shape shader program)
 
 					// activate the shader program
 					shaders[shaderIdx]->Use();
 
-					// set the color of the cube's shape based on the GUI input
+					// set the color of the shape based on the GUI input
 					shaders[shaderIdx]->SetVec3("material.albedo", shape->GetAlbedo());
 
-					// set the position of the cube's shape based on the GUI input
-					glm::mat4 model{ 1.0f };
-					model = glm::translate(model, shape->GetPosition());
-					shaders[shaderIdx]->SetMat4("model", model);
+					// set the model matrix for the shape
+					shaders[shaderIdx]->SetMat4("model", shape->GetModelMatrix());
+
+					// use fill mode to render regular shapes
+					glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 				}
 				break;
-				case GizmoShapeType::DIRECTIONAL_LIGHT: // if the shape is a DirectionalLight gizmo
+				// if the shape is a DirectionalLight gizmo, PointLight gizmo, or Spotlight gizmo
+				case GizmoShapeType::DIRECTIONAL_LIGHT:
+				case GizmoShapeType::POINT_LIGHT:
+				case GizmoShapeType::SPOTLIGHT:
 				{
-					shaderIdx = 1; // set the shader index to 1 (gizmo shader program)
+					shaderIdx = 1; // set the shader index to 1 (gizmo shape shader program)
 
 					// activate the shader program
 					shaders[shaderIdx]->Use();
 
-					// set the color of the light's shape based on the GUI input
+					// set the color of the shape based on the GUI input
 					shaders[shaderIdx]->SetVec3("albedo", shape->GetAlbedo());
 
-					// set the position of the light's shape based on the GUI input
-					glm::mat4 model{ 1.0f };
-					model = glm::translate(model, shape->GetPosition());
+					// set the model matrix for the shape
+					shaders[shaderIdx]->SetMat4("model", shape->GetModelMatrix());
 
-					// set the direction of the light's shape based on the GUI input
-					glm::vec3 defaultDirection = glm::normalize(shape->GetDefaultDirection());
-					glm::vec3 targetDirection = glm::normalize(shape->GetDirection());
-					if (glm::length(targetDirection) > 0.0001f) // avoid NaN if direction is zero
-					{
-						// calculate the rotation angle and axis to align the shape with the light's direction
-						float angle = acos(glm::clamp(glm::dot(defaultDirection, targetDirection), -1.0f, 1.0f));
-						glm::vec3 rotationAxis = glm::cross(defaultDirection, targetDirection);
-						if (glm::length(rotationAxis) > 0.0001f) // avoid NaN if rotation axis is zero
-						{
-							rotationAxis = glm::normalize(rotationAxis);
-							// rotate the shape around the rotation axis by the calculated angle
-							model = glm::rotate(model, angle, rotationAxis);
-						}
-						// if angle is 0 or 180 degrees, cross product is zero; handle 180 deg flip if needed
-						else if (angle > 3.13f) // ~pi
-						{
-							// pick any axis perpendicular to defaultDirection
-							glm::vec3 perp = glm::vec3(1.0f, 0.0f, 0.0f);
-							// if defaultDirection is close to perp, pick another axis
-							if (fabs(glm::dot(defaultDirection, perp)) > 0.99f)
-								perp = glm::vec3(0.0f, 0.0f, 1.0f);
-							// rotate around the perpendicular axis
-							model = glm::rotate(model, angle, perp);
-						}
-					}
-
-					// scale the shape to make it smaller
-					model = glm::scale(model, glm::vec3(0.4f));
-
-					// set the model matrix for the light's shape
-					shaders[shaderIdx]->SetMat4("model", model);
-				}
-				break;
-				case GizmoShapeType::POINT_LIGHT: // if the shape is a PointLight gizmo
-				{
-					shaderIdx = 1; // set the shader index to 1 (gizmo shader program)
-
-					// activate the shader program
-					shaders[shaderIdx]->Use();
-
-					// set the color of the light's shape based on the GUI input
-					shaders[shaderIdx]->SetVec3("albedo", shape->GetAlbedo());
-
-					// set the position of the light's shape based on the GUI input
-					glm::mat4 model{ 1.0f };
-					model = glm::translate(model, shape->GetPosition());
-
-					// scale the shape to make it smaller
-					model = glm::scale(model, glm::vec3(0.3f));
-
-					// set the model matrix for the light's shape
-					shaders[shaderIdx]->SetMat4("model", model);
-				}
-				break;
-				case GizmoShapeType::SPOTLIGHT: // if the shape is a Spotlight gizmo
-				{
-					shaderIdx = 1; // set the shader index to 1 (gizmo shader program)
-
-					// activate the shader program
-					shaders[shaderIdx]->Use();
-
-					// set the color of the light's shape based on the GUI input
-					shaders[shaderIdx]->SetVec3("albedo", shape->GetAlbedo());
-
-					// set the position of the light's shape based on the GUI input
-					glm::mat4 model{ 1.0f };
-					model = glm::translate(model, shape->GetPosition());
-
-					// set the direction of the light's shape based on the GUI input
-					glm::vec3 defaultDirection = glm::normalize(shape->GetDefaultDirection());
-					glm::vec3 targetDirection = glm::normalize(shape->GetDirection());
-					if (glm::length(targetDirection) > 0.0001f) // avoid NaN if direction is zero
-					{
-						// calculate the rotation angle and axis to align the shape with the light's direction
-						float angle = acos(glm::clamp(glm::dot(defaultDirection, targetDirection), -1.0f, 1.0f));
-						glm::vec3 rotationAxis = glm::cross(defaultDirection, targetDirection);
-						if (glm::length(rotationAxis) > 0.0001f) // avoid NaN if rotation axis is zero
-						{
-							rotationAxis = glm::normalize(rotationAxis);
-							// rotate the shape around the rotation axis by the calculated angle
-							model = glm::rotate(model, angle, rotationAxis);
-						}
-						// if angle is 0 or 180 degrees, cross product is zero; handle 180 deg flip if needed
-						else if (angle > 3.13f) // ~pi
-						{
-							// pick any axis perpendicular to defaultDirection
-							glm::vec3 perp = glm::vec3(1.0f, 0.0f, 0.0f);
-							// if defaultDirection is close to perp, pick another axis
-							if (fabs(glm::dot(defaultDirection, perp)) > 0.99f)
-								perp = glm::vec3(0.0f, 0.0f, 1.0f);
-							// rotate around the perpendicular axis
-							model = glm::rotate(model, angle, perp);
-						}
-					}
-
-					// scale the shape to make it smaller
-					model = glm::scale(model, glm::vec3(0.3f));
-
-					// set the model matrix for the light's shape
-					shaders[shaderIdx]->SetMat4("model", model);
+					// use wireframe mode to render gizmo shapes
+					glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 				}
 				break;
 				default: // if the shape is of an unknown gizmo type
 					std::cerr << "Unknown gizmo shape type for shape: " << shape->GetName() << std::endl;
 					return;
 			}
-
-			// if the shape is a gizmo, use wirefame mode for rendering
-			if (shape->GetGizmoShapeType() != GizmoShapeType::NONE)
-				glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); // set wireframe mode
-			else
-				glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); // set fill mode
 
 			// draw the shape or gizmo shape using the corresponding shader program
 			shape->Draw(*shaders[shaderIdx]);
@@ -480,14 +379,9 @@ void Core::MainLoop()
 			{
 				auto dirLight = dynamic_cast<DirectionalLight*>(light);
 
-				// update the line's vertices to match the light's position and direction
-				glm::vec3 start = dirLight->GetPosition();
-				glm::vec3 end = start + glm::normalize(dirLight->GetDirection()) * 1.5f; // 1.5f is the length of the line
-				std::vector<GLfloat> lineVertices = {
-					start.x, start.y, start.z,
-					end.x,   end.y,   end.z
-				};
-				dirLight->SetGizmoDirectionLine(std::make_shared<Line>(lineVertices));
+				// update the line's vertices to match the light's current position and direction
+				// with UpdateGizmoDirectionLine() (prevents constantly re-creating Line objects)
+				dirLight->UpdateGizmoDirectionLine();
 
 				// retrieve the line from the directional light
 				auto& line = dirLight->GetGizmoDirectionLine();

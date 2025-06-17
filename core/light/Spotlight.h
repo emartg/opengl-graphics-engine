@@ -9,6 +9,8 @@
 #include <glad/glad.h> // holds all OpenGL type declarations
 
 #include <glm/glm.hpp>
+#include <glm/gtc/constants.hpp> // for glm::pi
+#include <glm/gtc/quaternion.hpp>
 
 #include "Light.h"
 
@@ -39,8 +41,20 @@ public:
 	GLfloat GetQuadratic() const { return quadratic; }
 
 	// Setters
-	void SetPosition(glm::vec3 position) { this->position = position; }
-	void SetDirection(glm::vec3 direction) { this->direction = direction; }
+	// Sets the position of the light and updates the gizmo's position accordingly.
+	// This method also ensures the gizmo's direction line is updated if there are position changes
+	void SetPosition(glm::vec3 position);
+	// Sets the direction of the light without aligning the gizmo (only updates the light's direction).
+	// This is useful when the gizmo's rotation is changed (e.g., by the GUI), and the light's direction
+	// needs to be updated based on the gizmo's new orientation, without causing gizmoShape->SetForward() 
+	// to be called again, which would create a conflict.
+	// This method also ensures the gizmo's direction line is updated if there are direction changes
+	void SetDirectionOnly(const glm::vec3& direction);
+	// Sets the direction of the light and aligns the gizmo with the new direction.
+	// This is useful when the light's direction is changed programmatically, 
+	// and the visual gizmo needs to update its orientation to match.
+	// This method also ensures the gizmo's direction line is updated if there are direction changes
+	void SetDirectionAndAlignGizmo(const glm::vec3& direction);
 	void SetInnerCutOff(GLfloat innerCutOff) { this->innerCutOff = innerCutOff; }
 	void SetOuterCutOff(GLfloat outerCutOff) { this->outerCutOff = outerCutOff; }
 	void SetConstant(GLfloat constant) { this->constant = constant; }
@@ -51,12 +65,6 @@ public:
 	void CreateGizmo() override;
 	// Syncronizes gizmo's position with the light's position
 	void SyncGizmoPositionFromLight() { if (gizmoShape) gizmoShape->SetPosition(position); }
-	// Syncronizes gizmo's direction with the light's direction
-	void SyncGizmoDirectionFromLight() { if (gizmoShape) gizmoShape->SetDirection(direction); }
-	//// Syncronizes the gizmo's hex pyramid height with the light's inner cut-off angle
-	//void SyncGizmoInnerCutOffFromLight() { if (gizmoShape) gizmoShape->SetInnerCutOff(cutOff); }
-	//// Syncronizes the gizmo's hex pyramid base area with the light's outer cut-off angle
-	//void SyncGizmoOuterCutOffFromLight() { if (gizmoShape) gizmoShape->SetOuterCutOff(outerCutOff); }
 
 	// Static Public Functions
 	// -----------------------
@@ -84,6 +92,7 @@ private:
 	static constexpr glm::vec3 AMBIENT{ 0.1f }, DIFFUSE{ 0.8f }, SPECULAR{ 1.0f };
 	static constexpr GLfloat CONSTANT{ 1.0f }, LINEAR{ 0.09f }, QUADRATIC{ 0.032f };
 	static const GLfloat INNER_CUTOFF, OUTER_CUTOFF;
+	static constexpr glm::vec3 GIZMO_SCALE{ 0.3f }; // default scale for the gizmo
 
 };
 

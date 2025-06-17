@@ -16,13 +16,17 @@ class Line
 public:
 	// Contructors
 	// -----------
-	Line(const std::vector<GLfloat>& vertices);
-	Line(const GLfloat* vertices);
+	Line(const std::vector<GLfloat>& vertices = {
+		0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f
+		 }
+	);
 
 	// Public Methods
 	// --------------
 	// Renders the line
 	void Draw() const;
+	// Updates the vertices of the line
+	void UpdateVertices(const std::vector<GLfloat>& vertices);
 
 	// Deallocates all the resources of the line
 	void DeallocateResources();
@@ -37,6 +41,6 @@ private:
 	// Private Methods
 	// ---------------
 	// Initializes the buffer objects/arrays
-	void setupLine();
+	void setupLine(const std::vector<GLfloat>& vertices);
 
 };

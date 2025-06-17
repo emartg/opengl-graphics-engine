@@ -5,9 +5,10 @@
 * from vertex, normal, texture coordinate, index and texture data (if added).
 */
 
-#pragma once
-
 #include "Shape.h"
+
+#define GLM_ENABLE_EXPERIMENTAL // enable experimental features in GLM
+#include <glm/gtx/quaternion.hpp> // for quaternion operations
 
 // Static Private Attributes
 // -------------------------
@@ -18,10 +19,12 @@ GLuint Shape::nShapes{}; // initialize the number of shapes in the scene to 0
 Shape::Shape(const std::string& name,
 			 const std::vector<GLfloat> vertices, const std::vector<GLuint> indices,
 			 const glm::vec3 albedo,
-			 const glm::vec3 position, const glm::vec3 direction)
+			 const glm::vec3 position, const glm::quat rotation, const glm::vec3 scale,
+			 const glm::vec3 forward, const glm::vec3 meshForward)
 	: Model(name),
 	vertices{ processVertexData(vertices) }, indices{ indices },
-	albedo{ albedo }, position{ position }, direction{ direction }
+	albedo{ albedo }, position{ position }, rotation{ rotation }, scale{ scale },
+	forward{ forward }, meshForward{ meshForward }
 {
 	createMesh();
 	nShapes++; // increments the number of shapes
@@ -31,10 +34,12 @@ Shape::Shape(const std::string& name,
 			 const std::vector<GLfloat> positions, const std::vector<GLfloat> normals,
 			 const std::vector<GLfloat> texCoords, const std::vector<GLuint> indices,
 			 const glm::vec3 albedo,
-			 const glm::vec3 position, const glm::vec3 direction)
+			 const glm::vec3 position, const glm::quat rotation, const glm::vec3 scale,
+			 const glm::vec3 forward, const glm::vec3 meshForward)
 	: Model(name),
 	vertices{ processVertexData(positions, normals, texCoords) }, indices{ indices },
-	albedo{ albedo }, position{ position }, direction{ direction }
+	albedo{ albedo }, position{ position }, rotation{ rotation }, scale{ scale },
+	forward{ forward }, meshForward{ meshForward }
 {
 	createMesh();
 	nShapes++; // increments the number of shapes
@@ -44,9 +49,11 @@ Shape::Shape(const std::string& name,
 			 const GLfloat* vertices, const GLuint nVertices,
 			 const GLuint* indices, const GLuint nIndices,
 			 const glm::vec3 albedo,
-			 const glm::vec3 position, const glm::vec3 direction)
+			 const glm::vec3 position, const glm::quat rotation, const glm::vec3 scale,
+			 const glm::vec3 forward, const glm::vec3 meshForward)
 	: Model(name),
-	albedo{ albedo }, position{ position }, direction{ direction }
+	albedo{ albedo }, position{ position }, rotation{ rotation }, scale{ scale },
+	forward{ forward }, meshForward{ meshForward }
 {
 	std::vector<GLfloat> vertexData{ vertices, vertices + nVertices * 8 };
 	std::vector<GLuint> indexData{ indices, indices + nIndices };
@@ -62,9 +69,11 @@ Shape::Shape(const std::string& name,
 			 const GLfloat* texCoords, const GLuint nVertices,
 			 const GLuint* indices, const GLuint nIndices,
 			 const glm::vec3 albedo,
-			 const glm::vec3 position, const glm::vec3 direction)
+			 const glm::vec3 position, const glm::quat rotation, const glm::vec3 scale,
+			 const glm::vec3 forward, const glm::vec3 meshForward)
 	: Model(name),
-	albedo{ albedo }, position{ position }, direction{ direction }
+	albedo{ albedo }, position{ position }, rotation{ rotation }, scale{ scale },
+	forward{ forward }, meshForward{ meshForward }
 {
 	std::vector<GLfloat> positionData{ positions, positions + nVertices * 3 };
 	std::vector<GLfloat> normalData{ normals, normals + nVertices * 3 };
@@ -79,6 +88,38 @@ Shape::Shape(const std::string& name,
 
 // Public Methods
 // --------------
+void Shape::SetRotation(const glm::quat& rotation)
+{
+	// ensure the rotation quaternion is normalized to represent a valid rotation
+	this->rotation = glm::normalize(rotation);
+	// update forward vector based on the new rotation
+	forward = glm::normalize(this->rotation * meshForward);
+}
+void Shape::SetRotationInEulerAngles(const glm::vec3 eulerAnglesDegrees)
+{
+	// convert degrees to radians for glm::quat constructor
+	glm::vec3 eulerAnglesRadians = glm::radians(eulerAnglesDegrees);
+	// create quaternion from Euler angles. 
+	// The default order is YXZ (yaw, pitch, roll) for glm::quat(vec3).
+	// Usually a good default, but it is worth being aware of the order of rotations
+	glm::quat newRotation = glm::quat(eulerAnglesRadians);
+	// ensure the new rotation quaternion is normalized to represent a valid rotation
+	rotation = glm::normalize(newRotation);
+	// update the forward vector based on the new rotation
+	forward = glm::normalize(rotation * meshForward);
+}
+void Shape::SetForward(const glm::vec3& worldForward)
+{
+	// ensure the worldForward vector is normalized
+	glm::vec3 normWorldForward = glm::normalize(worldForward);
+	// rotate the meshForward vector to align with the worldForward vector
+	glm::quat rotationQuat = glm::rotation(meshForward, normWorldForward);
+	// ensure the rotation quaternion is normalized to represent a valid rotation
+	rotation = glm::normalize(rotationQuat);
+	// update the forward vector based on the new rotation
+	forward = normWorldForward;
+}
+
 void Shape::AddTextureData(const Texture* textures, const GLuint nTextures)
 {
 	for (GLuint i{}; i < nTextures; i++)
@@ -93,6 +134,52 @@ void Shape::AddTextureData(const std::vector<Texture> textures)
 		this->textures.push_back(texture);
 	meshes.clear();
 	createMesh();
+}
+
+void Shape::Rotate(const GLfloat angleX, const GLfloat angleY, const GLfloat angleZ)
+{
+	// convert the Euler angles from degrees to radians and create a quaternion from them
+	glm::vec3 angles(glm::radians(angleX), glm::radians(angleY), glm::radians(angleZ));
+	glm::quat rotationQuat = glm::quat(angles);
+
+	// normalize the quaternion to ensure it represents a valid rotation
+	rotationQuat = glm::normalize(rotationQuat);
+
+	// update the rotation attribute of the Shape
+	rotation = rotationQuat * rotation; // combine the new rotation with the existing one
+
+	// update the forward vector based on the new rotation
+	forward = glm::normalize(rotation * meshForward);
+}
+
+glm::mat4 Shape::GetModelMatrix() const
+{
+	glm::mat4 model = glm::mat4{ 1.0f };
+	model = glm::translate(model, position); // apply translation
+	model *= glm::mat4_cast(rotation); // apply rotation
+	model = glm::scale(model, scale); // apply scaling
+	return model;
+}
+
+glm::mat4 Shape::GetTranslationMatrix() const
+{
+	glm::mat4 translationMatrix = glm::mat4{ 1.0f };
+	translationMatrix = glm::translate(translationMatrix, position);
+	return translationMatrix;
+}
+
+glm::mat4 Shape::GetRotationMatrix() const
+{
+	glm::mat4 rotationMatrix = glm::mat4{ 1.0f };
+	rotationMatrix *= glm::mat4_cast(rotation);
+	return rotationMatrix;
+}
+
+glm::mat4 Shape::GetScaleMatrix() const
+{
+	glm::mat4 scaleMatrix = glm::mat4{ 1.0f };
+	scaleMatrix = glm::scale(scaleMatrix, scale);
+	return scaleMatrix;
 }
 
 // Private Methods

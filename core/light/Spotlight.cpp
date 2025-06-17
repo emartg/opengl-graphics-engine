@@ -36,17 +36,43 @@ Spotlight::Spotlight(const std::string& name,
 
 // Public Methods
 // --------------
+void Spotlight::SetPosition(glm::vec3 position)
+{
+	this->position = position;
+	// update gizmo position based on the light position
+	gizmoShape->SetPosition(position);
+}
+void Spotlight::SetDirectionOnly(const glm::vec3& direction)
+{
+	this->direction = glm::normalize(direction);
+}
+void Spotlight::SetDirectionAndAlignGizmo(const glm::vec3& direction)
+{
+	this->direction = glm::normalize(direction);
+	// update the gizmo's forward direction when the light's direction changes
+	gizmoShape->SetForward(this->direction);
+}
+
 void Spotlight::CreateGizmo()
 {
+	// compute the initial rotation of the gizmo based on the light's direction
+	glm::vec3 forward = glm::normalize(direction);
+	constexpr glm::vec3 meshForward = HEX_PYRAMID_FORWARD;
+	glm::quat meshToZ = glm::angleAxis(glm::half_pi<float>(), glm::vec3(1.0f, 0.0f, 0.0f)); // +90° around X
+	glm::quat lookAt = glm::quatLookAt(forward, glm::vec3(0.0f, 1.0f, 0.0f)); // look at the forward direction, Y is up
+	glm::quat rotation = lookAt * meshToZ;
+
 	// create a hexagonal pyramid shape for the spotlight gizmo
 	gizmoShape = std::make_shared<Shape>(name + " Gizmo",
 										 hexPyramidVerticesVec, hexPyramidIndicesVec,
 										 diffuse, // set the color of the gizmo to the light's diffuse color
 										 position, // set the position of the gizmo to the light's position
-										 direction // set the direction of the gizmo to the light's direction
+										 rotation, // set the rotation of the gizmo based on the light's direction
+										 GIZMO_SCALE, // set the scale of the gizmo to a predefined constant
+										 direction, // set the forward direction of the gizmo to the light's direction
+										 meshForward // set the mesh's forward direction to the local space forward direction
 	);
-	// set the default direction to the axis the mesh points to (the negative y-axis)
-	gizmoShape->SetDefaultDirection(glm::vec3(DIRECTION));
+
 	// set the gizmo type to SPOTLIGHT (used for rendering and interaction purposes)
 	gizmoShape->SetGizmoShapeType(GizmoShapeType::SPOTLIGHT);
 }
