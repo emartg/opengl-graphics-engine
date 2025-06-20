@@ -88,25 +88,32 @@ Shape::Shape(const std::string& name,
 
 // Public Methods
 // --------------
+const glm::vec3 Shape::GetRotationInEulerAngles() const
+{
+	// convert the quaternion rotation to Euler angles in radians, then to degrees
+	return glm::degrees(glm::eulerAngles(this->rotation));
+}
+const glm::vec3 Shape::GetForward() const
+{
+	// return the forward vector in world space, normalized
+	return glm::normalize(this->rotation * meshForward);
+}
+
 void Shape::SetRotation(const glm::quat& rotation)
 {
-	// ensure the rotation quaternion is normalized to represent a valid rotation
+	// normalize to ensure a valid rotation quaternion
 	this->rotation = glm::normalize(rotation);
 	// update forward vector based on the new rotation
-	forward = glm::normalize(this->rotation * meshForward);
+	this->forward = glm::normalize(this->rotation * meshForward);
 }
 void Shape::SetRotationInEulerAngles(const glm::vec3 eulerAnglesDegrees)
 {
 	// convert degrees to radians for glm::quat constructor
 	glm::vec3 eulerAnglesRadians = glm::radians(eulerAnglesDegrees);
-	// create quaternion from Euler angles. 
-	// The default order is YXZ (yaw, pitch, roll) for glm::quat(vec3).
-	// Usually a good default, but it is worth being aware of the order of rotations
+	// create quaternion from Euler angles
 	glm::quat newRotation = glm::quat(eulerAnglesRadians);
-	// ensure the new rotation quaternion is normalized to represent a valid rotation
-	rotation = glm::normalize(newRotation);
-	// update the forward vector based on the new rotation
-	forward = glm::normalize(rotation * meshForward);
+	// use the SetRotation method to set the new rotation as a quaternion
+	SetRotation(newRotation);
 }
 void Shape::SetForward(const glm::vec3& worldForward)
 {
@@ -114,10 +121,10 @@ void Shape::SetForward(const glm::vec3& worldForward)
 	glm::vec3 normWorldForward = glm::normalize(worldForward);
 	// rotate the meshForward vector to align with the worldForward vector
 	glm::quat rotationQuat = glm::rotation(meshForward, normWorldForward);
-	// ensure the rotation quaternion is normalized to represent a valid rotation
-	rotation = glm::normalize(rotationQuat);
+	// normalize the rotation quaternion to ensure a valid rotation quaternion
+	this->rotation = glm::normalize(rotationQuat);
 	// update the forward vector based on the new rotation
-	forward = normWorldForward;
+	this->forward = normWorldForward;
 }
 
 void Shape::AddTextureData(const Texture* textures, const GLuint nTextures)
@@ -136,22 +143,6 @@ void Shape::AddTextureData(const std::vector<Texture> textures)
 	createMesh();
 }
 
-void Shape::Rotate(const GLfloat angleX, const GLfloat angleY, const GLfloat angleZ)
-{
-	// convert the Euler angles from degrees to radians and create a quaternion from them
-	glm::vec3 angles(glm::radians(angleX), glm::radians(angleY), glm::radians(angleZ));
-	glm::quat rotationQuat = glm::quat(angles);
-
-	// normalize the quaternion to ensure it represents a valid rotation
-	rotationQuat = glm::normalize(rotationQuat);
-
-	// update the rotation attribute of the Shape
-	rotation = rotationQuat * rotation; // combine the new rotation with the existing one
-
-	// update the forward vector based on the new rotation
-	forward = glm::normalize(rotation * meshForward);
-}
-
 glm::mat4 Shape::GetModelMatrix() const
 {
 	glm::mat4 model = glm::mat4{ 1.0f };
@@ -160,21 +151,18 @@ glm::mat4 Shape::GetModelMatrix() const
 	model = glm::scale(model, scale); // apply scaling
 	return model;
 }
-
 glm::mat4 Shape::GetTranslationMatrix() const
 {
 	glm::mat4 translationMatrix = glm::mat4{ 1.0f };
 	translationMatrix = glm::translate(translationMatrix, position);
 	return translationMatrix;
 }
-
 glm::mat4 Shape::GetRotationMatrix() const
 {
 	glm::mat4 rotationMatrix = glm::mat4{ 1.0f };
 	rotationMatrix *= glm::mat4_cast(rotation);
 	return rotationMatrix;
 }
-
 glm::mat4 Shape::GetScaleMatrix() const
 {
 	glm::mat4 scaleMatrix = glm::mat4{ 1.0f };

@@ -224,7 +224,7 @@ void GUI::Setup()
 					break;
 				case GizmoShapeType::DIRECTIONAL_LIGHT:
 				case GizmoShapeType::SPOTLIGHT: // if the shape is a DirectionalLight or a Spotlight gizmo
-					// diplay the direction of the shape (i.e. the forward vector of the gizmo in world space)
+					// diplay the direction (i.e. the forward vector of the gizmo in world space)
 					ImGui::Text("Direction: (%.2f, %.2f, %.2f)",
 								shape->GetForward().x, shape->GetForward().y, shape->GetForward().z);
 					break;
@@ -297,7 +297,8 @@ void GUI::Setup()
 						directionalLight->SyncGizmoPositionFromLight(); // set the new position of the directional light's gizmo
 					}
 
-					// get a reference to the gizmo shape of the directional light and its rotation in Euler angles
+					// get a reference to the gizmo shape of the directional light 
+					// and its rotation in Euler angles
 					auto gizmoShape = directionalLight->GetGizmoShape();
 					glm::vec3 rotDegrees = gizmoShape->GetRotationInEulerAngles();
 					// create a slider for the x, y, and z components of the directionalLight's rotation
@@ -474,7 +475,7 @@ void GUI::Setup()
 					shape->SetPosition(pos); // set the new position of the shape
 				}
 
-				// get the rotation of the shape in Euler angles
+				// get the rotation in Euler angles
 				glm::vec3 rotDegrees = shape->GetRotationInEulerAngles();
 				// create a slider for the x, y, and z components of the shape's rotation
 				if (ImGui::SliderFloat3("Rotation", (float*)&rotDegrees,

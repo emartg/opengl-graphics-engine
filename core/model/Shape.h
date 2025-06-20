@@ -9,13 +9,15 @@
 
 #include <vector>
 
+#include <glad/glad.h> // holds all OpenGL type declarations
+#include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 
 #include "Model.h"
 
 // enumeration class that allows to disriminate between different types of gizmos 
 // and also indicate that the shape is not a gizmo without a boolean flag
-enum class GizmoShapeType { DIRECTIONAL_LIGHT, POINT_LIGHT, SPOTLIGHT, NONE };
+enum class GizmoShapeType { NONE = 0, DIRECTIONAL_LIGHT, POINT_LIGHT, SPOTLIGHT };
 
 class Shape : public Model
 {
@@ -92,18 +94,20 @@ public:
 	const glm::vec3& GetAlbedo() const { return albedo; }
 	const glm::vec3& GetPosition() const { return position; }
 	const glm::quat& GetRotation() const { return rotation; }
-	const glm::vec3 GetRotationInEulerAngles() const { return glm::degrees(glm::eulerAngles(rotation)); }
+	// Returns the rotation as Euler angles in degrees
+	const glm::vec3 GetRotationInEulerAngles() const;
 	const glm::vec3& GetScale() const { return scale; }
-	const glm::vec3 GetForward() const { return glm::normalize(rotation * meshForward); }
+	// Returns the shape's forward vector in world space, normalized
+	const glm::vec3 GetForward() const;
 	const glm::vec3& GetMeshForward() const { return meshForward; }
 	const GizmoShapeType GetGizmoShapeType() const { return gizmoShapeType; }
 
 	// Setters
 	void SetAlbedo(const glm::vec3& albedo) { this->albedo = albedo; }
 	void SetPosition(const glm::vec3& position) { this->position = position; }
-	// Sets the rotation of the shape using a quaternion and updates the forward vector accordingly
+	// Sets the rotation directly from a quaternion and updates the forward vector accordingly
 	void SetRotation(const glm::quat& rotation);
-	// Sets the rotation of the shape using Euler angles (in degrees) and updates the forward vector accordingly
+	// Sets the rotation from Euler angles in degrees and updates the forward vector accordingly
 	void SetRotationInEulerAngles(const glm::vec3 eulerAnglesDegrees);
 	void SetScale(const glm::vec3& scale) { this->scale = scale; }
 	// Aligns the shape's forward vector to the specified world forward vector
@@ -119,13 +123,10 @@ public:
 	// using Euler angles (in degrees),and updates the forward vector accordingly
 	void Rotate(const GLfloat angleX, const GLfloat angleY, const GLfloat angleZ);
 
-	// Returns the full model matrix (translation * rotation * scale)
+	// Methods that return the full model matrix, or any of its components separately
 	glm::mat4 GetModelMatrix() const;
-	// Returns the translation matrix (translation only)
 	glm::mat4 GetTranslationMatrix() const;
-	// Returns the rotation matrix (rotation only)
 	glm::mat4 GetRotationMatrix() const;
-	// Returns the scale matrix (scale only)
 	glm::mat4 GetScaleMatrix() const;
 
 	// Static Public Methods
@@ -139,20 +140,26 @@ private:
 
 	// Private Attributes
 	// ------------------
-	std::vector<Vertex> vertices; // vector of Vertex objects that contains the vertex, normal and texture coordinate data
-	std::vector<GLuint> indices; // vector of indices that defines the order in which the vertices are drawn
-	std::vector<Texture> textures; // vector of Texture objects that contains the texture data for the shape
+	std::vector<Vertex> vertices; // vertex, normal and texture coordinate data
+	std::vector<GLuint> indices; // indices that define the order in which the vertices are drawn
+	std::vector<Texture> textures; // texture data (if any) associated with the shape
 
-	glm::vec3 albedo; // current albedo (color) of the shape
-	glm::vec3 position; // current position vector of the shape
-	glm::quat rotation; // current orientation of the shape as a quaternion
-	glm::vec3 scale; // current scale vector of the shape
+	glm::vec3 albedo; // current albedo (color)
+	glm::vec3 position; // current position vector
+
+	glm::quat rotation; // current orientation as a quaternion
+
+	glm::vec3 scale; // current scale vector
+
+	glm::vec3 forward; // shape's current forward vector in world space
+	glm::vec3 meshForward; // shape's forward vector in local (mesh) space
 
 	glm::vec3 forward; // current forward direction vector of the shape (i.e., the direction the shape is facing in world space)
 	glm::vec3 meshForward; // forward direction vector of the mesh (i.e., the direction the mesh is modeled to face in its local space)
 	// all direction/rotation conversions use meshForward as the reference
 
-	GizmoShapeType gizmoShapeType{ GizmoShapeType::NONE }; // type of the gizmo, default is NONE (i.e, the shape wouldn't be a gizmo)
+	// type of the gizmo, default is NONE (i.e, the shape wouldn't be a gizmo)
+	GizmoShapeType gizmoShapeType{ GizmoShapeType::NONE };
 
 	// Private Methods
 	// ---------------
@@ -168,10 +175,10 @@ private:
 
 	// Private Static Attributes (for default values)
 	// ----------------------------------------------
-	static constexpr glm::vec3 ALBEDO{ 0.5f }; // default albedo (color) for the shape (grey)
-	static constexpr glm::vec3 POSITION{ 0.0f }; // default position vector for the shape (zero vector)
-	static constexpr glm::quat ROTATION{ 1.0f, 0.0f, 0.0f, 0.0f }; // default rotation quaternion for the shape (identity quaternion)
-	static constexpr glm::vec3 SCALE{ 1.0f }; // default scale vector for the shape (unit vector)
-	static constexpr glm::vec3 FORWARD{ 0.0f, 0.0f, 1.0f }; // default forward vector for the shape (+Z direction)
+	static constexpr glm::vec3 ALBEDO{ 0.5f }; // default albedo (color) (grey)
+	static constexpr glm::vec3 POSITION{ 0.0f }; // default position vector (zero vector)
+	static constexpr glm::quat ROTATION{ 1.0f, 0.0f, 0.0f, 0.0f }; // default rotation quaternion (identity quaternion)
+	static constexpr glm::vec3 SCALE{ 1.0f }; // default scale vector (unit vector)
+	static constexpr glm::vec3 FORWARD{ 0.0f, 0.0f, 1.0f }; // default forward vector (+Z direction)
 
 };

@@ -329,7 +329,7 @@ void Core::MainLoop()
 					// activate the shader program
 					shaders[shaderIdx]->Use();
 
-					// set the color of the shape based on the GUI input
+					// set the color based on the GUI input
 					shaders[shaderIdx]->SetVec3("material.albedo", shape->GetAlbedo());
 
 					// set the model matrix for the shape
@@ -349,7 +349,7 @@ void Core::MainLoop()
 					// activate the shader program
 					shaders[shaderIdx]->Use();
 
-					// set the color of the shape based on the GUI input
+					// set the color based on the GUI input
 					shaders[shaderIdx]->SetVec3("albedo", shape->GetAlbedo());
 
 					// set the model matrix for the shape
