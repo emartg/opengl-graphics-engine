@@ -119,10 +119,6 @@ public:
 	void AddTextureData(const Texture* textures, const GLuint nTextures);
 	void AddTextureData(const std::vector<Texture> textures);
 
-	// Applies an incremental rotation to the current orientation of the shape, 
-	// using Euler angles (in degrees),and updates the forward vector accordingly
-	void Rotate(const GLfloat angleX, const GLfloat angleY, const GLfloat angleZ);
-
 	// Methods that return the full model matrix, or any of its components separately
 	glm::mat4 GetModelMatrix() const;
 	glm::mat4 GetTranslationMatrix() const;
@@ -153,10 +149,6 @@ private:
 
 	glm::vec3 forward; // shape's current forward vector in world space
 	glm::vec3 meshForward; // shape's forward vector in local (mesh) space
-
-	glm::vec3 forward; // current forward direction vector of the shape (i.e., the direction the shape is facing in world space)
-	glm::vec3 meshForward; // forward direction vector of the mesh (i.e., the direction the mesh is modeled to face in its local space)
-	// all direction/rotation conversions use meshForward as the reference
 
 	// type of the gizmo, default is NONE (i.e, the shape wouldn't be a gizmo)
 	GizmoShapeType gizmoShapeType{ GizmoShapeType::NONE };
