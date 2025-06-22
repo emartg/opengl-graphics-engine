@@ -9,8 +9,12 @@
 #include <vector>
 #include <string>
 
-#include <glad/glad.h>
+#include <glad/glad.h> // holds all OpenGL type declarations
 #include <stb_image.h>
+
+#include <glm/glm.hpp>
+#define GLM_ENABLE_EXPERIMENTAL // enable experimental features in GLM
+#include <glm/gtx/quaternion.hpp> // for quaternion operations
 
 #include "../Asset.h"
 #include "mesh/Mesh.h"
@@ -20,7 +24,11 @@ class Model : public Asset
 public:
 	// Constructors
 	// ------------
-	Model(const std::string& name);
+	Model(const std::string& name,
+		  const glm::vec3 albedo = ALBEDO,
+		  const glm::vec3 position = POSITION, const glm::quat rotation = ROTATION,
+		  const glm::vec3 scale = SCALE,
+		  const glm::vec3 forward = FORWARD, const glm::vec3 meshForward = FORWARD);
 
 	// Virtual destructor 
 	// (ensures that derived classes can be deleted properly - polymorphism)
@@ -51,6 +59,35 @@ public:
 	// Binds the textures of the model
 	virtual void BindTextures(Shader& shader) const { for (const Mesh& mesh : meshes) mesh.BindTextures(shader); }
 
+	// Getters
+	const glm::vec3& GetAlbedo() const { return albedo; }
+	const glm::vec3& GetPosition() const { return position; }
+	const glm::quat& GetRotation() const { return rotation; }
+	// Returns the rotation as Euler angles in degrees
+	const glm::vec3 GetRotationInEulerAngles() const;
+	const glm::vec3& GetScale() const { return scale; }
+	// Returns the shape's forward vector in world space, normalized
+	const glm::vec3 GetForward() const;
+	const glm::vec3& GetMeshForward() const { return meshForward; }
+
+	// Setters
+	void SetAlbedo(const glm::vec3& albedo) { this->albedo = albedo; }
+	void SetPosition(const glm::vec3& position) { this->position = position; }
+	// Sets the rotation directly from a quaternion and updates the forward vector accordingly
+	void SetRotation(const glm::quat& rotation);
+	// Sets the rotation from Euler angles in degrees and updates the forward vector accordingly
+	void SetRotationInEulerAngles(const glm::vec3 eulerAnglesDegrees);
+	void SetScale(const glm::vec3& scale) { this->scale = scale; }
+	// Aligns the shape's forward vector to the specified world forward vector
+	void SetForward(const glm::vec3& worldForward);
+	void SetMeshForward(const glm::vec3& meshForward) { this->meshForward = meshForward; }
+
+	// Methods that return the full model matrix, or any of its components separately
+	glm::mat4 GetModelMatrix() const;
+	glm::mat4 GetTranslationMatrix() const;
+	glm::mat4 GetRotationMatrix() const;
+	glm::mat4 GetScaleMatrix() const;
+
 	// Static Public Functions
 	// -----------------------
 	static GLuint GetNModels() { return nModels; }
@@ -64,5 +101,22 @@ protected:
 	// --------------------
 	std::vector<Mesh> meshes;
 	std::vector<Texture> loadedTextures;
+	std::string directory; // directory of the model file
 
+	glm::vec3 albedo; // current albedo (color when texture is not applied)
+
+	glm::vec3 position; // current position vector
+	glm::quat rotation; // current orientation as a quaternion
+	glm::vec3 scale; // current scale vector
+
+	glm::vec3 forward; // shape's current forward vector in world space
+	glm::vec3 meshForward; // shape's forward vector in local (mesh) space
+
+	// Private Static Attributes (for default values)
+	// ----------------------------------------------
+	static constexpr glm::vec3 ALBEDO{ 0.5f }; // default albedo (color when texture is not applied) (gray)
+	static constexpr glm::vec3 POSITION{ 0.0f }; // default position vector (zero vector)
+	static constexpr glm::quat ROTATION{ 1.0f, 0.0f, 0.0f, 0.0f }; // default rotation quaternion (identity quaternion)
+	static constexpr glm::vec3 SCALE{ 1.0f }; // default scale vector (unit vector)
+	static constexpr glm::vec3 FORWARD{ 0.0f, 0.0f, 1.0f }; // default forward vector (+Z direction)
 };

@@ -29,6 +29,8 @@ void AssimpModel::loadAssimpModel(std::string const& path)
 		std::cerr << "ERROR::Assimp::" << importer.GetErrorString() << std::endl;
 		return;
 	}
+	// store the directory of the model file
+	directory = path.substr(0, path.find_last_of('/'));
 
 	// process the root node (recursively process all of its children)
 	processNode(scene->mRootNode, scene);
@@ -121,6 +123,7 @@ std::vector<Texture> AssimpModel::loadMaterialTextures(aiMaterial* mat, aiTextur
 		{
 			if (std::strcmp(loadedTextures[j].GetPath().data(), str.C_Str()) == 0)
 			{
+				// if the texture has already been loaded, add it to the textures vector
 				textures.push_back(loadedTextures[j]);
 				skip = true; // a texture with the same filepath has already been loaded, so no need to load it again
 				break;
