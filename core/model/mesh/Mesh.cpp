@@ -36,12 +36,12 @@ void Mesh::BindTextures(Shader& shader) const
 		TextureType type = textures[i].GetTextureType();
 		if (type == TextureType::DIFFUSE)
 		{
-			textureName = "diffuse";
+			textureName = "albedoMap";
 			textureNumber = std::to_string(diffuseTextureMapIdx++);
 		}
 		else if (type == TextureType::SPECULAR)
 		{
-			textureName = "specular";
+			textureName = "metallicMap";
 			textureNumber = std::to_string(specularTextureMapIdx++);
 		}
 

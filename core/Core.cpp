@@ -202,7 +202,7 @@ void Core::MainLoop()
 		m_renderer->SetClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 		m_renderer->ClearBuffers();
 
-		// activate the shader program for shapes
+		// activate the shader program for models
 		shaders[0]->Use();
 
 		// view/projection transformations
@@ -315,7 +315,7 @@ void Core::MainLoop()
 			// dynamically cast the asset to a Model object
 			auto model = dynamic_cast<Model*>(asset.get());
 
-			GLuint shaderIdx = 0; // default shader index to select a shader program (shape shader program)
+			GLuint shaderIdx = 0; // default shader index to select a shader program (model shader program)
 
 			GizmoType gizmoType = model->GetGizmoType(); // get the type of the model's gizmo
 
@@ -324,7 +324,7 @@ void Core::MainLoop()
 				// if the model is not a gizmo
 				case GizmoType::NONE:
 				{
-					shaderIdx = 0; // set the shader index to 0 (shape shader program)
+					shaderIdx = 0; // set the shader index to 0 (model shader program)
 
 					// activate the shader program
 					shaders[shaderIdx]->Use();

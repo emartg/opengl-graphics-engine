@@ -18,7 +18,7 @@ GLuint DirectionalLight::nDirectionalLights{};
 DirectionalLight::DirectionalLight(const std::string& name,
 								   const glm::vec3 ambient, const glm::vec3 diffuse, const glm::vec3 specular,
 								   const glm::vec3 position, const glm::vec3 direction)
-	: Light(name, ambient, diffuse, specular, 
+	: Light(name, ambient, diffuse, specular,
 			nullptr, // no gizmo model is provided at this point
 			LightType::DIRECTIONAL_LIGHT), // set the light type to directional light
 	position{ position }, direction{ direction },
@@ -64,13 +64,13 @@ void DirectionalLight::CreateGizmo()
 
 	// create a rectangular plane gizmo for the directional light gizmo
 	gizmo = std::make_shared<Shape>(name + " Gizmo",
-										 rectangularPlaneVerticesVec, rectangularPlaneIndicesVec,
-										 diffuse, // set the color of the gizmo to the light's diffuse color
-										 position, // set the position of the gizmo to the light's position
-										 rotation, // set the rotation of the gizmo based on the light's direction
-										 GIZMO_SCALE, // set the scale of the gizmo to a predefined constant
-										 direction, // set the forward direction of the gizmo to the light's direction
-										 meshForward // set the mesh's forward direction to the local space forward direction
+									rectangularPlaneVerticesVec, rectangularPlaneIndicesVec,
+									diffuse, // set the color of the gizmo to the light's diffuse color
+									position, // set the position of the gizmo to the light's position
+									rotation, // set the rotation of the gizmo based on the light's direction
+									GIZMO_SCALE, // set the scale of the gizmo to a predefined constant
+									direction, // set the forward direction of the gizmo to the light's direction
+									meshForward // set the mesh's forward direction to the local space forward direction
 	);
 
 	// set the gizmo's type to DIRECTIONAL_LIGHT (used for rendering and interaction purposes)

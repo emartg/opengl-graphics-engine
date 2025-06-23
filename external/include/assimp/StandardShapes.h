@@ -2,8 +2,7 @@
 Open Asset Import Library (assimp)
 ----------------------------------------------------------------------
 
-Copyright (c) 2006-2024, assimp team
-
+Copyright (c) 2006-2025, assimp team
 
 All rights reserved.
 
@@ -57,7 +56,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 struct aiMesh;
 
-namespace Assimp    {
+namespace Assimp {
 
 // ---------------------------------------------------------------------------
 /** \brief Helper class to generate vertex buffers for standard geometric
@@ -126,12 +125,12 @@ public:
 
 
     // ----------------------------------------------------------------
-    /** @brief Generates an decahedron
+    /** @brief Generates an octahedron
      *
      *  @param positions Receives output triangles.
      *  @return Number of vertices per face
      */
-    static unsigned int MakeDecahedron(
+    static unsigned int MakeOctahedron(
         std::vector<aiVector3D>& positions);
 
 
@@ -149,7 +148,7 @@ public:
     // ----------------------------------------------------------------
     /** @brief Generates a sphere
      *
-     *  @param tess Number of subdivions - 0 generates a decahedron
+     *  @param tess Number of subdivions - 0 generates a octahedron
      *  @param positions Receives output triangles.
      */
     static void MakeSphere(unsigned int tess,

@@ -25,7 +25,7 @@ Spotlight::Spotlight(const std::string& name,
 					 const glm::vec3 position, const glm::vec3 direction,
 					 const GLfloat innerCutOff, const GLfloat outerCutOff,
 					 const GLfloat constant, const GLfloat linear, const GLfloat quadratic)
-	: Light(name, ambient, diffuse, specular, 
+	: Light(name, ambient, diffuse, specular,
 			nullptr, // no gizmo model is provided at this point
 			LightType::SPOTLIGHT), // set the light type to spotlight
 	position{ position }, direction{ direction },
@@ -66,13 +66,13 @@ void Spotlight::CreateGizmo()
 
 	// create a hexagonal pyramid shape for the spotlight gizmo
 	gizmo = std::make_shared<Shape>(name + " Gizmo",
-										 hexPyramidVerticesVec, hexPyramidIndicesVec,
-										 diffuse, // set the color of the gizmo to the light's diffuse color
-										 position, // set the position of the gizmo to the light's position
-										 rotation, // set the rotation of the gizmo based on the light's direction
-										 GIZMO_SCALE, // set the scale of the gizmo to a predefined constant
-										 direction, // set the forward direction of the gizmo to the light's direction
-										 meshForward // set the mesh's forward direction to the local space forward direction
+									hexPyramidVerticesVec, hexPyramidIndicesVec,
+									diffuse, // set the color of the gizmo to the light's diffuse color
+									position, // set the position of the gizmo to the light's position
+									rotation, // set the rotation of the gizmo based on the light's direction
+									GIZMO_SCALE, // set the scale of the gizmo to a predefined constant
+									direction, // set the forward direction of the gizmo to the light's direction
+									meshForward // set the mesh's forward direction to the local space forward direction
 	);
 
 	// set the gizmo's type to SPOTLIGHT (used for rendering and interaction purposes)

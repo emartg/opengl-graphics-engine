@@ -2,7 +2,7 @@
 Open Asset Import Library (assimp)
 ----------------------------------------------------------------------
 
-Copyright (c) 2006-2024, assimp team
+Copyright (c) 2006-2025, assimp team
 
 All rights reserved.
 
@@ -55,6 +55,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "Logger.hpp"
 #include "NullLogger.hpp"
 #include <vector>
+
+#ifndef ASSIMP_BUILD_SINGLETHREADED
+#include <mutex>
+#include <thread>
+#endif
 
 namespace Assimp {
 // ------------------------------------------------------------------------------------
@@ -183,6 +188,10 @@ private:
 
     //! Attached streams
     StreamArray m_StreamArray;
+
+#ifndef ASSIMP_BUILD_SINGLETHREADED
+    std::mutex m_arrayMutex;
+#endif
 
     bool noRepeatMsg;
     char lastMsg[MAX_LOG_MESSAGE_LENGTH * 2];
