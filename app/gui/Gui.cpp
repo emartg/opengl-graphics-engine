@@ -187,53 +187,39 @@ void GUI::Setup()
 		unsigned int nModels = Core::GetInstance()->GetNModels();
 		// get the number of shapes in the scene
 		unsigned int nShapes = Core::GetInstance()->GetNShapes();
+		// get the number of Assimp models in the scene
+		unsigned int nAssimpModels = Core::GetInstance()->GetNAssimpModels();
 		// display the number of models in the scene
 		ImGui::Text("Number of Models: %d", nModels);
 		// display the number of shapes in the scene
 		ImGui::Text("Number of Shapes: %d", nShapes);
+		// display the number of Assimp models in the scene
+		ImGui::Text("Number of Assimp models: %d", nAssimpModels);
 
-		ImGui::Text("SHAPES:");
-		// for each shape in the scene, display its name, color, and position
-		for (unsigned int i{}; i < nShapes; i++)
+		ImGui::Text("MODELS:");
+		// for each model in the scene, display its name, color, and position
+		for (unsigned int i{}; i < nModels; i++)
 		{
-			// get the shape object
-			auto shape = dynamic_cast<Shape*>(Core::GetInstance()->GetAssets("MODEL")[i].get());
+			// get the model object
+			auto model = dynamic_cast<Model*>(Core::GetInstance()->GetAssets("MODEL")[i].get());
 
-			// use PushID to create a unique ID for each shape (to avoid conflicts with the GUI)
-			ImGui::PushID(shape->GetName().c_str());
+			// use PushID to create a unique ID for each model (to avoid conflicts with the GUI)
+			ImGui::PushID(model->GetName().c_str());
 
-			// display the name of the shape
-			ImGui::Text("Name: %s", shape->GetName().c_str());
-			// display the color of the shape
+			// display the name of the model
+			ImGui::Text("Name: %s", model->GetName().c_str());
+			// display the color of the model
 			ImGui::Text("Color: (%.2f, %.2f, %.2f)",
-						shape->GetAlbedo().x, shape->GetAlbedo().y, shape->GetAlbedo().z);
-			// display the position of the shape
+						model->GetAlbedo().x, model->GetAlbedo().y, model->GetAlbedo().z);
+			// display the position of the model
 			ImGui::Text("Position: (%.2f, %.2f, %.2f)",
-						shape->GetPosition().x, shape->GetPosition().y, shape->GetPosition().z);
+						model->GetPosition().x, model->GetPosition().y, model->GetPosition().z);
 			ImGui::Text("Rotation: (%.2f, %.2f, %.2f)",
-						shape->GetRotationInEulerAngles().x, shape->GetRotationInEulerAngles().y, shape->GetRotationInEulerAngles().z);
+						model->GetRotationInEulerAngles().x, model->GetRotationInEulerAngles().y, model->GetRotationInEulerAngles().z);
 			ImGui::Text("Scale: (%.2f, %.2f, %.2f)",
-						shape->GetScale().x, shape->GetScale().y, shape->GetScale().z);
-
-			// display additional information based on the shape's gizmo type
-			GizmoShapeType gizmoShapeType = shape->GetGizmoShapeType(); // get the type of the shape's gizmo
-
-			switch (gizmoShapeType) // switch based on the type of the shape's gizmo
-			{
-				case GizmoShapeType::NONE: // if the shape has no gizmo
-					break;
-				case GizmoShapeType::DIRECTIONAL_LIGHT:
-				case GizmoShapeType::SPOTLIGHT: // if the shape is a DirectionalLight or a Spotlight gizmo
-					// diplay the direction (i.e. the forward vector of the gizmo in world space)
-					ImGui::Text("Direction: (%.2f, %.2f, %.2f)",
-								shape->GetForward().x, shape->GetForward().y, shape->GetForward().z);
-					break;
-				case GizmoShapeType::POINT_LIGHT: // if the shape is a PointLight gizmo
-					break;
-				default: // if the shape has an unknown gizmo type
-					std::cerr << "Unknown gizmo shape type for shape: " << shape->GetName() << std::endl;
-					return;
-			}
+						model->GetScale().x, model->GetScale().y, model->GetScale().z);
+			ImGui::Text("Forward: (%.2f, %.2f, %.2f)",
+						model->GetForward().x, model->GetForward().y, model->GetForward().z);
 
 			// use PopID to end the unique ID scope
 			ImGui::PopID();
@@ -250,9 +236,9 @@ void GUI::Setup()
 	// set the window to be not collapsed (i.e., not minimized)
 	ImGui::SetNextWindowCollapsed(false, ImGuiCond_Appearing);
 
-	// show a window that allows the user to change the attributes of the lights (and their respective gizmos) 
-	// and the shapes in the scene, and create either new light sources (and consequently their gizmos) 
-	// or new shapes with random attributes
+	// show a window that allows the user to 
+	// change the attributes of the lights (and their respective gizmos) and the regular models in the scene, 
+	// and create either a new light sources (and their respective gizmos) or a new cube shape with random attributes
 	{
 		ImGui::Begin("Scene Settings");
 
@@ -297,19 +283,19 @@ void GUI::Setup()
 						directionalLight->SyncGizmoPositionFromLight(); // set the new position of the directional light's gizmo
 					}
 
-					// get a reference to the gizmo shape of the directional light 
+					// get a reference to the gizmo of the directional light 
 					// and its rotation in Euler angles
-					auto gizmoShape = directionalLight->GetGizmoShape();
-					glm::vec3 rotDegrees = gizmoShape->GetRotationInEulerAngles();
+					auto gizmo = directionalLight->GetGizmo();
+					glm::vec3 rotDegrees = gizmo->GetRotationInEulerAngles();
 					// create a slider for the x, y, and z components of the directionalLight's rotation
 					if (ImGui::SliderFloat3("Rotation", (float*)&rotDegrees,
 											MIN_ROTATION_SLIDER_VALUE, MAX_ROTATION_SLIDER_VALUE)) // if the slider is moved
 					{
 						// set the new rotation of the directional light's gizmo
-						gizmoShape->SetRotationInEulerAngles(rotDegrees);
+						gizmo->SetRotationInEulerAngles(rotDegrees);
 						// update the light's direction based on the gizmo's new forward vector,
 						// without causing the gizmo to be re-oriented by SetForward() again
-						directionalLight->SetDirectionOnly(gizmoShape->GetForward());
+						directionalLight->SetDirectionOnly(gizmo->GetForward());
 					}
 
 					// use PopID to end the unique ID scope
@@ -385,18 +371,18 @@ void GUI::Setup()
 						spotlight->SyncGizmoPositionFromLight(); // set the new position of the spotlight's gizmo
 					}
 
-					// get a reference to the gizmo shape of the spotlight and its rotation in Euler angles
-					auto gizmoShape = spotlight->GetGizmoShape();
-					glm::vec3 rotDegrees = gizmoShape->GetRotationInEulerAngles();
+					// get a reference to the gizmo of the spotlight and its rotation in Euler angles
+					auto gizmo = spotlight->GetGizmo();
+					glm::vec3 rotDegrees = gizmo->GetRotationInEulerAngles();
 					// create a slider for the x, y, and z components of the spotlight's rotation
 					if (ImGui::SliderFloat3("Rotation", (float*)&rotDegrees,
 											MIN_ROTATION_SLIDER_VALUE, MAX_ROTATION_SLIDER_VALUE)) // if the slider is moved
 					{
 						// set the new rotation of the spotlight's gizmo
-						gizmoShape->SetRotationInEulerAngles(rotDegrees);
+						gizmo->SetRotationInEulerAngles(rotDegrees);
 						// update the light's direction based on the gizmo's new forward vector,
 						// without causing the gizmo to be re-oriented by SetForward() again
-						spotlight->SetDirectionOnly(gizmoShape->GetForward());
+						spotlight->SetDirectionOnly(gizmo->GetForward());
 					}
 
 					// get the inner and outer cut-off angles of the spotlight 
@@ -443,60 +429,60 @@ void GUI::Setup()
 			}
 		}
 
-		// get number of shapes in the scene
-		unsigned int nShapes = Core::GetInstance()->GetNShapes();
-		// for each shape in the scene, create a color picker and a slider for its position component
-		for (unsigned int i{}; i < nShapes; i++)
+		// get the number of models in the scene
+		GLuint nModels = Core::GetInstance()->GetNModels();
+		// for each model in the scene, create all the necessary GUI elements to change its attributes
+		for (unsigned int i{}; i < nModels; i++)
 		{
-			// get the shape object
-			auto shape = dynamic_cast<Shape*>(Core::GetInstance()->GetAssets("MODEL")[i].get());
+			// get the model object
+			auto model = dynamic_cast<Model*>(Core::GetInstance()->GetAssets("MODEL")[i].get());
 
-			// if the shape is not a gizmo, then proceed, otherwise skip it (as gizmos are already handled in above)
-			if (shape->GetGizmoShapeType() == GizmoShapeType::NONE)
+			// if the model is not a gizmo, then proceed, otherwise skip it (as gizmos are already handled in above)
+			if (model->GetGizmoType() == GizmoType::NONE)
 			{
-				// use PushID to create a unique ID for each shape (to avoid conflicts with the GUI)
-				ImGui::PushID(shape->GetName().c_str());
+				// use PushID to create a unique ID for each model (to avoid conflicts with the GUI)
+				ImGui::PushID(model->GetName().c_str());
 
-				// display the name of the shape
-				ImGui::Text("%s", shape->GetName().c_str());
+				// display the name of the model
+				ImGui::Text("%s", model->GetName().c_str());
 
-				// get the color of the shape
-				glm::vec3 color = shape->GetAlbedo();
-				// create a color picker for the shape's color
+				// get the color of the model
+				glm::vec3 color = model->GetAlbedo();
+				// create a color picker for the model's color
 				if (ImGui::ColorEdit3("Color", (float*)&color)) // if the color picker is used
-					shape->SetAlbedo(color); // set the new color of the shape
+					model->SetAlbedo(color); // set the new color of the model
 
-				// get the position of the shape
-				glm::vec3 pos = shape->GetPosition();
-				// create a slider for the x, y, and z components of the shape's position
+				// get the position of the model
+				glm::vec3 pos = model->GetPosition();
+				// create a slider for the x, y, and z components of the model's position
 				if (ImGui::SliderFloat3("Position", (float*)&pos,
 										MIN_POSITION_SLIDER_VALUE, MAX_POSITION_SLIDER_VALUE)) // if the slider is moved
 				{
-					shape->SetPosition(pos); // set the new position of the shape
+					model->SetPosition(pos); // set the new position of the model
 				}
 
 				// get the rotation in Euler angles
-				glm::vec3 rotDegrees = shape->GetRotationInEulerAngles();
-				// create a slider for the x, y, and z components of the shape's rotation
+				glm::vec3 rotDegrees = model->GetRotationInEulerAngles();
+				// create a slider for the x, y, and z components of the model's rotation
 				if (ImGui::SliderFloat3("Rotation", (float*)&rotDegrees,
 										MIN_ROTATION_SLIDER_VALUE, MAX_ROTATION_SLIDER_VALUE)) // if the slider is moved
 				{
-					shape->SetRotationInEulerAngles(rotDegrees); // set the new rotation of the shape
+					model->SetRotationInEulerAngles(rotDegrees); // set the new rotation of the model
 				}
 
-				// get the scale of the shape
-				glm::vec3 scale = shape->GetScale();
-				// create a slider for the x, y, and z components of the shape's scale
+				// get the scale of the model
+				glm::vec3 scale = model->GetScale();
+				// create a slider for the x, y, and z components of the model's scale
 				if (ImGui::SliderFloat3("Scale", (float*)&scale,
 										MIN_SCALE_SLIDER_VALUE, MAX_SCALE_SLIDER_VALUE)) // if the slider is moved
 				{
-					shape->SetScale(scale); // set the new scale of the shape
+					model->SetScale(scale); // set the new scale of the model
 				}
 
 				// use PopID to end the unique ID scope
 				ImGui::PopID();
 
-				ImGui::Separator(); // add a separator between shapes
+				ImGui::Separator(); // add a separator between models
 			}
 		}
 
@@ -511,8 +497,8 @@ void GUI::Setup()
 																	MIN_DISTANCE_FROM_ORIGIN, MAX_DISTANCE_FROM_ORIGIN);
 			glm::vec3 newDir = m_randomizer->GenerateRandomDirection();
 
-			// get the current number of shapes in the scene
-			std::string nShapes = std::to_string(Core::GetInstance()->GetNShapes());
+			// get the current number of models in the scene
+			std::string nModels = std::to_string(Core::GetInstance()->GetNModels());
 			// get the current number of directional lights in the scene
 			std::string nDirectionalLights = std::to_string(Core::GetInstance()->GetNDirectionalLights());
 			// create a new directional light called "Directional Light n", 
@@ -525,11 +511,11 @@ void GUI::Setup()
 																		  newDir // direction (random)
 			);
 			// get gizmo's shared_ptr from the new directional light before adding the latter to the engine
-			auto newDirectionalLightGizmo = newDirectionalLight->GetGizmoShape();
+			auto newDirectionalLightGizmo = newDirectionalLight->GetGizmo();
 			Core::GetInstance()->AddAsset(std::move(newDirectionalLight)); // add the new directional light to the engine
-			// concatenate the name of the new directional light and " (Shape n)",
-			// where n is the current number of shapes in the scene
-			newDirectionalLightGizmo->SetName(newDirectionalLightGizmo->GetName() + " (Shape " + nShapes + ")");
+			// concatenate the name of the new directional light and " (Model n)",
+			// where n is the current number of models in the scene
+			newDirectionalLightGizmo->SetName(newDirectionalLightGizmo->GetName() + " (Model " + nModels + ")");
 			// add the directional light gizmo (a decahedron) to the engine
 			Core::GetInstance()->AddAsset(std::move(newDirectionalLightGizmo));
 		}
@@ -543,11 +529,11 @@ void GUI::Setup()
 																	MIN_DISTANCE_FROM_ORIGIN, MAX_DISTANCE_FROM_ORIGIN);
 			glm::vec3 newDir = m_randomizer->GenerateRandomDirection();
 
-			// get the current number of shapes in the scene
-			std::string nShapes = std::to_string(Core::GetInstance()->GetNShapes());
+			// get the current number of models in the scene
+			std::string nModels = std::to_string(Core::GetInstance()->GetNModels());
 			// get the current number of spotlights in the scene
 			std::string nSpotlights = std::to_string(Core::GetInstance()->GetNSpotlights());
-			// create a new spotlight called "Spotlight n",
+			// create a new spotlight called "Spotlight n", 
 			// where n is the current number of spotlights in the scene
 			auto newSpotlight = std::make_shared<Spotlight>("Spotlight " + nSpotlights,
 															glm::vec3{ 0.1f }, // ambient color (default)
@@ -557,11 +543,11 @@ void GUI::Setup()
 															newDir // direction (random)
 			);
 			// get gizmo's shared_ptr from the new spotlight before adding the latter to the engine
-			auto newSpotlightGizmo = newSpotlight->GetGizmoShape();
+			auto newSpotlightGizmo = newSpotlight->GetGizmo();
 			Core::GetInstance()->AddAsset(std::move(newSpotlight)); // add the new spotlight to the engine
-			// concatenate the name of the new spotlight and " (Shape n)",
-			// where n is the current number of shapes in the scene
-			newSpotlightGizmo->SetName(newSpotlightGizmo->GetName() + " (Shape " + nShapes + ")");
+			// concatenate the name of the new spotlight and " (Model n)", 
+			// where n is the current number of models in the scene
+			newSpotlightGizmo->SetName(newSpotlightGizmo->GetName() + " (Model " + nModels + ")");
 			// add the spotlight gizmo (a decahedron) to the engine
 			Core::GetInstance()->AddAsset(std::move(newSpotlightGizmo));
 		}
@@ -574,8 +560,8 @@ void GUI::Setup()
 			glm::vec3 newPos = m_randomizer->GenerateRandomPosition(glm::vec3(0.0f), // origin
 																	MIN_DISTANCE_FROM_ORIGIN, MAX_DISTANCE_FROM_ORIGIN);
 
-			// get the current number of shapes in the scene
-			std::string nShapes = std::to_string(Core::GetInstance()->GetNShapes());
+			// get the current number of models in the scene
+			std::string nModels = std::to_string(Core::GetInstance()->GetNModels());
 			// get the current number of point lights in the scene
 			std::string nPointLights = std::to_string(Core::GetInstance()->GetNPointLights());
 			// create a new point light called "Point Light n", 
@@ -587,11 +573,11 @@ void GUI::Setup()
 															  newPos // position (random)
 			);
 			// get gizmo's shared_ptr from the new point light before adding the latter to the engine
-			auto newPointLightGizmo = newPointLight->GetGizmoShape();
+			auto newPointLightGizmo = newPointLight->GetGizmo();
 			Core::GetInstance()->AddAsset(std::move(newPointLight)); // add the new point light to the engine
-			// concatenate the name of the new point light and " (Shape n)", 
-			// where n is the current number of shapes in the scene
-			newPointLightGizmo->SetName(newPointLightGizmo->GetName() + " (Shape " + nShapes + ")");
+			// concatenate the name of the new point light and " (Model n)", 
+			// where n is the current number of models in the scene
+			newPointLightGizmo->SetName(newPointLightGizmo->GetName() + " (Model " + nModels + ")");
 			// add the point light gizmo (a decahedron) to the engine
 			Core::GetInstance()->AddAsset(std::move(newPointLightGizmo));
 		}
@@ -604,11 +590,11 @@ void GUI::Setup()
 			glm::vec3 newPos = m_randomizer->GenerateRandomPosition(glm::vec3(0.0f), // origin
 																	MIN_DISTANCE_FROM_ORIGIN, MAX_DISTANCE_FROM_ORIGIN);
 
-			// get the current number of shapes in the scene
-			std::string nShapes = std::to_string(Core::GetInstance()->GetNShapes());
-			// create a new cube called "Cube (Shape n)", 
-			// where n is the current number of shapes in the scene
-			auto newShape = std::make_shared<Shape>("Cube (Shape " + nShapes + ")",
+			// get the current number of models in the scene
+			std::string nModels = std::to_string(Core::GetInstance()->GetNModels());
+			// create a new cube called "Cube (Model n)", 
+			// where n is the current number of models in the scene
+			auto newShape = std::make_shared<Shape>("Cube (Model " + nModels + ")",
 													cubeVerticesVec, cubeIndicesVec,
 													newColor, // color (random)
 													newPos // position (random)

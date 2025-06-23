@@ -6,11 +6,20 @@
 
 #include "AssimpModel.h"
 
+// Static Protected Attributes
+// ---------------------------
+GLuint AssimpModel::nAssimpModels{}; // initialize the number of Assimp models in the scene to 0
+
 // Constructors
 // ------------
 // Constructor that loads a model from a file
-AssimpModel::AssimpModel(const std::string& name, std::string const& path)
-	: Model(name)
+AssimpModel::AssimpModel(const std::string& name,
+						 const std::string& path,
+						 const glm::vec3 albedo,
+						 const glm::vec3 position, const glm::quat rotation, const glm::vec3 scale,
+						 const glm::vec3 forward, const glm::vec3 meshForward)
+	: Model(name, albedo, position, rotation, scale, forward, meshForward, 
+			ModelType::ASSIMP_MODEL) // set the model type to ASSIMP_MODEL
 {
 	loadAssimpModel(path);
 }

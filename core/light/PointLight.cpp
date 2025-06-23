@@ -6,6 +6,7 @@
 
 #include "PointLight.h"
 
+#include "../model/Shape.h" // to create the gizmo for the PointLight
 #include "../gizmos/DECAHEDRON.h" // the Point Light gizmo is a decahedron shape
 
 // Static Private Attributes
@@ -18,7 +19,8 @@ PointLight::PointLight(const std::string& name,
 					   const glm::vec3 ambient, const glm::vec3 diffuse, const glm::vec3 specular,
 					   const glm::vec3 position,
 					   const GLfloat constant, const GLfloat linear, const GLfloat quadratic)
-	: Light(name, ambient, diffuse, specular,
+	: Light(name, ambient, diffuse, specular, 
+			nullptr, // no gizmo model is provided at this point
 			LightType::POINT_LIGHT), // set the light type to point light
 	position{ position },
 	constant{ constant }, linear{ linear }, quadratic{ quadratic }
@@ -32,7 +34,7 @@ PointLight::PointLight(const std::string& name,
 void PointLight::CreateGizmo()
 {
 	// create a decahedron shape for the point light gizmo  
-	gizmoShape = std::make_shared<Shape>(name + " Gizmo",
+	gizmo = std::make_shared<Shape>(name + " Gizmo",
 										 decahedronVerticesVec, decahedronIndicesVec,
 										 diffuse, // set the color of the gizmo to the light's diffuse color
 										 position, // set the position of the gizmo to the light's position
@@ -40,6 +42,6 @@ void PointLight::CreateGizmo()
 										 GIZMO_SCALE // set the scale of the gizmo to a predefined constant
 	);
 
-	// set the gizmo shape's type to POINT_LIGHT (used for rendering and interaction purposes)
-	gizmoShape->SetGizmoShapeType(GizmoShapeType::POINT_LIGHT);
+	// set the gizmo's type to POINT_LIGHT (used for rendering and interaction purposes)
+	gizmo->SetGizmoType(GizmoType::POINT_LIGHT);
 }

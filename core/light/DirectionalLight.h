@@ -42,7 +42,7 @@ public:
 	void SetPosition(glm::vec3 position);
 	// Sets the direction of the light without aligning the gizmo (only updates the light's direction).
 	// This is useful when the gizmo's rotation is changed (e.g., by the GUI), and the light's direction
-	// needs to be updated based on the gizmo's new orientation, without causing gizmoShape->SetForward() 
+	// needs to be updated based on the gizmo's new orientation, without causing gizmo->SetForward() 
 	// to be called again, which would create a conflict.
 	// This method also ensures the gizmo's direction line is updated if there are direction changes
 	void SetDirectionOnly(const glm::vec3& direction);
@@ -57,7 +57,7 @@ public:
 	// Creates the gizmo for the directional light
 	void CreateGizmo() override;
 	// Syncronizes gizmo's position with the light's position
-	void SyncGizmoPositionFromLight() { gizmoShape->SetPosition(position); }
+	void SyncGizmoPositionFromLight() { gizmo->SetPosition(position); }
 	// Updates the vertices of the gizmo's direction line based on the light's current position and direction
 	void UpdateGizmoDirectionLine();
 

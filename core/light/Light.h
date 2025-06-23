@@ -15,9 +15,9 @@
 #include <glm/glm.hpp>
 
 #include "../Asset.h"
-#include "../model/Shape.h"	// in order for the Light class to be able to have a shape as a gizmo
+#include "../model/Model.h" // to allow the light to have a gizmo model
 
-enum class LightType { DIRECTIONAL_LIGHT, POINT_LIGHT, SPOTLIGHT, UNDEFINED };
+enum class LightType { UNDEFINED = 0, DIRECTIONAL_LIGHT, POINT_LIGHT, SPOTLIGHT };
 
 class Light : public Asset
 {
@@ -26,6 +26,7 @@ public:
 	// ------------
 	Light(const std::string& name,
 		  const glm::vec3 ambient, const glm::vec3 diffuse, const glm::vec3 specular,
+		  const std::shared_ptr<Model> gizmo = nullptr,
 		  const LightType type = LightType::UNDEFINED);
 
 	// Virtual destructor (ensures that derived classes can be deleted properly - polymorphism)
@@ -45,18 +46,19 @@ public:
 	glm::vec3 GetDiffuse() const { return diffuse; }
 	glm::vec3 GetSpecular() const { return specular; }
 	LightType GetLightType() const { return lightType; }
-	std::shared_ptr<Shape>& GetGizmoShape() { return gizmoShape; }
+	std::shared_ptr<Model>& GetGizmo() { return gizmo; }
 
 	// Setters
 	void SetAmbient(glm::vec3 ambient) { this->ambient = ambient; }
 	void SetDiffuse(glm::vec3 diffuse) { this->diffuse = diffuse; }
 	void SetSpecular(glm::vec3 specular) { this->specular = specular; }
-	void SetGizmoShape(std::shared_ptr<Shape> gizmo) { this->gizmoShape = gizmo; }
+	void SetLightType(LightType type) { this->lightType = type; }
+	void SetGizmo(std::shared_ptr<Model> gizmo) { this->gizmo = gizmo; }
 
 	// Create the gizmo for the light
 	virtual void CreateGizmo() = 0;
 	// Syncronize gizmo's diffuse color with the light's diffuse color
-	void SyncGizmoColorFromLight() { if (gizmoShape) gizmoShape->SetAlbedo(diffuse); }
+	void SyncGizmoColorFromLight() { if (gizmo) gizmo->SetAlbedo(diffuse); }
 
 	// Static Public Functions
 	// -----------------------
@@ -73,8 +75,8 @@ protected:
 	glm::vec3 diffuse;
 	glm::vec3 specular;
 
-	LightType lightType; // type of the light (directional, point, spotlight, etc.)
+	std::shared_ptr<Model> gizmo; // the model used to represent the light in the scene
 
-	std::shared_ptr<Shape> gizmoShape; // the shape used to represent the light in the scene
+	LightType lightType; // the type of the light (e.g.,DIRECTIONAL_LIGHT, POINT_LIGHT, SPOTLIGHT)
 
 };

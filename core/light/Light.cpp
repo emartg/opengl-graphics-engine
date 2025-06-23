@@ -14,11 +14,10 @@ GLuint Light::nLights{}; // initialize the number of lights in the scene to 0
 // ------------
 Light::Light(const std::string& name,
 			 const glm::vec3 ambient, const glm::vec3 diffuse, const glm::vec3 specular,
-			 const LightType lightType)
+			 const std::shared_ptr<Model> gizmo, const LightType lightType)
 	: Asset(name, AssetType::LIGHT),
 	ambient{ ambient }, diffuse{ diffuse }, specular{ specular },
-	lightType{ lightType },
-	gizmoShape{ nullptr }
+	gizmo{ gizmo }, lightType{ lightType }
 {
 	nLights++; // increments the number of lights
 }

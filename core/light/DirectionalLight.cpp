@@ -6,6 +6,7 @@
 
 #include "DirectionalLight.h"
 
+#include "../model/Shape.h" // to create the gizmo for the DirectionalLight
 #include "../gizmos/RECTANGULAR_PLANE.h"
 
 // Static Protected Attributes
@@ -17,7 +18,8 @@ GLuint DirectionalLight::nDirectionalLights{};
 DirectionalLight::DirectionalLight(const std::string& name,
 								   const glm::vec3 ambient, const glm::vec3 diffuse, const glm::vec3 specular,
 								   const glm::vec3 position, const glm::vec3 direction)
-	: Light(name, ambient, diffuse, specular,
+	: Light(name, ambient, diffuse, specular, 
+			nullptr, // no gizmo model is provided at this point
 			LightType::DIRECTIONAL_LIGHT), // set the light type to directional light
 	position{ position }, direction{ direction },
 	gizmoDirectionLine{ nullptr }
@@ -32,7 +34,7 @@ void DirectionalLight::SetPosition(glm::vec3 position)
 {
 	this->position = position;
 	// update gizmo position based on the light position
-	gizmoShape->SetPosition(position);
+	gizmo->SetPosition(position);
 	// update the position of the vertices of the direction line
 	UpdateGizmoDirectionLine();
 }
@@ -46,7 +48,7 @@ void DirectionalLight::SetDirectionAndAlignGizmo(const glm::vec3& direction)
 {
 	this->direction = glm::normalize(direction);
 	// update the gizmo's forward direction when the light's direction changes
-	gizmoShape->SetForward(this->direction);
+	gizmo->SetForward(this->direction);
 	// update the position of the vertices of the direction line
 	UpdateGizmoDirectionLine();
 }
@@ -61,7 +63,7 @@ void DirectionalLight::CreateGizmo()
 	glm::quat rotation = lookAt * meshToZ;
 
 	// create a rectangular plane gizmo for the directional light gizmo
-	gizmoShape = std::make_shared<Shape>(name + " Gizmo",
+	gizmo = std::make_shared<Shape>(name + " Gizmo",
 										 rectangularPlaneVerticesVec, rectangularPlaneIndicesVec,
 										 diffuse, // set the color of the gizmo to the light's diffuse color
 										 position, // set the position of the gizmo to the light's position
@@ -71,8 +73,8 @@ void DirectionalLight::CreateGizmo()
 										 meshForward // set the mesh's forward direction to the local space forward direction
 	);
 
-	// set the gizmo type to DIRECTIONAL_LIGHT (used for rendering and interaction purposes)
-	gizmoShape->SetGizmoShapeType(GizmoShapeType::DIRECTIONAL_LIGHT);
+	// set the gizmo's type to DIRECTIONAL_LIGHT (used for rendering and interaction purposes)
+	gizmo->SetGizmoType(GizmoType::DIRECTIONAL_LIGHT);
 
 	// create the line that represents the direction of the light,
 	// initializing it with the current position and direction of the light

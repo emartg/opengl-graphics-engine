@@ -7,8 +7,16 @@
 
 #include <memory> // for smart pointers
 
-#include "CUBE.h"
+// includes from the engine
 #include "../core/Core.h"
+#include "../core/light/DirectionalLight.h"
+#include "../core/light/PointLight.h"
+#include "../core/light/Spotlight.h"
+#include "../core/model/Shape.h"
+#include "../core/model/AssimpModel.h"
+
+// includes from the app itself
+#include "CUBE.h"
 #include "renderer/GLFWRenderer.h"
 
 int main(int argc, char** argv)
@@ -44,7 +52,7 @@ int main(int argc, char** argv)
 															   glm::vec3{ 0.18f, -0.9f, -0.45f } // direction (pointing downwards and to the right)
 	);
 	// get gizmo's shared_ptr from the directional light before adding the latter to the engine (as it will be moved)
-	auto directionalLightGizmo = directionalLight->GetGizmoShape();
+	auto directionalLightGizmo = directionalLight->GetGizmo();
 	engine->AddAsset(std::move(directionalLight)); // add the directional light to the engine
 	// concatenate the name of the directional light and " (Shape n)",
 	// where n is the current number of shapes in the scene
@@ -63,7 +71,7 @@ int main(int argc, char** argv)
 												   glm::vec3{ 1.8f, 1.8f, 4.5f } // position
 	);
 	// get gizmo's shared_ptr from the point light before adding the latter to the engine (as it will be moved)
-	auto pointLightGizmo = pointLight->GetGizmoShape();
+	auto pointLightGizmo = pointLight->GetGizmo();
 	engine->AddAsset(std::move(pointLight)); // add the point light to the engine
 	// concatenate the name of the point light and " (Shape n)", 
 	// where n is the current number of shapes in the scene
@@ -83,7 +91,7 @@ int main(int argc, char** argv)
 												 glm::vec3{ -0.75f, 0.33f, 0.56f } // direction
 	);
 	// get gizmo's shared_ptr from the spotlight before adding the latter to the engine (as it will be moved)
-	auto spotlightGizmo = spotlight->GetGizmoShape();
+	auto spotlightGizmo = spotlight->GetGizmo();
 	engine->AddAsset(std::move(spotlight)); // add the spotlight to the engine
 	// concatenate the name of the spotlight and " (Shape n)",
 	// where n is the current number of shapes in the scene
@@ -102,9 +110,9 @@ int main(int argc, char** argv)
 	engine->AddAsset(std::move(cubeShape)); // add the cube shape to the engine
 
 	// define shader names and paths and compile the shaders
-	std::vector<std::string> shaderNames{ "Shape Shader Program", "Gizmo Shape Shader Program" };
-	std::vector<std::string> vertexShaderPaths{ "shaders/shape.vert.glsl" , "shaders/gizmo_shape.vert.glsl" };
-	std::vector<std::string> fragmentShaderPaths{ "shaders/shape.frag.glsl", "shaders/gizmo_shape.frag.glsl" };
+	std::vector<std::string> shaderNames{ "Shape Shader Program", "Gizmo Shader Program" };
+	std::vector<std::string> vertexShaderPaths{ "shaders/shape.vert.glsl" , "shaders/gizmo.vert.glsl" };
+	std::vector<std::string> fragmentShaderPaths{ "shaders/shape.frag.glsl", "shaders/gizmo.frag.glsl" };
 	engine->CompileShaders(shaderNames, vertexShaderPaths, fragmentShaderPaths);
 
 	// run the main loop of the engine

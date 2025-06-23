@@ -19,6 +19,12 @@
 #include "../Asset.h"
 #include "mesh/Mesh.h"
 
+enum class ModelType { UNDEFINED = 0, ASSIMP_MODEL, SHAPE };
+
+// enumeration class that allows to disriminate between different types of gizmos 
+// and also indicate if the model is not a gizmo without a boolean flag
+enum class GizmoType { NONE = 0, DIRECTIONAL_LIGHT, POINT_LIGHT, SPOTLIGHT };
+
 class Model : public Asset
 {
 public:
@@ -28,7 +34,9 @@ public:
 		  const glm::vec3 albedo = ALBEDO,
 		  const glm::vec3 position = POSITION, const glm::quat rotation = ROTATION,
 		  const glm::vec3 scale = SCALE,
-		  const glm::vec3 forward = FORWARD, const glm::vec3 meshForward = FORWARD);
+		  const glm::vec3 forward = FORWARD, const glm::vec3 meshForward = FORWARD,
+		  const ModelType modelType = ModelType::UNDEFINED,
+		  const GizmoType gizmoType = GizmoType::NONE);
 
 	// Virtual destructor 
 	// (ensures that derived classes can be deleted properly - polymorphism)
@@ -69,6 +77,8 @@ public:
 	// Returns the shape's forward vector in world space, normalized
 	const glm::vec3 GetForward() const;
 	const glm::vec3& GetMeshForward() const { return meshForward; }
+	const ModelType& GetModelType() const { return modelType; }
+	const GizmoType& GetGizmoType() const { return gizmoType; }
 
 	// Setters
 	void SetAlbedo(const glm::vec3& albedo) { this->albedo = albedo; }
@@ -81,6 +91,8 @@ public:
 	// Aligns the shape's forward vector to the specified world forward vector
 	void SetForward(const glm::vec3& worldForward);
 	void SetMeshForward(const glm::vec3& meshForward) { this->meshForward = meshForward; }
+	void SetModelType(const ModelType modelType) { this->modelType = modelType; }
+	void SetGizmoType(GizmoType gizmoType) { this->gizmoType = gizmoType; }
 
 	// Methods that return the full model matrix, or any of its components separately
 	glm::mat4 GetModelMatrix() const;
@@ -111,6 +123,9 @@ protected:
 
 	glm::vec3 forward; // shape's current forward vector in world space
 	glm::vec3 meshForward; // shape's forward vector in local (mesh) space
+
+	ModelType modelType; // type of the model (e.g., ASSIMP_MODEL, SHAPE)
+	GizmoType gizmoType; // type of the gizmo if the model is a gizmo, or NONE if it is not a gizmo
 
 	// Private Static Attributes (for default values)
 	// ----------------------------------------------

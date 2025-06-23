@@ -170,7 +170,7 @@ void Core::MainLoop()
 
 	// Shader configuration
 	// --------------------
-	// shape shader configuration
+	// model shader configuration
 	shaders[0]->Use();
 	// fragment shader constant uniforms
 	shaders[0]->SetFloat("material.shininess", 32.0f);
@@ -301,28 +301,28 @@ void Core::MainLoop()
 		// set the current number of directional lights
 		shaders[0]->SetInt("nDirectionalLights", static_cast<GLint>(directionalLightIdx));
 
-		// activate the shader program for gizmo shapes
+		// activate the shader program for gizmos
 		shaders[1]->Use();
 
 		// view/projection transformations
 		shaders[1]->SetMat4("projection", projection);
 		shaders[1]->SetMat4("view", view);
 
-		// render the shapes using an algorithm to iterate over the vector of assets of type "MODEL"
+		// render the models using an algorithm to iterate over the vector of assets of type "MODEL"
 		std::for_each(m_assets["MODEL"].begin(), m_assets["MODEL"].end(),
 					  [&](const std::shared_ptr<Asset>& asset)
 		{
-			// dynamically cast the asset to a Shape object
-			auto shape = dynamic_cast<Shape*>(asset.get());
+			// dynamically cast the asset to a Model object
+			auto model = dynamic_cast<Model*>(asset.get());
 
 			GLuint shaderIdx = 0; // default shader index to select a shader program (shape shader program)
 
-			GizmoShapeType gizmoShapeType = shape->GetGizmoShapeType(); // get the type of the shape's gizmo
+			GizmoType gizmoType = model->GetGizmoType(); // get the type of the model's gizmo
 
-			switch (gizmoShapeType) // switch based on the gizmo type
+			switch (gizmoType) // switch based on the gizmo type
 			{
-				// if the shape is not a gizmo
-				case GizmoShapeType::NONE:
+				// if the model is not a gizmo
+				case GizmoType::NONE:
 				{
 					shaderIdx = 0; // set the shader index to 0 (shape shader program)
 
@@ -330,42 +330,42 @@ void Core::MainLoop()
 					shaders[shaderIdx]->Use();
 
 					// set the color based on the GUI input
-					shaders[shaderIdx]->SetVec3("material.albedo", shape->GetAlbedo());
+					shaders[shaderIdx]->SetVec3("material.albedo", model->GetAlbedo());
 
-					// set the model matrix for the shape
-					shaders[shaderIdx]->SetMat4("model", shape->GetModelMatrix());
+					// set the model matrix for the model
+					shaders[shaderIdx]->SetMat4("model", model->GetModelMatrix());
 
-					// use fill mode to render regular shapes
+					// use fill mode to render regular models
 					glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 				}
 				break;
-				// if the shape is a DirectionalLight gizmo, PointLight gizmo, or Spotlight gizmo
-				case GizmoShapeType::DIRECTIONAL_LIGHT:
-				case GizmoShapeType::POINT_LIGHT:
-				case GizmoShapeType::SPOTLIGHT:
+				// if the model is a DirectionalLight gizmo, PointLight gizmo, or Spotlight gizmo
+				case GizmoType::DIRECTIONAL_LIGHT:
+				case GizmoType::POINT_LIGHT:
+				case GizmoType::SPOTLIGHT:
 				{
-					shaderIdx = 1; // set the shader index to 1 (gizmo shape shader program)
+					shaderIdx = 1; // set the shader index to 1 (gizmo shader program)
 
 					// activate the shader program
 					shaders[shaderIdx]->Use();
 
 					// set the color based on the GUI input
-					shaders[shaderIdx]->SetVec3("albedo", shape->GetAlbedo());
+					shaders[shaderIdx]->SetVec3("albedo", model->GetAlbedo());
 
-					// set the model matrix for the shape
-					shaders[shaderIdx]->SetMat4("model", shape->GetModelMatrix());
+					// set the model matrix for the model
+					shaders[shaderIdx]->SetMat4("model", model->GetModelMatrix());
 
-					// use wireframe mode to render gizmo shapes
+					// use wireframe mode to render gizmo models
 					glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 				}
 				break;
-				default: // if the shape is of an unknown gizmo type
-					std::cerr << "Unknown gizmo shape type for shape: " << shape->GetName() << std::endl;
+				default: // if the model is of an unknown gizmo type
+					std::cerr << "Unknown gizmo model type for model: " << model->GetName() << std::endl;
 					return;
 			}
 
-			// draw the shape or gizmo shape using the corresponding shader program
-			shape->Draw(*shaders[shaderIdx]);
+			// draw the model or gizmo model using the corresponding shader program
+			model->Draw(*shaders[shaderIdx]);
 
 		});
 

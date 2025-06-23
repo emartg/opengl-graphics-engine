@@ -15,10 +15,14 @@ GLuint Model::nModels{}; // initialize the number of models in the scene to 0
 Model::Model(const std::string& name,
 			 const glm::vec3 albedo,
 			 const glm::vec3 position, const glm::quat rotation, const glm::vec3 scale,
-			 const glm::vec3 forward, const glm::vec3 meshForward)
+			 const glm::vec3 forward, const glm::vec3 meshForward, 
+			 const ModelType modelType, 
+			 const GizmoType gizmoType)
 	: Asset(name, AssetType::MODEL),
 	albedo{ albedo }, position{ position }, rotation{ rotation }, scale{ scale },
-	forward{ forward }, meshForward{ meshForward }
+	forward{ forward }, meshForward{ meshForward }, 
+	modelType{ modelType }, 
+	gizmoType{ gizmoType }
 {
 	nModels++; // increments the number of models
 }

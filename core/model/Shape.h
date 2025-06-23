@@ -14,10 +14,6 @@
 
 #include "Model.h"
 
-// enumeration class that allows to disriminate between different types of gizmos 
-// and also indicate that the shape is not a gizmo without a boolean flag
-enum class GizmoShapeType { NONE = 0, DIRECTIONAL_LIGHT, POINT_LIGHT, SPOTLIGHT };
-
 class Shape : public Model
 {
 public:
@@ -30,8 +26,7 @@ public:
 		  const glm::vec3 albedo = ALBEDO,
 		  const glm::vec3 position = POSITION, const glm::quat rotation = ROTATION,
 		  const glm::vec3 scale = SCALE,
-		  const glm::vec3 forward = FORWARD, const glm::vec3 meshForward = FORWARD
-	);
+		  const glm::vec3 forward = FORWARD, const glm::vec3 meshForward = FORWARD);
 
 	// Constructor that creates a shape from separate position, normal, and texture coordinate data,
 	// and index data. 
@@ -41,8 +36,7 @@ public:
 		  const glm::vec3 albedo = ALBEDO,
 		  const glm::vec3 position = POSITION, const glm::quat rotation = ROTATION,
 		  const glm::vec3 scale = SCALE,
-		  const glm::vec3 forward = FORWARD, const glm::vec3 meshForward = FORWARD
-	);
+		  const glm::vec3 forward = FORWARD, const glm::vec3 meshForward = FORWARD);
 
 	// Constructor that creates a shape from interleaved position, normal and texture coordinate data, 
 	// and index data.
@@ -54,8 +48,7 @@ public:
 		  const glm::vec3 albedo = ALBEDO,
 		  const glm::vec3 position = POSITION, const glm::quat rotation = ROTATION,
 		  const glm::vec3 scale = SCALE,
-		  const glm::vec3 forward = FORWARD, const glm::vec3 meshForward = FORWARD
-	);
+		  const glm::vec3 forward = FORWARD, const glm::vec3 meshForward = FORWARD);
 
 	// Constructor that creates a shape from separate position, normal, and texture coordinate data,
 	// and index data.
@@ -68,8 +61,7 @@ public:
 		  const glm::vec3 albedo = ALBEDO,
 		  const glm::vec3 position = POSITION, const glm::quat rotation = ROTATION,
 		  const glm::vec3 scale = SCALE,
-		  const glm::vec3 forward = FORWARD, const glm::vec3 meshForward = FORWARD
-	);
+		  const glm::vec3 forward = FORWARD, const glm::vec3 meshForward = FORWARD);
 
 	// Destructor
 	// ----------
@@ -77,12 +69,6 @@ public:
 
 	// Public Methods
 	// --------------
-	// Getters
-	const GizmoShapeType GetGizmoShapeType() const { return gizmoShapeType; }
-
-	// Setters
-	void SetGizmoShapeType(const GizmoShapeType gizmoShapeType) { this->gizmoShapeType = gizmoShapeType; }
-
 	// Adds texture data to the shape
 	void AddTextureData(const Texture* textures, const GLuint nTextures);
 	void AddTextureData(const std::vector<Texture> textures);
@@ -94,16 +80,13 @@ public:
 private:
 	// Static Private Attributes
 	// -------------------------
-	static GLuint nShapes; // number of shapes created
+	static GLuint nShapes; // number of shapes in the scene
 
 	// Private Attributes
 	// ------------------
 	std::vector<Vertex> vertices; // vertex, normal and texture coordinate data
 	std::vector<GLuint> indices; // indices that define the order in which the vertices are drawn
 	std::vector<Texture> textures; // texture data (if any) associated with the shape
-
-	// type of the gizmo, default is NONE (i.e, the shape wouldn't be a gizmo)
-	GizmoShapeType gizmoShapeType{ GizmoShapeType::NONE };
 
 	// Private Methods
 	// ---------------

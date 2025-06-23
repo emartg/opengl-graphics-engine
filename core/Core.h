@@ -27,6 +27,7 @@
 #include "light/DirectionalLight.h"
 #include "model/Model.h"
 #include "model/Shape.h"
+#include "model/AssimpModel.h"
 #include "shader/Shader.h"
 #include "texture/Texture.h"
 #include "renderer/Renderer.h"
@@ -104,6 +105,8 @@ public:
 	const GLuint GetNModels() const { return Model::GetNModels(); }
 	// get number of shapes in the scene
 	const GLuint GetNShapes() const { return Shape::GetNShapes(); }
+	// get the number of Assimp models in the scene
+	const GLuint GetNAssimpModels() const { return AssimpModel::GetNAssimpModels(); }
 	// get all the assets of a specific type
 	const std::vector<std::shared_ptr<Asset>>& GetAssets(const std::string& assetType) const;
 	// get an asset of a specific type by index

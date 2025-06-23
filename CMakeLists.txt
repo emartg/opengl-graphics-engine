@@ -27,6 +27,18 @@ if(WIN32)
 	set(BUILD_SHARED_LIBS OFF)
 endif()
 
+# Collect external dynamic libraries (DLLs) and copy them to the runtime directory
+if (WIN32)
+    # gather all DLLs from external/dlls
+    file(GLOB EXTERNAL_DLLS "${CMAKE_SOURCE_DIR}/external/dlls/*.dll")
+
+    # copy them immediately during CMake generation
+    if (EXTERNAL_DLLS)
+        message(STATUS "[${PROJECT_NAME}] Copying external DLLs to the runtime directory...")
+        file(COPY ${EXTERNAL_DLLS} DESTINATION "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
+    endif()
+endif()
+
 # Add library directories
 link_directories(${CMAKE_BINARY_DIR}/lib)
 

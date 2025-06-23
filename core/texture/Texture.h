@@ -35,6 +35,9 @@ public:
 	const std::string& GetPath() const { return path; }
 	const TextureType& GetTextureType() const { return textureType; }
 
+	// Setters
+	void SetTextureType(const TextureType type) { textureType = type; }
+
 	// Loads a texture from a file and returns the texture ID
 	GLuint LoadTextureFromFile(const GLchar* path);
 

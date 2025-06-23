@@ -59,6 +59,7 @@ set(LIBS
 target_link_libraries(App Core ${LIBS})
 
 # Copy shader files to the runtime directory
+message(STATUS "[APP] Copying shader files to the runtime directory...")
 file(INSTALL ${CMAKE_SOURCE_DIR}/shaders/ DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/shaders/)
 
 # Copy shader files to the runtime directory

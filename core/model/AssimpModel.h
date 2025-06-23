@@ -20,9 +20,25 @@ public:
 	// Constructors
 	// ------------
 	// Constructor that loads a model from a file
-	AssimpModel(const std::string& name, std::string const& path);
+	AssimpModel(const std::string& name, std::string const& path,
+				const glm::vec3 albedo = ALBEDO,
+				const glm::vec3 position = POSITION, const glm::quat rotation = ROTATION,
+				const glm::vec3 scale = SCALE,
+				const glm::vec3 forward = FORWARD, const glm::vec3 meshForward = FORWARD);
+
+	// Destructor
+	// ----------
+	~AssimpModel() { nAssimpModels--; } // decrements the number of Assimp models
+
+	// Static Public Methods
+	// ---------------------
+	static GLuint GetNAssimpModels() { return nAssimpModels; }
 
 private:
+	// Static Private Attributes
+	// -------------------------
+	static GLuint nAssimpModels; // number of Assimp models in the scene
+
 	// Private Methods
 	// ---------------
 	// Loads a model with supported Assimp extensions from file and stores the resulting meshes in the meshes vector
