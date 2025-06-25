@@ -29,24 +29,27 @@ void Mesh::Draw() const
 void Mesh::BindTextures(Shader& shader) const
 {
 	// bind appropriate textures
-	GLuint diffuseTextureMapIdx{ 1 }, specularTextureMapIdx{ 1 };
 	for (GLuint i{}; i < textures.size(); i++)
 	{
-		std::string textureNumber, textureName;
+		std::string textureName;
 		TextureType type = textures[i].GetTextureType();
-		if (type == TextureType::DIFFUSE)
+		if (textures[i].GetName().find("albedo") != std::string::npos ||
+			textures[i].GetName().find("diffuse") != std::string::npos ||
+			textures[i].GetName().find("color") != std::string::npos)
 		{
+			type = TextureType::DIFFUSE; // treat albedo, diffuse, and color textures as diffuse
 			textureName = "albedoMap";
-			textureNumber = std::to_string(diffuseTextureMapIdx++);
 		}
-		else if (type == TextureType::SPECULAR)
+		else if (textures[i].GetName().find("specular") != std::string::npos ||
+				 textures[i].GetName().find("reflective") != std::string::npos ||
+				 textures[i].GetName().find("metallic") != std::string::npos)
 		{
+			type = TextureType::SPECULAR; // treat specular and reflective textures as metallic
 			textureName = "metallicMap";
-			textureNumber = std::to_string(specularTextureMapIdx++);
 		}
 
 		// set the sampler to the correct texture unit and bind the texture to it
-		shader.SetInt("material." + textureName + textureNumber, i);
+		shader.SetInt("material." + textureName, i);
 		textures[i].Bind(i);
 	}
 	glActiveTexture(GL_TEXTURE0); // set the active texture unit back to 0 once all textures are bound

@@ -22,6 +22,7 @@ AssimpModel::AssimpModel(const std::string& name,
 			ModelType::ASSIMP_MODEL) // set the model type to ASSIMP_MODEL
 {
 	loadAssimpModel(path);
+	nAssimpModels++; // increments the number of Assimp models
 }
 
 // Private Methods
@@ -39,7 +40,7 @@ void AssimpModel::loadAssimpModel(std::string const& path)
 		return;
 	}
 	// store the directory of the model file
-	directory = path.substr(0, path.find_last_of('/'));
+	directory = path.substr(0, path.find_last_of('/')) + '/';
 
 	// process the root node (recursively process all of its children)
 	processNode(scene->mRootNode, scene);
@@ -126,11 +127,13 @@ std::vector<Texture> AssimpModel::loadMaterialTextures(aiMaterial* mat, aiTextur
 		aiString str;
 		mat->GetTexture(type, i, &str);
 
+		std::string texturePath = directory + str.C_Str(); // construct the full path to the texture file
+
 		// check if the texture was loaded before and if so, continue to the next iteration
 		GLboolean skip{ false };
 		for (GLuint j{}; j < loadedTextures.size(); j++)
 		{
-			if (std::strcmp(loadedTextures[j].GetPath().data(), str.C_Str()) == 0)
+			if (std::strcmp(loadedTextures[j].GetPath().data(), texturePath.c_str()) == 0)
 			{
 				// if the texture has already been loaded, add it to the textures vector
 				textures.push_back(loadedTextures[j]);
@@ -140,8 +143,7 @@ std::vector<Texture> AssimpModel::loadMaterialTextures(aiMaterial* mat, aiTextur
 		}
 		if (!skip) // if the texture hasn't been loaded already, load it
 		{
-			std::string textureName{ "texture" + std::to_string(i) };
-			Texture texture{ textureName, str.C_Str(), textureType };
+			Texture texture{ str.C_Str(), texturePath.c_str(), textureType };
 			textures.push_back(texture);
 			// to ensure we won't load the same texture again, store it in the loaded textures
 			loadedTextures.push_back(texture);

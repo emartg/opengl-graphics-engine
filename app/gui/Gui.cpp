@@ -582,28 +582,6 @@ void GUI::Setup()
 			Core::GetInstance()->AddAsset(std::move(newPointLightGizmo));
 		}
 
-		// button to add a new cube to the scene
-		if (ImGui::Button("Add Cube"))
-		{
-			// get a random color and a random position for the cube
-			glm::vec3 newColor = m_randomizer->GenerateRandomColor();
-			glm::vec3 newPos = m_randomizer->GenerateRandomPosition(glm::vec3(0.0f), // origin
-																	MIN_DISTANCE_FROM_ORIGIN, MAX_DISTANCE_FROM_ORIGIN);
-
-			// get the current number of models in the scene
-			std::string nModels = std::to_string(Core::GetInstance()->GetNModels());
-			// create a new cube called "Cube (Model n)", 
-			// where n is the current number of models in the scene
-			auto newShape = std::make_shared<Shape>("Cube (Model " + nModels + ")",
-													cubeVerticesVec, cubeIndicesVec,
-													newColor, // color (random)
-													newPos // position (random)
-			);
-
-			// add the new shape (a cube) to the engine
-			Core::GetInstance()->AddAsset(std::move(newShape));
-		}
-
 		ImGui::End();
 	}
 

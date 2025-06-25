@@ -45,10 +45,10 @@ int main(int argc, char** argv)
 	auto directionalLight = std::make_shared<DirectionalLight>("Directional Light "
 															   + std::to_string(engine->GetNDirectionalLights()),
 															   glm::vec3{ 0.1f }, // ambient color (default)
-															   glm::vec3{ 1.0f, 1.0f, 0.7f }, // diffuse color (sunlight yellow)
-															   glm::vec3{ 1.0f }, // specular color (default)
-															   glm::vec3{ -3.5f, 7.0f, 0.0f }, // position (default)
-															   glm::vec3{ 0.18f, -0.9f, -0.45f } // direction (pointing downwards and to the right)
+															   glm::vec3{ 1.0f, 1.0f, 0.7f }, // diffuse color
+															   glm::vec3{ 1.0f }, // specular color (same as default)
+															   glm::vec3{ 2.4f, 8.0f, -3.0f }, // position
+															   glm::vec3{ -0.2f, -0.8, 0.5f } // direction
 	);
 	// get gizmo's shared_ptr from the directional light before adding the latter to the engine (as it will be moved)
 	auto directionalLightGizmo = directionalLight->GetGizmo();
@@ -64,9 +64,9 @@ int main(int argc, char** argv)
 	// where n is the current number of point lights in the scene
 	auto pointLight = std::make_shared<PointLight>("Point Light " + std::to_string(engine->GetNPointLights()),
 												   glm::vec3{ 0.1f }, // ambient color (default)
-												   glm::vec3{ 0.25f, 0.7f, 1.0f }, // diffuse color (blue)
-												   glm::vec3{ 1.0f }, // specular color (default)
-												   glm::vec3{ 1.8f, 1.8f, 4.5f } // position
+												   glm::vec3{ 0.3f, 0.9f, 1.0f }, // diffuse color
+												   glm::vec3{ 1.0f }, // specular color (same as default)
+												   glm::vec3{ -0.6f, 3.2f, 3.2f } // position
 	);
 	// get gizmo's shared_ptr from the point light before adding the latter to the engine (as it will be moved)
 	auto pointLightGizmo = pointLight->GetGizmo();
@@ -82,10 +82,12 @@ int main(int argc, char** argv)
 	// where n is the current number of spotlights in the scene
 	auto spotlight = std::make_shared<Spotlight>("Spotlight " + std::to_string(engine->GetNSpotlights()),
 												 glm::vec3{ 0.1f }, // ambient color (default)
-												 glm::vec3{ 1.0f, 0.25f, 0.25f }, // diffuse color (red)
-												 glm::vec3{ 1.0f }, // specular color (default)
+												 glm::vec3{ 1.0f, 0.4f, 0.4f }, // diffuse color
+												 glm::vec3{ 1.0f }, // specular color (same as default)
 												 glm::vec3{ 3.0f, -0.3f, -0.9f }, // position
-												 glm::vec3{ -0.75f, 0.33f, 0.56f } // direction
+												 glm::vec3{ -0.8f, 0.3f, 0.6f }, // direction
+												 glm::cos(glm::radians(15.0f)), // inner cut-off
+												 glm::cos(glm::radians(32.5f)) // outer cut-off
 	);
 	// get gizmo's shared_ptr from the spotlight before adding the latter to the engine (as it will be moved)
 	auto spotlightGizmo = spotlight->GetGizmo();
@@ -98,9 +100,25 @@ int main(int argc, char** argv)
 	// update the number of models in the scene
 	nModels = std::to_string(engine->GetNModels());
 	// load the model from the assets folder and create an AssimpModel object
-	auto backpackModel = std::make_shared<AssimpModel>("Backpack Model (Model " + nModels + ")",
-													   "assets/models/backpack/backpack.obj");
-	engine->AddAsset(std::move(backpackModel)); // add the model to the engine
+	auto hydrantModel = std::make_shared<AssimpModel>(
+		"Hydrant Model (Model " + nModels + ")",
+		"assets/models/hydrant/hydrant.obj"
+	);
+	hydrantModel->SetPosition(glm::vec3{ -1.5f, 0.0f, 0.0f });
+	hydrantModel->SetScale(glm::vec3{ 0.05f }); // scale the model down
+	engine->AddAsset(std::move(hydrantModel)); // add the model to the engine
+
+	// update the number of models in the scene
+	nModels = std::to_string(engine->GetNModels());
+	// load the model from the assets folder and create an AssimpModel object
+	auto constructionHelmetModel = std::make_shared<AssimpModel>(
+		"Construction Helmet Model (Model " + nModels + ")",
+		"assets/models/construction_helmet/construction_helmet.obj"
+	);
+	constructionHelmetModel->SetPosition(glm::vec3{ 1.5f, 0.0f, 0.0f });
+	constructionHelmetModel->SetRotationInEulerAngles(glm::vec3{ 0.0f, 30.0f, 0.0f });
+	constructionHelmetModel->SetScale(glm::vec3{ 0.1f }); // scale the model down
+	engine->AddAsset(std::move(constructionHelmetModel)); // add the model to the engine
 
 	// define shader names and paths and compile the shaders
 	std::vector<std::string> shaderNames{ "Model Shader Program", "Gizmo Shader Program" };
