@@ -601,7 +601,7 @@ void GUI::Setup()
 			std::string nModels = std::to_string(Core::GetInstance()->GetNModels());
 			// create a new cube shape called "Cube (Model n)", 
 			// where n is the current number of models in the scene
-			auto newCubeShape = std::make_shared<Shape>("Cube (" + nModels + ")",
+			auto newCubeShape = std::make_shared<Shape>("Cube (Model " + nModels + ")",
 														cubeVerticesVec, cubeIndicesVec,
 														newColor, // albedo (random)
 														newPos // position (random)
@@ -613,7 +613,7 @@ void GUI::Setup()
 		ImGui::End();
 	}
 
-	
+
 
 	// check if ImGui wants to capture the mouse (when interacting with the GUI)
 	if (ImGui::GetIO().WantCaptureMouse) // prevent camera manipulation
