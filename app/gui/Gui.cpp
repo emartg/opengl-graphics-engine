@@ -613,8 +613,6 @@ void GUI::Setup()
 		ImGui::End();
 	}
 
-
-
 	// check if ImGui wants to capture the mouse (when interacting with the GUI)
 	if (ImGui::GetIO().WantCaptureMouse) // prevent camera manipulation
 		Core::GetInstance()->SetCameraControlEnabled(false);
