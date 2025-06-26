@@ -590,8 +590,30 @@ void GUI::Setup()
 			Core::GetInstance()->AddAsset(std::move(newPointLightGizmo));
 		}
 
+		// buttom to add a new cube shape to the scene
+		if (ImGui::Button("Add Cube Shape"))
+		{
+			// get a random color and a random position for the cube shape
+			glm::vec3 newColor = m_randomizer->GenerateRandomColor();
+			glm::vec3 newPos = m_randomizer->GenerateRandomPosition(glm::vec3(0.0f), // origin
+																	MIN_DISTANCE_FROM_ORIGIN, MAX_DISTANCE_FROM_ORIGIN);
+			// get the current number of models in the scene
+			std::string nModels = std::to_string(Core::GetInstance()->GetNModels());
+			// create a new cube shape called "Cube (Model n)", 
+			// where n is the current number of models in the scene
+			auto newCubeShape = std::make_shared<Shape>("Cube (" + nModels + ")",
+														cubeVerticesVec, cubeIndicesVec,
+														newColor, // albedo (random)
+														newPos // position (random)
+			);
+			// add the new cube shape to the engine
+			Core::GetInstance()->AddAsset(std::move(newCubeShape));
+		}
+
 		ImGui::End();
 	}
+
+	
 
 	// check if ImGui wants to capture the mouse (when interacting with the GUI)
 	if (ImGui::GetIO().WantCaptureMouse) // prevent camera manipulation
