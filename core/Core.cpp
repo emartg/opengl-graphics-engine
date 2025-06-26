@@ -158,22 +158,70 @@ void Core::LoadTextures(const std::vector<std::string>& textureNames,
 
 void Core::MainLoop()
 {
-	// Get raw pointers to the shader and light objects through dynamic casting
-	// ------------------------------------------------------------------------
+	// Retrieve and store the assets already loaded in the engine
+	// ----------------------------------------------------------
+	// set the main camera
+	m_camera = std::make_shared<Camera>(*dynamic_cast<Camera*>(m_assets["CAMERA"].front().get()));
+
+	// get raw pointers to the shader and light objects through dynamic casting
 	auto shaders = std::vector<Shader*>();
 	for (const auto& asset : m_assets["SHADER"])
 		shaders.push_back(dynamic_cast<Shader*>(asset.get()));
 
-	// Set the main camera
-	// -------------------
-	m_camera = std::make_shared<Camera>(*dynamic_cast<Camera*>(m_assets["CAMERA"].front().get()));
+	// declare pointers to the shaders to use in the rendering loop
+	// (provisional, allows us to get rid of shader indexes in the code, 
+	// but introduces raw pointer usage and name checking)
+	Shader* untexturedMattShapeShader = nullptr; // pointer to the untextured matt shape shader
+	Shader* assimpModelShader = nullptr; // pointer to the Assimp model shader
+	Shader* gizmoShapeShader = nullptr; // pointer to the gizmo shape shader
+
+	// assign shaders to the local raw pointers based on their names
+	// (provisional, allows us to get rid of shader indexes in the code, 
+	// but introduces raw pointer usage and name checking)
+	for (auto& shader : shaders)
+	{
+		if (strcmp(shader->GetName().c_str(), "Untextured Matt Shape Shader Program") == 0)
+			untexturedMattShapeShader = shader;
+		else if (strcmp(shader->GetName().c_str(), "Assimp Model Shader Program") == 0)
+			assimpModelShader = shader;
+		else if (strcmp(shader->GetName().c_str(), "Gizmo Shape Shader Program") == 0)
+			gizmoShapeShader = shader;
+		else
+		{
+			std::cerr << "Unknown shader name: " << shader->GetName() << std::endl;
+			continue; // skip this shader if it is not recognized
+		}
+	}
 
 	// Shader configuration
 	// --------------------
-	// model shader configuration
-	shaders[0]->Use();
-	// fragment shader constant uniforms
-	shaders[0]->SetFloat("material.shininess", 32.0f);
+	// untextured matt shape shader configuration (if it exists)
+	if (untexturedMattShapeShader)
+	{
+		// activate the shader program
+		untexturedMattShapeShader->Use();
+		// vertex shader constant uniforms
+		untexturedMattShapeShader->SetFloat("material.shininess", 32.0f);
+	}
+	else
+	{
+		std::cerr << "Untextured Matt Shape Shader Program not found!" << std::endl;
+		return; // exit the function if the untextured matt shape shader is not found
+	}
+
+	// Assimp model shader configuration (if it exists)
+	if (assimpModelShader)
+	{
+		// activate the shader program
+		assimpModelShader->Use();
+		// vertex shader constant uniforms
+		assimpModelShader->SetFloat("material.shininess", 32.0f);
+	}
+	else
+	{
+		std::cerr << "Assimp Model Shader Program not found!" << std::endl;
+		return; // exit the function if the Assimp model shader is not found
+	}
 
 	// Render loop
 	// -----------
@@ -197,211 +245,304 @@ void Core::MainLoop()
 		// -----
 		processInput(m_renderer->ProcessKeyboardInput());
 
-		// Render
-		// ------
+		// Per-frame shader configuration
+		// ------------------------------
 		m_renderer->SetClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 		m_renderer->ClearBuffers();
 
-		// activate the shader program for models
-		shaders[0]->Use();
-
-		// view/projection transformations
+		// compute view/projection transformations
 		glm::mat4 projection = glm::perspective(glm::radians(m_camera->GetZoom()),
 												static_cast<GLfloat>(SCR_WIDTH) / static_cast<GLfloat>(SCR_HEIGHT),
 												0.1f, 100.0f);
 		glm::mat4 view = m_camera->GetViewMatrix();
-		shaders[0]->SetMat4("projection", projection);
-		shaders[0]->SetMat4("view", view);
+		// set the view and projection matrices for each shader program
+		for (auto& shader : shaders)
+		{
+			shader->Use();
+			shader->SetMat4("view", view);
+			shader->SetMat4("projection", projection);
+		}
 
-		// set the properties of the point lights iterate over the vector of assets of type "LIGHT"
-		GLuint pointLightIdx{}, spotlightIdx{}, directionalLightIdx{}; // indices for lights whose properties are to be set
+		// indices for lights whose properties are to be set (counters for each type of light)
+		GLuint pointLightIdx{}, spotlightIdx{}, directionalLightIdx{};
+		// iterate over the vector of assets of type "LIGHT" and set the properties of the lights
+		// for every model shader program (provisional, allows us to get rid of shader indexes in the code,
+		// but forces us to set the uniforms for each model shader program separately)
 		std::for_each(m_assets["LIGHT"].begin(), m_assets["LIGHT"].end(),
 					  [&](const std::shared_ptr<Asset>& asset)
 		{
 			// dynamically cast the asset to a Light object and get its type
 			auto light = dynamic_cast<Light*>(asset.get());
-			LightType lightType = light->GetLightType();
 
-			switch (lightType)
+			LightType lightType = light->GetLightType(); // get the type of the light
+			switch (lightType) // switch based on the type of the light
 			{
 				case LightType::DIRECTIONAL_LIGHT:
 				{
+					// dynamically cast the light to a DirectionalLight object
 					auto directionalLight = dynamic_cast<DirectionalLight*>(light);
 
-					// vertex shader uniforms
-					shaders[0]->SetVec3("directionalLightDir[" + std::to_string(directionalLightIdx) + "]",
-										directionalLight->GetDirection());
-
-					// fragment shader uniforms
+					// prefix for fragment shader uniforms
 					std::string prefix = "directionalLights[" + std::to_string(directionalLightIdx) + "].";
-					shaders[0]->SetVec3(prefix + "ambient", directionalLight->GetAmbient());
-					shaders[0]->SetVec3(prefix + "diffuse", directionalLight->GetDiffuse());
-					shaders[0]->SetVec3(prefix + "specular", directionalLight->GetSpecular());
+
+					// activate the untextured matt shape shader program
+					untexturedMattShapeShader->Use();
+					// vertex shader uniforms
+					untexturedMattShapeShader->SetVec3("directionalLightDir[" + std::to_string(directionalLightIdx) + "]",
+													   directionalLight->GetDirection());
+					// fragment shader uniforms
+					untexturedMattShapeShader->SetVec3(prefix + "ambient", directionalLight->GetAmbient());
+					untexturedMattShapeShader->SetVec3(prefix + "diffuse", directionalLight->GetDiffuse());
+					untexturedMattShapeShader->SetVec3(prefix + "specular", directionalLight->GetSpecular());
+
+					// activate the Assimp model shader program
+					assimpModelShader->Use();
+					// vertex shader uniforms
+					assimpModelShader->SetVec3("directionalLightDir[" + std::to_string(directionalLightIdx) + "]",
+											   directionalLight->GetDirection());
+					// fragment shader uniforms
+					assimpModelShader->SetVec3(prefix + "ambient", directionalLight->GetAmbient());
+					assimpModelShader->SetVec3(prefix + "diffuse", directionalLight->GetDiffuse());
+					assimpModelShader->SetVec3(prefix + "specular", directionalLight->GetSpecular());
 
 					directionalLightIdx++; // increment the directional light index for the next iteration
 				}
 				break;
 				case LightType::POINT_LIGHT:
 				{
-					auto pointLight = dynamic_cast<PointLight*>(light); // get the PointLight object
+					// dynamically cast the light to a PointLight object
+					auto pointLight = dynamic_cast<PointLight*>(light);
 
-					// vertex shader uniforms
-					shaders[0]->SetVec3("pointLightPos[" + std::to_string(pointLightIdx) + "]",
-										pointLight->GetPosition());
-
-					// fragment shader uniforms
+					// prefix for fragment shader uniforms
 					std::string prefix = "pointLights[" + std::to_string(pointLightIdx) + "].";
-					shaders[0]->SetVec3(prefix + "ambient", pointLight->GetAmbient());
-					shaders[0]->SetVec3(prefix + "diffuse", pointLight->GetDiffuse());
-					shaders[0]->SetVec3(prefix + "specular", pointLight->GetSpecular());
-					shaders[0]->SetFloat(prefix + "constant", pointLight->GetConstant());
-					shaders[0]->SetFloat(prefix + "linear", pointLight->GetLinear());
-					shaders[0]->SetFloat(prefix + "quadratic", pointLight->GetQuadratic());
+
+					// activate the untextured matt shape shader program
+					untexturedMattShapeShader->Use();
+					// vertex shader uniforms
+					untexturedMattShapeShader->SetVec3("pointLightPos[" + std::to_string(pointLightIdx) + "]",
+													   pointLight->GetPosition());
+					// fragment shader uniforms
+					untexturedMattShapeShader->SetVec3(prefix + "ambient", pointLight->GetAmbient());
+					untexturedMattShapeShader->SetVec3(prefix + "diffuse", pointLight->GetDiffuse());
+					untexturedMattShapeShader->SetVec3(prefix + "specular", pointLight->GetSpecular());
+					untexturedMattShapeShader->SetFloat(prefix + "constant", pointLight->GetConstant());
+					untexturedMattShapeShader->SetFloat(prefix + "linear", pointLight->GetLinear());
+					untexturedMattShapeShader->SetFloat(prefix + "quadratic", pointLight->GetQuadratic());
+
+					// activate the Assimp model shader program
+					assimpModelShader->Use();
+					// vertex shader uniforms
+					assimpModelShader->SetVec3("pointLightPos[" + std::to_string(pointLightIdx) + "]",
+											   pointLight->GetPosition());
+					// fragment shader uniforms
+					assimpModelShader->SetVec3(prefix + "ambient", pointLight->GetAmbient());
+					assimpModelShader->SetVec3(prefix + "diffuse", pointLight->GetDiffuse());
+					assimpModelShader->SetVec3(prefix + "specular", pointLight->GetSpecular());
+					assimpModelShader->SetFloat(prefix + "constant", pointLight->GetConstant());
+					assimpModelShader->SetFloat(prefix + "linear", pointLight->GetLinear());
+					assimpModelShader->SetFloat(prefix + "quadratic", pointLight->GetQuadratic());
 
 					pointLightIdx++; // increment the point light index for the next iteration
 				}
 				break;
 				case LightType::SPOTLIGHT:
 				{
+					// dynamically cast the light to a Spotlight object
 					auto spotlight = dynamic_cast<Spotlight*>(light);
 
-					// vertex shader uniforms
-					shaders[0]->SetVec3("spotlightPos[" + std::to_string(spotlightIdx) + "]",
-										spotlight->GetPosition());
-					shaders[0]->SetVec3("spotlightDir[" + std::to_string(spotlightIdx) + "]",
-										spotlight->GetDirection());
-
-					// fragment shader uniforms
+					// prefix for fragment shader uniforms
 					std::string prefix = "spotlights[" + std::to_string(spotlightIdx) + "].";
-					shaders[0]->SetVec3(prefix + "ambient", spotlight->GetAmbient());
-					shaders[0]->SetVec3(prefix + "diffuse", spotlight->GetDiffuse());
-					shaders[0]->SetVec3(prefix + "specular", spotlight->GetSpecular());
-					shaders[0]->SetFloat(prefix + "constant", spotlight->GetConstant());
-					shaders[0]->SetFloat(prefix + "linear", spotlight->GetLinear());
-					shaders[0]->SetFloat(prefix + "quadratic", spotlight->GetQuadratic());
-					shaders[0]->SetFloat(prefix + "innerCutOff", spotlight->GetInnerCutOff());
-					shaders[0]->SetFloat(prefix + "outerCutOff", spotlight->GetOuterCutOff());
+
+					// activate the untextured matt shape shader program
+					untexturedMattShapeShader->Use();
+					// vertex shader uniforms
+					untexturedMattShapeShader->SetVec3("spotlightPos[" + std::to_string(spotlightIdx) + "]",
+													   spotlight->GetPosition());
+					untexturedMattShapeShader->SetVec3("spotlightDir[" + std::to_string(spotlightIdx) + "]",
+													   spotlight->GetDirection());
+					// fragment shader uniforms
+					untexturedMattShapeShader->SetVec3(prefix + "ambient", spotlight->GetAmbient());
+					untexturedMattShapeShader->SetVec3(prefix + "diffuse", spotlight->GetDiffuse());
+					untexturedMattShapeShader->SetVec3(prefix + "specular", spotlight->GetSpecular());
+					untexturedMattShapeShader->SetFloat(prefix + "constant", spotlight->GetConstant());
+					untexturedMattShapeShader->SetFloat(prefix + "linear", spotlight->GetLinear());
+					untexturedMattShapeShader->SetFloat(prefix + "quadratic", spotlight->GetQuadratic());
+					untexturedMattShapeShader->SetFloat(prefix + "innerCutOff", spotlight->GetInnerCutOff());
+					untexturedMattShapeShader->SetFloat(prefix + "outerCutOff", spotlight->GetOuterCutOff());
+
+					// activate the Assimp model shader program
+					assimpModelShader->Use();
+					// vertex shader uniforms
+					assimpModelShader->SetVec3(prefix + "ambient", spotlight->GetAmbient());
+					assimpModelShader->SetVec3("spotlightPos[" + std::to_string(spotlightIdx) + "]",
+											   spotlight->GetPosition());
+					assimpModelShader->SetVec3("spotlightDir[" + std::to_string(spotlightIdx) + "]",
+											   spotlight->GetDirection());
+					// fragment shader uniforms
+					assimpModelShader->SetVec3(prefix + "diffuse", spotlight->GetDiffuse());
+					assimpModelShader->SetVec3(prefix + "specular", spotlight->GetSpecular());
+					assimpModelShader->SetFloat(prefix + "constant", spotlight->GetConstant());
+					assimpModelShader->SetFloat(prefix + "linear", spotlight->GetLinear());
+					assimpModelShader->SetFloat(prefix + "quadratic", spotlight->GetQuadratic());
+					assimpModelShader->SetFloat(prefix + "innerCutOff", spotlight->GetInnerCutOff());
+					assimpModelShader->SetFloat(prefix + "outerCutOff", spotlight->GetOuterCutOff());
 
 					spotlightIdx++; // increment the spotlight index for the next iteration
 				}
 				break;
 				case LightType::UNDEFINED: // if the Light is of an undefined type
 					std::cerr << "UNDEFINED light type for light: " << light->GetName() << std::endl;
-					return;
+					return; // exit the function if the light type is undefined
 				default: // if the Light is of an unknown type
 					std::cerr << "Unknown light type for light: " << light->GetName() << std::endl;
-					return;
+					return; // exit the function if the light type is unknown
 			}
 		});
+		// set the current number of each type of light for the untextured matt shape shader
+		untexturedMattShapeShader->Use();
+		untexturedMattShapeShader->SetInt("nPointLights", static_cast<GLint>(pointLightIdx));
+		untexturedMattShapeShader->SetInt("nSpotlights", static_cast<GLint>(spotlightIdx));
+		untexturedMattShapeShader->SetInt("nDirectionalLights", static_cast<GLint>(directionalLightIdx));
+		// set the current number of each type of light for the Assimp model shader
+		assimpModelShader->Use();
+		assimpModelShader->SetInt("nPointLights", static_cast<GLint>(pointLightIdx));
+		assimpModelShader->SetInt("nSpotlights", static_cast<GLint>(spotlightIdx));
+		assimpModelShader->SetInt("nDirectionalLights", static_cast<GLint>(directionalLightIdx));
 
-		// set the current number of point lights
-		shaders[0]->SetInt("nPointLights", static_cast<GLint>(pointLightIdx));
-		// set the current number of spotlights
-		shaders[0]->SetInt("nSpotlights", static_cast<GLint>(spotlightIdx));
-		// set the current number of directional lights
-		shaders[0]->SetInt("nDirectionalLights", static_cast<GLint>(directionalLightIdx));
-
-		// activate the shader program for gizmos
-		shaders[1]->Use();
-
-		// view/projection transformations
-		shaders[1]->SetMat4("projection", projection);
-		shaders[1]->SetMat4("view", view);
-
-		// render the models using an algorithm to iterate over the vector of assets of type "MODEL"
+		// Render the models and gizmos
+		// ----------------------------
+		// iterate over the vector of assets of type "MODEL" and render the different types of models
 		std::for_each(m_assets["MODEL"].begin(), m_assets["MODEL"].end(),
 					  [&](const std::shared_ptr<Asset>& asset)
 		{
 			// dynamically cast the asset to a Model object
 			auto model = dynamic_cast<Model*>(asset.get());
 
-			GLuint shaderIdx = 0; // default shader index to select a shader program (model shader program)
-
 			GizmoType gizmoType = model->GetGizmoType(); // get the type of the model's gizmo
 
-			switch (gizmoType) // switch based on the gizmo type
+			// declare a current shader pointer to use for rendering
+			Shader* currentShader = nullptr;
+
+			// switch based on the gizmo type to:
+			// - set the current shader program accordingly for rendering
+			// - set the appropiate properties for the model for rendering
+			// - set the polygon mode (fill or line) for rendering
+			switch (gizmoType)
 			{
-				// if the model is not a gizmo
-				case GizmoType::NONE:
+				case GizmoType::NONE: // if the model is not a gizmo
 				{
-					shaderIdx = 0; // set the shader index to 0 (model shader program)
+					ModelType modelType = model->GetModelType(); // get the type of the model
+					switch (modelType) // switch based on the type of the model
+					{
+						case ModelType::ASSIMP_MODEL: // if the model is an Assimp model
+						{
+							// use the Assimp model shader
+							currentShader = assimpModelShader;
 
-					// activate the shader program
-					shaders[shaderIdx]->Use();
+							// activate the current shader program
+							currentShader->Use();
+						}
+						break;
+						case ModelType::SHAPE: // if the model is an untextured matt shape 
+						{
+							// use the untextured matt shape shader
+							currentShader = untexturedMattShapeShader;
 
-					// set the color based on the GUI input
-					shaders[shaderIdx]->SetVec3("material.albedo", model->GetAlbedo());
+							// activate the current shader program
+							currentShader->Use();
+
+							// set the color of the shape based on the model's albedo
+							currentShader->SetVec3("material.albedo", model->GetAlbedo());
+						}
+						break;
+						default:
+						{
+							std::cerr << "Unknown model type for model: " << model->GetName() << std::endl;
+							return; // exit the function if the model type is unknown
+						}
+					}
 
 					// set the model matrix for the model
-					shaders[shaderIdx]->SetMat4("model", model->GetModelMatrix());
+					currentShader->SetMat4("model", model->GetModelMatrix());
 
-					// use fill mode to render regular models
+					// set the polygon mode to fill for regular models
 					glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 				}
 				break;
-				// if the model is a DirectionalLight gizmo, PointLight gizmo, or Spotlight gizmo
-				case GizmoType::DIRECTIONAL_LIGHT:
-				case GizmoType::POINT_LIGHT:
-				case GizmoType::SPOTLIGHT:
+				case GizmoType::DIRECTIONAL_LIGHT: // if the model is a directional light gizmo
+				case GizmoType::POINT_LIGHT: // if the model is a point light gizmo
+				case GizmoType::SPOTLIGHT: // if the model is a spotlight gizmo
 				{
-					shaderIdx = 1; // set the shader index to 1 (gizmo shader program)
+					// use the gizmo shape shader
+					currentShader = gizmoShapeShader;
 
-					// activate the shader program
-					shaders[shaderIdx]->Use();
+					// activate the current shader program
+					currentShader->Use();
 
-					// set the color based on the GUI input
-					shaders[shaderIdx]->SetVec3("albedo", model->GetAlbedo());
+					// set the color of the gizmo shape based on the model's albedo
+					currentShader->SetVec3("albedo", model->GetAlbedo());
 
-					// set the model matrix for the model
-					shaders[shaderIdx]->SetMat4("model", model->GetModelMatrix());
+					// set the model matrix for the gizmo model
+					currentShader->SetMat4("model", model->GetModelMatrix());
 
-					// use wireframe mode to render gizmo models
+					// set the polygon mode to line for light gizmos
 					glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 				}
 				break;
 				default: // if the model is of an unknown gizmo type
-					std::cerr << "Unknown gizmo model type for model: " << model->GetName() << std::endl;
-					return;
+					std::cerr << "Unknown gizmo type for model: " << model->GetName() << std::endl;
+					return; // exit the function if the gizmo type is unknown
 			}
 
-			// draw the model or gizmo model using the corresponding shader program
-			model->Draw(*shaders[shaderIdx]);
-
+			// draw the model using the current shader program
+			model->Draw(*currentShader);
 		});
 
-		// render additional gizmos using an algorithm to iterate over the vector of assets of type "LIGHT" again
-		// (this includes directional light gizmos, which are rendered as lines)
+		// iterate over the vector of assets of type "LIGHT" and render the directional light gizmo lines
 		std::for_each(m_assets["LIGHT"].begin(), m_assets["LIGHT"].end(),
 					  [&](const std::shared_ptr<Asset>& asset)
 		{
+			// dynamically cast the asset to a Light object
 			auto light = dynamic_cast<Light*>(asset.get());
-			if (light->GetLightType() == LightType::DIRECTIONAL_LIGHT)
+
+			LightType lightType = light->GetLightType(); // get the type of the light
+
+			// check if the light is a directional light
+			if (lightType == LightType::DIRECTIONAL_LIGHT)
 			{
+				// cast the light to a DirectionalLight object
 				auto dirLight = dynamic_cast<DirectionalLight*>(light);
 
 				// update the line's vertices to match the light's current position and direction
-				// with UpdateGizmoDirectionLine() (prevents constantly re-creating Line objects)
+				// (prevents constantly re-creating Line objects)
 				dirLight->UpdateGizmoDirectionLine();
 
 				// retrieve the line from the directional light
 				auto& line = dirLight->GetGizmoDirectionLine();
-				// use the gizmo shader program for rendering the line
-				shaders[1]->Use();
+
+				// activate the gizmo shape shader for rendering the line
+				gizmoShapeShader->Use();
+
 				// set the projection and view matrices for the line						
-				shaders[1]->SetMat4("projection", projection);
-				shaders[1]->SetMat4("view", view);
+				gizmoShapeShader->SetMat4("projection", projection);
+				gizmoShapeShader->SetMat4("view", view);
+
 				// the model matrix is not used for lines, but we set it to identity for consistency
 				// (the line is drawn in world space, so it doesn't need a model matrix transformation)
 				glm::mat4 model{ 1.0f };
-				shaders[1]->SetMat4("model", model);
-				// set the color of the line
-				shaders[1]->SetVec3("albedo", dirLight->GetDiffuse());
+				// set the model matrix for the line
+				gizmoShapeShader->SetMat4("model", model);
+
+				// set the color of the line based on the directional light's diffuse color
+				gizmoShapeShader->SetVec3("albedo", dirLight->GetDiffuse());
+
 				// render the directional light gizmo line with its bespoke Draw method
 				line->Draw();
 			}
 		});
 
-		// render the GUI
+		// Render the GUI
+		// --------------
 		m_renderer->RenderGUI();
 
 		// Swap buffers

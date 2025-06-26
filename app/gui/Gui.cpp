@@ -437,8 +437,10 @@ void GUI::Setup()
 			// get the model object
 			auto model = dynamic_cast<Model*>(Core::GetInstance()->GetAssets("MODEL")[i].get());
 
+			ModelType modelType = model->GetModelType(); // get the type of the model
+			GizmoType gizmoType = model->GetGizmoType(); // get the type of the model's gizmo
 			// if the model is not a gizmo, then proceed, otherwise skip it (as gizmos are already handled in above)
-			if (model->GetGizmoType() == GizmoType::NONE)
+			if (gizmoType == GizmoType::NONE)
 			{
 				// use PushID to create a unique ID for each model (to avoid conflicts with the GUI)
 				ImGui::PushID(model->GetName().c_str());
@@ -446,11 +448,17 @@ void GUI::Setup()
 				// display the name of the model
 				ImGui::Text("%s", model->GetName().c_str());
 
-				// get the color of the model
-				glm::vec3 color = model->GetAlbedo();
-				// create a color picker for the model's color
-				if (ImGui::ColorEdit3("Color", (float*)&color)) // if the color picker is used
-					model->SetAlbedo(color); // set the new color of the model
+				// only if the model is a shape, display the color picker
+				if (modelType == ModelType::SHAPE)
+				{
+					// get the color of the model
+					glm::vec3 color = model->GetAlbedo();
+					// create a color picker for the model's color
+					if (ImGui::ColorEdit3("Color", (float*)&color)) // if the color picker is used
+					{
+						model->SetAlbedo(color); // set the new color of the model
+					}
+				}
 
 				// get the position of the model
 				glm::vec3 pos = model->GetPosition();
