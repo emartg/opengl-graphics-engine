@@ -41,7 +41,8 @@ private:
 
 	// Private Methods
 	// ---------------
-	// Loads a model with supported Assimp extensions from file and stores the resulting meshes in the meshes vector
+	// Loads a model with supported Assimp extensions from file and stores the resulting meshes 
+	// in the meshes vector
 	void loadAssimpModel(std::string const& path);
 
 	// Processes a node in a recursive fashion. Processes each individual mesh located at the node 
@@ -52,6 +53,8 @@ private:
 	Mesh processMesh(aiMesh* mesh, const aiScene* scene);
 
 	// Loads the material textures of a mesh
-	std::vector<Texture> loadMaterialTextures(aiMaterial* mat, aiTextureType type, TextureType textureType);
+	std::vector<Texture> loadMaterialTextures(aiMaterial* mat,
+											  aiTextureType type,
+											  TextureType textureType);
 
 };

@@ -29,9 +29,13 @@ AssimpModel::AssimpModel(const std::string& name,
 // ---------------
 void AssimpModel::loadAssimpModel(std::string const& path)
 {
-	// read file via Assimp (the second argument of ReadFile is a combination of post-processing options)
 	Assimp::Importer importer;
-	const aiScene* scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_GenNormals);
+
+	// read file via Assimp (the second argument of ReadFile is a combination of post-processing options)
+	const aiScene* scene = importer.ReadFile(path,
+											 aiProcess_Triangulate |
+											 aiProcess_FlipUVs |
+											 aiProcess_GenNormals);
 
 	// check for errors in the importing process
 	if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
@@ -54,6 +58,7 @@ void AssimpModel::processNode(aiNode* node, const aiScene* scene)
 		aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
 		meshes.emplace_back(processMesh(mesh, scene));
 	}
+
 	// recursively process each of the children's nodes (if any)
 	for (GLuint i{}; i < node->mNumChildren; i++)
 		processNode(node->mChildren[i], scene);
@@ -61,15 +66,16 @@ void AssimpModel::processNode(aiNode* node, const aiScene* scene)
 
 Mesh AssimpModel::processMesh(aiMesh* mesh, const aiScene* scene)
 {
-	std::vector<Vertex> vertices;
-	std::vector<GLuint> indices;
-	std::vector<Texture> textures;
+	// vector to store vertices, indices and textures
+	std::vector<Vertex> vertices; // each vertex contains position, normal and texture coordinates
+	std::vector<GLuint> indices; // each index corresponds to a vertex in the vertices vector
+	std::vector<Texture> textures; // each texture corresponds to a material texture of the mesh
 
 	// process vertices
 	for (GLuint i{}; i < mesh->mNumVertices; i++)
 	{
 		Vertex vertex;
-		// process vertex positions, normals and texture coordinates
+		// process vertex positions, normals and texture coordinates (if available)
 		glm::vec3 vector;
 		vector.x = mesh->mVertices[i].x;
 		vector.y = mesh->mVertices[i].y;
@@ -86,8 +92,12 @@ Mesh AssimpModel::processMesh(aiMesh* mesh, const aiScene* scene)
 			vec.y = mesh->mTextureCoords[0][i].y;
 			vertex.TexCoords = vec;
 		}
-		else
-			vertex.TexCoords = glm::vec2(0.0f, 0.0f);
+		else // if the mesh doesn't contain texture coordinates, set them to (0, 0)
+		{
+			vertex.TexCoords = glm::vec2(0.0f);
+		}
+
+		// add the vertex to the vertices vector
 		vertices.push_back(vertex);
 	}
 
@@ -119,9 +129,15 @@ Mesh AssimpModel::processMesh(aiMesh* mesh, const aiScene* scene)
 	return Mesh(vertices, indices, textures);
 }
 
-std::vector<Texture> AssimpModel::loadMaterialTextures(aiMaterial* mat, aiTextureType type, TextureType textureType)
+std::vector<Texture> AssimpModel::loadMaterialTextures(aiMaterial* mat,
+													   aiTextureType type,
+													   TextureType textureType)
 {
+	// a vector to store already loaded textures to avoid loading the same texture multiple times
 	std::vector<Texture> textures;
+
+	// iterate over all textures of the specified type in the material
+	// and add them to the textures vector if they haven't been loaded before
 	for (GLuint i{}; i < mat->GetTextureCount(type); i++)
 	{
 		aiString str;
@@ -137,11 +153,13 @@ std::vector<Texture> AssimpModel::loadMaterialTextures(aiMaterial* mat, aiTextur
 			{
 				// if the texture has already been loaded, add it to the textures vector
 				textures.push_back(loadedTextures[j]);
-				skip = true; // a texture with the same filepath has already been loaded, so no need to load it again
+				skip = true; // a texture with the same filepath already loaded, so no need to load it again
 				break;
 			}
 		}
-		if (!skip) // if the texture hasn't been loaded already, load it
+
+		// if the texture hasn't been loaded already, load it
+		if (!skip)
 		{
 			Texture texture{ str.C_Str(), texturePath.c_str(), textureType };
 			textures.push_back(texture);
@@ -149,5 +167,6 @@ std::vector<Texture> AssimpModel::loadMaterialTextures(aiMaterial* mat, aiTextur
 			loadedTextures.push_back(texture);
 		}
 	}
+
 	return textures;
 }
