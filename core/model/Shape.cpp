@@ -32,7 +32,8 @@ Shape::Shape(const std::string& name,
 			 const glm::vec3 albedo,
 			 const glm::vec3 position, const glm::quat rotation, const glm::vec3 scale,
 			 const glm::vec3 forward, const glm::vec3 meshForward)
-	: Model(name),
+	: Model(name, albedo, position, rotation, scale, forward, meshForward,
+			ModelType::SHAPE), // set the model type to SHAPE
 	vertices{ processVertexData(positions, normals, texCoords) }, indices{ indices }
 {
 	createMesh();
@@ -45,7 +46,8 @@ Shape::Shape(const std::string& name,
 			 const glm::vec3 albedo,
 			 const glm::vec3 position, const glm::quat rotation, const glm::vec3 scale,
 			 const glm::vec3 forward, const glm::vec3 meshForward)
-	: Model(name, albedo, position, rotation, scale, forward, meshForward)
+	: Model(name, albedo, position, rotation, scale, forward, meshForward,
+			ModelType::SHAPE) // set the model type to SHAPE
 {
 	std::vector<GLfloat> vertexData{ vertices, vertices + nVertices * 8 };
 	std::vector<GLuint> indexData{ indices, indices + nIndices };
@@ -63,7 +65,8 @@ Shape::Shape(const std::string& name,
 			 const glm::vec3 albedo,
 			 const glm::vec3 position, const glm::quat rotation, const glm::vec3 scale,
 			 const glm::vec3 forward, const glm::vec3 meshForward)
-	: Model(name, albedo, position, rotation, scale, forward, meshForward)
+	: Model(name, albedo, position, rotation, scale, forward, meshForward,
+			ModelType::SHAPE) // set the model type to SHAPE
 {
 	std::vector<GLfloat> positionData{ positions, positions + nVertices * 3 };
 	std::vector<GLfloat> normalData{ normals, normals + nVertices * 3 };

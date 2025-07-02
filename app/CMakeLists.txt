@@ -12,13 +12,17 @@ message(STATUS "[APP] Found GLFW3 in ${GLFW3_INCLUDE_DIR}")
 set(SOURCES_DIR ${CMAKE_SOURCE_DIR}/app)
 file(GLOB_RECURSE SOURCES ${SOURCES_DIR}/*.cpp)
 
-#Collect ImGui backend source files
+# Collect ImGui backend source files
 set (IMGUI_BACKEND_DIR ${CMAKE_SOURCE_DIR}/external/include/ImGui/backends)
 file(GLOB IMGUI_BACKEND_SOURCES ${IMGUI_BACKEND_DIR}/*.cpp)
 
 # Collect ImGui source files
 set(IMGUI_DIR ${CMAKE_SOURCE_DIR}/external/include/ImGui)
 file(GLOB IMGUI_SOURCES ${IMGUI_DIR}/*.cpp)
+
+# Collect ImGuiFileDialog source files
+set(IMGUI_FILE_DIALOG_DIR ${CMAKE_SOURCE_DIR}/external/include/ImGuiFileDialog)
+file(GLOB IMGUI_FILE_DIALOG_SOURCES ${IMGUI_FILE_DIALOG_DIR}/*.cpp)
 
 # Output each file in the list of sources for the App executable (debugging purposes)
 message(STATUS "[APP] Source files:")
@@ -39,7 +43,7 @@ foreach(SOURCE ${IMGUI_SOURCES})
 endforeach()
 
 # Create the App executable
-add_executable(App ${SOURCES} ${IMGUI_BACKEND_SOURCES} ${IMGUI_SOURCES})
+add_executable(App ${SOURCES} ${IMGUI_BACKEND_SOURCES} ${IMGUI_SOURCES} ${IMGUI_FILE_DIALOG_SOURCES})
 
 # Include directories for the App executable
 target_include_directories(App PUBLIC
@@ -47,6 +51,7 @@ target_include_directories(App PUBLIC
 	${GLFW3_INCLUDE_DIR}
 	${ASSIMP_INCLUDE_DIR}
 	${CMAKE_SOURCE_DIR}/external/include/ImGui
+	${CMAKE_SOURCE_DIR}/external/include/ImGuiFileDialog
 )
 
 # List of libraries to link against, including the ImGui library

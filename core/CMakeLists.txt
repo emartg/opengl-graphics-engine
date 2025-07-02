@@ -42,7 +42,7 @@ file(GLOB_RECURSE SOURCES ${SOURCES_DIR}/*.cpp)
 set(SHADERS_DIR ${CMAKE_SOURCE_DIR}/shaders)
 file(GLOB SHADERS ${SHADERS_DIR}/*.glsl)
 
-# Output each file in the list of headers, sources, and shaders for the Core library (debugging purposes))
+# Output each file in the list of headers, sources, and shaders for the Core library (debugging purposes)
 foreach(FILE_TYPE IN ITEMS HEADERS SOURCES SHADERS)
     message(STATUS "[CORE] ${FILE_TYPE} files:")
     foreach(FILE ${${FILE_TYPE}})

@@ -7,7 +7,10 @@
 */
 
 #include "Gui.h"
+#include "ImGuiFileDialog.h"
+
 #include "../CUBE.h"
+
 
 // Constructors
 // ------------
@@ -50,11 +53,11 @@ void GUI::Setup()
 	// get ImGuiIO object to access the display size later
 	ImGuiIO& io = ImGui::GetIO();
 
-	// set initial window position to the top-left corner (with some padding)
-	ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_Appearing);
-	// set initial window size to 320x(DisplaySize.y - 20) pixels 
+	// set initial window size to 320 x (DisplaySize.y - 20) pixels 
 	// (i.e, full height of the window with some padding)
 	ImGui::SetNextWindowSize(ImVec2(320, io.DisplaySize.y - 20), ImGuiCond_Appearing);
+	// set initial window position to the top-left corner (with some padding)
+	ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_Appearing);
 	// set the window to be not collapsed (i.e., not minimized)
 	ImGui::SetNextWindowCollapsed(false, ImGuiCond_Appearing);
 
@@ -228,11 +231,11 @@ void GUI::Setup()
 		ImGui::End();
 	}
 
-	// set initial window position to the top-right corner (with some padding)
-	ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x - 330, 10), ImGuiCond_Appearing);
-	// set initial window size to 320x(DisplaySize.y - 20) pixels 
+	// set initial window size to 320 x (DisplaySize.y - 20) pixels 
 	// (i.e, full height of the window with some padding)
 	ImGui::SetNextWindowSize(ImVec2(320, io.DisplaySize.y - 20), ImGuiCond_Appearing);
+	// set initial window position to the top-right corner (with some padding)
+	ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x - 330, 10), ImGuiCond_Appearing);
 	// set the window to be not collapsed (i.e., not minimized)
 	ImGui::SetNextWindowCollapsed(false, ImGuiCond_Appearing);
 
@@ -608,6 +611,57 @@ void GUI::Setup()
 			);
 			// add the new cube shape to the engine
 			Core::GetInstance()->AddAsset(std::move(newCubeShape));
+		}
+
+		// button to import a new model from a file
+		if (ImGui::Button("Import 3D Model"))
+		{
+			// file dialog configuration
+			IGFD::FileDialogConfig fileDialogConfig;
+			fileDialogConfig.path = "."; // initial directory to open the file dialog
+			fileDialogConfig.countSelectionMax = 1; // for now, allow only one file to be selected
+			fileDialogConfig.flags = ImGuiFileDialogFlags_None; // no special flags for the file dialog
+
+			// open a file dialog to select a model file
+			ImGuiFileDialog::Instance()->OpenDialog(
+				"ChooseFileDlgKey", // unique key for the file dialog
+				"Choose Model File", // title of the file dialog
+				".obj, .fbx, .dae, .gltf, .glb, .stl", // supported file extensions
+				fileDialogConfig // file dialog configuration
+			);
+		}
+
+		// set the initial window size to 1000 x 600 pixels
+		ImGui::SetNextWindowSize(ImVec2(1000, 600), ImGuiCond_Appearing);
+		// set the initial window position to the center of the screen
+		ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x / 2 - 500, io.DisplaySize.y / 2 - 300),
+								ImGuiCond_Appearing);
+		// set the window to be not collapsed (i.e. not minimized)
+		ImGui::SetNextWindowCollapsed(false, ImGuiCond_Appearing);
+
+		// check if the file dialog is displayed and if the user selected a file
+		if (ImGuiFileDialog::Instance()->Display("ChooseFileDlgKey"))
+		{
+			if (ImGuiFileDialog::Instance()->IsOk()) // if the user selected a file
+			{
+				std::string filePathName = ImGuiFileDialog::Instance()->GetFilePathName();
+				std::string fileName = ImGuiFileDialog::Instance()->GetCurrentFileName();
+
+				// normalize slashes to forward slashes for cross-platform texture loading
+				std::replace(filePathName.begin(), filePathName.end(), '\\', '/');
+
+				// get the current number of models in the scene
+				std::string nModels = std::to_string(Core::GetInstance()->GetNModels());
+				// create a new model from the selected file
+				auto newAssimpModel = std::make_shared<AssimpModel>(fileName
+																	+ " (Model " + nModels + ")",
+																	filePathName
+				);
+				// add the new model to the engine
+				Core::GetInstance()->AddAsset(std::move(newAssimpModel));
+			}
+
+			ImGuiFileDialog::Instance()->Close(); // close the file dialog
 		}
 
 		ImGui::End();
