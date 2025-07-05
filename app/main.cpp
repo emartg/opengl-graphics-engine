@@ -35,22 +35,24 @@ int main(int argc, char** argv)
 	engine->InitOGL();
 
 	// create the main camera
-	auto camera = std::make_shared<Camera>("Main Camera");
+	auto camera = std::make_shared<Camera>(
+		"Main Camera",
+		glm::vec3{ 22.0f, 12.0f, 17.5f } // position (overridden)
+	);
 	engine->AddAsset(std::move(camera)); // add the camera to the engine
 
 	// get the current number of models in the scene
 	std::string nModels = std::to_string(engine->GetNModels());
 	// create a directional light object with a name "Directional Light n",
 	// where n is the current number of directional lights in the scene
-	auto directionalLight =
-		std::make_shared<DirectionalLight>("Directional Light "
-										   + std::to_string(engine->GetNDirectionalLights()),
-										   glm::vec3{ 0.1f }, // ambient color (default)
-										   glm::vec3{ 1.0f, 1.0f, 0.7f }, // diffuse color
-										   glm::vec3{ 1.0f }, // specular color (same as default)
-										   glm::vec3{ 2.4f, 8.0f, -3.0f }, // position
-										   glm::vec3{ -0.2f, -0.8, 0.5f } // direction
-		);
+	auto directionalLight = std::make_shared<DirectionalLight>(
+		"Directional Light " + std::to_string(engine->GetNDirectionalLights()),
+		glm::vec3{ 0.1f }, // ambient color (default)
+		glm::vec3{ 1.0f, 1.0f, 0.7f }, // diffuse color (overridden)
+		glm::vec3{ 1.0f }, // specular color (override required although it is the default)
+		glm::vec3{ 2.4f, 8.0f, -3.0f }, // position (overridden)
+		glm::vec3{ -0.2f, -0.8, 0.5f } // direction (overridden)
+	);
 	// get gizmo's shared_ptr from the directional light before adding the latter to the engine 
 	// (because it will be moved and we need to keep the shared_ptr)
 	auto directionalLightGizmo = directionalLight->GetGizmo();
@@ -64,12 +66,12 @@ int main(int argc, char** argv)
 	nModels = std::to_string(engine->GetNModels());
 	// create a point light object with a name "Point Light n", 
 	// where n is the current number of point lights in the scene
-	auto pointLight = std::make_shared<PointLight>("Point Light "
-												   + std::to_string(engine->GetNPointLights()),
-												   glm::vec3{ 0.1f }, // ambient color (default)
-												   glm::vec3{ 0.3f, 0.9f, 1.0f }, // diffuse color
-												   glm::vec3{ 1.0f }, // specular color (same as default)
-												   glm::vec3{ -0.6f, 3.2f, 3.2f } // position
+	auto pointLight = std::make_shared<PointLight>(
+		"Point Light " + std::to_string(engine->GetNPointLights()),
+		glm::vec3{ 0.1f }, // ambient color (default)
+		glm::vec3{ 0.3f, 0.9f, 1.0f }, // diffuse color (overridden)
+		glm::vec3{ 1.0f }, // specular color (same as default)
+		glm::vec3{ -0.6f, 3.2f, 3.2f } // position (overridden)
 	);
 	// get gizmo's shared_ptr from the point light before adding the latter to the engine 
 	// (because it will be moved and we need to keep the shared_ptr)
@@ -78,21 +80,21 @@ int main(int argc, char** argv)
 	// concatenate the name of the point light and " (Model n)", 
 	// where n is the current number of models in the scene
 	pointLightGizmo->SetName(pointLightGizmo->GetName() + " (Model " + nModels + ")");
-	engine->AddAsset(std::move(pointLightGizmo)); // add the point light gizmo (a decahedron) to the engine
+	engine->AddAsset(std::move(pointLightGizmo)); // add the point light gizmo to the engine
 
 	// update the number of models in the scene
 	nModels = std::to_string(engine->GetNModels());
 	// create a spotlight object with a name "Spotlight n",
 	// where n is the current number of spotlights in the scene
-	auto spotlight = std::make_shared<Spotlight>("Spotlight "
-												 + std::to_string(engine->GetNSpotlights()),
-												 glm::vec3{ 0.1f }, // ambient color (default)
-												 glm::vec3{ 1.0f, 0.4f, 0.4f }, // diffuse color
-												 glm::vec3{ 1.0f }, // specular color (same as default)
-												 glm::vec3{ 3.0f, -0.3f, -0.9f }, // position
-												 glm::vec3{ -0.8f, 0.3f, 0.6f }, // direction
-												 glm::cos(glm::radians(15.0f)), // inner cut-off
-												 glm::cos(glm::radians(32.5f)) // outer cut-off
+	auto spotlight = std::make_shared<Spotlight>(
+		"Spotlight " + std::to_string(engine->GetNSpotlights()),
+		glm::vec3{ 0.1f }, // ambient color (override required although it is the default)
+		glm::vec3{ 1.0f, 0.4f, 0.4f }, // diffuse color (overridden)
+		glm::vec3{ 1.0f }, // specular color (override required although it is the default)
+		glm::vec3{ 3.0f, -0.3f, -0.9f }, // position (overridden)
+		glm::vec3{ -0.8f, 0.3f, 0.6f }, // direction (overridden)
+		glm::cos(glm::radians(15.0f)), // inner cut-off (overridden)
+		glm::cos(glm::radians(32.5f)) // outer cut-off (overridden)
 	);
 	// get gizmo's shared_ptr from the spotlight before adding the latter to the engine 
 	// (because it will be moved and we need to keep the shared_ptr)
@@ -101,31 +103,18 @@ int main(int argc, char** argv)
 	// concatenate the name of the spotlight and " (Model n)",
 	// where n is the current number of models in the scene
 	spotlightGizmo->SetName(spotlightGizmo->GetName() + " (Model " + nModels + ")");
-	engine->AddAsset(std::move(spotlightGizmo)); // add the spotlight gizmo (a hexagonal pyramid) to the engine
-
-	// update the number of models in the scene
-	nModels = std::to_string(engine->GetNModels());
-	// load the model from the assets folder and create an AssimpModel object
-	auto hydrantModel = std::make_shared<AssimpModel>(
-		"Hydrant Model (Model " + nModels + ")",
-		"assets/models/fire hydrant/hydrant.obj",
-		glm::vec3{ 0.5f }, // albedo (gray) - required in the constructor, but the model has textures
-		glm::vec3{ -1.5f, 0.0f, 0.0f }, // position in world space
-		glm::quat{ 1.0f, 0.0f, 0.0f, 0.0f }, // rotation as a quaternion (identity -> no rotation)
-		glm::vec3{ 0.05f } // scale
-	);
-	engine->AddAsset(std::move(hydrantModel)); // add the model to the engine
+	engine->AddAsset(std::move(spotlightGizmo)); // add the spotlight gizmo to the engine
 
 	// update the number of models in the scene
 	nModels = std::to_string(engine->GetNModels());
 	// load the model from the assets folder and create an AssimpModel object
 	auto constructionHelmetModel = std::make_shared<AssimpModel>(
 		"Construction Helmet Model (Model " + nModels + ")",
-		"assets/models/construction helmet/construction_helmet.obj",
-		glm::vec3{ 0.5f }, // diffuse color (gray) - required, but the model has textures
-		glm::vec3{ 1.5f, 0.0f, 0.0f }, // position in world space
-		glm::vec3{ 0.0f, 45.0f, 0.0f }, // rotation in Euler angles
-		glm::vec3{ 0.1f } // scale
+		"assets/models/construction helmet/obj/construction_helmet.obj",
+		glm::vec3{ 0.5f }, // diffuse color (override required although it is the default)
+		glm::vec3{ 0.0f }, // position (override required although it is the default)
+		glm::vec3{ 0.0f, 45.0f, 0.0f }, // rotation in Euler angles (overridden)
+		glm::vec3{ 0.2f } // scale (overridden)
 	);
 	engine->AddAsset(std::move(constructionHelmetModel)); // add the model to the engine
 

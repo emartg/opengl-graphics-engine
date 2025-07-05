@@ -46,20 +46,19 @@ public:
 private:
 	// Private Attributes
 	// ------------------
-	bool m_showDemoWindow;
-	bool m_showAnotherWindow;
-
-	ImVec4 m_clearColor;
-
+	ImVec4 m_clearColor; // clear color for the background
 	std::unique_ptr<Random> m_randomizer; // random generator to get random colors, positions, etc.
 
-	// Private Static Attributes (for default values)
-	// ----------------------------------------------
+	// Private Static Attributes
+	// -------------------------
+	static bool s_proportionalScaling; // flag for enabling/disabling proportional scaling
+
+	// default values for sliders and other parameters
 	static constexpr float MIN_POSITION_SLIDER_VALUE{ -15.0f };
 	static constexpr float MAX_POSITION_SLIDER_VALUE{ 15.0f };
 	static constexpr float MIN_ROTATION_SLIDER_VALUE{ -360.0f };
 	static constexpr float MAX_ROTATION_SLIDER_VALUE{ 360.0f };
-	static constexpr float MIN_SCALE_SLIDER_VALUE{ 0.01f };
+	static constexpr float MIN_SCALE_SLIDER_VALUE{ 0.001f };
 	static constexpr float MAX_SCALE_SLIDER_VALUE{ 5.0f };
 	static constexpr float MIN_INNER_CUTOFF_SLIDER_VALUE{ 0.0f };
 	static constexpr float MAX_INNER_CUTOFF_SLIDER_VALUE{ 45.0f };

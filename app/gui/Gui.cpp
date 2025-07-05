@@ -8,15 +8,17 @@
 
 #include "Gui.h"
 #include "ImGuiFileDialog.h"
-
 #include "../CUBE.h"
 
+// Static Attributes
+// -----------------
+bool GUI::s_proportionalScaling{ true }; // propertional scaling flag is true by default
 
 // Constructors
 // ------------
 GUI::GUI()
-	: m_showDemoWindow{ true }, m_showAnotherWindow{ true },
-	m_clearColor{ 0.45f, 0.55f, 0.60f, 1.00f }
+	: m_clearColor{ 0.45f, 0.55f, 0.60f, 1.00f }, // set the clear color to a light gray by default
+	m_randomizer{ std::make_unique<Random>() } // create a random number generator
 {}
 
 // Destructor
@@ -53,13 +55,15 @@ void GUI::Setup()
 	// get ImGuiIO object to access the display size later
 	ImGuiIO& io = ImGui::GetIO();
 
+	// Information Window
+	// ------------------
 	// set initial window size to 320 x (DisplaySize.y - 20) pixels 
-	// (i.e, full height of the window with some padding)
+	// (i.e. full height of the window with some padding)
 	ImGui::SetNextWindowSize(ImVec2(320, io.DisplaySize.y - 20), ImGuiCond_Appearing);
 	// set initial window position to the top-left corner (with some padding)
 	ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_Appearing);
-	// set the window to be not collapsed (i.e., not minimized)
-	ImGui::SetNextWindowCollapsed(false, ImGuiCond_Appearing);
+	// set the window to be collapsed (i.e. minimized)
+	ImGui::SetNextWindowCollapsed(true, ImGuiCond_Appearing);
 
 	// show a window that displays all information about the assets in the scene 
 	{
@@ -70,7 +74,9 @@ void GUI::Setup()
 		// display the name of the camera and its position
 		ImGui::Text("Camera Name: %s", camera->GetName().c_str());
 		ImGui::Text("Camera Position: (%.3f, %.3f, %.3f)",
-					camera->GetPosition().x, camera->GetPosition().y, camera->GetPosition().z);
+					camera->GetPosition().x,
+					camera->GetPosition().y,
+					camera->GetPosition().z);
 
 		ImGui::Separator();
 
@@ -106,23 +112,30 @@ void GUI::Setup()
 					// get the DirectionalLight object
 					auto directionalLight = dynamic_cast<DirectionalLight*>(light);
 
-					// use PushID to create a unique ID for each light (to avoid conflicts with the GUI)
+					// use PushID to create a unique ID for each light 
 					ImGui::PushID(directionalLight->GetName().c_str());
 
 					// display the name of the light
 					ImGui::Text("Name: %s", directionalLight->GetName().c_str());
 					// display the color of the light
-					ImGui::Text("Color: (%.2f, %.2f, %.2f)",
-								directionalLight->GetDiffuse().x, directionalLight->GetDiffuse().y, directionalLight->GetDiffuse().z);
-					// display the position of the light (so that the user can see it, but it is not used for directional lights)
-					ImGui::Text("Position: (%.2f, %.2f, %.2f)",
-								directionalLight->GetPosition().x, directionalLight->GetPosition().y, directionalLight->GetPosition().z);
+					ImGui::Text("Color: (%.3f, %.3f, %.3f)",
+								directionalLight->GetDiffuse().x,
+								directionalLight->GetDiffuse().y,
+								directionalLight->GetDiffuse().z);
+					// display the position of the light 
+					// (so that the user can see it, but it is not used for directional lights)
+					ImGui::Text("Position: (%.3f, %.3f, %.3f)",
+								directionalLight->GetPosition().x,
+								directionalLight->GetPosition().y,
+								directionalLight->GetPosition().z);
 					// display the direction of the light
-					ImGui::Text("Direction: (%.2f, %.2f, %.2f)",
-								directionalLight->GetDirection().x, directionalLight->GetDirection().y, directionalLight->GetDirection().z);
+					ImGui::Text("Direction: (%.3f, %.3f, %.3f)",
+								directionalLight->GetDirection().x,
+								directionalLight->GetDirection().y,
+								directionalLight->GetDirection().z);
 
-					// use PopID to end the unique ID scope
-					ImGui::PopID();
+
+					ImGui::PopID(); // use PopID to end the unique ID scope
 				}
 				break;
 				case LightType::POINT_LIGHT: // if the Light is a PointLight
@@ -130,20 +143,24 @@ void GUI::Setup()
 					// get the PointLight object
 					auto pointLight = dynamic_cast<PointLight*>(light);
 
-					// use PushID to create a unique ID for each light (to avoid conflicts with the GUI)
+					// use PushID to create a unique ID for each light 
 					ImGui::PushID(pointLight->GetName().c_str());
 
 					// display the name of the light
 					ImGui::Text("Name: %s", pointLight->GetName().c_str());
 					// display the color of the light
-					ImGui::Text("Color: (%.2f, %.2f, %.2f)",
-								pointLight->GetDiffuse().x, pointLight->GetDiffuse().y, pointLight->GetDiffuse().z);
+					ImGui::Text("Color: (%.3f, %.3f, %.3f)",
+								pointLight->GetDiffuse().x,
+								pointLight->GetDiffuse().y,
+								pointLight->GetDiffuse().z);
 					// display the position of the light
-					ImGui::Text("Position: (%.2f, %.2f, %.2f)",
-								pointLight->GetPosition().x, pointLight->GetPosition().y, pointLight->GetPosition().z);
+					ImGui::Text("Position: (%.3f, %.3f, %.3f)",
+								pointLight->GetPosition().x,
+								pointLight->GetPosition().y,
+								pointLight->GetPosition().z);
 
-					// use PopID to end the unique ID scope
-					ImGui::PopID();
+
+					ImGui::PopID(); // use PopID to end the unique ID scope
 				}
 				break;
 				case LightType::SPOTLIGHT: // if the Light is a Spotlight
@@ -151,26 +168,32 @@ void GUI::Setup()
 					// get the Spotlight object
 					auto spotlight = dynamic_cast<Spotlight*>(light);
 
-					// use PushID to create a unique ID for each spotlight (to avoid conflicts with the GUI)
+					// use PushID to create a unique ID for each spotlight 
 					ImGui::PushID(spotlight->GetName().c_str());
 
 					// display the name of the spotlight
 					ImGui::Text("Name: %s", spotlight->GetName().c_str());
 					// display the color of the spotlight
-					ImGui::Text("Color: (%.2f, %.2f, %.2f)",
-								spotlight->GetDiffuse().x, spotlight->GetDiffuse().y, spotlight->GetDiffuse().z);
+					ImGui::Text("Color: (%.3f, %.3f, %.3f)",
+								spotlight->GetDiffuse().x,
+								spotlight->GetDiffuse().y,
+								spotlight->GetDiffuse().z);
 					// display the position of the spotlight
-					ImGui::Text("Position: (%.2f, %.2f, %.2f)",
-								spotlight->GetPosition().x, spotlight->GetPosition().y, spotlight->GetPosition().z);
+					ImGui::Text("Position: (%.3f, %.3f, %.3f)",
+								spotlight->GetPosition().x,
+								spotlight->GetPosition().y,
+								spotlight->GetPosition().z);
 					// display the direction of the spotlight
-					ImGui::Text("Direction: (%.2f, %.2f, %.2f)",
-								spotlight->GetDirection().x, spotlight->GetDirection().y, spotlight->GetDirection().z);
+					ImGui::Text("Direction: (%.3f, %.3f, %.3f)",
+								spotlight->GetDirection().x,
+								spotlight->GetDirection().y,
+								spotlight->GetDirection().z);
 					// display the cut-off angles of the spotlight (in degrees)
-					ImGui::Text("Inner cut-off: %.2f", glm::degrees(glm::acos(spotlight->GetInnerCutOff())));
-					ImGui::Text("Outer cut-off: %.2f", glm::degrees(glm::acos(spotlight->GetOuterCutOff())));
+					ImGui::Text("Inner cut-off: %.3f", glm::degrees(glm::acos(spotlight->GetInnerCutOff())));
+					ImGui::Text("Outer cut-off: %.3f", glm::degrees(glm::acos(spotlight->GetOuterCutOff())));
 
-					// use PopID to end the unique ID scope
-					ImGui::PopID();
+
+					ImGui::PopID(); // use PopID to end the unique ID scope
 				}
 				break;
 				case LightType::UNDEFINED: // if the Light is of an undefined type
@@ -181,8 +204,6 @@ void GUI::Setup()
 					return;
 			}
 		}
-
-
 
 		ImGui::Separator();
 
@@ -206,42 +227,52 @@ void GUI::Setup()
 			// get the model object
 			auto model = dynamic_cast<Model*>(Core::GetInstance()->GetAssets("MODEL")[i].get());
 
-			// use PushID to create a unique ID for each model (to avoid conflicts with the GUI)
+			// use PushID to create a unique ID for each model 
 			ImGui::PushID(model->GetName().c_str());
 
 			// display the name of the model
 			ImGui::Text("Name: %s", model->GetName().c_str());
 			// display the color of the model
-			ImGui::Text("Color: (%.2f, %.2f, %.2f)",
-						model->GetAlbedo().x, model->GetAlbedo().y, model->GetAlbedo().z);
+			ImGui::Text("Color: (%.3f, %.3f, %.3f)",
+						model->GetAlbedo().x,
+						model->GetAlbedo().y,
+						model->GetAlbedo().z);
 			// display the position of the model
-			ImGui::Text("Position: (%.2f, %.2f, %.2f)",
-						model->GetPosition().x, model->GetPosition().y, model->GetPosition().z);
-			ImGui::Text("Rotation: (%.2f, %.2f, %.2f)",
-						model->GetRotationInEulerAngles().x, model->GetRotationInEulerAngles().y, model->GetRotationInEulerAngles().z);
-			ImGui::Text("Scale: (%.2f, %.2f, %.2f)",
-						model->GetScale().x, model->GetScale().y, model->GetScale().z);
-			ImGui::Text("Forward: (%.2f, %.2f, %.2f)",
-						model->GetForward().x, model->GetForward().y, model->GetForward().z);
+			ImGui::Text("Position: (%.3f, %.3f, %.3f)",
+						model->GetPosition().x,
+						model->GetPosition().y,
+						model->GetPosition().z);
+			ImGui::Text("Rotation: (%.3f, %.3f, %.3f)",
+						model->GetRotationInEulerAngles().x,
+						model->GetRotationInEulerAngles().y,
+						model->GetRotationInEulerAngles().z);
+			ImGui::Text("Scale: (%.3f, %.3f, %.3f)",
+						model->GetScale().x,
+						model->GetScale().y,
+						model->GetScale().z);
+			ImGui::Text("Forward: (%.3f, %.3f, %.3f)",
+						model->GetForward().x,
+						model->GetForward().y,
+						model->GetForward().z);
 
-			// use PopID to end the unique ID scope
-			ImGui::PopID();
+			ImGui::PopID(); // use PopID to end the unique ID scope
 		}
 
 		ImGui::End();
 	}
 
+	// Properties Window
+	// -----------------
 	// set initial window size to 320 x (DisplaySize.y - 20) pixels 
-	// (i.e, full height of the window with some padding)
+	// (i.e. full height of the window with some padding)
 	ImGui::SetNextWindowSize(ImVec2(320, io.DisplaySize.y - 20), ImGuiCond_Appearing);
 	// set initial window position to the top-right corner (with some padding)
 	ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x - 330, 10), ImGuiCond_Appearing);
-	// set the window to be not collapsed (i.e., not minimized)
+	// set the window to be not collapsed (i.e. not minimized)
 	ImGui::SetNextWindowCollapsed(false, ImGuiCond_Appearing);
 
-	// show a window that allows the user to 
-	// change the attributes of the lights (and their respective gizmos) and the regular models in the scene, 
-	// and create either a new light sources (and their respective gizmos) or a new cube shape with random attributes
+	// show a window that allows the user to change the properties of the assets in the scene
+	// and add new assets to the scene
 	{
 		ImGui::Begin("Scene Settings");
 
@@ -261,7 +292,7 @@ void GUI::Setup()
 					// get the DirectionalLight object
 					auto directionalLight = dynamic_cast<DirectionalLight*>(light);
 
-					// use PushID to create a unique ID for each directional light (to avoid conflicts with the GUI)
+					// use PushID to create a unique ID for each directional light 
 					ImGui::PushID(directionalLight->GetName().c_str());
 
 					// display the name of the directional light
@@ -273,17 +304,19 @@ void GUI::Setup()
 					if (ImGui::ColorEdit3("Color", (float*)&color)) // if the color picker is used
 					{
 						directionalLight->SetDiffuse(color); // set the new color of the directional light
-						directionalLight->SyncGizmoColorFromLight(); // set the new color of the directional light's gizmo
+						directionalLight->SyncGizmoColorFromLight(); // set the new color of the gizmo
 					}
 
-					// get the position of the directional light (so that the user can see it, but it is not used for directional lights)
+					// get the position of the directional light 
+					// (so that the user can see it, but it is not used for directional lights)
 					glm::vec3 pos = directionalLight->GetPosition();
 					// create a slider for the x, y, and z components of the directional light's position
 					if (ImGui::SliderFloat3("Position", (float*)&pos,
-											MIN_POSITION_SLIDER_VALUE, MAX_POSITION_SLIDER_VALUE)) // if the slider is moved
+											MIN_POSITION_SLIDER_VALUE,
+											MAX_POSITION_SLIDER_VALUE)) // if the slider is moved
 					{
 						directionalLight->SetPosition(pos); // set the new position of the directional light
-						directionalLight->SyncGizmoPositionFromLight(); // set the new position of the directional light's gizmo
+						directionalLight->SyncGizmoPositionFromLight(); // set the new position of the gizmo
 					}
 
 					// get a reference to the gizmo of the directional light 
@@ -292,7 +325,8 @@ void GUI::Setup()
 					glm::vec3 rotDegrees = gizmo->GetRotationInEulerAngles();
 					// create a slider for the x, y, and z components of the directionalLight's rotation
 					if (ImGui::SliderFloat3("Rotation", (float*)&rotDegrees,
-											MIN_ROTATION_SLIDER_VALUE, MAX_ROTATION_SLIDER_VALUE)) // if the slider is moved
+											MIN_ROTATION_SLIDER_VALUE,
+											MAX_ROTATION_SLIDER_VALUE)) // if the slider is moved
 					{
 						// set the new rotation of the directional light's gizmo
 						gizmo->SetRotationInEulerAngles(rotDegrees);
@@ -301,8 +335,8 @@ void GUI::Setup()
 						directionalLight->SetDirectionOnly(gizmo->GetForward());
 					}
 
-					// use PopID to end the unique ID scope
-					ImGui::PopID();
+
+					ImGui::PopID(); // use PopID to end the unique ID scope
 
 					ImGui::Separator(); // add a separator between lights
 				}
@@ -312,7 +346,7 @@ void GUI::Setup()
 					// get the PointLight object
 					auto pointLight = dynamic_cast<PointLight*>(light);
 
-					// use PushID to create a unique ID for each point light (to avoid conflicts with the GUI)
+					// use PushID to create a unique ID for each point light 
 					ImGui::PushID(pointLight->GetName().c_str());
 
 					// display the name of the point light
@@ -324,24 +358,23 @@ void GUI::Setup()
 					if (ImGui::ColorEdit3("Color", (float*)&color)) // if the color picker is used
 					{
 						pointLight->SetDiffuse(color); // set the new color of the point light
-						pointLight->SyncGizmoColorFromLight(); // set the new color of the point light's gizmo
+						pointLight->SyncGizmoColorFromLight(); // set the new color of the gizmo
 					}
 
 					// get the position of the point light
 					glm::vec3 pos = pointLight->GetPosition();
 					// create a slider for the x, y, and z components of the point light's position
 					if (ImGui::SliderFloat3("Position", (float*)&pos,
-											MIN_POSITION_SLIDER_VALUE, MAX_POSITION_SLIDER_VALUE)) // if the slider is moved
+											MIN_POSITION_SLIDER_VALUE,
+											MAX_POSITION_SLIDER_VALUE)) // if the slider is moved
 					{
 						pointLight->SetPosition(pos); // set the new position of the point light
-						pointLight->SyncGizmoPositionFromLight(); // set the new position of the point light's gizmo
+						pointLight->SyncGizmoPositionFromLight(); // set the new position of the gizmo
 					}
 
-					// use PopID to end the unique ID scope
-					ImGui::PopID();
+					ImGui::PopID(); // use PopID to end the unique ID scope
 
-					// add a separator between lights
-					ImGui::Separator();
+					ImGui::Separator(); // add a separator between lights
 				}
 				break;
 				case LightType::SPOTLIGHT: // if the Light is a Spotlight
@@ -349,7 +382,7 @@ void GUI::Setup()
 					// get the Spotlight object
 					auto spotlight = dynamic_cast<Spotlight*>(light);
 
-					// use PushID to create a unique ID for each spotlight (to avoid conflicts with the GUI)
+					// use PushID to create a unique ID for each spotlight 
 					ImGui::PushID(spotlight->GetName().c_str());
 
 					// display the name of the spotlight
@@ -361,17 +394,18 @@ void GUI::Setup()
 					if (ImGui::ColorEdit3("Color", (float*)&color)) // if the color picker is used
 					{
 						spotlight->SetDiffuse(color); // set the new color of the spotlight
-						spotlight->SyncGizmoColorFromLight(); // set the new color of the spotlight's gizmo
+						spotlight->SyncGizmoColorFromLight(); // set the new color of the gizmo
 					}
 
 					// get the position of the spotlight
 					glm::vec3 pos = spotlight->GetPosition();
 					// create a slider for the x, y, and z components of the spotlight's position
 					if (ImGui::SliderFloat3("Position", (float*)&pos,
-											MIN_POSITION_SLIDER_VALUE, MAX_POSITION_SLIDER_VALUE)) // if the slider is moved
+											MIN_POSITION_SLIDER_VALUE,
+											MAX_POSITION_SLIDER_VALUE)) // if the slider is moved
 					{
 						spotlight->SetPosition(pos); // set the new position of the spotlight
-						spotlight->SyncGizmoPositionFromLight(); // set the new position of the spotlight's gizmo
+						spotlight->SyncGizmoPositionFromLight(); // set the new position of the gizmo
 					}
 
 					// get a reference to the gizmo of the spotlight and its rotation in Euler angles
@@ -379,7 +413,8 @@ void GUI::Setup()
 					glm::vec3 rotDegrees = gizmo->GetRotationInEulerAngles();
 					// create a slider for the x, y, and z components of the spotlight's rotation
 					if (ImGui::SliderFloat3("Rotation", (float*)&rotDegrees,
-											MIN_ROTATION_SLIDER_VALUE, MAX_ROTATION_SLIDER_VALUE)) // if the slider is moved
+											MIN_ROTATION_SLIDER_VALUE,
+											MAX_ROTATION_SLIDER_VALUE)) // if the slider is moved
 					{
 						// set the new rotation of the spotlight's gizmo
 						gizmo->SetRotationInEulerAngles(rotDegrees);
@@ -388,39 +423,43 @@ void GUI::Setup()
 						spotlight->SetDirectionOnly(gizmo->GetForward());
 					}
 
-					// get the inner and outer cut-off angles of the spotlight 
-					// and convert them from radians (cosine) to degrees for the sliders
+					// get the inner and outer cut-off angles of the spotlight and 
+					// convert them from radians (cosine) to degrees for the sliders
 					float innerCutOff = glm::degrees(glm::acos(spotlight->GetInnerCutOff()));
 					float outerCutOff = glm::degrees(glm::acos(spotlight->GetOuterCutOff()));
-					// clamp the maximum value of the inner cut-off angle slider so that it does not exceed the outer cut-off angle
+					// clamp the maximum value of the inner cut-off angle slider 
+					// so that it does not exceed the outer cut-off angle
 					// (the inner cut-off angle must be less than or equal to the outer cut-off angle)
-					float currentInnerMaxCutOffSliderValue = std::min(MAX_INNER_CUTOFF_SLIDER_VALUE, outerCutOff);
+					float currentInnerMaxCutOffSliderValue = std::min(MAX_INNER_CUTOFF_SLIDER_VALUE,
+																	  outerCutOff);
 					// create a slider for the inner cut-off angle of the spotlight
 					if (ImGui::SliderFloat("Inner Cut-off", &innerCutOff,
-										   MIN_INNER_CUTOFF_SLIDER_VALUE, currentInnerMaxCutOffSliderValue)) // max is outerCutOff
+										   MIN_INNER_CUTOFF_SLIDER_VALUE,
+										   currentInnerMaxCutOffSliderValue)) // max is outerCutOff
 					{
 						// clamp to avoid going above outerCutOff
 						// (the inner cut-off angle must be less than or equal to the outer cut-off angle)
 						if (innerCutOff > outerCutOff) innerCutOff = outerCutOff;
-						// convert back to radians and cosine and set the new inner cut-off angle for the spotlight
+						// convert back to radians and cosine and 
+						// set the new inner cut-off angle for the spotlight
 						spotlight->SetInnerCutOff(glm::cos(glm::radians(innerCutOff)));
 					}
 					// create a slider for the outer cut-off angle of the spotlight
 					if (ImGui::SliderFloat("Outer Cut-off", &outerCutOff,
-										   MIN_OUTER_CUTOFF_SLIDER_VALUE, MAX_OUTER_CUTOFF_SLIDER_VALUE))
+										   MIN_OUTER_CUTOFF_SLIDER_VALUE,
+										   MAX_OUTER_CUTOFF_SLIDER_VALUE))
 					{
 						// clamp to avoid going below innerCutOff 
 						// (the inner cut-off angle must be less than or equal to the outer cut-off angle)
 						if (outerCutOff < innerCutOff) outerCutOff = innerCutOff;
-						// convert back to radians and cosine and set the new outer cut-off angle for the spotlight
+						// convert back to radians and cosine and 
+						// set the new outer cut-off angle for the spotlight
 						spotlight->SetOuterCutOff(glm::cos(glm::radians(outerCutOff)));
 					}
 
-					// use PopID to end the unique ID scope
-					ImGui::PopID();
+					ImGui::PopID(); // use PopID to end the unique ID scope
 
-					// add a separator between lights
-					ImGui::Separator();
+					ImGui::Separator(); // add a separator between lights
 				}
 				break;
 				case LightType::UNDEFINED: // if the Light is of an undefined type
@@ -442,10 +481,10 @@ void GUI::Setup()
 
 			ModelType modelType = model->GetModelType(); // get the type of the model
 			GizmoType gizmoType = model->GetGizmoType(); // get the type of the model's gizmo
-			// if the model is not a gizmo, then proceed, otherwise skip it (as gizmos are already handled in above)
+			// if the model is not a gizmo, then proceed, otherwise skip it (gizmos already handled above)
 			if (gizmoType == GizmoType::NONE)
 			{
-				// use PushID to create a unique ID for each model (to avoid conflicts with the GUI)
+				// use PushID to create a unique ID for each model 
 				ImGui::PushID(model->GetName().c_str());
 
 				// display the name of the model
@@ -467,7 +506,8 @@ void GUI::Setup()
 				glm::vec3 pos = model->GetPosition();
 				// create a slider for the x, y, and z components of the model's position
 				if (ImGui::SliderFloat3("Position", (float*)&pos,
-										MIN_POSITION_SLIDER_VALUE, MAX_POSITION_SLIDER_VALUE)) // if the slider is moved
+										MIN_POSITION_SLIDER_VALUE,
+										MAX_POSITION_SLIDER_VALUE)) // if the slider is moved
 				{
 					model->SetPosition(pos); // set the new position of the model
 				}
@@ -476,22 +516,95 @@ void GUI::Setup()
 				glm::vec3 rotDegrees = model->GetRotationInEulerAngles();
 				// create a slider for the x, y, and z components of the model's rotation
 				if (ImGui::SliderFloat3("Rotation", (float*)&rotDegrees,
-										MIN_ROTATION_SLIDER_VALUE, MAX_ROTATION_SLIDER_VALUE)) // if the slider is moved
+										MIN_ROTATION_SLIDER_VALUE,
+										MAX_ROTATION_SLIDER_VALUE)) // if the slider is moved
 				{
 					model->SetRotationInEulerAngles(rotDegrees); // set the new rotation of the model
 				}
 
 				// get the scale of the model
 				glm::vec3 scale = model->GetScale();
-				// create a slider for the x, y, and z components of the model's scale
-				if (ImGui::SliderFloat3("Scale", (float*)&scale,
-										MIN_SCALE_SLIDER_VALUE, MAX_SCALE_SLIDER_VALUE)) // if the slider is moved
+				// get name of the model to use it for unique IDs
+				std::string name = model->GetName();
+
+				ImGui::Text("Scale");
+
+				// checkbox to enable/disable proportional scaling
+				ImGui::Checkbox("Proportional Scaling", &s_proportionalScaling);
+
+				// editable fields with up/down arrows for each component
+				float prevScaleX = scale.x, prevScaleY = scale.y, prevScaleZ = scale.z;
+				float step = 0.001f; // step size for arrows
+
+				// use PushID to create a unique ID for the scale controls
+				ImGui::PushID(name.append("_scale").c_str());
+
+				// X
+				ImGui::PushID(name.append("_scaleX").c_str());
+				ImGui::SetNextItemWidth(60);
+				ImGui::InputFloat("x", &scale.x, 0.0f, 0.0f, "%.3f");
+				ImGui::SameLine();
+				if (ImGui::ArrowButton("##upX", ImGuiDir_Up)) scale.x += step;
+				ImGui::SameLine();
+				if (ImGui::ArrowButton("##downX", ImGuiDir_Down)) scale.x -= step;
+				ImGui::PopID(); // use PopID to end the unique ID scope
+
+				// Y
+				ImGui::PushID(name.append("_scaleY").c_str());
+				ImGui::SetNextItemWidth(60);
+				ImGui::InputFloat("y", &scale.y, 0.0f, 0.0f, "%.3f");
+				ImGui::SameLine();
+				if (ImGui::ArrowButton("##upY", ImGuiDir_Up)) scale.y += step;
+				ImGui::SameLine();
+				if (ImGui::ArrowButton("##downY", ImGuiDir_Down)) scale.y -= step;
+				ImGui::PopID(); // use PopID to end the unique ID scope
+
+				// Z
+				ImGui::PushID(name.append("_scaleZ").c_str());
+				ImGui::SetNextItemWidth(60);
+				ImGui::InputFloat("z", &scale.z, 0.0f, 0.0f, "%.3f");
+				ImGui::SameLine();
+				if (ImGui::ArrowButton("##upZ", ImGuiDir_Up)) scale.z += step;
+				ImGui::SameLine();
+				if (ImGui::ArrowButton("##downZ", ImGuiDir_Down)) scale.z -= step;
+				ImGui::PopID(); // use PopID to end the unique ID scope
+
+				ImGui::PopID(); // end of unique ID scope for scale controls
+
+				// ensure scale values are within the defined limits
+				scale.x = std::clamp(scale.x, MIN_SCALE_SLIDER_VALUE, MAX_SCALE_SLIDER_VALUE);
+				scale.y = std::clamp(scale.y, MIN_SCALE_SLIDER_VALUE, MAX_SCALE_SLIDER_VALUE);
+				scale.z = std::clamp(scale.z, MIN_SCALE_SLIDER_VALUE, MAX_SCALE_SLIDER_VALUE);
+
+				// if proportional scaling is enabled, 
+				// set the other components to the same value as the one that was changed by the user
+				if (s_proportionalScaling)
 				{
-					model->SetScale(scale); // set the new scale of the model
+					// if the user changes the x component, set y and z to the same value
+					if (scale.x != prevScaleX)
+					{
+						scale.y = scale.x;
+						scale.z = scale.x;
+					}
+					// if the user changes the y component, set x and z to the same value
+					else if (scale.y != prevScaleY)
+					{
+						scale.x = scale.y;
+						scale.z = scale.y;
+					}
+					// if the user changes the z component, set x and y to the same value
+					else if (scale.z != prevScaleZ)
+					{
+						scale.x = scale.z;
+						scale.y = scale.z;
+					}
 				}
 
-				// use PopID to end the unique ID scope
-				ImGui::PopID();
+				// apply the new scale to the model only if it has changed
+				if (scale.x != prevScaleX || scale.y != prevScaleY || scale.z != prevScaleZ)
+					model->SetScale(scale);
+
+				ImGui::PopID(); // use PopID to end the unique ID scope 
 
 				ImGui::Separator(); // add a separator between models
 			}
@@ -505,7 +618,8 @@ void GUI::Setup()
 			// get a random color and a random direction for the directional light and its gizmo
 			glm::vec3 newColor = m_randomizer->GenerateRandomColor();
 			glm::vec3 newPos = m_randomizer->GenerateRandomPosition(glm::vec3(0.0f), // origin
-																	MIN_DISTANCE_FROM_ORIGIN, MAX_DISTANCE_FROM_ORIGIN);
+																	MIN_DISTANCE_FROM_ORIGIN,
+																	MAX_DISTANCE_FROM_ORIGIN);
 			glm::vec3 newDir = m_randomizer->GenerateRandomDirection();
 
 			// get the current number of models in the scene
@@ -514,19 +628,22 @@ void GUI::Setup()
 			std::string nDirectionalLights = std::to_string(Core::GetInstance()->GetNDirectionalLights());
 			// create a new directional light called "Directional Light n", 
 			// where n is the current number of directional lights in the scene
-			auto newDirectionalLight = std::make_shared<DirectionalLight>("Directional Light " + nDirectionalLights,
-																		  glm::vec3{ 0.1f }, // ambient color (default)
-																		  newColor, // diffuse color (random)
-																		  glm::vec3{ 1.0f }, // specular color (default)
-																		  newPos, // position (random)
-																		  newDir // direction (random)
-			);
+			auto newDirectionalLight =
+				std::make_shared<DirectionalLight>("Directional Light " + nDirectionalLights,
+												   glm::vec3{ 0.1f }, // ambient color (default)
+												   newColor, // diffuse color (random)
+												   glm::vec3{ 1.0f }, // specular color (default)
+												   newPos, // position (random)
+												   newDir // direction (random)
+				);
 			// get gizmo's shared_ptr from the new directional light before adding the latter to the engine
 			auto newDirectionalLightGizmo = newDirectionalLight->GetGizmo();
-			Core::GetInstance()->AddAsset(std::move(newDirectionalLight)); // add the new directional light to the engine
+			// add the new directional light to the engine
+			Core::GetInstance()->AddAsset(std::move(newDirectionalLight));
 			// concatenate the name of the new directional light and " (Model n)",
 			// where n is the current number of models in the scene
-			newDirectionalLightGizmo->SetName(newDirectionalLightGizmo->GetName() + " (Model " + nModels + ")");
+			newDirectionalLightGizmo->SetName(newDirectionalLightGizmo->GetName()
+											  + " (Model " + nModels + ")");
 			// add the directional light gizmo (a decahedron) to the engine
 			Core::GetInstance()->AddAsset(std::move(newDirectionalLightGizmo));
 		}
@@ -537,7 +654,8 @@ void GUI::Setup()
 			// get a random color, a random position, and a random direction for the spotlight and its gizmo
 			glm::vec3 newColor = m_randomizer->GenerateRandomColor();
 			glm::vec3 newPos = m_randomizer->GenerateRandomPosition(glm::vec3(0.0f), // origin
-																	MIN_DISTANCE_FROM_ORIGIN, MAX_DISTANCE_FROM_ORIGIN);
+																	MIN_DISTANCE_FROM_ORIGIN,
+																	MAX_DISTANCE_FROM_ORIGIN);
 			glm::vec3 newDir = m_randomizer->GenerateRandomDirection();
 
 			// get the current number of models in the scene
@@ -546,19 +664,22 @@ void GUI::Setup()
 			std::string nSpotlights = std::to_string(Core::GetInstance()->GetNSpotlights());
 			// create a new spotlight called "Spotlight n", 
 			// where n is the current number of spotlights in the scene
-			auto newSpotlight = std::make_shared<Spotlight>("Spotlight " + nSpotlights,
-															glm::vec3{ 0.1f }, // ambient color (default)
-															newColor, // diffuse color (random)
-															glm::vec3{ 1.0f }, // specular color (default)
-															newPos, // position (random)
-															newDir // direction (random)
-			);
+			auto newSpotlight =
+				std::make_shared<Spotlight>("Spotlight " + nSpotlights,
+											glm::vec3{ 0.1f }, // ambient color (default)
+											newColor, // diffuse color (random)
+											glm::vec3{ 1.0f }, // specular color (default)
+											newPos, // position (random)
+											newDir // direction (random)
+				);
 			// get gizmo's shared_ptr from the new spotlight before adding the latter to the engine
 			auto newSpotlightGizmo = newSpotlight->GetGizmo();
-			Core::GetInstance()->AddAsset(std::move(newSpotlight)); // add the new spotlight to the engine
+			// add the new spotlight to the engine
+			Core::GetInstance()->AddAsset(std::move(newSpotlight));
 			// concatenate the name of the new spotlight and " (Model n)", 
 			// where n is the current number of models in the scene
-			newSpotlightGizmo->SetName(newSpotlightGizmo->GetName() + " (Model " + nModels + ")");
+			newSpotlightGizmo->SetName(newSpotlightGizmo->GetName()
+									   + " (Model " + nModels + ")");
 			// add the spotlight gizmo (a decahedron) to the engine
 			Core::GetInstance()->AddAsset(std::move(newSpotlightGizmo));
 		}
@@ -569,7 +690,8 @@ void GUI::Setup()
 			// get a random color and a random position for the point light and its gizmo
 			glm::vec3 newColor = m_randomizer->GenerateRandomColor();
 			glm::vec3 newPos = m_randomizer->GenerateRandomPosition(glm::vec3(0.0f), // origin
-																	MIN_DISTANCE_FROM_ORIGIN, MAX_DISTANCE_FROM_ORIGIN);
+																	MIN_DISTANCE_FROM_ORIGIN,
+																	MAX_DISTANCE_FROM_ORIGIN);
 
 			// get the current number of models in the scene
 			std::string nModels = std::to_string(Core::GetInstance()->GetNModels());
@@ -577,18 +699,21 @@ void GUI::Setup()
 			std::string nPointLights = std::to_string(Core::GetInstance()->GetNPointLights());
 			// create a new point light called "Point Light n", 
 			// where n is the current number of point lights in the scene
-			auto newPointLight = std::make_shared<PointLight>("Point Light " + nPointLights,
-															  glm::vec3{ 0.1f }, // ambient color (default)
-															  newColor, // diffuse color (random)
-															  glm::vec3{ 1.0f }, // specular color (default)
-															  newPos // position (random)
-			);
+			auto newPointLight =
+				std::make_shared<PointLight>("Point Light " + nPointLights,
+											 glm::vec3{ 0.1f }, // ambient color (default)
+											 newColor, // diffuse color (random)
+											 glm::vec3{ 1.0f }, // specular color (default)
+											 newPos // position (random)
+				);
 			// get gizmo's shared_ptr from the new point light before adding the latter to the engine
 			auto newPointLightGizmo = newPointLight->GetGizmo();
-			Core::GetInstance()->AddAsset(std::move(newPointLight)); // add the new point light to the engine
+			// add the new point light to the engine
+			Core::GetInstance()->AddAsset(std::move(newPointLight));
 			// concatenate the name of the new point light and " (Model n)", 
 			// where n is the current number of models in the scene
-			newPointLightGizmo->SetName(newPointLightGizmo->GetName() + " (Model " + nModels + ")");
+			newPointLightGizmo->SetName(newPointLightGizmo->GetName()
+										+ " (Model " + nModels + ")");
 			// add the point light gizmo (a decahedron) to the engine
 			Core::GetInstance()->AddAsset(std::move(newPointLightGizmo));
 		}
@@ -599,7 +724,8 @@ void GUI::Setup()
 			// get a random color and a random position for the cube shape
 			glm::vec3 newColor = m_randomizer->GenerateRandomColor();
 			glm::vec3 newPos = m_randomizer->GenerateRandomPosition(glm::vec3(0.0f), // origin
-																	MIN_DISTANCE_FROM_ORIGIN, MAX_DISTANCE_FROM_ORIGIN);
+																	MIN_DISTANCE_FROM_ORIGIN,
+																	MAX_DISTANCE_FROM_ORIGIN);
 			// get the current number of models in the scene
 			std::string nModels = std::to_string(Core::GetInstance()->GetNModels());
 			// create a new cube shape called "Cube (Model n)", 
