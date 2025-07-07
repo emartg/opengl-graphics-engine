@@ -1,8 +1,8 @@
 /*
 * DECAHEDRON.h
-* This file defines the vertex data for a simple decahedron (pentagonal bipyramid), 
+* This file defines the vertex data for a simple decahedron (pentagonal bipyramid),
 * both in array and vector form.
-* Vertices are replicated for each face, so that each face can have 
+* Vertices are replicated for each face, so that each face can have
 * different normals and texture coordinates.
 * The vertex data is separated into position, normal, and texture coordinate data, but there is also
 * an array and a vector with the interleaved vertex data to test the Shape constructors that take

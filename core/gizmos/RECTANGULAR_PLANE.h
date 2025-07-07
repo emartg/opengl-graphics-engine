@@ -1,6 +1,6 @@
 /*
 * RECTANGULAR_PLANE.h
-* This file defines the vertex data for a simple rectangular plane, 
+* This file defines the vertex data for a simple rectangular plane,
 * both in array and vector form.
 * Vertices are replicated for each triangle, so that each triangle can have
 * different normals and texture coordinates.
