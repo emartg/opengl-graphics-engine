@@ -14,11 +14,15 @@ const glm::vec3 Random::GenerateRandomColor() const
 	return newColor;
 }
 
-const glm::vec3 Random::GenerateRandomPosition(glm::vec3 target, float minDistanceFromTarget, float maxDistanceFromTarget) const
+const glm::vec3 Random::GenerateRandomPosition(glm::vec3 target,
+											   float minDistanceFromTarget,
+											   float maxDistanceFromTarget) const
 {
 	glm::vec3 newPos{ target.x + (rand() % 100) / 100.0f * (maxDistanceFromTarget - minDistanceFromTarget),
 					  target.y + (rand() % 100) / 100.0f * (maxDistanceFromTarget - minDistanceFromTarget),
-					  target.z + (rand() % 100) / 100.0f * (maxDistanceFromTarget - minDistanceFromTarget) };
+					  target.z + (rand() % 100) / 100.0f * (maxDistanceFromTarget - minDistanceFromTarget)
+	};
+
 	return newPos;
 }
 
@@ -48,7 +52,8 @@ const glm::quat Random::GenerateRandomRotation(float minAngle, float maxAngle) c
 	glm::vec3 randomAxis = glm::normalize(glm::vec3(x, y, z)); // normalize the vector to get a random axis
 
 	// generate a random angle between minAngle and maxAngle
-	float angle = minAngle + static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * (maxAngle - minAngle);
+	float angle = minAngle
+		+ static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * (maxAngle - minAngle);
 
 	return glm::angleAxis(glm::radians(angle), randomAxis); // create quaternion from axis and angle
 }
@@ -56,7 +61,8 @@ const glm::quat Random::GenerateRandomRotation(float minAngle, float maxAngle) c
 const glm::quat Random::GenerateRandomRotation(float minAngle, float maxAngle, glm::vec3 axis) const
 {
 	// generate a random angle between minAngle and maxAngle
-	float angle = minAngle + static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * (maxAngle - minAngle);
+	float angle = minAngle
+		+ static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * (maxAngle - minAngle);
 
 	return glm::angleAxis(glm::radians(angle), glm::normalize(axis)); // create quaternion from axis and angle
 }

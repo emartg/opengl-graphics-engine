@@ -32,7 +32,8 @@ public:
 	// ------------
 	Model(const std::string& name,
 		  const glm::vec3 albedo = ALBEDO,
-		  const glm::vec3 position = POSITION, const glm::quat rotation = ROTATION,
+		  const glm::vec3 position = POSITION,
+		  const glm::quat rotation = ROTATION,
 		  const glm::vec3 scale = SCALE,
 		  const glm::vec3 forward = FORWARD, const glm::vec3 meshForward = FORWARD,
 		  const ModelType modelType = ModelType::UNDEFINED,
@@ -40,15 +41,15 @@ public:
 
 	Model(const std::string& name,
 		  const glm::vec3 albedo = ALBEDO,
-		  const glm::vec3 position = POSITION, const glm::vec3 rotationInEulerAnglesDegrees = ROTATION_IN_EULER_ANGLES,
+		  const glm::vec3 position = POSITION,
+		  const glm::vec3 rotationInEulerAnglesDegrees = ROTATION_IN_EULER_ANGLES,
 		  const glm::vec3 scale = SCALE,
 		  const glm::vec3 forward = FORWARD, const glm::vec3 meshForward = FORWARD,
 		  const ModelType modelType = ModelType::UNDEFINED,
 		  const GizmoType gizmoType = GizmoType::NONE);
 
 	// Virtual destructor 
-	// (ensures that derived classes can be deleted properly - polymorphism)
-	// ----------------------------------------------------------------------------------------
+	// ------------------
 	virtual ~Model() { nModels--; } // decrements the number of models
 
 	// Public Functions
@@ -73,7 +74,10 @@ public:
 	}
 
 	// Binds the textures of the model
-	virtual void BindTextures(Shader& shader) const { for (const Mesh& mesh : meshes) mesh.BindTextures(shader); }
+	virtual void BindTextures(Shader& shader) const
+	{
+		for (const Mesh& mesh : meshes) mesh.BindTextures(shader);
+	}
 
 	// Getters
 	const glm::vec3& GetAlbedo() const { return albedo; }
@@ -135,8 +139,9 @@ protected:
 	ModelType modelType; // type of the model (e.g., ASSIMP_MODEL, SHAPE)
 	GizmoType gizmoType; // type of the gizmo if the model is a gizmo, or NONE if it is not a gizmo
 
-	// Private Static Attributes (for default values)
-	// ----------------------------------------------
+	// Private Static Attributes
+	// -------------------------
+	// default values for the model attributes
 	static constexpr glm::vec3 ALBEDO{ 0.5f }; // gray (when no texture is applied)
 	static constexpr glm::vec3 POSITION{ 0.0f }; // origin position
 	static constexpr glm::quat ROTATION{ 1.0f, 0.0f, 0.0f, 0.0f }; // identity quaternion (no rotation)

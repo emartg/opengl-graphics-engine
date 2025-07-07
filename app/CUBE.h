@@ -1,7 +1,9 @@
 /*
 * CUBE.h
-* This file defines the vertex data for a simple cube, both in array and vector form.
-* Vertices are replicated for each face, so that each face can have different normals and texture coordinates.
+* This file defines the vertex data for a simple cube, 
+* both in array and vector form.
+* Vertices are replicated for each face, so that each face can have 
+* different normals and texture coordinates.
 * The vertex data is separated into position, normal, and texture coordinate data, but there is also
 * an array and a vector with the interleaved vertex data to test the Shape constructors that take
 * interleaved vertex data directly.
@@ -176,8 +178,18 @@ const GLfloat cubeVerticesArr[] = {
 };
 
 // Cube data in vector form
-const std::vector<GLfloat> cubePositionsVec{ std::begin(cubePositionsArr), std::end(cubePositionsArr) };
-const std::vector<GLfloat> cubeNormalsVec{ std::begin(cubeNormalsArr), std::end(cubeNormalsArr) };
-const std::vector<GLfloat> cubeTexCoordsVec{ std::begin(cubeTexCoordsArr), std::end(cubeTexCoordsArr) };
-const std::vector<GLuint> cubeIndicesVec{ std::begin(cubeIndicesArr), std::end(cubeIndicesArr) };
-const std::vector<GLfloat> cubeVerticesVec{ std::begin(cubeVerticesArr), std::end(cubeVerticesArr) };
+const std::vector<GLfloat> cubePositionsVec{
+	std::begin(cubePositionsArr), std::end(cubePositionsArr)
+};
+const std::vector<GLfloat> cubeNormalsVec{
+	std::begin(cubeNormalsArr), std::end(cubeNormalsArr) 
+};
+const std::vector<GLfloat> cubeTexCoordsVec{
+	std::begin(cubeTexCoordsArr), std::end(cubeTexCoordsArr) 
+};
+const std::vector<GLuint> cubeIndicesVec{
+	std::begin(cubeIndicesArr), std::end(cubeIndicesArr)
+};
+const std::vector<GLfloat> cubeVerticesVec{
+	std::begin(cubeVerticesArr), std::end(cubeVerticesArr) 
+};

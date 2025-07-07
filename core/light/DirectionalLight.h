@@ -21,7 +21,9 @@ public:
 	// Constructors
 	// ------------
 	DirectionalLight(const std::string& name,
-					 const glm::vec3 ambient = AMBIENT, const glm::vec3 diffuse = DIFFUSE, const glm::vec3 specular = SPECULAR,
+					 const glm::vec3 ambient = AMBIENT,
+					 const glm::vec3 diffuse = DIFFUSE,
+					 const glm::vec3 specular = SPECULAR,
 					 const glm::vec3 position = POSITION, const glm::vec3 direction = DIRECTION);
 
 	// Destructor
@@ -51,14 +53,18 @@ public:
 	// and the visual gizmo needs to update its orientation to match.
 	// This method also ensures the gizmo's direction line is updated if there are direction changes
 	void SetDirectionAndAlignGizmo(const glm::vec3& direction);
-	void SetGizmoDirectionLine(std::shared_ptr<Line> gizmoDirectionLine) { this->gizmoDirectionLine = gizmoDirectionLine; }
+	void SetGizmoDirectionLine(std::shared_ptr<Line> gizmoDirectionLine)
+	{
+		this->gizmoDirectionLine = gizmoDirectionLine;
+	}
 	void SetGizmoDirectionLineLength(const GLfloat length) { gizmoDirectionLineLength = length; }
 
 	// Creates the gizmo for the directional light
 	void CreateGizmo() override;
 	// Syncronizes gizmo's position with the light's position
 	void SyncGizmoPositionFromLight() { gizmo->SetPosition(position); }
-	// Updates the vertices of the gizmo's direction line based on the light's current position and direction
+	// Updates the vertices of the gizmo's direction line 
+	// based on the light's current position and direction
 	void UpdateGizmoDirectionLine();
 
 	// Static Public Functions
@@ -78,12 +84,13 @@ private:
 	std::shared_ptr<Line> gizmoDirectionLine; // the gizmo representing the direction of the light
 	GLfloat gizmoDirectionLineLength{ 1.5f };
 
-	// Private Static Attributes (for default values)
-	// ----------------------------------------------
+	// Private Static Attributes
+	// -------------------------
+	// default values for the directional light attributes
 	static constexpr glm::vec3 POSITION{ -3.5f, 7.0f, 0.0f };
-	static constexpr glm::vec3 DIRECTION{ 0.0f, 1.0f, 0.0f }; // default direction is +Y axis
+	static constexpr glm::vec3 DIRECTION{ 0.0f, 1.0f, 0.0f }; // +Y axis by default
 	static constexpr glm::vec3 AMBIENT{ 0.1f }, DIFFUSE{ 0.8f }, SPECULAR{ 1.0f };
-	static constexpr glm::vec3 GIZMO_SCALE{ 0.4f }; // default scale for the gizmo
+	static constexpr glm::vec3 GIZMO_SCALE{ 0.4f }; // default scale factor for the directional light gizmo
 
 };
 

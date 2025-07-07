@@ -18,8 +18,8 @@ public:
 	Asset(const std::string& name, const AssetType type)
 		: name{ name }, type{ type } {}
 
-	// Virtual destructor (ensures that derived classes can be deleted properly - polymorphism)
-	// ---------------------------------------------------------------------------------------
+	// Virtual destructor
+	// ------------------
 	virtual ~Asset() {}
 
 	// Public Functions

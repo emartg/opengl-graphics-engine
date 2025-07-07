@@ -17,6 +17,7 @@
 #include "../Asset.h"
 #include "../model/Model.h" // to allow the light to have a gizmo model
 
+// enumeration for the different types of lights
 enum class LightType { UNDEFINED = 0, DIRECTIONAL_LIGHT, POINT_LIGHT, SPOTLIGHT };
 
 class Light : public Asset
@@ -29,8 +30,8 @@ public:
 		  const std::shared_ptr<Model> gizmo = nullptr,
 		  const LightType type = LightType::UNDEFINED);
 
-	// Virtual destructor (ensures that derived classes can be deleted properly - polymorphism)
-	// ----------------------------------------------------------------------------------------
+	// Virtual destructor
+	// ------------------
 	virtual ~Light() { nLights--; } // decrements the number of lights
 
 	// Public Methods
@@ -77,6 +78,6 @@ protected:
 
 	std::shared_ptr<Model> gizmo; // the model used to represent the light in the scene
 
-	LightType lightType; // the type of the light (e.g.,DIRECTIONAL_LIGHT, POINT_LIGHT, SPOTLIGHT)
+	LightType lightType; // type of the light (e.g., DIRECTIONAL_LIGHT, POINT_LIGHT, SPOTLIGHT)
 
 };

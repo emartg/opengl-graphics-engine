@@ -29,13 +29,16 @@ Model::Model(const std::string& name,
 
 Model::Model(const std::string& name,
 			 const glm::vec3 albedo,
-			 const glm::vec3 position, const glm::vec3 rotationInEulerAnglesDegrees,
-			 const glm::vec3 scale,
+			 const glm::vec3 position, const glm::vec3 rotationInEulerAnglesDegrees, const glm::vec3 scale,
 			 const glm::vec3 forward, const glm::vec3 meshForward,
 			 const ModelType modelType,
 			 const GizmoType gizmoType)
-	: Model(name, albedo, position, glm::quat(glm::radians(rotationInEulerAnglesDegrees)), scale, 
-			forward, meshForward, modelType, gizmoType)
+	: Model(name,
+			albedo,
+			position, glm::quat(glm::radians(rotationInEulerAnglesDegrees)), scale,
+			forward, meshForward,
+			modelType,
+			gizmoType)
 {}
 
 // Public Methods

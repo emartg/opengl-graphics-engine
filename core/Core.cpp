@@ -251,9 +251,11 @@ void Core::MainLoop()
 		m_renderer->ClearBuffers();
 
 		// compute view/projection transformations
-		glm::mat4 projection = glm::perspective(glm::radians(m_camera->GetZoom()),
-												static_cast<GLfloat>(SCR_WIDTH) / static_cast<GLfloat>(SCR_HEIGHT),
-												0.1f, 100.0f);
+		glm::mat4 projection = glm::perspective(
+			glm::radians(m_camera->GetZoom()),
+			static_cast<GLfloat>(SCR_WIDTH) / static_cast<GLfloat>(SCR_HEIGHT),
+			0.1f, 100.0f
+		);
 		glm::mat4 view = m_camera->GetViewMatrix();
 		// set the view and projection matrices for each shader program
 		for (auto& shader : shaders)
@@ -266,7 +268,7 @@ void Core::MainLoop()
 		// indices for lights whose properties are to be set (counters for each type of light)
 		GLuint pointLightIdx{}, spotlightIdx{}, directionalLightIdx{};
 		// iterate over the vector of assets of type "LIGHT" and set the properties of the lights
-		// for every model shader program (provisional, allows us to get rid of shader indexes in the code,
+		// for every model shader program (provisional, allows us to get rid of shader indexes in the code, 
 		// but forces us to set the uniforms for each model shader program separately)
 		std::for_each(m_assets["LIGHT"].begin(), m_assets["LIGHT"].end(),
 					  [&](const std::shared_ptr<Asset>& asset)
@@ -288,8 +290,10 @@ void Core::MainLoop()
 					// activate the untextured matt shape shader program
 					untexturedMattShapeShader->Use();
 					// vertex shader uniforms
-					untexturedMattShapeShader->SetVec3("directionalLightDir[" + std::to_string(directionalLightIdx) + "]",
-													   directionalLight->GetDirection());
+					untexturedMattShapeShader->SetVec3(
+						"directionalLightDir[" + std::to_string(directionalLightIdx) + "]",
+						directionalLight->GetDirection()
+					);
 					// fragment shader uniforms
 					untexturedMattShapeShader->SetVec3(prefix + "ambient", directionalLight->GetAmbient());
 					untexturedMattShapeShader->SetVec3(prefix + "diffuse", directionalLight->GetDiffuse());
@@ -298,8 +302,10 @@ void Core::MainLoop()
 					// activate the Assimp model shader program
 					assimpModelShader->Use();
 					// vertex shader uniforms
-					assimpModelShader->SetVec3("directionalLightDir[" + std::to_string(directionalLightIdx) + "]",
-											   directionalLight->GetDirection());
+					assimpModelShader->SetVec3(
+						"directionalLightDir[" + std::to_string(directionalLightIdx) + "]",
+						directionalLight->GetDirection()
+					);
 					// fragment shader uniforms
 					assimpModelShader->SetVec3(prefix + "ambient", directionalLight->GetAmbient());
 					assimpModelShader->SetVec3(prefix + "diffuse", directionalLight->GetDiffuse());
@@ -319,8 +325,10 @@ void Core::MainLoop()
 					// activate the untextured matt shape shader program
 					untexturedMattShapeShader->Use();
 					// vertex shader uniforms
-					untexturedMattShapeShader->SetVec3("pointLightPos[" + std::to_string(pointLightIdx) + "]",
-													   pointLight->GetPosition());
+					untexturedMattShapeShader->SetVec3(
+						"pointLightPos[" + std::to_string(pointLightIdx) + "]",
+						pointLight->GetPosition()
+					);
 					// fragment shader uniforms
 					untexturedMattShapeShader->SetVec3(prefix + "ambient", pointLight->GetAmbient());
 					untexturedMattShapeShader->SetVec3(prefix + "diffuse", pointLight->GetDiffuse());
@@ -332,8 +340,10 @@ void Core::MainLoop()
 					// activate the Assimp model shader program
 					assimpModelShader->Use();
 					// vertex shader uniforms
-					assimpModelShader->SetVec3("pointLightPos[" + std::to_string(pointLightIdx) + "]",
-											   pointLight->GetPosition());
+					assimpModelShader->SetVec3(
+						"pointLightPos[" + std::to_string(pointLightIdx) + "]",
+						pointLight->GetPosition()
+					);
 					// fragment shader uniforms
 					assimpModelShader->SetVec3(prefix + "ambient", pointLight->GetAmbient());
 					assimpModelShader->SetVec3(prefix + "diffuse", pointLight->GetDiffuse());
@@ -356,10 +366,14 @@ void Core::MainLoop()
 					// activate the untextured matt shape shader program
 					untexturedMattShapeShader->Use();
 					// vertex shader uniforms
-					untexturedMattShapeShader->SetVec3("spotlightPos[" + std::to_string(spotlightIdx) + "]",
-													   spotlight->GetPosition());
-					untexturedMattShapeShader->SetVec3("spotlightDir[" + std::to_string(spotlightIdx) + "]",
-													   spotlight->GetDirection());
+					untexturedMattShapeShader->SetVec3(
+						"spotlightPos[" + std::to_string(spotlightIdx) + "]",
+						spotlight->GetPosition()
+					);
+					untexturedMattShapeShader->SetVec3(
+						"spotlightDir[" + std::to_string(spotlightIdx) + "]",
+						spotlight->GetDirection()
+					);
 					// fragment shader uniforms
 					untexturedMattShapeShader->SetVec3(prefix + "ambient", spotlight->GetAmbient());
 					untexturedMattShapeShader->SetVec3(prefix + "diffuse", spotlight->GetDiffuse());
@@ -374,10 +388,14 @@ void Core::MainLoop()
 					assimpModelShader->Use();
 					// vertex shader uniforms
 					assimpModelShader->SetVec3(prefix + "ambient", spotlight->GetAmbient());
-					assimpModelShader->SetVec3("spotlightPos[" + std::to_string(spotlightIdx) + "]",
-											   spotlight->GetPosition());
-					assimpModelShader->SetVec3("spotlightDir[" + std::to_string(spotlightIdx) + "]",
-											   spotlight->GetDirection());
+					assimpModelShader->SetVec3(
+						"spotlightPos[" + std::to_string(spotlightIdx) + "]",
+						spotlight->GetPosition()
+					);
+					assimpModelShader->SetVec3(
+						"spotlightDir[" + std::to_string(spotlightIdx) + "]",
+						spotlight->GetDirection()
+					);
 					// fragment shader uniforms
 					assimpModelShader->SetVec3(prefix + "diffuse", spotlight->GetDiffuse());
 					assimpModelShader->SetVec3(prefix + "specular", spotlight->GetSpecular());
@@ -579,7 +597,8 @@ void Core::AddAsset(std::shared_ptr<Asset> asset)
 	// add asset to the corresponding vector in the map
 	m_assets[assetType].emplace_back(asset);
 	// print the type and name of the asset added to the console
-	std::cout << "Asset added: " << assetType << "\t| " << m_assets[assetType].back()->GetName() << std::endl;
+	std::cout << "Asset added: " << assetType << "\t| "
+		<< m_assets[assetType].back()->GetName() << std::endl;
 }
 
 const std::vector<std::shared_ptr<Asset>>& Core::GetAssets(const std::string& assetType) const

@@ -14,6 +14,7 @@ class Renderer
 {
 public:
 	// Destructor
+	// ----------
 	virtual ~Renderer() {}
 
 	// Public Methods

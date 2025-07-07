@@ -1,6 +1,9 @@
 /*
 * RECTANGULAR_PLANE.h
-* This file defines the vertex data for a simple rectangular plane, both in array and vector form.
+* This file defines the vertex data for a simple rectangular plane, 
+* both in array and vector form.
+* Vertices are replicated for each triangle, so that each triangle can have
+* different normals and texture coordinates.
 * The vertex data is separated into position, normal, and texture coordinate data, but there is also
 * an array and a vector with the interleaved vertex data to test the Shape constructors that take
 * interleaved vertex data directly.
@@ -64,21 +67,41 @@ const GLfloat rectangularPlaneVerticesArr[] = {
 	 PLANE_WIDTH / 2,	0.0f,	 PLANE_HEIGHT / 2,		0.0f,	1.0f,	0.0f,		1.0f,	1.0f,
 	-PLANE_WIDTH / 2,	0.0f,	 PLANE_HEIGHT / 2,		0.0f,	1.0f,	0.0f,		0.0f,	1.0f,
 
-	 0.0f,				0.0f,	 0.0f,					0.0f,	1.0f,	0.0f,		0.5f,	0.5f	// center
+	// center vertex (used for normal direction line)
+	 0.0f,				0.0f,	 0.0f,					0.0f,	1.0f,	0.0f,		0.5f,	0.5f
 };
 
 // Rectangular plane data in vector form
-const std::vector<GLfloat> rectangularPlanePositionsVec{ std::begin(rectangularPlanePositionsArr), std::end(rectangularPlanePositionsArr) };
-const std::vector<GLfloat> rectangularPlaneNormalsVec{ std::begin(rectangularPlaneNormalsArr), std::end(rectangularPlaneNormalsArr) };
-const std::vector<GLfloat> rectangularPlaneTexCoordsVec{ std::begin(rectangularPlaneTexCoordsArr), std::end(rectangularPlaneTexCoordsArr) };
-const std::vector<GLuint> rectangularPlaneIndicesVec{ std::begin(rectangularPlaneIndicesArr), std::end(rectangularPlaneIndicesArr) };
-const std::vector<GLfloat> rectangularPlaneVerticesVec{ std::begin(rectangularPlaneVerticesArr), std::end(rectangularPlaneVerticesArr) };
+const std::vector<GLfloat> rectangularPlanePositionsVec{
+	std::begin(rectangularPlanePositionsArr), std::end(rectangularPlanePositionsArr)
+};
+const std::vector<GLfloat> rectangularPlaneNormalsVec{
+	std::begin(rectangularPlaneNormalsArr), std::end(rectangularPlaneNormalsArr)
+};
+const std::vector<GLfloat> rectangularPlaneTexCoordsVec{
+	std::begin(rectangularPlaneTexCoordsArr), std::end(rectangularPlaneTexCoordsArr)
+};
+const std::vector<GLuint> rectangularPlaneIndicesVec{
+	std::begin(rectangularPlaneIndicesArr), std::end(rectangularPlaneIndicesArr)
+};
+const std::vector<GLfloat> rectangularPlaneVerticesVec{
+	std::begin(rectangularPlaneVerticesArr), std::end(rectangularPlaneVerticesArr)
+};
 
 // Rectangular plane direction line data (the normal direction)
 const GLfloat rectangularPlaneDirectionLineArr[] = {
-	0.0f,	0.0f,	0.0f,   // start: center
-	0.0f,	1.0f,	0.0f    // end:	1 unit along +Y (normal)
+	// start: center
+	rectangularPlaneVerticesArr[32],
+	rectangularPlaneVerticesArr[33],
+	rectangularPlaneVerticesArr[34],
+
+	// end: center + normal direction
+	rectangularPlaneVerticesArr[32] + rectangularPlaneVerticesArr[35],
+	rectangularPlaneVerticesArr[33] + rectangularPlaneVerticesArr[36],
+	rectangularPlaneVerticesArr[34] + rectangularPlaneVerticesArr[37]
 };
 
 // Rectangular plane direction line data in vector form
-const std::vector<GLfloat> rectangularPlaneDirectionLineVec{ std::begin(rectangularPlaneDirectionLineArr), std::end(rectangularPlaneDirectionLineArr) };
+const std::vector<GLfloat> rectangularPlaneDirectionLineVec{
+	std::begin(rectangularPlaneDirectionLineArr), std::end(rectangularPlaneDirectionLineArr)
+};

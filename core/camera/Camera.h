@@ -94,9 +94,9 @@ private:
 	GLfloat mouseSensitivity;
 	GLfloat zoom;
 
-	// Private Static Attributes (for default values)
-	// ----------------------------------------------
-	// Default camera values
+	// Private Static Attributes
+	// -------------------------
+	// default values for the camera attributes
 	static constexpr glm::vec3 POSITION = glm::vec3{ 20.0f, 12.0f, 20.0f };
 	static constexpr glm::vec3 UP = glm::vec3{ 0.0f, 1.0f, 0.0f };
 	static constexpr GLfloat YAW = -135.0f;

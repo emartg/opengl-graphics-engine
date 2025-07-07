@@ -8,7 +8,7 @@
 // Constructors
 // ------------
 Mesh::Mesh(std::vector<Vertex> vertices, std::vector<GLuint> indices, std::vector<Texture> textures)
-	: vertices(vertices), indices(indices), textures(textures)
+	: vertices{ vertices }, indices{ indices }, textures{ textures }
 {
 	setupMesh();
 }

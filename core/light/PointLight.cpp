@@ -34,12 +34,13 @@ PointLight::PointLight(const std::string& name,
 void PointLight::CreateGizmo()
 {
 	// create a decahedron shape for the point light gizmo  
-	gizmo = std::make_shared<Shape>(name + " Gizmo",
-									decahedronVerticesVec, decahedronIndicesVec,
-									diffuse, // set the color of the gizmo to the light's diffuse color
-									position, // set the position of the gizmo to the light's position
-									glm::quat{ 1.0f, 0.0f, 0.0f, 0.0f }, // set the orientation of the gizmo to identity quaternion (no rotation)
-									GIZMO_SCALE // set the scale of the gizmo to a predefined constant
+	gizmo = std::make_shared<Shape>(
+		name + " Gizmo",
+		decahedronVerticesVec, decahedronIndicesVec,
+		diffuse, // set the color of the gizmo to the light's diffuse color
+		position, // set the position of the gizmo to the light's position
+		glm::quat{ 1.0f, 0.0f, 0.0f, 0.0f }, // set the orientation of the gizmo to identity quaternion
+		GIZMO_SCALE // set the scale of the gizmo to a predefined constant
 	);
 
 	// set the gizmo's type to POINT_LIGHT (used for rendering and interaction purposes)

@@ -1,7 +1,9 @@
 /*
 * DECAHEDRON.h
-* This file defines the vertex data for a simple decahedron (pentagonal bipyramid), both in array and vector form.
-* Vertices are replicated for each face, so that each face can have different normals and texture coordinates.
+* This file defines the vertex data for a simple decahedron (pentagonal bipyramid), 
+* both in array and vector form.
+* Vertices are replicated for each face, so that each face can have 
+* different normals and texture coordinates.
 * The vertex data is separated into position, normal, and texture coordinate data, but there is also
 * an array and a vector with the interleaved vertex data to test the Shape constructors that take
 * interleaved vertex data directly.
@@ -36,17 +38,45 @@ const GLfloat decahedronPositionsArr[] = {
 // Decahedron normal data (flat normals for each triangle face)
 const GLfloat decahedronNormalsArr[] = {
 	// simplified normals, actual per-face normals would be calculated with cross products
-	 0.0f,		0.707f,		 0.707f,		 0.0f,		0.707f,		 0.707f,		 0.0f,		0.707f,		 0.707f,
-	 0.707f,	0.707f,		 0.0f,			 0.707f,	0.707f,		 0.0f,			 0.707f,	0.707f,		 0.0f,
-	 0.0f,		0.707f,		-0.707f,		 0.0f,		0.707f,		-0.707f,		 0.0f,		0.707f,		-0.707f,
-	-0.707f,	0.707f,		 0.0f,			-0.707f,	0.707f,		 0.0f,			-0.707f,	0.707f,		 0.0f,
-	 0.0f,		0.707f,		 0.707f,		 0.0f,		0.707f,		 0.707f,		 0.0f,		0.707f,		 0.707f,
+	 0.0f,		0.707f,		 0.707f,
+	 0.0f,		0.707f,		 0.707f,
+	 0.0f,		0.707f,		 0.707f,
 
-	 0.0f,		-0.707f,	 0.707f,		 0.0f,		-0.707f,	 0.707f,		 0.0f,		-0.707f,	 0.707f,
-	-0.707f,	-0.707f,	 0.0f,			-0.707f,	-0.707f,	 0.0f,			-0.707f,	-0.707f,	 0.0f,
-	 0.0f,		-0.707f,	-0.707f,		 0.0f,		-0.707f,	-0.707f,		 0.0f,		-0.707f,	-0.707f,
-	 0.707f,	-0.707f,	 0.0f,			 0.707f,	-0.707f,	 0.0f,			 0.707f,	-0.707f,	 0.0f,
-	 0.0f,		-0.707f,	 0.707f,		 0.0f,		-0.707f,	 0.707f,		 0.0f,		-0.707f,	 0.707f
+	 0.707f,	0.707f,		 0.0f,
+	 0.707f,	0.707f,		 0.0f,
+	 0.707f,	0.707f,		 0.0f,
+
+	 0.0f,		0.707f,		-0.707f,
+	 0.0f,		0.707f,		-0.707f,
+	 0.0f,		0.707f,		-0.707f,
+
+	-0.707f,	0.707f,		 0.0f,
+	-0.707f,	0.707f,		 0.0f,
+	-0.707f,	0.707f,		 0.0f,
+
+	 0.0f,		0.707f,		 0.707f,
+	 0.0f,		0.707f,		 0.707f,
+	 0.0f,		0.707f,		 0.707f,
+
+	 0.0f,		-0.707f,	 0.707f,
+	 0.0f,		-0.707f,	 0.707f,
+	 0.0f,		-0.707f,	 0.707f,
+
+	-0.707f,	-0.707f,	 0.0f,
+	-0.707f,	-0.707f,	 0.0f,
+	-0.707f,	-0.707f,	 0.0f,
+
+	 0.0f,		-0.707f,	-0.707f,
+	 0.0f,		-0.707f,	-0.707f,
+	 0.0f,		-0.707f,	-0.707f,
+
+	 0.707f,	-0.707f,	 0.0f,
+	 0.707f,	-0.707f,	 0.0f,
+	 0.707f,	-0.707f,	 0.0f,
+
+	 0.0f,		-0.707f,	 0.707f,
+	 0.0f,		-0.707f,	 0.707f,
+	 0.0f,		-0.707f,	 0.707f
 };
 
 // Decahedron texture coordinate data (simple triangle layout)
@@ -123,8 +153,18 @@ const GLfloat decahedronVerticesArr[] = {
 };
 
 // Decahedron data in vector form
-const std::vector<GLfloat> decahedronPositionsVec{ std::begin(decahedronPositionsArr), std::end(decahedronPositionsArr) };
-const std::vector<GLfloat> decahedronNormalsVec{ std::begin(decahedronNormalsArr), std::end(decahedronNormalsArr) };
-const std::vector<GLfloat> decahedronTexCoordsVec{ std::begin(decahedronTexCoordsArr), std::end(decahedronTexCoordsArr) };
-const std::vector<GLuint> decahedronIndicesVec{ std::begin(decahedronIndicesArr), std::end(decahedronIndicesArr) };
-const std::vector<GLfloat> decahedronVerticesVec{ std::begin(decahedronVerticesArr), std::end(decahedronVerticesArr) };
+const std::vector<GLfloat> decahedronPositionsVec{
+	std::begin(decahedronPositionsArr), std::end(decahedronPositionsArr)
+};
+const std::vector<GLfloat> decahedronNormalsVec{
+	std::begin(decahedronNormalsArr), std::end(decahedronNormalsArr)
+};
+const std::vector<GLfloat> decahedronTexCoordsVec{
+	std::begin(decahedronTexCoordsArr), std::end(decahedronTexCoordsArr)
+};
+const std::vector<GLuint> decahedronIndicesVec{
+	std::begin(decahedronIndicesArr), std::end(decahedronIndicesArr)
+};
+const std::vector<GLfloat> decahedronVerticesVec{
+	std::begin(decahedronVerticesArr), std::end(decahedronVerticesArr)
+};

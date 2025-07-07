@@ -67,6 +67,7 @@ target_link_libraries(App Core ${LIBS})
 message(STATUS "[APP] Copying shader files to the runtime directory...")
 file(INSTALL ${CMAKE_SOURCE_DIR}/shaders/ DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/shaders/)
 
-# Copy asset files to the runtime directory
+# Copy asset files to the runtime directory 
+# (sample assets to test the application and the underlying Core library)
 message(STATUS "[APP] Copying asset files to the runtime directory...")
 file(INSTALL ${CMAKE_SOURCE_DIR}/assets/ DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/assets/)

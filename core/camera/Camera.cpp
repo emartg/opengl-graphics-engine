@@ -62,7 +62,8 @@ void Camera::ProcessMouseTranslation(GLfloat xoffset, GLfloat yoffset, GLfloat s
 	position += up * yoffset;
 }
 
-void Camera::ProcessMouseRotation(GLfloat xoffset, GLfloat yoffset, GLfloat sensitivity, GLboolean constrainPitch)
+void Camera::ProcessMouseRotation(GLfloat xoffset, GLfloat yoffset,
+								  GLfloat sensitivity, GLboolean constrainPitch)
 {
 	xoffset *= sensitivity;
 	yoffset *= sensitivity;

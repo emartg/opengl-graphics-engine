@@ -20,10 +20,14 @@ public:
 	// Constructors
 	// ------------
 	Spotlight(const std::string& name,
-			  const glm::vec3 ambient = AMBIENT, const glm::vec3 diffuse = DIFFUSE, const glm::vec3 specular = SPECULAR,
+			  const glm::vec3 ambient = AMBIENT,
+			  const glm::vec3 diffuse = DIFFUSE,
+			  const glm::vec3 specular = SPECULAR,
 			  const glm::vec3 position = POSITION, const glm::vec3 direction = DIRECTION,
 			  const GLfloat innerCutOff = INNER_CUTOFF, const GLfloat outerCutOff = OUTER_CUTOFF,
-			  const GLfloat constant = CONSTANT, const GLfloat linear = LINEAR, const GLfloat quadratic = QUADRATIC);
+			  const GLfloat constant = CONSTANT,
+			  const GLfloat linear = LINEAR,
+			  const GLfloat quadratic = QUADRATIC);
 
 	// Destructor
 	// ----------
@@ -85,14 +89,15 @@ private:
 	GLfloat linear;
 	GLfloat quadratic;
 
-	// Private Static Attributes (for default values)
-	// ----------------------------------------------
+	// Private Static Attributes
+	// -------------------------
+	// default values for the spotlight attributes
 	static constexpr glm::vec3 POSITION{ 1.0f , 4.5f , -0.5f };
-	static constexpr glm::vec3 DIRECTION{ 0.0f, -1.0f, 0.0f }; // default direction is -Y axis
+	static constexpr glm::vec3 DIRECTION{ 0.0f, -1.0f, 0.0f }; // -Y axis by default
 	static constexpr glm::vec3 AMBIENT{ 0.1f }, DIFFUSE{ 0.8f }, SPECULAR{ 1.0f };
 	static constexpr GLfloat CONSTANT{ 1.0f }, LINEAR{ 0.09f }, QUADRATIC{ 0.032f };
 	static const GLfloat INNER_CUTOFF, OUTER_CUTOFF;
-	static constexpr glm::vec3 GIZMO_SCALE{ 0.3f }; // default scale for the gizmo
+	static constexpr glm::vec3 GIZMO_SCALE{ 0.3f }; // default scale factor for the spotlight gizmo
 
 };
 

@@ -16,7 +16,9 @@ GLuint DirectionalLight::nDirectionalLights{};
 // Constructors
 // ------------
 DirectionalLight::DirectionalLight(const std::string& name,
-								   const glm::vec3 ambient, const glm::vec3 diffuse, const glm::vec3 specular,
+								   const glm::vec3 ambient,
+								   const glm::vec3 diffuse,
+								   const glm::vec3 specular,
 								   const glm::vec3 position, const glm::vec3 direction)
 	: Light(name, ambient, diffuse, specular,
 			nullptr, // no gizmo model is provided at this point
@@ -58,19 +60,22 @@ void DirectionalLight::CreateGizmo()
 	// compute the initial rotation of the gizmo based on the light's direction
 	glm::vec3 forward = glm::normalize(direction);
 	constexpr glm::vec3 meshForward = RECTANGULAR_PLANE_FORWARD;
-	glm::quat meshToZ = glm::angleAxis(glm::half_pi<float>() * -1.0f, glm::vec3(1.0f, 0.0f, 0.0f)); // -90° around X
-	glm::quat lookAt = glm::quatLookAt(forward, glm::vec3(0.0f, 1.0f, 0.0f)); // look at the forward direction, with Y up
+	glm::quat meshToZ = glm::angleAxis(
+		glm::half_pi<float>() * -1.0f, glm::vec3(1.0f, 0.0f, 0.0f)); // -90° around X
+	glm::quat lookAt = glm::quatLookAt(
+		forward, glm::vec3(0.0f, 1.0f, 0.0f)); // look at the forward direction, with Y up
 	glm::quat rotation = lookAt * meshToZ;
 
 	// create a rectangular plane gizmo for the directional light gizmo
-	gizmo = std::make_shared<Shape>(name + " Gizmo",
-									rectangularPlaneVerticesVec, rectangularPlaneIndicesVec,
-									diffuse, // set the color of the gizmo to the light's diffuse color
-									position, // set the position of the gizmo to the light's position
-									rotation, // set the rotation of the gizmo based on the light's direction
-									GIZMO_SCALE, // set the scale of the gizmo to a predefined constant
-									direction, // set the forward direction of the gizmo to the light's direction
-									meshForward // set the mesh's forward direction to the local space forward direction
+	gizmo = std::make_shared<Shape>(
+		name + " Gizmo",
+		rectangularPlaneVerticesVec, rectangularPlaneIndicesVec,
+		diffuse, // set the color of the gizmo to the light's diffuse color
+		position, // set the position of the gizmo to the light's position
+		rotation, // set the rotation of the gizmo based on the light's direction
+		GIZMO_SCALE, // set the scale of the gizmo to a predefined constant
+		direction, // set the forward direction of the gizmo to the light's direction
+		meshForward // set the mesh's forward direction to the local space forward direction
 	);
 
 	// set the gizmo's type to DIRECTIONAL_LIGHT (used for rendering and interaction purposes)

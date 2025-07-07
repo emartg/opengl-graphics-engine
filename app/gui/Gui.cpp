@@ -628,14 +628,14 @@ void GUI::Setup()
 			std::string nDirectionalLights = std::to_string(Core::GetInstance()->GetNDirectionalLights());
 			// create a new directional light called "Directional Light n", 
 			// where n is the current number of directional lights in the scene
-			auto newDirectionalLight =
-				std::make_shared<DirectionalLight>("Directional Light " + nDirectionalLights,
-												   glm::vec3{ 0.1f }, // ambient color (default)
-												   newColor, // diffuse color (random)
-												   glm::vec3{ 1.0f }, // specular color (default)
-												   newPos, // position (random)
-												   newDir // direction (random)
-				);
+			auto newDirectionalLight = std::make_shared<DirectionalLight>(
+				"Directional Light " + nDirectionalLights,
+				glm::vec3{ 0.1f }, // ambient color (default)
+				newColor, // diffuse color (random)
+				glm::vec3{ 1.0f }, // specular color (default)
+				newPos, // position (random)
+				newDir // direction (random)
+			);
 			// get gizmo's shared_ptr from the new directional light before adding the latter to the engine
 			auto newDirectionalLightGizmo = newDirectionalLight->GetGizmo();
 			// add the new directional light to the engine
@@ -664,14 +664,14 @@ void GUI::Setup()
 			std::string nSpotlights = std::to_string(Core::GetInstance()->GetNSpotlights());
 			// create a new spotlight called "Spotlight n", 
 			// where n is the current number of spotlights in the scene
-			auto newSpotlight =
-				std::make_shared<Spotlight>("Spotlight " + nSpotlights,
-											glm::vec3{ 0.1f }, // ambient color (default)
-											newColor, // diffuse color (random)
-											glm::vec3{ 1.0f }, // specular color (default)
-											newPos, // position (random)
-											newDir // direction (random)
-				);
+			auto newSpotlight = std::make_shared<Spotlight>(
+				"Spotlight " + nSpotlights,
+				glm::vec3{ 0.1f }, // ambient color (default)
+				newColor, // diffuse color (random)
+				glm::vec3{ 1.0f }, // specular color (default)
+				newPos, // position (random)
+				newDir // direction (random)
+			);
 			// get gizmo's shared_ptr from the new spotlight before adding the latter to the engine
 			auto newSpotlightGizmo = newSpotlight->GetGizmo();
 			// add the new spotlight to the engine
@@ -699,13 +699,13 @@ void GUI::Setup()
 			std::string nPointLights = std::to_string(Core::GetInstance()->GetNPointLights());
 			// create a new point light called "Point Light n", 
 			// where n is the current number of point lights in the scene
-			auto newPointLight =
-				std::make_shared<PointLight>("Point Light " + nPointLights,
-											 glm::vec3{ 0.1f }, // ambient color (default)
-											 newColor, // diffuse color (random)
-											 glm::vec3{ 1.0f }, // specular color (default)
-											 newPos // position (random)
-				);
+			auto newPointLight = std::make_shared<PointLight>(
+				"Point Light " + nPointLights,
+				glm::vec3{ 0.1f }, // ambient color (default)
+				newColor, // diffuse color (random)
+				glm::vec3{ 1.0f }, // specular color (default)
+				newPos // position (random)
+			);
 			// get gizmo's shared_ptr from the new point light before adding the latter to the engine
 			auto newPointLightGizmo = newPointLight->GetGizmo();
 			// add the new point light to the engine
@@ -730,10 +730,11 @@ void GUI::Setup()
 			std::string nModels = std::to_string(Core::GetInstance()->GetNModels());
 			// create a new cube shape called "Cube (Model n)", 
 			// where n is the current number of models in the scene
-			auto newCubeShape = std::make_shared<Shape>("Cube (Model " + nModels + ")",
-														cubeVerticesVec, cubeIndicesVec,
-														newColor, // albedo (random)
-														newPos // position (random)
+			auto newCubeShape = std::make_shared<Shape>(
+				"Cube (Model " + nModels + ")",
+				cubeVerticesVec, cubeIndicesVec,
+				newColor, // albedo (random)
+				newPos // position (random)
 			);
 			// add the new cube shape to the engine
 			Core::GetInstance()->AddAsset(std::move(newCubeShape));
@@ -779,9 +780,10 @@ void GUI::Setup()
 				// get the current number of models in the scene
 				std::string nModels = std::to_string(Core::GetInstance()->GetNModels());
 				// create a new model from the selected file
-				auto newAssimpModel = std::make_shared<AssimpModel>(fileName
-																	+ " (Model " + nModels + ")",
-																	filePathName
+				auto newAssimpModel = std::make_shared<AssimpModel>(
+					fileName
+					+ " (Model " + nModels + ")",
+					filePathName
 				);
 				// add the new model to the engine
 				Core::GetInstance()->AddAsset(std::move(newAssimpModel));

@@ -36,7 +36,9 @@ public:
 	const glm::vec3 GenerateRandomColor() const;
 
 	// Generate a random position within a certain range with respect to a target
-	const glm::vec3 GenerateRandomPosition(glm::vec3 target, float minDistanceFromTarget, float maxDistanceFromTarget) const;
+	const glm::vec3 GenerateRandomPosition(glm::vec3 target,
+										   float minDistanceFromTarget,
+										   float maxDistanceFromTarget) const;
 	// Generate a random rotation quaternion
 	const glm::quat GenerateRandomRotation() const;
 	// Genearate a random rotation quaternion with a specified angle range

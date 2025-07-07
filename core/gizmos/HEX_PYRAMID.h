@@ -1,7 +1,9 @@
 /*
 * HEX_PYRAMID.h
-* This file defines the vertex data for a simple hexagonal pyramid, both in array and vector form.
-* Vertices are replicated for each face, so that each face can have different normals and texture coordinates.
+* This file defines the vertex data for a simple hexagonal pyramid, 
+* both in array and vector form.
+* Vertices are replicated for each face, so that each face can have 
+* different normals and texture coordinates.
 * The vertex data is separated into position, normal, and texture coordinate data, but there is also
 * an array and a vector with the interleaved vertex data to test the Shape constructors that take
 * interleaved vertex data directly.
@@ -82,35 +84,81 @@ const GLuint hexPyramidIndicesArr[] = {
 
 // Interleaved hexagonal pyramid vertex data (position, normal, texture coordinates)
 const GLfloat hexPyramidVerticesArr[] = {
-	// position															// normal							// tex coords
-	0.0f,					HEX_HEIGHT,		 0.0f,						0.0f,		0.5f,	-0.866f,		0.5f,	1.0f,
-	HEX_RADIUS,				0.0f,			 0.0f,						0.0f,		0.5f,	-0.866f,		0.0f,	0.0f,
-	HEX_RADIUS * 0.5f,		0.0f,			-HEX_RADIUS * 0.866f,		0.0f,		0.5f,	-0.866f,		1.0f,	0.0f,
+	 0.0f,					HEX_HEIGHT,		 0.0f,
+	 0.0f,					0.5f,			-0.866f,
+	 0.5f,					1.0f,
 
-	 0.0f,					HEX_HEIGHT,		 0.0f,						-0.866f,	0.5f,	-0.5f,			0.5f,	1.0f,
-	 HEX_RADIUS * 0.5f,		0.0f,			-HEX_RADIUS * 0.866f,		-0.866f,	0.5f,	-0.5f,			0.0f,	0.0f,
-	-HEX_RADIUS * 0.5f,		0.0f,			-HEX_RADIUS * 0.866f,		-0.866f,	0.5f,	-0.5f,			1.0f,	0.0f,
+	 HEX_RADIUS,			0.0f,			 0.0f,
+	 0.0f,					0.5f,			-0.866f,
+	 0.0f,					0.0f,
+	 HEX_RADIUS * 0.5f,		0.0f,			-HEX_RADIUS * 0.866f,
+	 0.0f,					0.5f,			-0.866f,
+	 1.0f,					0.0f,
 
-	 0.0f,					HEX_HEIGHT,		 0.0f,						-1.0f,		0.5f,	0.0f,			0.5f,	1.0f,
-	-HEX_RADIUS * 0.5f,		0.0f,			-HEX_RADIUS * 0.866f,		-1.0f,		0.5f,	0.0f,			0.0f,	0.0f,
-	-HEX_RADIUS,			0.0f,			 0.0f,						-1.0f,		0.5f,	0.0f, 			1.0f,	0.0f,
+	 0.0f,					HEX_HEIGHT,		 0.0f,
+	-0.866f,				0.5f,			-0.5f,
+	 0.5f,	1.0f,
+	 HEX_RADIUS * 0.5f,		0.0f,			-HEX_RADIUS * 0.866f,
+	-0.866f,				0.5f,			-0.5f,
+	 0.0f,					0.0f,
+	-HEX_RADIUS * 0.5f,		0.0f,			-HEX_RADIUS * 0.866f,
+	-0.866f,				0.5f,			-0.5f,
+	 1.0f,					0.0f,
 
-	 0.0f,					HEX_HEIGHT,		0.0f,						-0.866f,	0.5f,	0.5f,			0.5f,	1.0f,
-	-HEX_RADIUS,			0.0f,			0.0f,						-0.866f,	0.5f,	0.5f,			0.0f,	0.0f,
-	-HEX_RADIUS * 0.5f,		0.0f,			HEX_RADIUS * 0.866f,		-0.866f,	0.5f,	0.5f,			1.0f,	0.0f,
+	 0.0f,					HEX_HEIGHT,		 0.0f,
+	-1.0f,					0.5f,			 0.0f,
+	 0.5f,					1.0f,
+	-HEX_RADIUS * 0.5f,		0.0f,			-HEX_RADIUS * 0.866f,
+	-1.0f,					0.5f,			 0.0f,
+	 0.0f,					0.0f,
+	-HEX_RADIUS,			0.0f,			 0.0f,
+	-1.0f,					0.5f,			 0.0f,
+	 1.0f,					0.0f,
 
-	 0.0f,					HEX_HEIGHT,		0.0f,						0.0f,		0.5f,	0.866f,			0.5f,	1.0f,
-	-HEX_RADIUS * 0.5f,		0.0f,			HEX_RADIUS * 0.866f,		0.0f,		0.5f,	0.866f,			0.0f,	0.0f,
-	 HEX_RADIUS * 0.5f,		0.0f,			HEX_RADIUS * 0.866f,		0.0f,		0.5f,	0.866f,			1.0f,	0.0f,
+	 0.0f,					HEX_HEIGHT,		 0.0f,
+	-0.866f,				0.5f,			 0.5f,
+	 0.5f,					1.0f,
+	-HEX_RADIUS,			0.0f,			 0.0f,
+	-0.866f,				0.5f,			 0.5f,
+	 0.0f,					0.0f,
+	-HEX_RADIUS * 0.5f,		0.0f,			 HEX_RADIUS * 0.866f,
+	-0.866f,				0.5f,			 0.5f,
+	 1.0f,					0.0f,
 
-	0.0f,					HEX_HEIGHT,		0.0f,						0.866f,		0.5f,	0.5f,			0.5f,	1.0f,
-	HEX_RADIUS * 0.5f,		0.0f,			HEX_RADIUS * 0.866f,		0.866f,		0.5f,	0.5f,			0.0f,	0.0f,
-	HEX_RADIUS,				0.0f,			0.0f,						0.866f,		0.5f,	0.5f,			1.0f,	0.0f
+	 0.0f,					HEX_HEIGHT,		 0.0f,
+	 0.0f,					0.5f,			 0.866f,
+	 0.5f,					1.0f,
+	-HEX_RADIUS * 0.5f,		0.0f,			 HEX_RADIUS * 0.866f,
+	 0.0f,					0.5f,			 0.866f,
+	 0.0f,					0.0f,
+	 HEX_RADIUS * 0.5f,		0.0f,			 HEX_RADIUS * 0.866f,
+	 0.0f,					0.5f,			 0.866f,
+	 1.0f,					0.0f,
+
+	 0.0f,					HEX_HEIGHT,		 0.0f,
+	 0.866f,				0.5f,			 0.5f,
+	 0.5f,					1.0f,
+	 HEX_RADIUS * 0.5f,		0.0f,			 HEX_RADIUS * 0.866f,
+	 0.866f,				0.5f,			 0.5f,
+	 0.0f,					0.0f,
+	 HEX_RADIUS,			0.0f,			 0.0f,
+	 0.866f,				0.5f,			 0.5f,
+	 1.0f,					0.0f
 };
 
 // Hexagonal pyramid data in vector form
-const std::vector<GLfloat> hexPyramidPositionsVec{ std::begin(hexPyramidPositionsArr), std::end(hexPyramidPositionsArr) };
-const std::vector<GLfloat> hexPyramidNormalsVec{ std::begin(hexPyramidNormalsArr), std::end(hexPyramidNormalsArr) };
-const std::vector<GLfloat> hexPyramidTexCoordsVec{ std::begin(hexPyramidTexCoordsArr), std::end(hexPyramidTexCoordsArr) };
-const std::vector<GLuint> hexPyramidIndicesVec{ std::begin(hexPyramidIndicesArr), std::end(hexPyramidIndicesArr) };
-const std::vector<GLfloat> hexPyramidVerticesVec{ std::begin(hexPyramidVerticesArr), std::end(hexPyramidVerticesArr) };
+const std::vector<GLfloat> hexPyramidPositionsVec{
+	std::begin(hexPyramidPositionsArr), std::end(hexPyramidPositionsArr)
+};
+const std::vector<GLfloat> hexPyramidNormalsVec{
+	std::begin(hexPyramidNormalsArr), std::end(hexPyramidNormalsArr)
+};
+const std::vector<GLfloat> hexPyramidTexCoordsVec{
+	std::begin(hexPyramidTexCoordsArr), std::end(hexPyramidTexCoordsArr)
+};
+const std::vector<GLuint> hexPyramidIndicesVec{
+	std::begin(hexPyramidIndicesArr), std::end(hexPyramidIndicesArr)
+};
+const std::vector<GLfloat> hexPyramidVerticesVec{
+	std::begin(hexPyramidVerticesArr), std::end(hexPyramidVerticesArr)
+};

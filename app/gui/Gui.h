@@ -53,7 +53,7 @@ private:
 	// -------------------------
 	static bool s_proportionalScaling; // flag for enabling/disabling proportional scaling
 
-	// default values for sliders and other parameters
+	// default values for sliders and other GUI parameters
 	static constexpr float MIN_POSITION_SLIDER_VALUE{ -15.0f };
 	static constexpr float MAX_POSITION_SLIDER_VALUE{ 15.0f };
 	static constexpr float MIN_ROTATION_SLIDER_VALUE{ -360.0f };

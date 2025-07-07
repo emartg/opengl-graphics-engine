@@ -50,4 +50,5 @@ private:
 	GLuint id;
 	std::string path; // path of the texture to compare with other textures
 	TextureType textureType;
+
 };

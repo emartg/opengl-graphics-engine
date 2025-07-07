@@ -14,7 +14,11 @@ Line::Line(const std::vector<GLfloat>& vertices)
 {
 	// check if the vector is empty or has the correct size (empty vector allows for deferred update)
 	if (vertices.size() != 6 && !vertices.empty())
-		throw std::invalid_argument("Line constructor requires 6 float values for two endpoints, or be empty for deferred update.");
+	{
+		throw std::invalid_argument(
+			"Line constructor requires 6 float values for two endpoints, or be empty for deferred update."
+		);
+	}
 
 	setupLine(vertices);
 }
