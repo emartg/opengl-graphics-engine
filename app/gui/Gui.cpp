@@ -781,8 +781,7 @@ void GUI::Setup()
 				std::string nModels = std::to_string(Core::GetInstance()->GetNModels());
 				// create a new model from the selected file
 				auto newAssimpModel = std::make_shared<AssimpModel>(
-					fileName
-					+ " (Model " + nModels + ")",
+					fileName + " (Model " + nModels + ")",
 					filePathName
 				);
 				// add the new model to the engine

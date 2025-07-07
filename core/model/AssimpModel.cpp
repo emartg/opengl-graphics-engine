@@ -49,6 +49,8 @@ void AssimpModel::loadAssimpModel(std::string const& path)
 
 	// process the root node (recursively process all of its children)
 	processNode(scene->mRootNode, scene);
+
+	std::cout << "Assimp model loaded successfully at path: " << path << std::endl;
 }
 
 void AssimpModel::processNode(aiNode* node, const aiScene* scene)
@@ -63,6 +65,7 @@ void AssimpModel::processNode(aiNode* node, const aiScene* scene)
 	// recursively process each of the children's nodes (if any)
 	for (GLuint i{}; i < node->mNumChildren; i++)
 		processNode(node->mChildren[i], scene);
+
 }
 
 Mesh AssimpModel::processMesh(aiMesh* mesh, const aiScene* scene)

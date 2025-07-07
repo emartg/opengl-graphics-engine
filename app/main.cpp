@@ -6,8 +6,9 @@
 */
 
 #include <memory> // for smart pointers
+#include <filesystem>
 
-// includes from the engine
+// includes from this module
 #include "../core/Core.h"
 #include "../core/light/DirectionalLight.h"
 #include "../core/light/PointLight.h"
@@ -16,8 +17,7 @@
 #include "../core/model/Shape.h"
 #include "../core/model/AssimpModel.h"
 
-// includes from the app itself
-#include "CUBE.h"
+// includes from the App module
 #include "renderer/GLFWRenderer.h"
 
 int main(int argc, char** argv)
@@ -107,14 +107,24 @@ int main(int argc, char** argv)
 
 	// update the number of models in the scene
 	nModels = std::to_string(engine->GetNModels());
-	// load the model from the assets folder and create an AssimpModel object
+	// define the path to the 3D model file
+	std::string filepath = "assets/models/traffic_cone/gltf/traffic_cone.gltf";
+	if (!std::filesystem::exists(filepath)) // check if the file exists
+	{ // if the file does not exist, print an error message and exit the program
+		std::cerr << "Error: The file " << filepath << " does not exist." << std::endl;
+		return -1;
+	}
+	// get the filename from the file path
+	std::string filename = std::filesystem::path(filepath).filename().string();
+	// load the model from the assets folder and create an AssimpModel object.
+	// The name of the model will "filename (Model n)"
 	auto constructionHelmetModel = std::make_shared<AssimpModel>(
-		"Construction Helmet Model (Model " + nModels + ")",
-		"assets/models/construction helmet/obj/construction_helmet.obj",
+		filename + " (Model " + nModels + ")", 
+		filepath,
 		glm::vec3{ 0.5f }, // diffuse color (override required although it is the default)
 		glm::vec3{ 0.0f }, // position (override required although it is the default)
 		glm::vec3{ 0.0f, 45.0f, 0.0f }, // rotation in Euler angles (overridden)
-		glm::vec3{ 0.2f } // scale (overridden)
+		glm::vec3{ 0.15f } // scale (overridden)
 	);
 	engine->AddAsset(std::move(constructionHelmetModel)); // add the model to the engine
 
