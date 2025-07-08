@@ -16,11 +16,11 @@ public:
 	// Constructors
 	// ------------
 	Asset(const std::string& name, const AssetType type)
-		: name{ name }, type{ type } {}
+		: id{ nAssets++ }, name{ name }, type{ type } {}
 
 	// Virtual destructor
 	// ------------------
-	virtual ~Asset() {}
+	virtual ~Asset() { nAssets--; }
 
 	// Public Functions
 	// ----------------
@@ -31,15 +31,28 @@ public:
 	virtual void DeallocateResources() = 0;
 
 	// Getters
+	virtual std::uint32_t GetID() const { return id; }
 	virtual const std::string& GetName() const { return name; }
 	virtual const AssetType& GetType() const { return type; }
 
 	// Setters
+	virtual void SetID(std::uint32_t id) { this->id = id; }
 	virtual void SetName(const std::string& name) { this->name = name; }
+	virtual void SetType(const AssetType& type) { this->type = type; }
+
+	// Static Public Functions
+	// -----------------------
+	static std::uint32_t GetNAssets() { return nAssets; }
+
+private:
+	// Static Private Attributes
+	// -------------------------
+	static std::uint32_t nAssets; // number of assets in the scene
 
 protected:
-	// Protected Attributes (can be accessed by derived classes)
-	// ---------------------------------------------------------
+	// Protected Attributes
+	// --------------------
+	std::uint32_t id; // unique identifier for the asset
 	std::string name;
 	AssetType type;
 

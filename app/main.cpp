@@ -119,7 +119,7 @@ int main(int argc, char** argv)
 	// load the model from the assets folder and create an AssimpModel object.
 	// The name of the model will "filename (Model n)"
 	auto constructionHelmetModel = std::make_shared<AssimpModel>(
-		filename + " (Model " + nModels + ")", 
+		filename + " (Model " + nModels + ")",
 		filepath,
 		glm::vec3{ 0.5f }, // diffuse color (override required although it is the default)
 		glm::vec3{ 0.0f }, // position (override required although it is the default)

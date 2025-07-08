@@ -28,7 +28,7 @@ public:
 
 	// Destructor
 	// ----------
-	~DirectionalLight() { nDirectionalLights--; } // decrements the number of directional lights
+	~DirectionalLight() { nDirectionalLights--; }
 
 	// Public Methods
 	// --------------

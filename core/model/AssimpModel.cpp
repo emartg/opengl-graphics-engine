@@ -22,8 +22,8 @@ AssimpModel::AssimpModel(const std::string& name,
 	: Model(name, albedo, position, rotation, scale, forward, meshForward,
 			ModelType::ASSIMP_MODEL) // set the model type to ASSIMP_MODEL
 {
-	loadAssimpModel(path);
-	nAssimpModels++; // increments the number of Assimp models
+	loadAssimpModel(path); // load the model from the specified path
+	nAssimpModels++;
 }
 
 // Private Methods

@@ -27,7 +27,7 @@ DirectionalLight::DirectionalLight(const std::string& name,
 	gizmoDirectionLine{ nullptr }
 {
 	CreateGizmo(); // create the gizmo for the spotlight
-	nDirectionalLights++; // increment the number of directional lights
+	nDirectionalLights++;
 }
 
 // Public Methods

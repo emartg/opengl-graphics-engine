@@ -27,12 +27,11 @@ public:
 	// ------------
 	Light(const std::string& name,
 		  const glm::vec3 ambient, const glm::vec3 diffuse, const glm::vec3 specular,
-		  const std::shared_ptr<Model> gizmo = nullptr,
-		  const LightType type = LightType::UNDEFINED);
+		  const std::shared_ptr<Model> gizmo = nullptr, const LightType type = LightType::UNDEFINED);
 
 	// Virtual destructor
 	// ------------------
-	virtual ~Light() { nLights--; } // decrements the number of lights
+	virtual ~Light() { nLights--; }
 
 	// Public Methods
 	// --------------

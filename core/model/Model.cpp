@@ -16,29 +16,25 @@ Model::Model(const std::string& name,
 			 const glm::vec3 albedo,
 			 const glm::vec3 position, const glm::quat rotation, const glm::vec3 scale,
 			 const glm::vec3 forward, const glm::vec3 meshForward,
-			 const ModelType modelType,
-			 const GizmoType gizmoType)
+			 const ModelType modelType, const GizmoType gizmoType)
 	: Asset(name, AssetType::MODEL),
 	albedo{ albedo }, position{ position }, rotation{ rotation }, scale{ scale },
 	forward{ forward }, meshForward{ meshForward },
-	modelType{ modelType },
-	gizmoType{ gizmoType }
+	modelType{ modelType }, gizmoType{ gizmoType }
 {
-	nModels++; // increments the number of models
+	nModels++;
 }
 
 Model::Model(const std::string& name,
 			 const glm::vec3 albedo,
 			 const glm::vec3 position, const glm::vec3 rotationInEulerAnglesDegrees, const glm::vec3 scale,
 			 const glm::vec3 forward, const glm::vec3 meshForward,
-			 const ModelType modelType,
-			 const GizmoType gizmoType)
+			 const ModelType modelType, const GizmoType gizmoType)
 	: Model(name,
 			albedo,
 			position, glm::quat(glm::radians(rotationInEulerAnglesDegrees)), scale,
 			forward, meshForward,
-			modelType,
-			gizmoType)
+			modelType, gizmoType)
 {}
 
 // Public Methods

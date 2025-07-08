@@ -36,8 +36,7 @@ public:
 		  const glm::quat rotation = ROTATION,
 		  const glm::vec3 scale = SCALE,
 		  const glm::vec3 forward = FORWARD, const glm::vec3 meshForward = FORWARD,
-		  const ModelType modelType = ModelType::UNDEFINED,
-		  const GizmoType gizmoType = GizmoType::NONE);
+		  const ModelType modelType = ModelType::UNDEFINED, const GizmoType gizmoType = GizmoType::NONE);
 
 	Model(const std::string& name,
 		  const glm::vec3 albedo = ALBEDO,
@@ -45,12 +44,11 @@ public:
 		  const glm::vec3 rotationInEulerAnglesDegrees = ROTATION_IN_EULER_ANGLES,
 		  const glm::vec3 scale = SCALE,
 		  const glm::vec3 forward = FORWARD, const glm::vec3 meshForward = FORWARD,
-		  const ModelType modelType = ModelType::UNDEFINED,
-		  const GizmoType gizmoType = GizmoType::NONE);
+		  const ModelType modelType = ModelType::UNDEFINED, const GizmoType gizmoType = GizmoType::NONE);
 
 	// Virtual destructor 
 	// ------------------
-	virtual ~Model() { nModels--; } // decrements the number of models
+	virtual ~Model() { nModels--; }
 
 	// Public Functions
 	// ----------------

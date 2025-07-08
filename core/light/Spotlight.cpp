@@ -33,7 +33,7 @@ Spotlight::Spotlight(const std::string& name,
 	constant{ constant }, linear{ linear }, quadratic{ quadratic }
 {
 	CreateGizmo(); // create the gizmo for the spotlight
-	nSpotlights++; // increment the number of spotlights
+	nSpotlights++;
 }
 
 // Public Methods

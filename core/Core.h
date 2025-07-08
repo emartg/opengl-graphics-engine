@@ -89,6 +89,8 @@ public:
 	// Public Methods
 	// --------------
 	// Getters
+	// get the number of assets in the scene
+	const GLuint GetNAssets() const { return Asset::GetNAssets(); }
 	// get the renderer object
 	const Renderer* GetRenderer() const { return m_renderer; }
 	// get the camera object

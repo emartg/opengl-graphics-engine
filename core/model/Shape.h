@@ -65,7 +65,7 @@ public:
 
 	// Destructor
 	// ----------
-	~Shape() { nShapes--; } // decrements the number of shapes
+	~Shape() { nShapes--; }
 
 	// Public Methods
 	// --------------

@@ -28,7 +28,7 @@ public:
 
 	// Destructor
 	// ----------
-	~PointLight() { nPointLights--; } // decrements the number of point lights
+	~PointLight() { nPointLights--; }
 
 	// Public Methods
 	// --------------

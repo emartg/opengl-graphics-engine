@@ -19,5 +19,5 @@ Light::Light(const std::string& name,
 	ambient{ ambient }, diffuse{ diffuse }, specular{ specular },
 	gizmo{ gizmo }, lightType{ lightType }
 {
-	nLights++; // increments the number of lights
+	nLights++;
 }

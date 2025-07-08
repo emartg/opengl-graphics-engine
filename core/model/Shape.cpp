@@ -23,7 +23,7 @@ Shape::Shape(const std::string& name,
 	vertices{ processVertexData(vertices) }, indices{ indices }
 {
 	createMesh();
-	nShapes++; // increments the number of shapes
+	nShapes++;
 }
 
 Shape::Shape(const std::string& name,
@@ -37,7 +37,7 @@ Shape::Shape(const std::string& name,
 	vertices{ processVertexData(positions, normals, texCoords) }, indices{ indices }
 {
 	createMesh();
-	nShapes++; // increments the number of shapes
+	nShapes++;
 }
 
 Shape::Shape(const std::string& name,
@@ -55,7 +55,7 @@ Shape::Shape(const std::string& name,
 	this->indices = indexData;
 
 	createMesh();
-	nShapes++; // increments the number of shapes
+	nShapes++;
 }
 
 Shape::Shape(const std::string& name,
@@ -76,7 +76,7 @@ Shape::Shape(const std::string& name,
 	this->indices = indexData;
 
 	createMesh();
-	nShapes++; // increments the number of shapes
+	nShapes++;
 }
 
 // Public Methods

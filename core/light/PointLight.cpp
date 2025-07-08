@@ -26,7 +26,7 @@ PointLight::PointLight(const std::string& name,
 	constant{ constant }, linear{ linear }, quadratic{ quadratic }
 {
 	CreateGizmo(); // create the gizmo for the point light
-	nPointLights++; // increment the number of point lights
+	nPointLights++;
 }
 
 // Public Methods  
