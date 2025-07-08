@@ -114,7 +114,22 @@ void Core::InitOGL() const
 
 	// OpenGL global state configuration
 	// ---------------------------------
+	// Depth buffer configuration:
+	// 1. Enable the depth test
+	// 2. Set the depth function to GL_LESS, which is the default depth function,
+	//    i.e., discard fragments whose depth value is greater than or equal to 
+	//    the current fragment's depth value
 	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LESS); // default depth function (discard fragments behind the current fragment)
+	// Stencil buffer configuration:
+	// 1. Enable the stencil test
+	// 2. Set the stencil operation to replace the stencil value with the reference value 
+	//	  if both the stencil test and depth test pass
+	// 3. Set the stencil function to pass only if the stencil value is not equal 
+	//    to the reference value, which is set to 1 in this case
+	glEnable(GL_STENCIL_TEST);
+	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+	glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
 }
 
 void Core::CompileShaders(const std::vector<std::string>& shaderNames,
@@ -173,7 +188,7 @@ void Core::MainLoop()
 	// but introduces raw pointer usage and name checking)
 	Shader* untexturedMattShapeShader = nullptr; // pointer to the untextured matt shape shader
 	Shader* assimpModelShader = nullptr; // pointer to the Assimp model shader
-	Shader* gizmoShapeShader = nullptr; // pointer to the gizmo shape shader
+	Shader* singleAlbedoShader = nullptr; // pointer to the single albedo shader
 
 	// assign shaders to the local raw pointers based on their names
 	// (provisional, allows us to get rid of shader indexes in the code, 
@@ -184,8 +199,8 @@ void Core::MainLoop()
 			untexturedMattShapeShader = shader;
 		else if (strcmp(shader->GetName().c_str(), "Assimp Model Shader Program") == 0)
 			assimpModelShader = shader;
-		else if (strcmp(shader->GetName().c_str(), "Gizmo Shape Shader Program") == 0)
-			gizmoShapeShader = shader;
+		else if (strcmp(shader->GetName().c_str(), "Single Albedo Shader Program") == 0)
+			singleAlbedoShader = shader;
 		else
 		{
 			std::cerr << "Unknown shader name: " << shader->GetName() << std::endl;
@@ -248,7 +263,7 @@ void Core::MainLoop()
 		// Per-frame shader configuration
 		// ------------------------------
 		m_renderer->SetClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-		m_renderer->ClearBuffers();
+		m_renderer->ClearBuffers(); // clear the color, depth, and stencil buffers
 
 		// compute view/projection transformations
 		glm::mat4 projection = glm::perspective(
@@ -427,8 +442,14 @@ void Core::MainLoop()
 		assimpModelShader->SetInt("nSpotlights", static_cast<GLint>(spotlightIdx));
 		assimpModelShader->SetInt("nDirectionalLights", static_cast<GLint>(directionalLightIdx));
 
-		// Render the models and gizmos
-		// ----------------------------
+		// 1. First render pass: render the models and gizmos as normal, writing to the stencil buffer
+		// -------------------------------------------------------------------------------------------
+		// Stencil buffer configuration:
+		// 1. Set the stencil function to always pass
+		// 2. Set the stencil mask to write to the stencil buffer
+		glStencilFunc(GL_ALWAYS, 1, 0xFF);
+		glStencilMask(0xFF);
+
 		// iterate over the vector of assets of type "MODEL" and render the different types of models
 		std::for_each(m_assets["MODEL"].begin(), m_assets["MODEL"].end(),
 					  [&](const std::shared_ptr<Asset>& asset)
@@ -491,8 +512,8 @@ void Core::MainLoop()
 				case GizmoType::POINT_LIGHT: // if the model is a point light gizmo
 				case GizmoType::SPOTLIGHT: // if the model is a spotlight gizmo
 				{
-					// use the gizmo shape shader
-					currentShader = gizmoShapeShader;
+					// use the single albedo shader
+					currentShader = singleAlbedoShader;
 
 					// activate the current shader program
 					currentShader->Use();
@@ -538,26 +559,74 @@ void Core::MainLoop()
 				// retrieve the line from the directional light
 				auto& line = dirLight->GetGizmoDirectionLine();
 
-				// activate the gizmo shape shader for rendering the line
-				gizmoShapeShader->Use();
+				// activate the single albedo shader for rendering the line
+				singleAlbedoShader->Use();
 
 				// set the projection and view matrices for the line						
-				gizmoShapeShader->SetMat4("projection", projection);
-				gizmoShapeShader->SetMat4("view", view);
+				singleAlbedoShader->SetMat4("projection", projection);
+				singleAlbedoShader->SetMat4("view", view);
 
 				// the model matrix is not used for lines, but we set it to identity for consistency
 				// (the line is drawn in world space, so it doesn't need a model matrix transformation)
 				glm::mat4 model{ 1.0f };
 				// set the model matrix for the line
-				gizmoShapeShader->SetMat4("model", model);
+				singleAlbedoShader->SetMat4("model", model);
 
 				// set the color of the line based on the directional light's diffuse color
-				gizmoShapeShader->SetVec3("albedo", dirLight->GetDiffuse());
+				singleAlbedoShader->SetVec3("albedo", dirLight->GetDiffuse());
 
 				// render the directional light gizmo line with its bespoke Draw method
 				line->Draw();
 			}
 		});
+
+		// 2. Second render pass: render slightly scaled up models and gizmos, now disabling stencil writing
+		//    As the stencil buffer is already populated with 1s from the models and gizmos rendered in the 
+		//    first pass, those parts of the screen will not be rendered again, only the size differences,
+		//    which creates an outline effect around the models and gizmos
+		// -------------------------------------------------------------------------------------------------
+		// Stencil buffer configuration:
+		// 1. Set the stencil function to pass only if the stencil value is not equal 
+		// to the reference value, which is set to 1 in this case
+		// 2. Set the stencil mask to not write to the stencil buffer
+		// 3. Disable the depth test to ensure the outline is rendered on top of the models and gizmos
+		glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+		glStencilMask(0x00);
+		glDisable(GL_DEPTH_TEST);
+
+		// activate the single albedo shader for rendering the outlines
+		singleAlbedoShader->Use();
+		// set a float scale factor for the outlines
+		GLfloat outlineScaleFactor = 1.05f;
+
+		// iterate over the vector of assets of type "MODEL" and render the outlines 
+		// for the models and gizmos
+		std::for_each(m_assets["MODEL"].begin(), m_assets["MODEL"].end(),
+					  [&](const std::shared_ptr<Asset>& asset)
+		{
+			// dynamically cast the asset to a Model object
+			auto model = dynamic_cast<Model*>(asset.get());
+			
+			// set the color of the outline based on the model's albedo
+			singleAlbedoShader->SetVec3("albedo", model->GetAlbedo());
+
+			// get the model matrix for the outline and scale it up
+			glm::mat4 outlineModelMatrix = model->GetModelMatrix();
+			outlineModelMatrix = glm::scale(outlineModelMatrix, glm::vec3(outlineScaleFactor));
+			// set the model matrix for the outline
+			singleAlbedoShader->SetMat4("model", outlineModelMatrix);
+
+			// draw the model using the single albedo shader program
+			model->Draw(*singleAlbedoShader);
+		});
+
+		// Stencil buffer configuration:
+		// 4. Re-enable writing to the stencil buffer
+		// 5. Set the stencil function to always pass again
+		// 6. Re-enable the depth test
+		glStencilMask(0xFF);
+		glStencilFunc(GL_ALWAYS, 1, 0xFF);
+		glEnable(GL_DEPTH_TEST);
 
 		// Render the GUI
 		// --------------

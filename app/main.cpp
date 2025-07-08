@@ -132,15 +132,15 @@ int main(int argc, char** argv)
 	std::vector<std::string> shaderNames{
 		"Untextured Matt Shape Shader Program",
 		"Assimp Model Shader Program",
-		"Gizmo Shape Shader Program" };
+		"Single Albedo Shader Program" };
 	std::vector<std::string> vertexShaderPaths{
 		"shaders/untextured_matt_shape.vert.glsl",
 		"shaders/assimp_model.vert.glsl" ,
-		"shaders/gizmo_shape.vert.glsl" };
+		"shaders/single_albedo.vert.glsl" };
 	std::vector<std::string> fragmentShaderPaths{
 		"shaders/untextured_matt_shape.frag.glsl",
 		"shaders/assimp_model.frag.glsl",
-		"shaders/gizmo_shape.frag.glsl" };
+		"shaders/single_albedo.frag.glsl" };
 	engine->CompileShaders(shaderNames, vertexShaderPaths, fragmentShaderPaths);
 
 	// run the main loop of the engine

@@ -140,7 +140,7 @@ protected:
 	// Private Static Attributes
 	// -------------------------
 	// default values for the model attributes
-	static constexpr glm::vec3 ALBEDO{ 0.5f }; // gray (when no texture is applied)
+	static constexpr glm::vec3 ALBEDO{ 0.8 }; // default albedo color (light gray)
 	static constexpr glm::vec3 POSITION{ 0.0f }; // origin position
 	static constexpr glm::quat ROTATION{ 1.0f, 0.0f, 0.0f, 0.0f }; // identity quaternion (no rotation)
 	static constexpr glm::vec3 ROTATION_IN_EULER_ANGLES{ 0.0f, 0.0f, 0.0f }; // no rotation
