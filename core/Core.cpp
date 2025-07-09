@@ -189,6 +189,7 @@ void Core::MainLoop()
 	Shader* untexturedMattShapeShader = nullptr; // pointer to the untextured matt shape shader
 	Shader* assimpModelShader = nullptr; // pointer to the Assimp model shader
 	Shader* singleAlbedoShader = nullptr; // pointer to the single albedo shader
+	Shader* outlineShader = nullptr; // pointer to the outline shader
 
 	// assign shaders to the local raw pointers based on their names
 	// (provisional, allows us to get rid of shader indexes in the code, 
@@ -201,6 +202,8 @@ void Core::MainLoop()
 			assimpModelShader = shader;
 		else if (strcmp(shader->GetName().c_str(), "Single Albedo Shader Program") == 0)
 			singleAlbedoShader = shader;
+		else if (strcmp(shader->GetName().c_str(), "Outline Shader Program") == 0)
+			outlineShader = shader;
 		else
 		{
 			std::cerr << "Unknown shader name: " << shader->GetName() << std::endl;
@@ -236,6 +239,28 @@ void Core::MainLoop()
 	{
 		std::cerr << "Assimp Model Shader Program not found!" << std::endl;
 		return; // exit the function if the Assimp model shader is not found
+	}
+
+	// single albedo shader configuration (if it exists)
+	if (!singleAlbedoShader)
+	{
+		std::cerr << "Single Albedo Shader Program not found!" << std::endl;
+		return; // exit the function if the single albedo shader is not found
+	}
+
+	// outline shader configuration (if it exists)
+	if (outlineShader)
+	{
+		// activate the shader program
+		outlineShader->Use();
+
+		// vertex shader constant uniforms
+		outlineShader->SetFloat("outlineThickness", 0.5f); // default outline thickness
+	}
+	else
+	{
+		std::cerr << "Outline Shader Program not found!" << std::endl;
+		return; // exit the function if the outline shader is not found
 	}
 
 	// Render loop
@@ -580,44 +605,40 @@ void Core::MainLoop()
 			}
 		});
 
-		// 2. Second render pass: render slightly scaled up models and gizmos, now disabling stencil writing
-		//    As the stencil buffer is already populated with 1s from the models and gizmos rendered in the 
-		//    first pass, those parts of the screen will not be rendered again, only the size differences,
-		//    which creates an outline effect around the models and gizmos
-		// -------------------------------------------------------------------------------------------------
+		// 2. Second render pass: render outlines for the models and gizmos by extruding vertices 
+		//    along their normals in the vertex shader. 
+		//    This creates a uniform outline around the objects, regardless of their shape or size.
+		//    The outline is rendered using a dedicated outline shader with a configurable thickness
+		// -----------------------------------------------------------------------------------------
 		// Stencil buffer configuration:
 		// 1. Set the stencil function to pass only if the stencil value is not equal 
-		// to the reference value, which is set to 1 in this case
+		//    to the reference value, which is set to 1 in this case
 		// 2. Set the stencil mask to not write to the stencil buffer
 		// 3. Disable the depth test to ensure the outline is rendered on top of the models and gizmos
 		glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
 		glStencilMask(0x00);
 		glDisable(GL_DEPTH_TEST);
 
-		// activate the single albedo shader for rendering the outlines
-		singleAlbedoShader->Use();
-		// set a float scale factor for the outlines
-		GLfloat outlineScaleFactor = 1.05f;
+		// activate the outline shader for rendering the outlines
+		outlineShader->Use();
+		// set the outline thickness in world units
+		outlineShader->SetFloat("outlineThickness", 0.5f);
 
-		// iterate over the vector of assets of type "MODEL" and render the outlines 
-		// for the models and gizmos
+		// iterate over the vector of assets of type "MODEL" and render the outlines
+		// for the models and gizmos that were rendered in the first pass
 		std::for_each(m_assets["MODEL"].begin(), m_assets["MODEL"].end(),
 					  [&](const std::shared_ptr<Asset>& asset)
 		{
 			// dynamically cast the asset to a Model object
 			auto model = dynamic_cast<Model*>(asset.get());
-			
-			// set the color of the outline based on the model's albedo
-			singleAlbedoShader->SetVec3("albedo", model->GetAlbedo());
 
-			// get the model matrix for the outline and scale it up
-			glm::mat4 outlineModelMatrix = model->GetModelMatrix();
-			outlineModelMatrix = glm::scale(outlineModelMatrix, glm::vec3(outlineScaleFactor));
 			// set the model matrix for the outline
-			singleAlbedoShader->SetMat4("model", outlineModelMatrix);
+			outlineShader->SetMat4("model", model->GetModelMatrix());
 
-			// draw the model using the single albedo shader program
-			model->Draw(*singleAlbedoShader);
+			// set the outline color based on the model's albedo
+			outlineShader->SetVec3("albedo", model->GetAlbedo());
+
+			model->Draw(*outlineShader);
 		});
 
 		// Stencil buffer configuration:
