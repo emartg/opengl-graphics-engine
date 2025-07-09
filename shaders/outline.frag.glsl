@@ -1,9 +1,9 @@
 #version 420 core
 out vec4 FragColor;
 
-uniform vec3 albedo;
+uniform vec3 outlineAlbedo;
 
 void main()
 {
-	FragColor = vec4(albedo, 1.0);
+	FragColor = vec4(outlineAlbedo, 1.0);
 }

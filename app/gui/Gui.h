@@ -59,7 +59,7 @@ private:
 	static constexpr float MIN_ROTATION_SLIDER_VALUE{ -360.0f };
 	static constexpr float MAX_ROTATION_SLIDER_VALUE{ 360.0f };
 	static constexpr float MIN_SCALE_SLIDER_VALUE{ 0.001f };
-	static constexpr float MAX_SCALE_SLIDER_VALUE{ 5.0f };
+	static constexpr float MAX_SCALE_SLIDER_VALUE{ 10.0f };
 	static constexpr float MIN_INNER_CUTOFF_SLIDER_VALUE{ 0.0f };
 	static constexpr float MAX_INNER_CUTOFF_SLIDER_VALUE{ 45.0f };
 	static constexpr float MIN_OUTER_CUTOFF_SLIDER_VALUE{ 0.0f };

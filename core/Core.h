@@ -43,17 +43,14 @@ private:
 	// ----------
 	~Core();
 
-	// Static Instance
-	// ---------------
+	// Private Static Instance
+	// -----------------------
 	static Core* m_instance; // instance of the Core class (Singleton)
-
-	// Public Static Attributes
-	// ------------------------
-	static constexpr GLuint SCR_WIDTH{ 1400 }, SCR_HEIGHT{ 1000 }; // screen settings
 
 	// Private Attributes
 	// ------------------
 	Renderer* m_renderer; // current renderer object
+	GLuint m_screenWidth{ 1400 }, m_screenHeight{ 1000 }; // screen settings
 
 	// engine-specific attributes
 	GLfloat m_lastMouseX, m_lastMouseY, m_firstMouse; // mouse settings
@@ -78,8 +75,8 @@ public:
 	// --------------------
 	void operator=(Core const&) = delete; // assignment operator (Singleton is not assignable)
 
-	// Static Methods
-	// --------------
+	// Public Static Methods
+	// ---------------------
 	// Returns the instance of the Core class (Singleton)
 	static Core* GetInstance();
 
@@ -89,12 +86,22 @@ public:
 	// Public Methods
 	// --------------
 	// Getters
-	// get the number of assets in the scene
-	const GLuint GetNAssets() const { return Asset::GetNAssets(); }
+	// get the screen width
+	const GLuint& GetScreenWidth() const { return m_screenWidth; }
+	// get the screen height
+	const GLuint& GetScreenHeight() const { return m_screenHeight; }
 	// get the renderer object
 	const Renderer* GetRenderer() const { return m_renderer; }
+
+	// get all the assets of a specific type
+	const std::vector<std::shared_ptr<Asset>>& GetAssets(const std::string& assetType) const;
+	// get an asset of a specific type by index
+	const std::shared_ptr<Asset>& GetAssetByIndex(const std::string& assetType, GLuint index) const;
 	// get the camera object
 	const std::shared_ptr<Camera>& GetCamera() { return m_camera; }
+
+	// get the number of assets in the scene
+	const GLuint GetNAssets() const { return Asset::GetNAssets(); }
 	// get number of lights in the scene
 	const GLuint GetNLights() const { return Light::GetNLights(); }
 	// get number of point lights in the scene
@@ -105,22 +112,25 @@ public:
 	const GLuint GetNDirectionalLights() const { return DirectionalLight::GetNDirectionalLights(); }
 	// get number of models in the scene
 	const GLuint GetNModels() const { return Model::GetNModels(); }
-	// get number of shapes in the scene
-	const GLuint GetNShapes() const { return Shape::GetNShapes(); }
 	// get the number of Assimp models in the scene
 	const GLuint GetNAssimpModels() const { return AssimpModel::GetNAssimpModels(); }
-	// get all the assets of a specific type
-	const std::vector<std::shared_ptr<Asset>>& GetAssets(const std::string& assetType) const;
-	// get an asset of a specific type by index
-	const std::shared_ptr<Asset>& GetAssetByIndex(const std::string& assetType, GLuint index) const;
+	// get number of shapes in the scene
+	const GLuint GetNShapes() const { return Shape::GetNShapes(); }
+
 	// get the camera control flag
 	const GLboolean& GetCameraControlEnabled() const { return m_cameraControlEnabled; }
 
 	// Setters
+	// set the screen width
+	void SetScreenWidth(GLuint width) { m_screenWidth = width; }
+	// set the screen height
+	void SetScreenHeight(GLuint height) { m_screenHeight = height; }
 	// set the renderer object
 	void SetRenderer(Renderer* renderer) { m_renderer = renderer; }
+
 	// set the camera object
 	void SetCamera(std::shared_ptr<Camera> camera) { m_camera = std::move(camera); }
+
 	// set the camera control flag
 	void SetCameraControlEnabled(GLboolean enabled) { m_cameraControlEnabled = enabled; }
 

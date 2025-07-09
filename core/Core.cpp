@@ -18,7 +18,7 @@
 // ------------
 Core::Core()
 	: m_renderer{ nullptr },
-	m_lastMouseX{ SCR_WIDTH / 2.0f }, m_lastMouseY{ SCR_HEIGHT / 2.0f }, m_firstMouse{ true },
+	m_lastMouseX{ m_screenWidth / 2.0f }, m_lastMouseY{ m_screenHeight / 2.0f }, m_firstMouse{ true },
 	m_deltaTime{ 0.0f }, m_lastFrameTime{ 0.0f }, m_camera{ nullptr },
 	m_cameraControlEnabled{ false }
 {}
@@ -88,7 +88,7 @@ void Core::InitOGL() const
 
 	// Create the window and configure it
 	// -----------------------------------
-	m_renderer->CreateWindow(SCR_WIDTH, SCR_HEIGHT, "Test Window");
+	m_renderer->CreateWindow(m_screenWidth, m_screenHeight, "Test Window");
 	m_renderer->ConfigureWindow();
 
 	// Set the callback functions
@@ -106,7 +106,7 @@ void Core::InitOGL() const
 
 	// Set viewport
 	// ------------
-	m_renderer->SetViewport(SCR_WIDTH, SCR_HEIGHT);
+	m_renderer->SetViewport(m_screenWidth, m_screenHeight);
 
 	// Initialize the GUI
 	// ------------------
@@ -253,9 +253,10 @@ void Core::MainLoop()
 	{
 		// activate the shader program
 		outlineShader->Use();
-
 		// vertex shader constant uniforms
 		outlineShader->SetFloat("outlineThickness", 0.5f); // default outline thickness
+		// fragment shader constant uniforms
+		outlineShader->SetVec3("outlineAlbedo", glm::vec3{ 0.8f }); // default outline color (light gray)
 	}
 	else
 	{
@@ -293,7 +294,7 @@ void Core::MainLoop()
 		// compute view/projection transformations
 		glm::mat4 projection = glm::perspective(
 			glm::radians(m_camera->GetZoom()),
-			static_cast<GLfloat>(SCR_WIDTH) / static_cast<GLfloat>(SCR_HEIGHT),
+			static_cast<GLfloat>(m_screenWidth) / static_cast<GLfloat>(m_screenHeight),
 			0.1f, 100.0f
 		);
 		glm::mat4 view = m_camera->GetViewMatrix();
@@ -467,14 +468,15 @@ void Core::MainLoop()
 		assimpModelShader->SetInt("nSpotlights", static_cast<GLint>(spotlightIdx));
 		assimpModelShader->SetInt("nDirectionalLights", static_cast<GLint>(directionalLightIdx));
 
-		// 1. First render pass: render the models and gizmos as normal, writing to the stencil buffer
-		// -------------------------------------------------------------------------------------------
+		// 1. First render pass: render the models as normal, writing to the stencil buffer
+		// --------------------------------------------------------------------------------
 		// Stencil buffer configuration:
 		// 1. Set the stencil function to always pass
 		// 2. Set the stencil mask to write to the stencil buffer
 		glStencilFunc(GL_ALWAYS, 1, 0xFF);
 		glStencilMask(0xFF);
 
+		// Render the models in the scene (all models, including gizmo shapes)
 		// iterate over the vector of assets of type "MODEL" and render the different types of models
 		std::for_each(m_assets["MODEL"].begin(), m_assets["MODEL"].end(),
 					  [&](const std::shared_ptr<Asset>& asset)
@@ -543,11 +545,11 @@ void Core::MainLoop()
 					// activate the current shader program
 					currentShader->Use();
 
-					// set the color of the gizmo shape based on the model's albedo
-					currentShader->SetVec3("albedo", model->GetAlbedo());
-
 					// set the model matrix for the gizmo model
 					currentShader->SetMat4("model", model->GetModelMatrix());
+
+					// set the color of the gizmo shape based on the model's albedo
+					currentShader->SetVec3("albedo", model->GetAlbedo());
 
 					// set the polygon mode to line for light gizmos
 					glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -561,6 +563,10 @@ void Core::MainLoop()
 			// draw the model using the current shader program
 			model->Draw(*currentShader);
 		});
+
+		// Render the directional light gizmo lines (which are not models, but lines)
+		// set the polygon mode to line for the directional light gizmo lines
+		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
 		// iterate over the vector of assets of type "LIGHT" and render the directional light gizmo lines
 		std::for_each(m_assets["LIGHT"].begin(), m_assets["LIGHT"].end(),
@@ -605,8 +611,8 @@ void Core::MainLoop()
 			}
 		});
 
-		// 2. Second render pass: render outlines for the models and gizmos by extruding vertices 
-		//    along their normals in the vertex shader. 
+		// 2. Second render pass: render outlines for the models by extruding vertices along 
+		//    their normals in the vertex shader. 
 		//    This creates a uniform outline around the objects, regardless of their shape or size.
 		//    The outline is rendered using a dedicated outline shader with a configurable thickness
 		// -----------------------------------------------------------------------------------------
@@ -614,10 +620,13 @@ void Core::MainLoop()
 		// 1. Set the stencil function to pass only if the stencil value is not equal 
 		//    to the reference value, which is set to 1 in this case
 		// 2. Set the stencil mask to not write to the stencil buffer
-		// 3. Disable the depth test to ensure the outline is rendered on top of the models and gizmos
+		// 3. Disable the depth test to ensure the outline is rendered on top of the models
 		glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
 		glStencilMask(0x00);
 		glDisable(GL_DEPTH_TEST);
+
+		// set the polygon mode to fill for the outlines
+		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
 		// activate the outline shader for rendering the outlines
 		outlineShader->Use();
@@ -625,7 +634,7 @@ void Core::MainLoop()
 		outlineShader->SetFloat("outlineThickness", 0.5f);
 
 		// iterate over the vector of assets of type "MODEL" and render the outlines
-		// for the models and gizmos that were rendered in the first pass
+		// for the models that were rendered in the first pass
 		std::for_each(m_assets["MODEL"].begin(), m_assets["MODEL"].end(),
 					  [&](const std::shared_ptr<Asset>& asset)
 		{
@@ -636,7 +645,7 @@ void Core::MainLoop()
 			outlineShader->SetMat4("model", model->GetModelMatrix());
 
 			// set the outline color based on the model's albedo
-			outlineShader->SetVec3("albedo", model->GetAlbedo());
+			outlineShader->SetVec3("outlineAlbedo", model->GetAlbedo());
 
 			model->Draw(*outlineShader);
 		});

@@ -55,14 +55,28 @@ void GUI::Setup()
 	// get ImGuiIO object to access the display size later
 	ImGuiIO& io = ImGui::GetIO();
 
-	// Information Window
-	// ------------------
-	// set initial window size to 320 x (DisplaySize.y - 20) pixels 
-	// (i.e. full height of the window with some padding)
-	ImGui::SetNextWindowSize(ImVec2(320, io.DisplaySize.y - 20), ImGuiCond_Appearing);
-	// set initial window position to the top-left corner (with some padding)
-	ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_Appearing);
-	// set the window to be collapsed (i.e. minimized)
+	// Configuration of the GUI
+	// ------------------------
+	// relative width of a panel window (30% of the display width)
+	float panelRelativeWidth{ 0.3f };
+	// padding for the panel window (position and size)
+	ImVec2 panelPadding{ 20.0f, 10.0f };
+	// relative offset for the right panel window (75% of the display width)
+	float rightPanelOffset{ 0.75f };
+
+	// size (width and height) of a panel window (30% of the display width, full height minus padding)
+	ImVec2 panelSize{ io.DisplaySize.x * panelRelativeWidth, io.DisplaySize.y - panelPadding.x };
+	// position of the left panel window (top left corner with padding)
+	ImVec2 leftPanelPosition{ panelPadding.y, panelPadding.y };
+	// position of the right panel window (top right corner with padding)
+	ImVec2 rightPanelPosition{ io.DisplaySize.x * rightPanelOffset - panelPadding.y, panelPadding.y };
+
+	// Scene Information Panel Window
+	// ------------------------------
+	// set initial size and position for the left panel window
+	ImGui::SetNextWindowSize(panelSize, ImGuiCond_Appearing);
+	ImGui::SetNextWindowPos(leftPanelPosition, ImGuiCond_Appearing);
+	// set the left panel window to be collapsed (i.e. minimized)
 	ImGui::SetNextWindowCollapsed(true, ImGuiCond_Appearing);
 
 	// show a window that displays all information about the assets in the scene 
@@ -261,14 +275,12 @@ void GUI::Setup()
 		ImGui::End();
 	}
 
-	// Properties Window
-	// -----------------
-	// set initial window size to 320 x (DisplaySize.y - 20) pixels 
-	// (i.e. full height of the window with some padding)
-	ImGui::SetNextWindowSize(ImVec2(320, io.DisplaySize.y - 20), ImGuiCond_Appearing);
-	// set initial window position to the top-right corner (with some padding)
-	ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x - 330, 10), ImGuiCond_Appearing);
-	// set the window to be not collapsed (i.e. not minimized)
+	// Scene Settings Panel Window
+	// ---------------------------
+	// set initial size and position for the right panel window
+	ImGui::SetNextWindowSize(panelSize, ImGuiCond_Appearing);
+	ImGui::SetNextWindowPos(rightPanelPosition, ImGuiCond_Appearing);
+	// set the right panel window to be expanded (i.e. not minimized)
 	ImGui::SetNextWindowCollapsed(false, ImGuiCond_Appearing);
 
 	// show a window that allows the user to change the properties of the assets in the scene
@@ -753,7 +765,7 @@ void GUI::Setup()
 			ImGuiFileDialog::Instance()->OpenDialog(
 				"ChooseFileDlgKey", // unique key for the file dialog
 				"Choose Model File", // title of the file dialog
-				".obj, .fbx, .dae, .gltf, .glb, .stl", // supported file extensions
+				".obj, .fbx, .dae, .gltf, .glb, .stl, .ply, .3ds", // supported file extensions
 				fileDialogConfig // file dialog configuration
 			);
 		}
