@@ -295,8 +295,7 @@ void Core::MainLoop()
 		glm::mat4 projection = glm::perspective(
 			glm::radians(m_camera->GetZoom()),
 			static_cast<GLfloat>(m_screenWidth) / static_cast<GLfloat>(m_screenHeight),
-			0.1f, 100.0f
-		);
+			0.1f, 100.0f);
 		glm::mat4 view = m_camera->GetViewMatrix();
 		// set the view and projection matrices for each shader program
 		for (auto& shader : shaders)
@@ -478,6 +477,15 @@ void Core::MainLoop()
 
 		// Render the models in the scene (all models, including gizmo shapes)
 		// iterate over the vector of assets of type "MODEL" and render the different types of models
+		// II. Second render pass: render the models as normal, writing to the stencil buffer
+		// I. First render pass: render the models as normal, writing to the stencil buffer
+		// stencil buffer configuration
+		// 1. Set the stencil function to always pass
+		// 2. Set the stencil mask to write to the stencil buffer
+		glStencilFunc(GL_ALWAYS, 1, 0xFF);
+		glStencilMask(0xFF);
+
+		// iterate over the vector of assets of type "MODEL" and render the models
 		std::for_each(m_assets["MODEL"].begin(), m_assets["MODEL"].end(),
 					  [&](const std::shared_ptr<Asset>& asset)
 		{
@@ -564,7 +572,6 @@ void Core::MainLoop()
 			model->Draw(*currentShader);
 		});
 
-		// Render the directional light gizmo lines (which are not models, but lines)
 		// set the polygon mode to line for the directional light gizmo lines
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
@@ -611,12 +618,11 @@ void Core::MainLoop()
 			}
 		});
 
-		// 2. Second render pass: render outlines for the models by extruding vertices along 
-		//    their normals in the vertex shader. 
-		//    This creates a uniform outline around the objects, regardless of their shape or size.
-		//    The outline is rendered using a dedicated outline shader with a configurable thickness
-		// -----------------------------------------------------------------------------------------
-		// Stencil buffer configuration:
+		// II. Second render pass: render outlines for the models by extruding vertices along 
+		//     their normals in the vertex shader. 
+		//     This creates a uniform outline around the objects, regardless of their shape or size.
+		//	   The outline is rendered using a dedicated outline shader with a configurable thickness
+		// stencil buffer configuration
 		// 1. Set the stencil function to pass only if the stencil value is not equal 
 		//    to the reference value, which is set to 1 in this case
 		// 2. Set the stencil mask to not write to the stencil buffer
@@ -650,7 +656,7 @@ void Core::MainLoop()
 			model->Draw(*outlineShader);
 		});
 
-		// Stencil buffer configuration:
+		// stencil buffer configuration
 		// 4. Re-enable writing to the stencil buffer
 		// 5. Set the stencil function to always pass again
 		// 6. Re-enable the depth test

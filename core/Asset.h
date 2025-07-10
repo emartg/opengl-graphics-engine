@@ -15,8 +15,11 @@ class Asset
 public:
 	// Constructors
 	// ------------
+	// This constructor initializes the asset with a unique ID, a name, and an asset type.
+	// The ID is pre-incremented to ensure each asset has a unique identifier starting from 1,
+	// since 0 is reserved as a sentinel value to indicate that no asset is selected
 	Asset(const std::string& name, const AssetType type)
-		: id{ nAssets++ }, name{ name }, type{ type } {}
+		: id{ ++nAssets }, name{ name }, type{ type } {}
 
 	// Virtual destructor
 	// ------------------
@@ -31,12 +34,12 @@ public:
 	virtual void DeallocateResources() = 0;
 
 	// Getters
-	virtual std::uint32_t GetID() const { return id; }
+	virtual std::uint32_t GetId() const { return id; }
 	virtual const std::string& GetName() const { return name; }
 	virtual const AssetType& GetType() const { return type; }
 
 	// Setters
-	virtual void SetID(std::uint32_t id) { this->id = id; }
+	virtual void SetId(std::uint32_t id) { this->id = id; }
 	virtual void SetName(const std::string& name) { this->name = name; }
 	virtual void SetType(const AssetType& type) { this->type = type; }
 

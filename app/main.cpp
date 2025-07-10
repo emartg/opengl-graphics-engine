@@ -8,7 +8,8 @@
 #include <memory> // for smart pointers
 #include <filesystem>
 
-// includes from this module
+#include "renderer/GLFWRenderer.h"
+
 #include "../core/Core.h"
 #include "../core/light/DirectionalLight.h"
 #include "../core/light/PointLight.h"
@@ -16,9 +17,6 @@
 #include "../core/model/Model.h"
 #include "../core/model/Shape.h"
 #include "../core/model/AssimpModel.h"
-
-// includes from the App module
-#include "renderer/GLFWRenderer.h"
 
 int main(int argc, char** argv)
 {
