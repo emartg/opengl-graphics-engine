@@ -114,14 +114,15 @@ void Core::InitOGL() const
 
 	// OpenGL global state configuration
 	// ---------------------------------
-	// Depth buffer configuration:
+	// depth buffer configuration:
 	// 1. Enable the depth test
 	// 2. Set the depth function to GL_LESS, which is the default depth function,
 	//    i.e., discard fragments whose depth value is greater than or equal to 
 	//    the current fragment's depth value
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS); // default depth function (discard fragments behind the current fragment)
-	// Stencil buffer configuration:
+
+	// stencil buffer configuration:
 	// 1. Enable the stencil test
 	// 2. Set the stencil operation to replace the stencil value with the reference value 
 	//	  if both the stencil test and depth test pass
@@ -288,8 +289,9 @@ void Core::MainLoop()
 
 		// Per-frame shader configuration
 		// ------------------------------
+		// set clear color and clear the color, depth, and stencil buffers
 		m_renderer->SetClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-		m_renderer->ClearBuffers(); // clear the color, depth, and stencil buffers
+		m_renderer->ClearBuffers();
 
 		// compute view/projection transformations
 		glm::mat4 projection = glm::perspective(
@@ -467,19 +469,8 @@ void Core::MainLoop()
 		assimpModelShader->SetInt("nSpotlights", static_cast<GLint>(spotlightIdx));
 		assimpModelShader->SetInt("nDirectionalLights", static_cast<GLint>(directionalLightIdx));
 
-		// 1. First render pass: render the models as normal, writing to the stencil buffer
-		// --------------------------------------------------------------------------------
-		// Stencil buffer configuration:
-		// 1. Set the stencil function to always pass
-		// 2. Set the stencil mask to write to the stencil buffer
-		glStencilFunc(GL_ALWAYS, 1, 0xFF);
-		glStencilMask(0xFF);
-
-		// Render the models in the scene (all models, including gizmo shapes)
-		// iterate over the vector of assets of type "MODEL" and render the different types of models
-		// II. Second render pass: render the models as normal, writing to the stencil buffer
 		// I. First render pass: render the models as normal, writing to the stencil buffer
-		// stencil buffer configuration
+		// stencil buffer configuration:
 		// 1. Set the stencil function to always pass
 		// 2. Set the stencil mask to write to the stencil buffer
 		glStencilFunc(GL_ALWAYS, 1, 0xFF);
@@ -618,11 +609,11 @@ void Core::MainLoop()
 			}
 		});
 
-		// II. Second render pass: render outlines for the models by extruding vertices along 
+		// II. Second render pass: render outlines for the non-gizmo models by extruding vertices along 
 		//     their normals in the vertex shader. 
 		//     This creates a uniform outline around the objects, regardless of their shape or size.
 		//	   The outline is rendered using a dedicated outline shader with a configurable thickness
-		// stencil buffer configuration
+		// stencil buffer configuration:
 		// 1. Set the stencil function to pass only if the stencil value is not equal 
 		//    to the reference value, which is set to 1 in this case
 		// 2. Set the stencil mask to not write to the stencil buffer
@@ -640,12 +631,18 @@ void Core::MainLoop()
 		outlineShader->SetFloat("outlineThickness", 0.5f);
 
 		// iterate over the vector of assets of type "MODEL" and render the outlines
-		// for the models that were rendered in the first pass
+		// for the non-gizmo models that were rendered in the first pass
 		std::for_each(m_assets["MODEL"].begin(), m_assets["MODEL"].end(),
 					  [&](const std::shared_ptr<Asset>& asset)
 		{
 			// dynamically cast the asset to a Model object
 			auto model = dynamic_cast<Model*>(asset.get());
+
+			// get the gizmo type of the model
+			GizmoType gizmoType = model->GetGizmoType();
+			// skip rendering outlines using this method if the model is a gizmo
+			if (gizmoType != GizmoType::NONE)
+				return;
 
 			// set the model matrix for the outline
 			outlineShader->SetMat4("model", model->GetModelMatrix());

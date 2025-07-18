@@ -146,4 +146,5 @@ protected:
 	static constexpr glm::vec3 ROTATION_IN_EULER_ANGLES{ 0.0f, 0.0f, 0.0f }; // no rotation
 	static constexpr glm::vec3 SCALE{ 1.0f }; // unit vector
 	static constexpr glm::vec3 FORWARD{ 0.0f, 0.0f, 1.0f }; // +Z direction
+
 };

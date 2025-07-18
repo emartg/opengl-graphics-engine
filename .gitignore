@@ -416,3 +416,9 @@ CMakeUserPresets.json
 **/cmake_install.cmake
 **/install_manifest.txt
 **/compile_commands.json
+
+
+## Ignore other specific files and directories
+
+# Information about the structure of the Project
+*tree*

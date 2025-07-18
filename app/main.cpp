@@ -116,18 +116,18 @@ int main(int argc, char** argv)
 	std::string filename = std::filesystem::path(filepath).filename().string();
 	// load the model from the assets folder and create an AssimpModel object.
 	// The name of the model will "filename (Model n)"
-	auto constructionHelmetModel = std::make_shared<AssimpModel>(
+	auto trafficConeModel = std::make_shared<AssimpModel>(
 		filename + " (Model " + nModels + ")",
 		filepath,
-		glm::vec3{ 0.5f }, // diffuse color (override required although it is the default)
+		glm::vec3{ 0.8f }, // diffuse color (override required although it is the default)
 		glm::vec3{ 0.0f }, // position (override required although it is the default)
 		glm::vec3{ 0.0f, 45.0f, 0.0f }, // rotation in Euler angles (overridden)
 		glm::vec3{ 0.15f } // scale (overridden)
 	);
-	engine->AddAsset(std::move(constructionHelmetModel)); // add the model to the engine
+	engine->AddAsset(std::move(trafficConeModel)); // add the model to the engine
 
-	// define shader names and paths and compile the shaders
-	std::vector<std::string> shaderNames{
+	// define shader program names and their paths and compile the shaders
+	std::vector<std::string> shaderProgramNames{
 		"Untextured Matt Shape Shader Program",
 		"Assimp Model Shader Program",
 		"Single Albedo Shader Program",
@@ -145,7 +145,7 @@ int main(int argc, char** argv)
 		"shaders/single_albedo.frag.glsl",
 		"shaders/outline.frag.glsl"
 	};
-	engine->CompileShaders(shaderNames, vertexShaderPaths, fragmentShaderPaths);
+	engine->CompileShaders(shaderProgramNames, vertexShaderPaths, fragmentShaderPaths);
 
 	// run the main loop of the engine
 	engine->MainLoop();
