@@ -57,24 +57,37 @@ void GUI::Setup()
 
 	// Configuration of the GUI
 	// ------------------------
-	// relative width of a panel window (30% of the display width)
-	float panelRelativeWidth{ 0.3f };
-	// padding for the panel window (position and size)
-	ImVec2 panelPadding{ 20.0f, 10.0f };
-	// relative offset for the right panel window (75% of the display width)
-	float rightPanelOffset{ 0.75f };
+	float leftPanelRelativeWidth{ 0.3f }; // relative width of the left panel window
+	float rightPanelRelativeWidth{ 0.2f }; // relative width of the right panel window
+	ImVec2 panelPositionPadding{ 10.0f, 10.0f }; // padding for the position of the panel window
+	ImVec2 panelSizePadding{ 20.f, 20.0f }; // padding for the size of the panel window
+	float rightPanelOffset{ 1.0f - rightPanelRelativeWidth }; // offset for the right panel window
 
-	// size (width and height) of a panel window (30% of the display width, full height minus padding)
-	ImVec2 panelSize{ io.DisplaySize.x * panelRelativeWidth, io.DisplaySize.y - panelPadding.x };
+	// size (width and height) of the left panel window
+	ImVec2 leftPanelSize{
+		io.DisplaySize.x * leftPanelRelativeWidth - panelSizePadding.x, // width
+		io.DisplaySize.y - panelSizePadding.y // height
+	};
+	// size (width and height) of the right panel window
+	ImVec2 rightPanelSize{
+		io.DisplaySize.x * rightPanelRelativeWidth - panelSizePadding.x, // width
+		io.DisplaySize.y - panelSizePadding.y // height
+	};
 	// position of the left panel window (top left corner with padding)
-	ImVec2 leftPanelPosition{ panelPadding.y, panelPadding.y };
+	ImVec2 leftPanelPosition{
+		panelPositionPadding.x, // x position
+		panelPositionPadding.y // y position
+	};
 	// position of the right panel window (top right corner with padding)
-	ImVec2 rightPanelPosition{ io.DisplaySize.x * rightPanelOffset - panelPadding.y, panelPadding.y };
+	ImVec2 rightPanelPosition{
+		io.DisplaySize.x * rightPanelOffset + panelPositionPadding.x, // x position
+		panelPositionPadding.y // y position
+	};
 
 	// Scene Information Panel Window
 	// ------------------------------
 	// set initial size and position for the left panel window
-	ImGui::SetNextWindowSize(panelSize, ImGuiCond_Appearing);
+	ImGui::SetNextWindowSize(leftPanelSize, ImGuiCond_Appearing);
 	ImGui::SetNextWindowPos(leftPanelPosition, ImGuiCond_Appearing);
 	// set the left panel window to be collapsed (i.e. minimized)
 	ImGui::SetNextWindowCollapsed(true, ImGuiCond_Appearing);
@@ -278,7 +291,7 @@ void GUI::Setup()
 	// Scene Settings Panel Window
 	// ---------------------------
 	// set initial size and position for the right panel window
-	ImGui::SetNextWindowSize(panelSize, ImGuiCond_Appearing);
+	ImGui::SetNextWindowSize(rightPanelSize, ImGuiCond_Appearing);
 	ImGui::SetNextWindowPos(rightPanelPosition, ImGuiCond_Appearing);
 	// set the right panel window to be expanded (i.e. not minimized)
 	ImGui::SetNextWindowCollapsed(false, ImGuiCond_Appearing);
@@ -313,8 +326,8 @@ void GUI::Setup()
 					// get the color of the directional light
 					glm::vec3 color = directionalLight->GetDiffuse();
 					// create a color picker for the directional light's color
-					if (ImGui::ColorEdit3("Color", (float*)&color)) // if the color picker is used
-					{
+					if (drawColorControl("Albedo", color))
+					{ // if the color control is used
 						directionalLight->SetDiffuse(color); // set the new color of the directional light
 						directionalLight->SyncGizmoColorFromLight(); // set the new color of the gizmo
 					}
@@ -322,11 +335,10 @@ void GUI::Setup()
 					// get the position of the directional light 
 					// (so that the user can see it, but it is not used for directional lights)
 					glm::vec3 pos = directionalLight->GetPosition();
-					// create a slider for the x, y, and z components of the directional light's position
-					if (ImGui::SliderFloat3("Position", (float*)&pos,
-											MIN_POSITION_SLIDER_VALUE,
-											MAX_POSITION_SLIDER_VALUE)) // if the slider is moved
-					{
+					// create a control for the x, y, and z components of the directional light's position
+					if (drawVec3Control("Position", pos, false, // is not the scale control
+										DEFAULT_MIN_POSITION_VALUE, DEFAULT_MAX_POSITION_VALUE))
+					{ // if the control is used
 						directionalLight->SetPosition(pos); // set the new position of the directional light
 						directionalLight->SyncGizmoPositionFromLight(); // set the new position of the gizmo
 					}
@@ -335,11 +347,10 @@ void GUI::Setup()
 					// and its rotation in Euler angles
 					auto gizmo = directionalLight->GetGizmo();
 					glm::vec3 rotDegrees = gizmo->GetRotationInEulerAngles();
-					// create a slider for the x, y, and z components of the directionalLight's rotation
-					if (ImGui::SliderFloat3("Rotation", (float*)&rotDegrees,
-											MIN_ROTATION_SLIDER_VALUE,
-											MAX_ROTATION_SLIDER_VALUE)) // if the slider is moved
-					{
+					// create a control for the x, y, and z components of the directional light's rotation
+					if (drawVec3Control("Rotation", rotDegrees, false, // is not the scale control
+										DEFAULT_MIN_ROTATION_VALUE, DEFAULT_MAX_ROTATION_VALUE))
+					{ // if the control is used
 						// set the new rotation of the directional light's gizmo
 						gizmo->SetRotationInEulerAngles(rotDegrees);
 						// update the light's direction based on the gizmo's new forward vector,
@@ -367,19 +378,18 @@ void GUI::Setup()
 					// get the color of the point light
 					glm::vec3 color = pointLight->GetDiffuse();
 					// create a color picker for the point light's color
-					if (ImGui::ColorEdit3("Color", (float*)&color)) // if the color picker is used
-					{
+					if (drawColorControl("Albedo", color))
+					{ // if the color control is used
 						pointLight->SetDiffuse(color); // set the new color of the point light
 						pointLight->SyncGizmoColorFromLight(); // set the new color of the gizmo
 					}
 
 					// get the position of the point light
 					glm::vec3 pos = pointLight->GetPosition();
-					// create a slider for the x, y, and z components of the point light's position
-					if (ImGui::SliderFloat3("Position", (float*)&pos,
-											MIN_POSITION_SLIDER_VALUE,
-											MAX_POSITION_SLIDER_VALUE)) // if the slider is moved
-					{
+					// create a control for the x, y, and z components of the point light's position
+					if (drawVec3Control("Position", pos, false, // is not the scale control
+										DEFAULT_MIN_POSITION_VALUE, DEFAULT_MAX_POSITION_VALUE))
+					{ // if the control is used
 						pointLight->SetPosition(pos); // set the new position of the point light
 						pointLight->SyncGizmoPositionFromLight(); // set the new position of the gizmo
 					}
@@ -403,19 +413,18 @@ void GUI::Setup()
 					// get the color of the spotlight
 					glm::vec3 color = spotlight->GetDiffuse();
 					// create a color picker for the spotlight's color
-					if (ImGui::ColorEdit3("Color", (float*)&color)) // if the color picker is used
-					{
+					if (drawColorControl("Albedo", color))
+					{ // if the color control is used
 						spotlight->SetDiffuse(color); // set the new color of the spotlight
 						spotlight->SyncGizmoColorFromLight(); // set the new color of the gizmo
 					}
 
 					// get the position of the spotlight
 					glm::vec3 pos = spotlight->GetPosition();
-					// create a slider for the x, y, and z components of the spotlight's position
-					if (ImGui::SliderFloat3("Position", (float*)&pos,
-											MIN_POSITION_SLIDER_VALUE,
-											MAX_POSITION_SLIDER_VALUE)) // if the slider is moved
-					{
+					// create a control for the x, y, and z components of the spotlight's position
+					if (drawVec3Control("Position", pos, false, // is not the scale control
+										DEFAULT_MIN_POSITION_VALUE, DEFAULT_MAX_POSITION_VALUE))
+					{ // if the control is used
 						spotlight->SetPosition(pos); // set the new position of the spotlight
 						spotlight->SyncGizmoPositionFromLight(); // set the new position of the gizmo
 					}
@@ -423,11 +432,11 @@ void GUI::Setup()
 					// get a reference to the gizmo of the spotlight and its rotation in Euler angles
 					auto gizmo = spotlight->GetGizmo();
 					glm::vec3 rotDegrees = gizmo->GetRotationInEulerAngles();
-					// create a slider for the x, y, and z components of the spotlight's rotation
-					if (ImGui::SliderFloat3("Rotation", (float*)&rotDegrees,
-											MIN_ROTATION_SLIDER_VALUE,
-											MAX_ROTATION_SLIDER_VALUE)) // if the slider is moved
-					{
+					// create a control for the x, y, and z components of the spotlight's rotation
+					if (drawVec3Control("Rotation", rotDegrees, false, // is not the scale control
+										DEFAULT_MIN_ROTATION_VALUE, DEFAULT_MAX_ROTATION_VALUE,
+										60.0f, 0.75f))
+					{ // if the control are used
 						// set the new rotation of the spotlight's gizmo
 						gizmo->SetRotationInEulerAngles(rotDegrees);
 						// update the light's direction based on the gizmo's new forward vector,
@@ -435,36 +444,25 @@ void GUI::Setup()
 						spotlight->SetDirectionOnly(gizmo->GetForward());
 					}
 
+					ImGui::Text("Cut-off Angles");
 					// get the inner and outer cut-off angles of the spotlight and 
-					// convert them from radians (cosine) to degrees for the sliders
+					// convert them from radians (cosine) to degrees for the controls
 					float innerCutOff = glm::degrees(glm::acos(spotlight->GetInnerCutOff()));
 					float outerCutOff = glm::degrees(glm::acos(spotlight->GetOuterCutOff()));
-					// clamp the maximum value of the inner cut-off angle slider 
-					// so that it does not exceed the outer cut-off angle
-					// (the inner cut-off angle must be less than or equal to the outer cut-off angle)
-					float currentInnerMaxCutOffSliderValue = std::min(MAX_INNER_CUTOFF_SLIDER_VALUE,
-																	  outerCutOff);
-					// create a slider for the inner cut-off angle of the spotlight
-					if (ImGui::SliderFloat("Inner Cut-off", &innerCutOff,
-										   MIN_INNER_CUTOFF_SLIDER_VALUE,
-										   currentInnerMaxCutOffSliderValue)) // max is outerCutOff
-					{
-						// clamp to avoid going above outerCutOff
-						// (the inner cut-off angle must be less than or equal to the outer cut-off angle)
-						if (innerCutOff > outerCutOff) innerCutOff = outerCutOff;
-						// convert back to radians and cosine and 
+					// create controls for the inner and outer cut-off angles of the spotlight
+					if (drawFloatControl("Inner", innerCutOff,
+										 DEFAULT_MIN_INNER_CUTOFF_VALUE, outerCutOff, // innerCutOff <= outerCutOff
+										 60.0f, 0.1f, 15.0f)) // the reset value is 15 degrees
+					{ // if the control is used
+						// convert back to radians and cosine and
 						// set the new inner cut-off angle for the spotlight
 						spotlight->SetInnerCutOff(glm::cos(glm::radians(innerCutOff)));
 					}
-					// create a slider for the outer cut-off angle of the spotlight
-					if (ImGui::SliderFloat("Outer Cut-off", &outerCutOff,
-										   MIN_OUTER_CUTOFF_SLIDER_VALUE,
-										   MAX_OUTER_CUTOFF_SLIDER_VALUE))
-					{
-						// clamp to avoid going below innerCutOff 
-						// (the inner cut-off angle must be less than or equal to the outer cut-off angle)
-						if (outerCutOff < innerCutOff) outerCutOff = innerCutOff;
-						// convert back to radians and cosine and 
+					if (drawFloatControl("Outer", outerCutOff,
+										 innerCutOff, DEFAULT_MAX_OUTER_CUTOFF_VALUE, // outerCutOff >= innerCutOff
+										 60.0f, 0.1f, 32.5f)) // the reset value is 32.5 degrees
+					{ // if the control is used
+						// convert back to radians and cosine and
 						// set the new outer cut-off angle for the spotlight
 						spotlight->SetOuterCutOff(glm::cos(glm::radians(outerCutOff)));
 					}
@@ -508,117 +506,42 @@ void GUI::Setup()
 					// get the color of the model
 					glm::vec3 color = model->GetAlbedo();
 					// create a color picker for the model's color
-					if (ImGui::ColorEdit3("Color", (float*)&color)) // if the color picker is used
-					{
+					if (drawColorControl("Albedo", color))
+					{ // if the color control is used
 						model->SetAlbedo(color); // set the new color of the model
 					}
 				}
 
 				// get the position of the model
 				glm::vec3 pos = model->GetPosition();
-				// create a slider for the x, y, and z components of the model's position
-				if (ImGui::SliderFloat3("Position", (float*)&pos,
-										MIN_POSITION_SLIDER_VALUE,
-										MAX_POSITION_SLIDER_VALUE)) // if the slider is moved
-				{
+				// create a control for the x, y, and z components of the model's position
+				if (drawVec3Control("Position", pos, false, // is not the scale control
+									DEFAULT_MIN_POSITION_VALUE, DEFAULT_MAX_POSITION_VALUE))
+				{ // if the control is used
 					model->SetPosition(pos); // set the new position of the model
 				}
 
 				// get the rotation in Euler angles
 				glm::vec3 rotDegrees = model->GetRotationInEulerAngles();
-				// create a slider for the x, y, and z components of the model's rotation
-				if (ImGui::SliderFloat3("Rotation", (float*)&rotDegrees,
-										MIN_ROTATION_SLIDER_VALUE,
-										MAX_ROTATION_SLIDER_VALUE)) // if the slider is moved
-				{
+				// create a control for the x, y, and z components of the model's rotation
+				if (drawVec3Control("Rotation", rotDegrees, false, // is not the scale control
+									DEFAULT_MIN_ROTATION_VALUE, DEFAULT_MAX_ROTATION_VALUE,
+									60.0f, 0.5f))
+				{ // if the control is used
 					model->SetRotationInEulerAngles(rotDegrees); // set the new rotation of the model
 				}
 
 				// get the scale of the model
 				glm::vec3 scale = model->GetScale();
-				// get name of the model to use it for unique IDs
-				std::string name = model->GetName();
-
-				ImGui::Text("Scale");
-
-				// checkbox to enable/disable proportional scaling
-				ImGui::Checkbox("Proportional Scaling", &s_proportionalScaling);
-
-				// editable fields with up/down arrows for each component
-				float prevScaleX = scale.x, prevScaleY = scale.y, prevScaleZ = scale.z;
-				float step = 0.001f; // step size for arrows
-
-				// use PushID to create a unique ID for the scale controls
-				ImGui::PushID(name.append("_scale").c_str());
-
-				// X
-				ImGui::PushID(name.append("_scaleX").c_str());
-				ImGui::SetNextItemWidth(60);
-				ImGui::InputFloat("x", &scale.x, 0.0f, 0.0f, "%.3f");
-				ImGui::SameLine();
-				if (ImGui::ArrowButton("##upX", ImGuiDir_Up)) scale.x += step;
-				ImGui::SameLine();
-				if (ImGui::ArrowButton("##downX", ImGuiDir_Down)) scale.x -= step;
-				ImGui::PopID(); // use PopID to end the unique ID scope
-
-				// Y
-				ImGui::PushID(name.append("_scaleY").c_str());
-				ImGui::SetNextItemWidth(60);
-				ImGui::InputFloat("y", &scale.y, 0.0f, 0.0f, "%.3f");
-				ImGui::SameLine();
-				if (ImGui::ArrowButton("##upY", ImGuiDir_Up)) scale.y += step;
-				ImGui::SameLine();
-				if (ImGui::ArrowButton("##downY", ImGuiDir_Down)) scale.y -= step;
-				ImGui::PopID(); // use PopID to end the unique ID scope
-
-				// Z
-				ImGui::PushID(name.append("_scaleZ").c_str());
-				ImGui::SetNextItemWidth(60);
-				ImGui::InputFloat("z", &scale.z, 0.0f, 0.0f, "%.3f");
-				ImGui::SameLine();
-				if (ImGui::ArrowButton("##upZ", ImGuiDir_Up)) scale.z += step;
-				ImGui::SameLine();
-				if (ImGui::ArrowButton("##downZ", ImGuiDir_Down)) scale.z -= step;
-				ImGui::PopID(); // use PopID to end the unique ID scope
-
-				ImGui::PopID(); // end of unique ID scope for scale controls
-
-				// ensure scale values are within the defined limits
-				scale.x = std::clamp(scale.x, MIN_SCALE_SLIDER_VALUE, MAX_SCALE_SLIDER_VALUE);
-				scale.y = std::clamp(scale.y, MIN_SCALE_SLIDER_VALUE, MAX_SCALE_SLIDER_VALUE);
-				scale.z = std::clamp(scale.z, MIN_SCALE_SLIDER_VALUE, MAX_SCALE_SLIDER_VALUE);
-
-				// if proportional scaling is enabled, 
-				// set the other components to the same value as the one that was changed by the user
-				if (s_proportionalScaling)
-				{
-					// if the user changes the x component, set y and z to the same value
-					if (scale.x != prevScaleX)
-					{
-						scale.y = scale.x;
-						scale.z = scale.x;
-					}
-					// if the user changes the y component, set x and z to the same value
-					else if (scale.y != prevScaleY)
-					{
-						scale.x = scale.y;
-						scale.z = scale.y;
-					}
-					// if the user changes the z component, set x and y to the same value
-					else if (scale.z != prevScaleZ)
-					{
-						scale.x = scale.z;
-						scale.y = scale.z;
-					}
+				// create a control for the x, y, and z components of the model's scale
+				if (drawVec3Control("Scale", scale, true, // is the scale control
+									DEFAULT_MIN_SCALE_VALUE, DEFAULT_MAX_SCALE_VALUE,
+									60.0f, 0.0005f, 1.0f))
+				{ // if the control is used
+					model->SetScale(scale); // set the new scale of the model
 				}
 
-				// apply the new scale to the model only if it has changed
-				if (scale.x != prevScaleX || scale.y != prevScaleY || scale.z != prevScaleZ)
-					model->SetScale(scale);
-
-				ImGui::PopID(); // use PopID to end the unique ID scope 
-
-				ImGui::Separator(); // add a separator between models
+				ImGui::PopID();
 			}
 		}
 
@@ -630,8 +553,8 @@ void GUI::Setup()
 			// get a random color and a random direction for the directional light and its gizmo
 			glm::vec3 newColor = m_randomizer->GenerateRandomColor();
 			glm::vec3 newPos = m_randomizer->GenerateRandomPosition(glm::vec3(0.0f), // origin
-																	MIN_DISTANCE_FROM_ORIGIN,
-																	MAX_DISTANCE_FROM_ORIGIN);
+																	DEFAULT_MIN_DISTANCE_FROM_ORIGIN,
+																	DEFAULT_MAX_DISTANCE_FROM_ORIGIN);
 			glm::vec3 newDir = m_randomizer->GenerateRandomDirection();
 
 			// get the current number of models in the scene
@@ -666,8 +589,8 @@ void GUI::Setup()
 			// get a random color, a random position, and a random direction for the spotlight and its gizmo
 			glm::vec3 newColor = m_randomizer->GenerateRandomColor();
 			glm::vec3 newPos = m_randomizer->GenerateRandomPosition(glm::vec3(0.0f), // origin
-																	MIN_DISTANCE_FROM_ORIGIN,
-																	MAX_DISTANCE_FROM_ORIGIN);
+																	DEFAULT_MIN_DISTANCE_FROM_ORIGIN,
+																	DEFAULT_MAX_DISTANCE_FROM_ORIGIN);
 			glm::vec3 newDir = m_randomizer->GenerateRandomDirection();
 
 			// get the current number of models in the scene
@@ -702,8 +625,8 @@ void GUI::Setup()
 			// get a random color and a random position for the point light and its gizmo
 			glm::vec3 newColor = m_randomizer->GenerateRandomColor();
 			glm::vec3 newPos = m_randomizer->GenerateRandomPosition(glm::vec3(0.0f), // origin
-																	MIN_DISTANCE_FROM_ORIGIN,
-																	MAX_DISTANCE_FROM_ORIGIN);
+																	DEFAULT_MIN_DISTANCE_FROM_ORIGIN,
+																	DEFAULT_MAX_DISTANCE_FROM_ORIGIN);
 
 			// get the current number of models in the scene
 			std::string nModels = std::to_string(Core::GetInstance()->GetNModels());
@@ -736,8 +659,8 @@ void GUI::Setup()
 			// get a random color and a random position for the cube shape
 			glm::vec3 newColor = m_randomizer->GenerateRandomColor();
 			glm::vec3 newPos = m_randomizer->GenerateRandomPosition(glm::vec3(0.0f), // origin
-																	MIN_DISTANCE_FROM_ORIGIN,
-																	MAX_DISTANCE_FROM_ORIGIN);
+																	DEFAULT_MIN_DISTANCE_FROM_ORIGIN,
+																	DEFAULT_MAX_DISTANCE_FROM_ORIGIN);
 			// get the current number of models in the scene
 			std::string nModels = std::to_string(Core::GetInstance()->GetNModels());
 			// create a new cube shape called "Cube (Model n)", 
@@ -824,4 +747,257 @@ void GUI::Shutdown() const
 	ImGui_ImplOpenGL3_Shutdown();
 	ImGui_ImplGlfw_Shutdown();
 	ImGui::DestroyContext();
+}
+
+// Private methods
+// ---------------
+bool GUI::drawColorControl(const std::string& label, glm::vec3& color,
+						   float colorControlWidth)
+{
+	bool value_changed{ false }; // flag to indicate if the color has changed
+
+	ImGuiIO& io = ImGui::GetIO(); // get ImGui IO object for font and style settings
+	auto boldFont = io.Fonts->Fonts[0]; // get the bold font from the ImGui IO object
+
+	ImGui::PushID(label.c_str()); // create a unique ID for the label to avoid conflicts with other controls
+
+	ImGui::Text("%s", label.c_str()); // display the label for the control
+
+	ImGui::SetNextItemWidth(colorControlWidth); // set the width of the color picker
+	if (ImGui::ColorEdit3("##color", (float*)&color))
+	{ // if the color picker is used
+		value_changed = true; // set the value_changed flag to true
+	}
+
+	ImGui::PopID(); // end the unique ID scope for the label
+
+	return value_changed; // return whether the color has changed
+}
+
+bool GUI::drawVec3Control(const std::string& label, glm::vec3& values, bool scaleControls,
+						  float minInputFieldValue, float maxInputFieldValue,
+						  float inputFieldWidth,
+						  float speed,
+						  float resetValue, float resetButtonWidth)
+{
+	bool value_changed{ false }; // flag to indicate if any value has changed
+
+	ImGui::PushID(label.c_str()); // create a unique ID for the label to avoid conflicts with other controls
+
+	ImGui::Text("%s", label.c_str()); // display the label for the control
+
+	// if the controls are for scaling, display a checkbox to enable proportional scaling
+	if (scaleControls)
+		ImGui::Checkbox("Proportional", &s_proportionalScaling);
+
+	// store previous values so that we can check if any value has changed
+	glm::vec3 prevValues = values;
+
+	// x component
+	ImGui::PushID("x");
+	ImGui::Text("  X  "); // display the label for the x component
+	ImGui::SameLine();
+	ImGui::SetNextItemWidth(inputFieldWidth); // set the width of the input field for the x component
+	if (ImGui::InputFloat("##x", &values.x, 0.0f, 0.0f, "%.3f"))
+	{ // if the input field is used
+		value_changed = true; // set the value_changed flag to true
+	}
+	ImGui::SameLine();
+	if (ImGui::ArrowButton("##upX", ImGuiDir_Up))
+	{ // if the up arrow button is pressed
+		values.x += speed; // increase the x component by speed
+		value_changed = true; // set the value_changed flag to true
+	}
+	if (ImGui::IsItemActive())
+	{ // if the up arrow button is active (held down)
+		values.x += speed; // increase the x component by speed
+		value_changed = true; // set the value_changed flag to true
+	}
+	ImGui::SameLine();
+	if (ImGui::ArrowButton("##downX", ImGuiDir_Down))
+	{ // if the down arrow button is pressed
+		values.x -= speed; // decrease the x component by speed
+		value_changed = true; // set the value_changed flag to true
+	}
+	if (ImGui::IsItemActive()) // if the down arrow button is active (held down)
+	{
+		values.x -= speed; // decrease the x component by speed
+		value_changed = true; // set the value_changed flag to true
+	}
+	ImGui::SameLine();
+	if (ImGui::Button("Reset", ImVec2(resetButtonWidth, 20.0f)))
+	{ // if the Reset button is pressed
+		values.x = resetValue; // reset the x component to the reset value
+		value_changed = true; // set the value_changed flag to true
+	}
+	ImGui::PopID(); // end the unique ID scope for the x component
+
+	// y component
+	ImGui::PushID("y");
+	ImGui::Text("  Y  "); // display the label for the y component
+	ImGui::SameLine();
+	ImGui::SetNextItemWidth(inputFieldWidth); // set the width of the input field for the y component
+	if (ImGui::InputFloat("##y", &values.y, 0.0f, 0.0f, "%.3f"))
+	{ // if the input field is used
+		value_changed = true; // set the value_changed flag to true
+	}
+	ImGui::SameLine();
+	if (ImGui::ArrowButton("##upY", ImGuiDir_Up))
+	{ // if the up arrow button is pressed
+		values.y += speed; // increase the y component by speed
+		value_changed = true; // set the value_changed flag to true
+	}
+	if (ImGui::IsItemActive())
+	{ // if the up arrow button is active (held down)
+		values.y += speed; // increase the y component by speed
+		value_changed = true; // set the value_changed flag to true
+	}
+	ImGui::SameLine();
+	if (ImGui::ArrowButton("##downY", ImGuiDir_Down))
+	{ // if the down arrow button is pressed
+		values.y -= speed; // decrease the y component by speed
+		value_changed = true; // set the value_changed flag to true
+	}
+	if (ImGui::IsItemActive())
+	{ // if the down arrow button is active (held down)
+		values.y -= speed; // decrease the y component by speed
+		value_changed = true; // set the value_changed flag to true
+	}
+	ImGui::SameLine();
+	if (ImGui::Button("Reset", ImVec2(resetButtonWidth, 20.0f)))
+	{ // if the Reset button is pressed
+		values.y = resetValue; // reset the y component to the reset value
+		value_changed = true; // set the value_changed flag to true
+	}
+	ImGui::PopID(); // end the unique ID scope for the y component
+
+	// z component
+	ImGui::PushID("z");
+	ImGui::Text("  Z  "); // display the label for the z component
+	ImGui::SameLine();
+	ImGui::SetNextItemWidth(inputFieldWidth); // set the width of the input field for the z component
+	if (ImGui::InputFloat("##z", &values.z, 0.0f, 0.0f, "%.3f"))
+	{ // if the input field is used
+		value_changed = true; // set the value_changed flag to true
+	}
+	ImGui::SameLine();
+	if (ImGui::ArrowButton("##upZ", ImGuiDir_Up))
+	{ // if the up arrow button is pressed
+		values.z += speed; // increase the z component by speed
+		value_changed = true; // set the value_changed flag to true
+	}
+	if (ImGui::IsItemActive()) // if the up arrow button is active (held down)
+	{
+		values.z += speed; // increase the z component by speed
+		value_changed = true; // set the value_changed flag to true
+	}
+	ImGui::SameLine();
+	if (ImGui::ArrowButton("##downZ", ImGuiDir_Down))
+	{ // if the down arrow button is pressed
+		values.z -= speed; // decrease the z component by speed
+		value_changed = true; // set the value_changed flag to true
+	}
+	if (ImGui::IsItemActive()) // if the down arrow button is active (held down)
+	{
+		values.z -= speed; // decrease the z component by speed
+		value_changed = true; // set the value_changed flag to true
+	}
+	ImGui::SameLine();
+	if (ImGui::Button("Reset", ImVec2(resetButtonWidth, 20.0f)))
+	{ // if the Reset button is pressed
+		values.z = resetValue; // reset the z component to the reset value
+		value_changed = true; // set the value_changed flag to true
+	}
+	ImGui::PopID(); // end the unique ID scope for the z component
+
+	ImGui::PopID(); // end the unique ID scope for the label
+
+	// clamp values to the specified range
+	values.x = std::clamp(values.x, minInputFieldValue, maxInputFieldValue);
+	values.y = std::clamp(values.y, minInputFieldValue, maxInputFieldValue);
+	values.z = std::clamp(values.z, minInputFieldValue, maxInputFieldValue);
+
+	// if proportional scaling is enabled, adjust the other components accordingly
+	if (scaleControls && s_proportionalScaling)
+	{
+		if (values.x != prevValues.x)
+		{
+			values.y = values.z = values.x;
+			value_changed = true;
+		}
+		else if (values.y != prevValues.y)
+		{
+			values.x = values.z = values.y;
+			value_changed = true;
+		}
+		else if (values.z != prevValues.z)
+		{
+			values.x = values.y = values.z;
+			value_changed = true;
+		}
+	}
+
+	// update the value_changed flag if any of the components have changed
+	if (values.x != prevValues.x || values.y != prevValues.y || values.z != prevValues.z)
+		value_changed = true;
+
+	return value_changed;
+}
+
+bool GUI::drawFloatControl(const std::string& label, float& value,
+						   float minInputFieldValue, float maxInputFieldValue,
+						   float inputFieldWidth,
+						   float speed,
+						   float resetValue, float resetButtonWidth)
+{
+	bool value_changed{ false }; // flag to indicate if the value has changed
+
+	ImGui::PushID(label.c_str()); // create a unique ID for the label to avoid conflicts with other controls
+
+	ImGui::Text("%s", label.c_str()); // display the label for the control
+
+	ImGui::SameLine();
+	ImGui::SetNextItemWidth(inputFieldWidth); // set the width of the input field
+	if (ImGui::InputFloat("##val", &value, 0.0f, 0.0f, "%.2f"))
+	{ // if the input field is used
+		value_changed = true;
+	} // set the value_changed flag to true
+
+	ImGui::SameLine();
+	if (ImGui::ArrowButton("##up", ImGuiDir_Up))
+	{ // if the up arrow button is pressed
+		value += speed; // increase the value by speed
+		value_changed = true; // set the value_changed flag to true
+	}
+	if (ImGui::IsItemActive())
+	{ // if the up arrow button is active (held down)
+		value += speed; // increase the value by speed
+		value_changed = true; // set the value_changed flag to true
+	}
+
+	ImGui::SameLine();
+	if (ImGui::ArrowButton("##down", ImGuiDir_Down))
+	{ // if the down arrow button is pressed
+		value -= speed; // decrease the value by speed
+		value_changed = true; // set the value_changed flag to true
+	}
+	if (ImGui::IsItemActive())
+	{ // if the down arrow button is active (held down)
+		value -= speed; // decrease the value by speed
+		value_changed = true; // set the value_changed flag to true
+	}
+
+	ImGui::SameLine();
+	if (ImGui::Button("Reset", ImVec2(resetButtonWidth, 20.0f)))
+	{ // if the Reset button is pressed
+		value = resetValue; // reset the value to the reset value
+		value_changed = true; // set the value_changed flag to true
+	}
+
+	// clamp the value to the specified range
+	value = std::clamp(value, minInputFieldValue, maxInputFieldValue);
+
+	ImGui::PopID(); // end the unique ID scope for the label
+
+	return value_changed;
 }

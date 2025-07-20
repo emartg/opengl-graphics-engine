@@ -53,18 +53,47 @@ private:
 	// -------------------------
 	static bool s_proportionalScaling; // flag for enabling/disabling proportional scaling
 
-	// default values for sliders and other GUI parameters
-	static constexpr float MIN_POSITION_SLIDER_VALUE{ -15.0f };
-	static constexpr float MAX_POSITION_SLIDER_VALUE{ 15.0f };
-	static constexpr float MIN_ROTATION_SLIDER_VALUE{ -360.0f };
-	static constexpr float MAX_ROTATION_SLIDER_VALUE{ 360.0f };
-	static constexpr float MIN_SCALE_SLIDER_VALUE{ 0.001f };
-	static constexpr float MAX_SCALE_SLIDER_VALUE{ 10.0f };
-	static constexpr float MIN_INNER_CUTOFF_SLIDER_VALUE{ 0.0f };
-	static constexpr float MAX_INNER_CUTOFF_SLIDER_VALUE{ 45.0f };
-	static constexpr float MIN_OUTER_CUTOFF_SLIDER_VALUE{ 0.0f };
-	static constexpr float MAX_OUTER_CUTOFF_SLIDER_VALUE{ 45.0f };
-	static constexpr float MIN_DISTANCE_FROM_ORIGIN{ 4.0f };
-	static constexpr float MAX_DISTANCE_FROM_ORIGIN{ 15.0f };
+	// default values for controls and other GUI parameters
+	static constexpr float DEFAULT_ITEM_WIDTH{ 225.0f };
+	static constexpr float DEFAULT_ITEM_HEIGHT{ 20.0f };
+	static constexpr float DEFAULT_INPUT_FIELD_WIDTH{ 60.0f };
+	static constexpr float DEFAULT_INPUT_FIELD_HEIGHT{ 20.0f };
+	static constexpr float DEFAULT_BUTTON_WIDTH{ 60.0f };
+	static constexpr float DEFAULT_BUTTON_HEIGHT{ 20.0f };
+
+	static constexpr float DEFAULT_MIN_POSITION_VALUE{ -15.0f };
+	static constexpr float DEFAULT_MAX_POSITION_VALUE{ 15.0f };
+	static constexpr float DEFAULT_MIN_ROTATION_VALUE{ -360.0f };
+	static constexpr float DEFAULT_MAX_ROTATION_VALUE{ 360.0f };
+	static constexpr float DEFAULT_MIN_SCALE_VALUE{ 0.001f };
+	static constexpr float DEFAULT_MAX_SCALE_VALUE{ 10.0f };
+	static constexpr float DEFAULT_MIN_INNER_CUTOFF_VALUE{ 0.0f };
+	static constexpr float DEFAULT_MAX_INNER_CUTOFF_VALUE{ 45.0f };
+	static constexpr float DEFAULT_MIN_OUTER_CUTOFF_VALUE{ 0.0f };
+	static constexpr float DEFAULT_MAX_OUTER_CUTOFF_VALUE{ 45.0f };
+
+	static constexpr float DEFAULT_MIN_DISTANCE_FROM_ORIGIN{ 4.0f };
+	static constexpr float DEFAULT_MAX_DISTANCE_FROM_ORIGIN{ 15.0f };
+
+	// Private Methods
+	// ---------------
+	// Creates a color picker with sliders for RGB components
+	// and returns true if the color was changed
+	bool drawColorControl(const std::string& label, glm::vec3& color,
+						  float colorControlWidth = DEFAULT_ITEM_WIDTH);
+	// Creates a 3-component vector control with input fields and buttons
+	// and returns true if any of the components were changed
+	bool drawVec3Control(const std::string& label, glm::vec3& values, bool scaleControls,
+						 float minInputFieldValue, float maxInputFieldValue,
+						 float inputFieldWidth = DEFAULT_INPUT_FIELD_WIDTH,
+						 float speed = 0.1f,
+						 float resetValue = 0.0f, float resetButtonWidth = DEFAULT_BUTTON_WIDTH);
+	// Draws a float control with an input field and arrow buttons
+	// and returns true if the value was changed
+	bool drawFloatControl(const std::string& label, float& value,
+						  float minInputFieldValue, float maxInputFieldValue,
+						  float inputFieldWidth = DEFAULT_INPUT_FIELD_WIDTH,
+						  float speed = 0.1f,
+						  float resetValue = 0.0f, float resetButtonWidth = DEFAULT_BUTTON_WIDTH);
 
 };
