@@ -435,7 +435,7 @@ void GUI::Setup()
 					// create a control for the x, y, and z components of the spotlight's rotation
 					if (drawVec3Control("Rotation", rotDegrees, false, // is not the scale control
 										DEFAULT_MIN_ROTATION_VALUE, DEFAULT_MAX_ROTATION_VALUE,
-										60.0f, 0.75f))
+										DEFAULT_INPUT_FIELD_WIDTH, 0.75f))
 					{ // if the control are used
 						// set the new rotation of the spotlight's gizmo
 						gizmo->SetRotationInEulerAngles(rotDegrees);
@@ -444,23 +444,23 @@ void GUI::Setup()
 						spotlight->SetDirectionOnly(gizmo->GetForward());
 					}
 
-					ImGui::Text("Cut-off Angles");
+					ImGui::Text("Cut-off Angles (in degrees):");
 					// get the inner and outer cut-off angles of the spotlight and 
 					// convert them from radians (cosine) to degrees for the controls
 					float innerCutOff = glm::degrees(glm::acos(spotlight->GetInnerCutOff()));
 					float outerCutOff = glm::degrees(glm::acos(spotlight->GetOuterCutOff()));
 					// create controls for the inner and outer cut-off angles of the spotlight
 					if (drawFloatControl("Inner", innerCutOff,
-										 DEFAULT_MIN_INNER_CUTOFF_VALUE, outerCutOff, // innerCutOff <= outerCutOff
-										 60.0f, 0.1f, 15.0f)) // the reset value is 15 degrees
+										 DEFAULT_MIN_CUTOFF_VALUE, outerCutOff, // innerCutOff <= outerCutOff
+										 DEFAULT_INPUT_FIELD_WIDTH, 0.1f, DEFAULT_INNER_CUTOFF_VALUE))
 					{ // if the control is used
 						// convert back to radians and cosine and
 						// set the new inner cut-off angle for the spotlight
 						spotlight->SetInnerCutOff(glm::cos(glm::radians(innerCutOff)));
 					}
 					if (drawFloatControl("Outer", outerCutOff,
-										 innerCutOff, DEFAULT_MAX_OUTER_CUTOFF_VALUE, // outerCutOff >= innerCutOff
-										 60.0f, 0.1f, 32.5f)) // the reset value is 32.5 degrees
+										 innerCutOff, DEFAULT_MAX_CUTOFF_VALUE, // outerCutOff >= innerCutOff
+										 DEFAULT_INPUT_FIELD_WIDTH, 0.1f, DEFAULT_OUTER_CUTOFF_VALUE))
 					{ // if the control is used
 						// convert back to radians and cosine and
 						// set the new outer cut-off angle for the spotlight
@@ -526,7 +526,7 @@ void GUI::Setup()
 				// create a control for the x, y, and z components of the model's rotation
 				if (drawVec3Control("Rotation", rotDegrees, false, // is not the scale control
 									DEFAULT_MIN_ROTATION_VALUE, DEFAULT_MAX_ROTATION_VALUE,
-									60.0f, 0.5f))
+									DEFAULT_INPUT_FIELD_WIDTH, 0.5f))
 				{ // if the control is used
 					model->SetRotationInEulerAngles(rotDegrees); // set the new rotation of the model
 				}
@@ -536,7 +536,7 @@ void GUI::Setup()
 				// create a control for the x, y, and z components of the model's scale
 				if (drawVec3Control("Scale", scale, true, // is the scale control
 									DEFAULT_MIN_SCALE_VALUE, DEFAULT_MAX_SCALE_VALUE,
-									60.0f, 0.0005f, 1.0f))
+									DEFAULT_INPUT_FIELD_WIDTH, 0.0005f, 1.0f))
 				{ // if the control is used
 					model->SetScale(scale); // set the new scale of the model
 				}
@@ -548,141 +548,63 @@ void GUI::Setup()
 		ImGui::Separator();
 
 		// button to add a new directional light to the scene
-		if (ImGui::Button("Add Directional Light"))
-		{
-			// get a random color and a random direction for the directional light and its gizmo
-			glm::vec3 newColor = m_randomizer->GenerateRandomColor();
-			glm::vec3 newPos = m_randomizer->GenerateRandomPosition(glm::vec3(0.0f), // origin
-																	DEFAULT_MIN_DISTANCE_FROM_ORIGIN,
-																	DEFAULT_MAX_DISTANCE_FROM_ORIGIN);
-			glm::vec3 newDir = m_randomizer->GenerateRandomDirection();
-
-			// get the current number of models in the scene
-			std::string nModels = std::to_string(Core::GetInstance()->GetNModels());
-			// get the current number of directional lights in the scene
-			std::string nDirectionalLights = std::to_string(Core::GetInstance()->GetNDirectionalLights());
-			// create a new directional light called "Directional Light n", 
-			// where n is the current number of directional lights in the scene
-			auto newDirectionalLight = std::make_shared<DirectionalLight>(
-				"Directional Light " + nDirectionalLights,
-				glm::vec3{ 0.1f }, // ambient color (default)
-				newColor, // diffuse color (random)
-				glm::vec3{ 1.0f }, // specular color (default)
-				newPos, // position (random)
-				newDir // direction (random)
-			);
-			// get gizmo's shared_ptr from the new directional light before adding the latter to the engine
-			auto newDirectionalLightGizmo = newDirectionalLight->GetGizmo();
-			// add the new directional light to the engine
-			Core::GetInstance()->AddAsset(std::move(newDirectionalLight));
-			// concatenate the name of the new directional light and " (Model n)",
-			// where n is the current number of models in the scene
-			newDirectionalLightGizmo->SetName(newDirectionalLightGizmo->GetName()
-											  + " (Model " + nModels + ")");
-			// add the directional light gizmo (a decahedron) to the engine
-			Core::GetInstance()->AddAsset(std::move(newDirectionalLightGizmo));
+		if (ImGui::Button("Add Directional Light", ImVec2(DEFAULT_ITEM_WIDTH, 0.0f)))
+		{ // if the button is clicked
+			ImGui::OpenPopup("Add Directional Light");
+			// set random initial values
+			m_newAlbedo = m_randomizer->GenerateRandomColor();
+			m_newPosition = m_randomizer->GenerateRandomPosition(glm::vec3(0.0f),
+																 DEFAULT_MIN_DISTANCE_FROM_ORIGIN,
+																 DEFAULT_MAX_DISTANCE_FROM_ORIGIN);
+			m_newDirection = m_randomizer->GenerateRandomDirection();
 		}
+		drawAddDirectionalLightPopup(); // draw the popup for adding a new directional light
 
 		// button to add a new spotlight to the scene
-		if (ImGui::Button("Add Spotlight"))
-		{
-			// get a random color, a random position, and a random direction for the spotlight and its gizmo
-			glm::vec3 newColor = m_randomizer->GenerateRandomColor();
-			glm::vec3 newPos = m_randomizer->GenerateRandomPosition(glm::vec3(0.0f), // origin
-																	DEFAULT_MIN_DISTANCE_FROM_ORIGIN,
-																	DEFAULT_MAX_DISTANCE_FROM_ORIGIN);
-			glm::vec3 newDir = m_randomizer->GenerateRandomDirection();
-
-			// get the current number of models in the scene
-			std::string nModels = std::to_string(Core::GetInstance()->GetNModels());
-			// get the current number of spotlights in the scene
-			std::string nSpotlights = std::to_string(Core::GetInstance()->GetNSpotlights());
-			// create a new spotlight called "Spotlight n", 
-			// where n is the current number of spotlights in the scene
-			auto newSpotlight = std::make_shared<Spotlight>(
-				"Spotlight " + nSpotlights,
-				glm::vec3{ 0.1f }, // ambient color (default)
-				newColor, // diffuse color (random)
-				glm::vec3{ 1.0f }, // specular color (default)
-				newPos, // position (random)
-				newDir // direction (random)
-			);
-			// get gizmo's shared_ptr from the new spotlight before adding the latter to the engine
-			auto newSpotlightGizmo = newSpotlight->GetGizmo();
-			// add the new spotlight to the engine
-			Core::GetInstance()->AddAsset(std::move(newSpotlight));
-			// concatenate the name of the new spotlight and " (Model n)", 
-			// where n is the current number of models in the scene
-			newSpotlightGizmo->SetName(newSpotlightGizmo->GetName()
-									   + " (Model " + nModels + ")");
-			// add the spotlight gizmo (a decahedron) to the engine
-			Core::GetInstance()->AddAsset(std::move(newSpotlightGizmo));
+		if (ImGui::Button("Add Spotlight", ImVec2(DEFAULT_ITEM_WIDTH, 0.0f)))
+		{ // if the button is clicked
+			ImGui::OpenPopup("Add Spotlight");
+			// set random initial values
+			m_newAlbedo = m_randomizer->GenerateRandomColor();
+			m_newPosition = m_randomizer->GenerateRandomPosition(glm::vec3(0.0f),
+																 DEFAULT_MIN_DISTANCE_FROM_ORIGIN,
+																 DEFAULT_MAX_DISTANCE_FROM_ORIGIN);
+			m_newDirection = m_randomizer->GenerateRandomDirection();
 		}
+		drawAddSpotlightPopup(); // draw the popup for adding a new spotlight
 
 		// button to add a new point light to the scene
-		if (ImGui::Button("Add Point Light"))
-		{
-			// get a random color and a random position for the point light and its gizmo
-			glm::vec3 newColor = m_randomizer->GenerateRandomColor();
-			glm::vec3 newPos = m_randomizer->GenerateRandomPosition(glm::vec3(0.0f), // origin
-																	DEFAULT_MIN_DISTANCE_FROM_ORIGIN,
-																	DEFAULT_MAX_DISTANCE_FROM_ORIGIN);
-
-			// get the current number of models in the scene
-			std::string nModels = std::to_string(Core::GetInstance()->GetNModels());
-			// get the current number of point lights in the scene
-			std::string nPointLights = std::to_string(Core::GetInstance()->GetNPointLights());
-			// create a new point light called "Point Light n", 
-			// where n is the current number of point lights in the scene
-			auto newPointLight = std::make_shared<PointLight>(
-				"Point Light " + nPointLights,
-				glm::vec3{ 0.1f }, // ambient color (default)
-				newColor, // diffuse color (random)
-				glm::vec3{ 1.0f }, // specular color (default)
-				newPos // position (random)
-			);
-			// get gizmo's shared_ptr from the new point light before adding the latter to the engine
-			auto newPointLightGizmo = newPointLight->GetGizmo();
-			// add the new point light to the engine
-			Core::GetInstance()->AddAsset(std::move(newPointLight));
-			// concatenate the name of the new point light and " (Model n)", 
-			// where n is the current number of models in the scene
-			newPointLightGizmo->SetName(newPointLightGizmo->GetName()
-										+ " (Model " + nModels + ")");
-			// add the point light gizmo (a decahedron) to the engine
-			Core::GetInstance()->AddAsset(std::move(newPointLightGizmo));
+		if (ImGui::Button("Add Point Light", ImVec2(DEFAULT_ITEM_WIDTH, 0.0f)))
+		{ // if the button is clicked
+			ImGui::OpenPopup("Add Point Light");
+			// set random initial values
+			m_newAlbedo = m_randomizer->GenerateRandomColor();
+			m_newPosition = m_randomizer->GenerateRandomPosition(glm::vec3(0.0f),
+																 DEFAULT_MIN_DISTANCE_FROM_ORIGIN,
+																 DEFAULT_MAX_DISTANCE_FROM_ORIGIN);
 		}
+		drawAddPointLightPopup(); // draw the popup for adding a new point light
 
 		// buttom to add a new cube shape to the scene
-		if (ImGui::Button("Add Cube Shape"))
-		{
-			// get a random color and a random position for the cube shape
-			glm::vec3 newColor = m_randomizer->GenerateRandomColor();
-			glm::vec3 newPos = m_randomizer->GenerateRandomPosition(glm::vec3(0.0f), // origin
-																	DEFAULT_MIN_DISTANCE_FROM_ORIGIN,
-																	DEFAULT_MAX_DISTANCE_FROM_ORIGIN);
-			// get the current number of models in the scene
-			std::string nModels = std::to_string(Core::GetInstance()->GetNModels());
-			// create a new cube shape called "Cube (Model n)", 
-			// where n is the current number of models in the scene
-			auto newCubeShape = std::make_shared<Shape>(
-				"Cube (Model " + nModels + ")",
-				cubeVerticesVec, cubeIndicesVec,
-				newColor, // albedo (random)
-				newPos // position (random)
-			);
-			// add the new cube shape to the engine
-			Core::GetInstance()->AddAsset(std::move(newCubeShape));
+		if (ImGui::Button("Add Cube Shape", ImVec2(DEFAULT_ITEM_WIDTH, 0.0f)))
+		{ // if the button is clicked
+			ImGui::OpenPopup("Add Cube Shape");
+			// set random initial values
+			m_newAlbedo = m_randomizer->GenerateRandomColor();
+			m_newPosition = m_randomizer->GenerateRandomPosition(glm::vec3(0.0f),
+																 DEFAULT_MIN_DISTANCE_FROM_ORIGIN,
+																 DEFAULT_MAX_DISTANCE_FROM_ORIGIN);
 		}
+		drawAddCubeShapePopup(); // draw the popup for adding a new cube shape
 
 		// button to import a new model from a file
-		if (ImGui::Button("Import 3D Model"))
-		{
+		if (ImGui::Button("Import 3D Model", ImVec2(DEFAULT_ITEM_WIDTH, 0.0f)))
+		{ // if the button is clicked
 			// file dialog configuration
 			IGFD::FileDialogConfig fileDialogConfig;
 			fileDialogConfig.path = "."; // initial directory to open the file dialog
 			fileDialogConfig.countSelectionMax = 1; // for now, allow only one file to be selected
-			fileDialogConfig.flags = ImGuiFileDialogFlags_None; // no special flags for the file dialog
+			fileDialogConfig.flags = ImGuiFileDialogFlags_Modal; // no special flags for the file dialog
 
 			// open a file dialog to select a model file
 			ImGuiFileDialog::Instance()->OpenDialog(
@@ -693,19 +615,12 @@ void GUI::Setup()
 			);
 		}
 
-		// set the initial window size to 1000 x 600 pixels
-		ImGui::SetNextWindowSize(ImVec2(1000, 600), ImGuiCond_Appearing);
-		// set the initial window position to the center of the screen
-		ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x / 2 - 500, io.DisplaySize.y / 2 - 300),
-								ImGuiCond_Appearing);
-		// set the window to be not collapsed (i.e. not minimized)
-		ImGui::SetNextWindowCollapsed(false, ImGuiCond_Appearing);
-
 		// check if the file dialog is displayed and if the user selected a file
 		if (ImGuiFileDialog::Instance()->Display("ChooseFileDlgKey"))
-		{
-			if (ImGuiFileDialog::Instance()->IsOk()) // if the user selected a file
-			{
+		{ // if the file dialog is displayed
+			if (ImGuiFileDialog::Instance()->IsOk())
+			{ // if the user clicked the OK button (i.e. selected a file)
+				// get the selected file path and name
 				std::string filePathName = ImGuiFileDialog::Instance()->GetFilePathName();
 				std::string fileName = ImGuiFileDialog::Instance()->GetCurrentFileName();
 
@@ -714,11 +629,13 @@ void GUI::Setup()
 
 				// get the current number of models in the scene
 				std::string nModels = std::to_string(Core::GetInstance()->GetNModels());
+
 				// create a new model from the selected file
 				auto newAssimpModel = std::make_shared<AssimpModel>(
 					fileName + " (Model " + nModels + ")",
 					filePathName
 				);
+
 				// add the new model to the engine
 				Core::GetInstance()->AddAsset(std::move(newAssimpModel));
 			}
@@ -1000,4 +917,269 @@ bool GUI::drawFloatControl(const std::string& label, float& value,
 	ImGui::PopID(); // end the unique ID scope for the label
 
 	return value_changed;
+}
+
+void GUI::drawAddDirectionalLightPopup()
+{
+	if (ImGui::BeginPopupModal("Add Directional Light", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+	{ // if the popup is open
+		// display a message to the user
+		ImGui::Text("Set initial properties for the new Directional Light.\n");
+		ImGui::Separator();
+
+		// display controls to set the color, position, and direction of the new directional light
+		drawColorControl("Color", m_newAlbedo);
+		drawVec3Control("Position", m_newPosition, false,
+						DEFAULT_MIN_POSITION_VALUE, DEFAULT_MAX_POSITION_VALUE);
+		drawVec3Control("Direction", m_newDirection, false, -1.0f, 1.0f);
+
+		ImGui::Separator();
+
+		// display a button to randomize the properties of the new directional light
+		if (ImGui::Button("Randomize", ImVec2(DEFAULT_POPUP_BUTTON_WIDTH, 0.0f)))
+		{ // if the Randomize button is clicked
+			// generate random values for the new directional light's properties
+			m_newAlbedo = m_randomizer->GenerateRandomColor();
+			m_newPosition = m_randomizer->GenerateRandomPosition(glm::vec3(0.0f), // origin
+																 DEFAULT_MIN_DISTANCE_FROM_ORIGIN,
+																 DEFAULT_MAX_DISTANCE_FROM_ORIGIN);
+			m_newDirection = m_randomizer->GenerateRandomDirection();
+		}
+
+		// display a button to create the new directional light
+		ImGui::SameLine();
+		if (ImGui::Button("Create", ImVec2(DEFAULT_POPUP_BUTTON_WIDTH, 0.0f)))
+		{ // if the Create button is clicked
+			// get the number of models and directional lights in the scene
+			std::string nModels = std::to_string(Core::GetInstance()->GetNModels());
+			std::string nDirectionalLights = std::to_string(Core::GetInstance()->GetNDirectionalLights());
+
+			// create a new directional light with the specified properties
+			auto newDirectionalLight = std::make_shared<DirectionalLight>(
+				"Directional Light " + nDirectionalLights,
+				glm::vec3{ 0.1f }, m_newAlbedo, glm::vec3{ 1.0f },
+				m_newPosition, m_newDirection
+			);
+
+			// get the gizmo of the new directional light before adding the light to the engine
+			auto newDirectionalLightGizmo = newDirectionalLight->GetGizmo();
+			// add the new directional light to the engine
+			Core::GetInstance()->AddAsset(std::move(newDirectionalLight));
+			// set the name of the gizmo to include the model number
+			newDirectionalLightGizmo->SetName(newDirectionalLightGizmo->GetName() + " (Model " + nModels + ")");
+			// add the gizmo of the new directional light to the engine
+			Core::GetInstance()->AddAsset(std::move(newDirectionalLightGizmo));
+
+			ImGui::CloseCurrentPopup(); // close the popup
+		}
+
+		// display a button to cancel the operation and close the popup
+		ImGui::SameLine();
+		if (ImGui::Button("Cancel", ImVec2(DEFAULT_POPUP_BUTTON_WIDTH, 0.0f)))
+		{ // if the Cancel button is clicked
+			ImGui::CloseCurrentPopup(); // close the popup
+		}
+
+		ImGui::EndPopup();
+	}
+}
+
+void GUI::drawAddPointLightPopup()
+{
+	if (ImGui::BeginPopupModal("Add Point Light", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+	{ // if the popup is open
+		// display a message to the user
+		ImGui::Text("Set initial properties for the new Point Light\n");
+		ImGui::Separator();
+
+		// display controls to set the color and position of the new point light
+		drawColorControl("Color", m_newAlbedo);
+		drawVec3Control("Position", m_newPosition, false,
+						DEFAULT_MIN_POSITION_VALUE, DEFAULT_MAX_POSITION_VALUE);
+
+		ImGui::Separator();
+
+		// display a button to randomize the properties of the new point light
+		if (ImGui::Button("Randomize", ImVec2(DEFAULT_POPUP_BUTTON_WIDTH, 0.0f)))
+		{ // if the Randomize button is clicked
+			// generate random values for the new point light's properties
+			m_newAlbedo = m_randomizer->GenerateRandomColor();
+			m_newPosition = m_randomizer->GenerateRandomPosition(glm::vec3(0.0f), // origin
+																 DEFAULT_MIN_DISTANCE_FROM_ORIGIN,
+																 DEFAULT_MAX_DISTANCE_FROM_ORIGIN);
+		}
+
+		ImGui::SameLine();
+		// display a button to create the new point light
+		if (ImGui::Button("Create", ImVec2(DEFAULT_POPUP_BUTTON_WIDTH, 0.0f)))
+		{ // if the Create button is clicked
+			// get the number of models and point lights in the scene
+			std::string nModels = std::to_string(Core::GetInstance()->GetNModels());
+			std::string nPointLights = std::to_string(Core::GetInstance()->GetNPointLights());
+
+			// create a new point light with the specified properties
+			auto newPointLight = std::make_shared<PointLight>(
+				"Point Light " + nPointLights,
+				glm::vec3{ 0.1f }, m_newAlbedo, glm::vec3{ 1.0f },
+				m_newPosition
+			);
+
+			// get the gizmo of the new point light before adding the light to the engine
+			auto newPointLightGizmo = newPointLight->GetGizmo();
+			// add the new point light to the engine
+			Core::GetInstance()->AddAsset(std::move(newPointLight));
+			// set the name of the gizmo to include the model number
+			newPointLightGizmo->SetName(newPointLightGizmo->GetName() + " (Model " + nModels + ")");
+			// add the gizmo of the new point light to the engine
+			Core::GetInstance()->AddAsset(std::move(newPointLightGizmo));
+
+			ImGui::CloseCurrentPopup(); // close the popup
+		}
+
+		// display a button to cancel the operation and close the popup
+		ImGui::SameLine();
+		if (ImGui::Button("Cancel", ImVec2(DEFAULT_POPUP_BUTTON_WIDTH, 0.0f)))
+		{ // if the Cancel button is clicked
+			ImGui::CloseCurrentPopup(); // close the popup
+		}
+		ImGui::EndPopup();
+	}
+}
+
+void GUI::drawAddSpotlightPopup()
+{
+	if (ImGui::BeginPopupModal("Add Spotlight", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+	{ // if the popup is open
+		// display a message to the user
+		ImGui::Text("Set initial properties for the new Spotlight\n");
+		ImGui::Separator();
+
+		// display controls to set the color, position, direction, and cut-off angles of the new spotlight
+		drawColorControl("Color", m_newAlbedo);
+		drawVec3Control("Position", m_newPosition, false,
+						DEFAULT_MIN_POSITION_VALUE, DEFAULT_MAX_POSITION_VALUE);
+		drawVec3Control("Direction", m_newDirection, false, -1.0f, 1.0f);
+		ImGui::Text("Cut-Off Angles (in degrees):");
+		// initialize the inner and outer cut-off angles with default values before drawing the controls
+		drawFloatControl("Inner", m_newInnerCutOff,
+						 DEFAULT_MIN_CUTOFF_VALUE, DEFAULT_MAX_CUTOFF_VALUE, // innerCutOff <= outerCutOff
+						 DEFAULT_INPUT_FIELD_WIDTH, 0.1f, DEFAULT_INNER_CUTOFF_VALUE);
+		drawFloatControl("Outer", m_newOuterCutOff,
+						 m_newInnerCutOff, DEFAULT_MAX_CUTOFF_VALUE, // outerCutOff >= innerCutOff
+						 DEFAULT_INPUT_FIELD_WIDTH, 0.1f, DEFAULT_OUTER_CUTOFF_VALUE);
+
+		ImGui::Separator();
+
+		// display a button to randomize the properties of the new spotlight
+		if (ImGui::Button("Randomize", ImVec2(DEFAULT_POPUP_BUTTON_WIDTH, 0.0f)))
+		{ // if the Randomize button is clicked
+			// generate random values for the new spotlight's properties
+			m_newAlbedo = m_randomizer->GenerateRandomColor();
+			m_newPosition = m_randomizer->GenerateRandomPosition(glm::vec3(0.0f), // origin
+																 DEFAULT_MIN_DISTANCE_FROM_ORIGIN,
+																 DEFAULT_MAX_DISTANCE_FROM_ORIGIN);
+			m_newDirection = m_randomizer->GenerateRandomDirection();
+			m_newInnerCutOff = m_randomizer->GenerateRandomFloat(
+				DEFAULT_MIN_CUTOFF_VALUE,
+				DEFAULT_MAX_CUTOFF_VALUE
+			);
+			m_newOuterCutOff = m_randomizer->GenerateRandomFloat(
+				m_newInnerCutOff, // ensure outer cut-off is greater than inner cut-off
+				DEFAULT_MAX_CUTOFF_VALUE
+			);
+		}
+
+		// display a button to create the new spotlight
+		ImGui::SameLine();
+		if (ImGui::Button("Create", ImVec2(DEFAULT_POPUP_BUTTON_WIDTH, 0.0f)))
+		{ // if the Create button is clicked
+			// get the number of models and spotlights in the scene
+			std::string nModels = std::to_string(Core::GetInstance()->GetNModels());
+			std::string nSpotlights = std::to_string(Core::GetInstance()->GetNSpotlights());
+
+			// create a new spotlight with the specified properties
+			auto newSpotlight = std::make_shared<Spotlight>(
+				"Spotlight " + nSpotlights,
+				glm::vec3{ 0.1f }, m_newAlbedo, glm::vec3{ 1.0f },
+				m_newPosition, m_newDirection
+			);
+
+			// get the gizmo of the new spotlight before adding the light to the engine
+			auto newSpotlightGizmo = newSpotlight->GetGizmo();
+			// add the new spotlight to the engine
+			Core::GetInstance()->AddAsset(std::move(newSpotlight));
+			// set the name of the gizmo to include the model number
+			newSpotlightGizmo->SetName(newSpotlightGizmo->GetName() + " (Model " + nModels + ")");
+			// add the gizmo of the new spotlight to the engine
+			Core::GetInstance()->AddAsset(std::move(newSpotlightGizmo));
+
+			ImGui::CloseCurrentPopup(); // close the popup
+		}
+
+		// display a button to cancel the operation and close the popup
+		ImGui::SameLine();
+		if (ImGui::Button("Cancel", ImVec2(DEFAULT_POPUP_BUTTON_WIDTH, 0.0f)))
+		{ // if the Cancel button is clicked
+			ImGui::CloseCurrentPopup(); // close the popup
+		}
+
+		ImGui::EndPopup();
+	}
+}
+
+void GUI::drawAddCubeShapePopup()
+{
+	if (ImGui::BeginPopupModal("Add Cube Shape", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+	{ // if the popup is open
+		// display a message to the user
+		ImGui::Text("Set initial properties for the new Cube Shape\n");
+		ImGui::Separator();
+
+		// display controls to set the color and position of the new cube shape
+		drawColorControl("Color", m_newAlbedo);
+		drawVec3Control("Position", m_newPosition, false,
+						DEFAULT_MIN_POSITION_VALUE, DEFAULT_MAX_POSITION_VALUE);
+
+		ImGui::Separator();
+
+		// display a button to randomize the properties of the new cube shape
+		if (ImGui::Button("Randomize", ImVec2(DEFAULT_POPUP_BUTTON_WIDTH, 0.0f)))
+		{ // if the Randomize button is clicked
+			// generate random values for the new cube shape's properties
+			m_newAlbedo = m_randomizer->GenerateRandomColor();
+			m_newPosition = m_randomizer->GenerateRandomPosition(glm::vec3(0.0f), // origin
+																 DEFAULT_MIN_DISTANCE_FROM_ORIGIN,
+																 DEFAULT_MAX_DISTANCE_FROM_ORIGIN);
+		}
+
+		// display a button to create the new cube shape
+		ImGui::SameLine();
+		if (ImGui::Button("Create", ImVec2(DEFAULT_POPUP_BUTTON_WIDTH, 0.0f)))
+		{ // if the Create button is clicked
+			// get the number of models in the scene
+			std::string nModels = std::to_string(Core::GetInstance()->GetNModels());
+
+			// create a cube shape with the specified properties
+			auto newCubeShape = std::make_shared<Shape>(
+				"Cube (Model " + nModels + ")",
+				cubeVerticesVec, cubeIndicesVec,
+				m_newAlbedo,
+				m_newPosition
+			);
+
+			// add the new cube shape to the engine
+			Core::GetInstance()->AddAsset(std::move(newCubeShape));
+
+			ImGui::CloseCurrentPopup(); // close the popup
+		}
+
+		// display a button to cancel the operation and close the popup
+		ImGui::SameLine();
+		if (ImGui::Button("Cancel", ImVec2(DEFAULT_POPUP_BUTTON_WIDTH, 0.0f)))
+		{ // if the Cancel button is clicked
+			ImGui::CloseCurrentPopup(); // close the popup
+		}
+
+		ImGui::EndPopup();
+	}
 }

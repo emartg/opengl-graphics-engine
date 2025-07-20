@@ -8,6 +8,11 @@
 
 // Private Methods
 // ---------------
+const float Random::GenerateRandomFloat(float minValue, float maxValue) const
+{
+	return minValue + static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * (maxValue - minValue);
+}
+
 const glm::vec3 Random::GenerateRandomColor() const
 {
 	glm::vec3 newColor{ (rand() % 100) / 100.0f, (rand() % 100) / 100.0f, (rand() % 100) / 100.0f };

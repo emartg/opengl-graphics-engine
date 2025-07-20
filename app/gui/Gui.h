@@ -49,6 +49,10 @@ private:
 	ImVec4 m_clearColor; // clear color for the background
 	std::unique_ptr<Random> m_randomizer; // random generator to get random colors, positions, etc.
 
+	// attributes for the new objects to be created
+	glm::vec3 m_newAlbedo, m_newPosition, m_newDirection;
+	float m_newInnerCutOff, m_newOuterCutOff;
+
 	// Private Static Attributes
 	// -------------------------
 	static bool s_proportionalScaling; // flag for enabling/disabling proportional scaling
@@ -60,6 +64,8 @@ private:
 	static constexpr float DEFAULT_INPUT_FIELD_HEIGHT{ 20.0f };
 	static constexpr float DEFAULT_BUTTON_WIDTH{ 60.0f };
 	static constexpr float DEFAULT_BUTTON_HEIGHT{ 20.0f };
+	static constexpr float DEFAULT_POPUP_BUTTON_WIDTH{ 120.0f };
+	static constexpr float DEFAULT_POPUP_BUTTON_HEIGHT{ 20.0f };
 
 	static constexpr float DEFAULT_MIN_POSITION_VALUE{ -15.0f };
 	static constexpr float DEFAULT_MAX_POSITION_VALUE{ 15.0f };
@@ -67,10 +73,10 @@ private:
 	static constexpr float DEFAULT_MAX_ROTATION_VALUE{ 360.0f };
 	static constexpr float DEFAULT_MIN_SCALE_VALUE{ 0.001f };
 	static constexpr float DEFAULT_MAX_SCALE_VALUE{ 10.0f };
-	static constexpr float DEFAULT_MIN_INNER_CUTOFF_VALUE{ 0.0f };
-	static constexpr float DEFAULT_MAX_INNER_CUTOFF_VALUE{ 45.0f };
-	static constexpr float DEFAULT_MIN_OUTER_CUTOFF_VALUE{ 0.0f };
-	static constexpr float DEFAULT_MAX_OUTER_CUTOFF_VALUE{ 45.0f };
+	static constexpr float DEFAULT_INNER_CUTOFF_VALUE{ 12.5f };
+	static constexpr float DEFAULT_OUTER_CUTOFF_VALUE{ 32.5f };
+	static constexpr float DEFAULT_MIN_CUTOFF_VALUE{ 0.0f };
+	static constexpr float DEFAULT_MAX_CUTOFF_VALUE{ 45.0f };
 
 	static constexpr float DEFAULT_MIN_DISTANCE_FROM_ORIGIN{ 4.0f };
 	static constexpr float DEFAULT_MAX_DISTANCE_FROM_ORIGIN{ 15.0f };
@@ -95,5 +101,14 @@ private:
 						  float inputFieldWidth = DEFAULT_INPUT_FIELD_WIDTH,
 						  float speed = 0.1f,
 						  float resetValue = 0.0f, float resetButtonWidth = DEFAULT_BUTTON_WIDTH);
+
+	// Draws a pop-up modal window to add a new directional light
+	void drawAddDirectionalLightPopup();
+	// Draws a pop-up modal window to add a new point light
+	void drawAddPointLightPopup();
+	// Draws a pop-up modal window to add a new spotlight
+	void drawAddSpotlightPopup();
+	// Draws a pop-up modal window to add a new cube shape
+	void drawAddCubeShapePopup();
 
 };
