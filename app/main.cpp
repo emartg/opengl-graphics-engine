@@ -131,19 +131,22 @@ int main(int argc, char** argv)
 		"Untextured Matt Shape Shader Program",
 		"Assimp Model Shader Program",
 		"Single Albedo Shader Program",
-		"Outline Shader Program"
+		"Assimp Model Outline Shader Program",
+		"Shape Outline Shader Program"
 	};
 	std::vector<std::string> vertexShaderPaths{
 		"shaders/untextured_matt_shape.vert.glsl",
 		"shaders/assimp_model.vert.glsl",
 		"shaders/single_albedo.vert.glsl",
-		"shaders/outline.vert.glsl"
+		"shaders/assimp_model_outline.vert.glsl",
+		"shaders/shape_outline.vert.glsl"
 	};
 	std::vector<std::string> fragmentShaderPaths{
 		"shaders/untextured_matt_shape.frag.glsl",
 		"shaders/assimp_model.frag.glsl",
 		"shaders/single_albedo.frag.glsl",
-		"shaders/outline.frag.glsl"
+		"shaders/assimp_model_outline.frag.glsl",
+		"shaders/shape_outline.frag.glsl"
 	};
 	engine->CompileShaders(shaderProgramNames, vertexShaderPaths, fragmentShaderPaths);
 

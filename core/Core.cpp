@@ -190,7 +190,8 @@ void Core::MainLoop()
 	Shader* untexturedMattShapeShader = nullptr; // pointer to the untextured matt shape shader
 	Shader* assimpModelShader = nullptr; // pointer to the Assimp model shader
 	Shader* singleAlbedoShader = nullptr; // pointer to the single albedo shader
-	Shader* outlineShader = nullptr; // pointer to the outline shader
+	Shader* assimpModelOutlineShader = nullptr; // pointer to the Assimp model outline shader
+	Shader* shapeOutlineShader = nullptr; // pointer to the shape outline shader
 
 	// assign shaders to the local raw pointers based on their names
 	// (provisional, allows us to get rid of shader indexes in the code, 
@@ -203,8 +204,10 @@ void Core::MainLoop()
 			assimpModelShader = shader;
 		else if (strcmp(shader->GetName().c_str(), "Single Albedo Shader Program") == 0)
 			singleAlbedoShader = shader;
-		else if (strcmp(shader->GetName().c_str(), "Outline Shader Program") == 0)
-			outlineShader = shader;
+		else if (strcmp(shader->GetName().c_str(), "Assimp Model Outline Shader Program") == 0)
+			assimpModelOutlineShader = shader;
+		else if (strcmp(shader->GetName().c_str(), "Shape Outline Shader Program") == 0)
+			shapeOutlineShader = shader;
 		else
 		{
 			std::cerr << "Unknown shader name: " << shader->GetName() << std::endl;
@@ -249,20 +252,34 @@ void Core::MainLoop()
 		return; // exit the function if the single albedo shader is not found
 	}
 
-	// outline shader configuration (if it exists)
-	if (outlineShader)
+	// assimp model outline shader configuration (if it exists)
+	if (assimpModelOutlineShader)
 	{
 		// activate the shader program
-		outlineShader->Use();
+		assimpModelOutlineShader->Use();
 		// vertex shader constant uniforms
-		outlineShader->SetFloat("outlineThickness", 0.5f); // default outline thickness
+		assimpModelOutlineShader->SetFloat("outlineThickness", 0.5f); // default outline thickness
 		// fragment shader constant uniforms
-		outlineShader->SetVec3("outlineAlbedo", glm::vec3{ 0.8f }); // default outline color (light gray)
+		assimpModelOutlineShader->SetVec3("outlineAlbedo", glm::vec3{ 0.8f }); // default outline color (light gray)
 	}
 	else
 	{
-		std::cerr << "Outline Shader Program not found!" << std::endl;
-		return; // exit the function if the outline shader is not found
+		std::cerr << "Assimp Model Outline Shader Program not found!" << std::endl;
+		return; // exit the function if the Assimp model outline shader is not found
+	}
+
+	// shape outline shader configuration (if it exists)
+	if (shapeOutlineShader)
+	{
+		// activate the shader program
+		shapeOutlineShader->Use();
+		// fragment shader constant uniforms
+		assimpModelOutlineShader->SetVec3("outlineAlbedo", glm::vec3{ 0.8f }); // default outline color (light gray)
+	}
+	else
+	{
+		std::cerr << "Shape Outline Shader Program not found!" << std::endl;
+		return; // exit the function if the shape outline shader is not found
 	}
 
 	// Render loop
@@ -609,11 +626,16 @@ void Core::MainLoop()
 			}
 		});
 
-		// II. Second render pass: render outlines for the Assimp models 
-		//     by extruding vertices along their normals in the vertex shader. 
-		//     This creates a uniform outline around the objects, regardless of their shape or size.
-		//	   The outline is rendered using a dedicated outline shader with a thickness value
-		//	   that depends on the model's bounding box size
+		// II. Second render pass: render outlines for the non-gizmo models
+		//     - Render outlines for the Assimp models by extruding vertices 
+		//       along their normals in the vertex shader. 
+		//       This creates a uniform outline around the objects, regardless of their shape or size.
+		//       It might not be consistent when working with Assimp models whose sizes differ significantly, 
+		//       but it is a simple and effective way to render outlines.
+		//	     The outline is rendered using a dedicated outline shader with a thickness value
+		//     - Render outlines for the Shape models by scaling them up slightly
+		//       and rendering them with a different color.
+		//       The outline is rendered using a dedicated outline shader (a simple vertex shader).
 		// stencil buffer configuration:
 		// 1. Set the stencil function to pass only if the stencil value is not equal 
 		//    to the reference value, which is set to 1 in this case
@@ -626,11 +648,10 @@ void Core::MainLoop()
 		// set the polygon mode to fill for the outlines
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-		// activate the outline shader for rendering the outlines
-		outlineShader->Use();
-		// set the base outline thickness, which will be adjusted per-model in the vertex shader, 
-		// depending on the model's bounding box size
-		outlineShader->SetFloat("outlineThickness", 0.5f);
+		// activate the assimp model outline shader for rendering outlines of Assimp models
+		assimpModelOutlineShader->Use();
+		// set the base outline thickness
+		assimpModelOutlineShader->SetFloat("outlineThickness", 0.5f);
 
 		// iterate over the vector of assets of type "MODEL" and render the outlines
 		// for the non-gizmo models that were rendered in the first pass
@@ -640,24 +661,52 @@ void Core::MainLoop()
 			// dynamically cast the asset to a Model object
 			auto model = dynamic_cast<Model*>(asset.get());
 
-			// skip rendering outlines using this method if the model is not an Assimp model
-			ModelType modelType = model->GetModelType();
-			if (modelType != ModelType::ASSIMP_MODEL)
+			// skip rendering outlines for models that are gizmos
+			if (model->GetGizmoType() != GizmoType::NONE)
 				return;
 
-			// calculate a scale factor for the outline thickness 
-			// based on the model's bounding box size
-			glm::vec3 bboxSize = model->GetBoundingBoxSize();
-			float outlineScaleFactor = glm::length(bboxSize);
+			// depending on the model type, we may need to use a different outline shader
+			// and set different properties for the outline rendering, thus 
+			// the use of a raw pointer to the outline shader and a switch statement
+			Shader* outlineShader = nullptr; // pointer to the outline shader to use
 
-			// set the model matrix for the outline
-			outlineShader->SetMat4("model", model->GetModelMatrix());
+			glm::mat4 modelMatrix = model->GetModelMatrix(); // get the model matrix for the outline
 
-			// set the scale factor for the outline thickness
-			outlineShader->SetFloat("outlineScaleFactor", outlineScaleFactor);
+			switch (model->GetModelType()) // switch based on the type of the model
+			{
+				case ModelType::ASSIMP_MODEL:
+				{
+					// use the Assimp model outline shader for Assimp models
+					outlineShader = assimpModelOutlineShader;
 
-			// set the outline color based on the model's albedo
-			outlineShader->SetVec3("outlineAlbedo", model->GetAlbedo());
+					// activate the outline shader program
+					outlineShader->Use();
+				}
+				break;
+				case ModelType::SHAPE:
+				{
+					// use the shape outline shader for untextured matt shapes
+					outlineShader = shapeOutlineShader;
+
+					// activate the outline shader program
+					outlineShader->Use();
+
+					// scale the model matrix by 1.05 to create a slight outline effect
+					modelMatrix = glm::scale(modelMatrix, glm::vec3(1.05f));
+				}
+				break;
+				default:
+				{
+					std::cerr << "Unknown model type for model: " << model->GetName() << std::endl;
+					return; // exit the function if the model type is unknown
+				}
+			}
+
+			// set the outline color to light gray
+			outlineShader->SetVec3("outlineAlbedo", glm::vec3{ 0.8f });
+
+			// set the model matrix for the outline shader
+			outlineShader->SetMat4("model", modelMatrix);
 
 			model->Draw(*outlineShader);
 		});
