@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include <algorithm>
+
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
@@ -56,5 +58,8 @@ private:
 	std::vector<Texture> loadMaterialTextures(aiMaterial* mat,
 											  aiTextureType type,
 											  TextureType textureType);
+
+	// Calculates the bounding box of the model based on the vertices of the meshes
+	void calculateBoundingBox();
 
 };

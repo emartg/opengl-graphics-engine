@@ -615,6 +615,13 @@ void GUI::Setup()
 			);
 		}
 
+		// set the size and position of the next window to display the file dialog adequately,
+		// centered on the screen and with a 1000x600 size
+		ImGui::SetNextWindowSize(ImVec2(1000.0f, 600.0f), ImGuiCond_Appearing);
+		ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x * 0.5f - 500.0f,
+									   io.DisplaySize.y * 0.5f - 300.0f),
+								ImGuiCond_Appearing);
+
 		// check if the file dialog is displayed and if the user selected a file
 		if (ImGuiFileDialog::Instance()->Display("ChooseFileDlgKey"))
 		{ // if the file dialog is displayed

@@ -40,6 +40,9 @@ public:
 	// Deletes all the buffer objects/arrays
 	void DeallocateResources();
 
+	// Getters
+	std::vector<Vertex> GetVertices() const { return vertices; }
+
 private:
 	// Private Attributes
 	// ------------------

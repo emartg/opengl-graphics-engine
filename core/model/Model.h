@@ -110,6 +110,9 @@ public:
 	glm::mat4 GetRotationMatrix() const;
 	glm::mat4 GetScaleMatrix() const;
 
+	// Gets the size of the model's bounding box
+	glm::vec3 GetBoundingBoxSize() const { return m_boundingBoxMax - m_boundingBoxMin; }
+
 	// Static Public Functions
 	// -----------------------
 	static GLuint GetNModels() { return nModels; }
@@ -136,6 +139,9 @@ protected:
 
 	ModelType modelType; // type of the model (e.g., ASSIMP_MODEL, SHAPE)
 	GizmoType gizmoType; // type of the gizmo if the model is a gizmo, or NONE if it is not a gizmo
+
+	glm::vec3 m_boundingBoxMin{}; // minimum point of the bounding box
+	glm::vec3 m_boundingBoxMax{}; // maximum point of the bounding box
 
 	// Private Static Attributes
 	// -------------------------

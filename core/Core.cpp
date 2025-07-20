@@ -609,10 +609,11 @@ void Core::MainLoop()
 			}
 		});
 
-		// II. Second render pass: render outlines for the non-gizmo models by extruding vertices along 
-		//     their normals in the vertex shader. 
+		// II. Second render pass: render outlines for the Assimp models 
+		//     by extruding vertices along their normals in the vertex shader. 
 		//     This creates a uniform outline around the objects, regardless of their shape or size.
-		//	   The outline is rendered using a dedicated outline shader with a configurable thickness
+		//	   The outline is rendered using a dedicated outline shader with a thickness value
+		//	   that depends on the model's bounding box size
 		// stencil buffer configuration:
 		// 1. Set the stencil function to pass only if the stencil value is not equal 
 		//    to the reference value, which is set to 1 in this case
@@ -627,7 +628,8 @@ void Core::MainLoop()
 
 		// activate the outline shader for rendering the outlines
 		outlineShader->Use();
-		// set the outline thickness in world units
+		// set the base outline thickness, which will be adjusted per-model in the vertex shader, 
+		// depending on the model's bounding box size
 		outlineShader->SetFloat("outlineThickness", 0.5f);
 
 		// iterate over the vector of assets of type "MODEL" and render the outlines
@@ -638,14 +640,21 @@ void Core::MainLoop()
 			// dynamically cast the asset to a Model object
 			auto model = dynamic_cast<Model*>(asset.get());
 
-			// get the gizmo type of the model
-			GizmoType gizmoType = model->GetGizmoType();
-			// skip rendering outlines using this method if the model is a gizmo
-			if (gizmoType != GizmoType::NONE)
+			// skip rendering outlines using this method if the model is not an Assimp model
+			ModelType modelType = model->GetModelType();
+			if (modelType != ModelType::ASSIMP_MODEL)
 				return;
+
+			// calculate a scale factor for the outline thickness 
+			// based on the model's bounding box size
+			glm::vec3 bboxSize = model->GetBoundingBoxSize();
+			float outlineScaleFactor = glm::length(bboxSize);
 
 			// set the model matrix for the outline
 			outlineShader->SetMat4("model", model->GetModelMatrix());
+
+			// set the scale factor for the outline thickness
+			outlineShader->SetFloat("outlineScaleFactor", outlineScaleFactor);
 
 			// set the outline color based on the model's albedo
 			outlineShader->SetVec3("outlineAlbedo", model->GetAlbedo());
