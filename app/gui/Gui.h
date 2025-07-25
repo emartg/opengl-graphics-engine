@@ -19,6 +19,8 @@
 #include "backends/imgui_impl_opengl3.h"
 
 #include "../core/Core.h"
+#include "../core/managers/AssetManager.h"
+#include "../core/managers/SceneManager.h"
 #include "../core/utils/random/Random.h"
 
 class GUI
@@ -73,13 +75,14 @@ private:
 	static constexpr float DEFAULT_MAX_ROTATION_VALUE{ 360.0f };
 	static constexpr float DEFAULT_MIN_SCALE_VALUE{ 0.001f };
 	static constexpr float DEFAULT_MAX_SCALE_VALUE{ 10.0f };
-	static constexpr float DEFAULT_INNER_CUTOFF_VALUE{ 12.5f };
-	static constexpr float DEFAULT_OUTER_CUTOFF_VALUE{ 32.5f };
 	static constexpr float DEFAULT_MIN_CUTOFF_VALUE{ 0.0f };
 	static constexpr float DEFAULT_MAX_CUTOFF_VALUE{ 45.0f };
 
 	static constexpr float DEFAULT_MIN_DISTANCE_FROM_ORIGIN{ 4.0f };
 	static constexpr float DEFAULT_MAX_DISTANCE_FROM_ORIGIN{ 15.0f };
+
+	static constexpr float DEFAULT_INNER_CUTOFF_VALUE{ 12.5f };
+	static constexpr float DEFAULT_OUTER_CUTOFF_VALUE{ 32.5f };
 
 	// Private Methods
 	// ---------------

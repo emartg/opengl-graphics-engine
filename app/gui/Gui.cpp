@@ -18,7 +18,12 @@ bool GUI::s_proportionalScaling{ true }; // propertional scaling flag is true by
 // ------------
 GUI::GUI()
 	: m_clearColor{ 0.45f, 0.55f, 0.60f, 1.00f }, // set the clear color to a light gray by default
-	m_randomizer{ std::make_unique<Random>() } // create a random number generator
+	m_randomizer{ std::make_unique<Random>() }, // create a random number generator
+	m_newAlbedo{ 0.8f }, // default albedo color for new objects is light gray
+	m_newPosition{ 0.0f }, // default position for new objects is the origin
+	m_newDirection{ 0.0f, 0.0f, -1.0f }, // default direction for new objects is negative z-axis
+	m_newInnerCutOff{ 12.5f }, // default inner cutoff angle for new spotlights
+	m_newOuterCutOff{ 32.5f } // default outer cutoff angle for new spotlights
 {}
 
 // Destructor
@@ -51,6 +56,11 @@ void GUI::Setup()
 	ImGui_ImplOpenGL3_NewFrame();
 	ImGui_ImplGlfw_NewFrame();
 	ImGui::NewFrame();
+
+	// get the asset manager, the input manager, and the scene manager from the Core instance
+	auto assetManager = Core::GetInstance()->GetAssetManager();
+	auto inputManager = Core::GetInstance()->GetInputManager();
+	auto sceneManager = Core::GetInstance()->GetSceneManager();
 
 	// get ImGuiIO object to access the display size later
 	ImGuiIO& io = ImGui::GetIO();
@@ -97,7 +107,7 @@ void GUI::Setup()
 		ImGui::Begin("Scene Information");
 
 		// get the camera object
-		auto& camera = Core::GetInstance()->GetCamera();
+		auto& camera = sceneManager->GetCamera();
 		// display the name of the camera and its position
 		ImGui::Text("Camera Name: %s", camera->GetName().c_str());
 		ImGui::Text("Camera Position: (%.3f, %.3f, %.3f)",
@@ -108,13 +118,13 @@ void GUI::Setup()
 		ImGui::Separator();
 
 		// get the number of lights in the scene
-		unsigned int nLights = Core::GetInstance()->GetNLights();
+		unsigned int nLights = assetManager->GetNLights();
 		// get the number of point lights in the scene
-		unsigned int nPointLights = Core::GetInstance()->GetNPointLights();
+		unsigned int nPointLights = assetManager->GetNPointLights();
 		// get the number of spotlights in the scene
-		unsigned int nSpotlights = Core::GetInstance()->GetNSpotlights();
+		unsigned int nSpotlights = assetManager->GetNSpotlights();
 		// get the number of directional lights in the scene
-		unsigned int nDirectionalLights = Core::GetInstance()->GetNDirectionalLights();
+		unsigned int nDirectionalLights = assetManager->GetNDirectionalLights();
 		// display the number of lights in the scene
 		ImGui::Text("Number of Lights: %d", nLights);
 		// display the number of point lights in the scene
@@ -129,7 +139,7 @@ void GUI::Setup()
 		for (unsigned int i{}; i < nLights; i++)
 		{
 			// get the light object and its type
-			auto light = dynamic_cast<Light*>(Core::GetInstance()->GetAssets("LIGHT")[i].get());
+			auto light = dynamic_cast<Light*>(assetManager->GetAssets("LIGHT")[i].get());
 			LightType lightType = light->GetLightType();
 
 			switch (lightType) // switch based on the type of the light
@@ -235,11 +245,11 @@ void GUI::Setup()
 		ImGui::Separator();
 
 		// get the number of models in the scene
-		unsigned int nModels = Core::GetInstance()->GetNModels();
+		unsigned int nModels = assetManager->GetNModels();
 		// get the number of shapes in the scene
-		unsigned int nShapes = Core::GetInstance()->GetNShapes();
+		unsigned int nShapes = assetManager->GetNShapes();
 		// get the number of Assimp models in the scene
-		unsigned int nAssimpModels = Core::GetInstance()->GetNAssimpModels();
+		unsigned int nAssimpModels = assetManager->GetNAssimpModels();
 		// display the number of models in the scene
 		ImGui::Text("Number of Models: %d", nModels);
 		// display the number of shapes in the scene
@@ -252,7 +262,7 @@ void GUI::Setup()
 		for (unsigned int i{}; i < nModels; i++)
 		{
 			// get the model object
-			auto model = dynamic_cast<Model*>(Core::GetInstance()->GetAssets("MODEL")[i].get());
+			auto model = dynamic_cast<Model*>(assetManager->GetAssets("MODEL")[i].get());
 
 			// use PushID to create a unique ID for each model 
 			ImGui::PushID(model->GetName().c_str());
@@ -302,12 +312,12 @@ void GUI::Setup()
 		ImGui::Begin("Scene Settings");
 
 		// get the number of lights in the scene
-		unsigned int nLights = Core::GetInstance()->GetNLights();
+		unsigned int nLights = assetManager->GetNLights();
 		// for each light in the scene, create all the necessary GUI elements to change its attributes
 		for (unsigned int i{}; i < nLights; i++)
 		{
 			// get the light object and its type
-			auto light = dynamic_cast<Light*>(Core::GetInstance()->GetAssets("LIGHT")[i].get());
+			auto light = dynamic_cast<Light*>(assetManager->GetAssets("LIGHT")[i].get());
 			LightType lightType = light->GetLightType();
 
 			switch (lightType) // switch based on the type of the light
@@ -482,12 +492,12 @@ void GUI::Setup()
 		}
 
 		// get the number of models in the scene
-		GLuint nModels = Core::GetInstance()->GetNModels();
+		GLuint nModels = assetManager->GetNModels();
 		// for each model in the scene, create all the necessary GUI elements to change its attributes
 		for (unsigned int i{}; i < nModels; i++)
 		{
 			// get the model object
-			auto model = dynamic_cast<Model*>(Core::GetInstance()->GetAssets("MODEL")[i].get());
+			auto model = dynamic_cast<Model*>(assetManager->GetAssets("MODEL")[i].get());
 
 			ModelType modelType = model->GetModelType(); // get the type of the model
 			GizmoType gizmoType = model->GetGizmoType(); // get the type of the model's gizmo
@@ -635,7 +645,7 @@ void GUI::Setup()
 				std::replace(filePathName.begin(), filePathName.end(), '\\', '/');
 
 				// get the current number of models in the scene
-				std::string nModels = std::to_string(Core::GetInstance()->GetNModels());
+				std::string nModels = std::to_string(assetManager->GetNModels());
 
 				// create a new model from the selected file
 				auto newAssimpModel = std::make_shared<AssimpModel>(
@@ -644,7 +654,7 @@ void GUI::Setup()
 				);
 
 				// add the new model to the engine
-				Core::GetInstance()->AddAsset(std::move(newAssimpModel));
+				assetManager->AddAsset(std::move(newAssimpModel));
 			}
 
 			ImGuiFileDialog::Instance()->Close(); // close the file dialog
@@ -655,9 +665,9 @@ void GUI::Setup()
 
 	// check if ImGui wants to capture the mouse (when interacting with the GUI)
 	if (ImGui::GetIO().WantCaptureMouse) // prevent camera manipulation
-		Core::GetInstance()->SetCameraControlEnabled(false);
+		inputManager->SetCameraControlEnabled(false);
 	else // re-enable camera manipulation
-		Core::GetInstance()->SetCameraControlEnabled(true);
+		inputManager->SetCameraControlEnabled(true);
 }
 
 void GUI::Render()
@@ -958,8 +968,9 @@ void GUI::drawAddDirectionalLightPopup()
 		if (ImGui::Button("Create", ImVec2(DEFAULT_POPUP_BUTTON_WIDTH, 0.0f)))
 		{ // if the Create button is clicked
 			// get the number of models and directional lights in the scene
-			std::string nModels = std::to_string(Core::GetInstance()->GetNModels());
-			std::string nDirectionalLights = std::to_string(Core::GetInstance()->GetNDirectionalLights());
+			std::string nModels = std::to_string(Core::GetInstance()->GetAssetManager()->GetNModels());
+			std::string nDirectionalLights =
+				std::to_string(Core::GetInstance()->GetAssetManager()->GetNDirectionalLights());
 
 			// create a new directional light with the specified properties
 			auto newDirectionalLight = std::make_shared<DirectionalLight>(
@@ -971,11 +982,11 @@ void GUI::drawAddDirectionalLightPopup()
 			// get the gizmo of the new directional light before adding the light to the engine
 			auto newDirectionalLightGizmo = newDirectionalLight->GetGizmo();
 			// add the new directional light to the engine
-			Core::GetInstance()->AddAsset(std::move(newDirectionalLight));
+			Core::GetInstance()->GetAssetManager()->AddAsset(std::move(newDirectionalLight));
 			// set the name of the gizmo to include the model number
 			newDirectionalLightGizmo->SetName(newDirectionalLightGizmo->GetName() + " (Model " + nModels + ")");
 			// add the gizmo of the new directional light to the engine
-			Core::GetInstance()->AddAsset(std::move(newDirectionalLightGizmo));
+			Core::GetInstance()->GetAssetManager()->AddAsset(std::move(newDirectionalLightGizmo));
 
 			ImGui::CloseCurrentPopup(); // close the popup
 		}
@@ -1021,8 +1032,8 @@ void GUI::drawAddPointLightPopup()
 		if (ImGui::Button("Create", ImVec2(DEFAULT_POPUP_BUTTON_WIDTH, 0.0f)))
 		{ // if the Create button is clicked
 			// get the number of models and point lights in the scene
-			std::string nModels = std::to_string(Core::GetInstance()->GetNModels());
-			std::string nPointLights = std::to_string(Core::GetInstance()->GetNPointLights());
+			std::string nModels = std::to_string(Core::GetInstance()->GetAssetManager()->GetNModels());
+			std::string nPointLights = std::to_string(Core::GetInstance()->GetAssetManager()->GetNPointLights());
 
 			// create a new point light with the specified properties
 			auto newPointLight = std::make_shared<PointLight>(
@@ -1034,11 +1045,11 @@ void GUI::drawAddPointLightPopup()
 			// get the gizmo of the new point light before adding the light to the engine
 			auto newPointLightGizmo = newPointLight->GetGizmo();
 			// add the new point light to the engine
-			Core::GetInstance()->AddAsset(std::move(newPointLight));
+			Core::GetInstance()->GetAssetManager()->AddAsset(std::move(newPointLight));
 			// set the name of the gizmo to include the model number
 			newPointLightGizmo->SetName(newPointLightGizmo->GetName() + " (Model " + nModels + ")");
 			// add the gizmo of the new point light to the engine
-			Core::GetInstance()->AddAsset(std::move(newPointLightGizmo));
+			Core::GetInstance()->GetAssetManager()->AddAsset(std::move(newPointLightGizmo));
 
 			ImGui::CloseCurrentPopup(); // close the popup
 		}
@@ -1088,12 +1099,10 @@ void GUI::drawAddSpotlightPopup()
 			m_newDirection = m_randomizer->GenerateRandomDirection();
 			m_newInnerCutOff = m_randomizer->GenerateRandomFloat(
 				DEFAULT_MIN_CUTOFF_VALUE,
-				DEFAULT_MAX_CUTOFF_VALUE
-			);
+				DEFAULT_MAX_CUTOFF_VALUE);
 			m_newOuterCutOff = m_randomizer->GenerateRandomFloat(
 				m_newInnerCutOff, // ensure outer cut-off is greater than inner cut-off
-				DEFAULT_MAX_CUTOFF_VALUE
-			);
+				DEFAULT_MAX_CUTOFF_VALUE);
 		}
 
 		// display a button to create the new spotlight
@@ -1101,8 +1110,8 @@ void GUI::drawAddSpotlightPopup()
 		if (ImGui::Button("Create", ImVec2(DEFAULT_POPUP_BUTTON_WIDTH, 0.0f)))
 		{ // if the Create button is clicked
 			// get the number of models and spotlights in the scene
-			std::string nModels = std::to_string(Core::GetInstance()->GetNModels());
-			std::string nSpotlights = std::to_string(Core::GetInstance()->GetNSpotlights());
+			std::string nModels = std::to_string(Core::GetInstance()->GetAssetManager()->GetNModels());
+			std::string nSpotlights = std::to_string(Core::GetInstance()->GetAssetManager()->GetNSpotlights());
 
 			// create a new spotlight with the specified properties
 			auto newSpotlight = std::make_shared<Spotlight>(
@@ -1114,11 +1123,11 @@ void GUI::drawAddSpotlightPopup()
 			// get the gizmo of the new spotlight before adding the light to the engine
 			auto newSpotlightGizmo = newSpotlight->GetGizmo();
 			// add the new spotlight to the engine
-			Core::GetInstance()->AddAsset(std::move(newSpotlight));
+			Core::GetInstance()->GetAssetManager()->AddAsset(std::move(newSpotlight));
 			// set the name of the gizmo to include the model number
 			newSpotlightGizmo->SetName(newSpotlightGizmo->GetName() + " (Model " + nModels + ")");
 			// add the gizmo of the new spotlight to the engine
-			Core::GetInstance()->AddAsset(std::move(newSpotlightGizmo));
+			Core::GetInstance()->GetAssetManager()->AddAsset(std::move(newSpotlightGizmo));
 
 			ImGui::CloseCurrentPopup(); // close the popup
 		}
@@ -1164,7 +1173,7 @@ void GUI::drawAddCubeShapePopup()
 		if (ImGui::Button("Create", ImVec2(DEFAULT_POPUP_BUTTON_WIDTH, 0.0f)))
 		{ // if the Create button is clicked
 			// get the number of models in the scene
-			std::string nModels = std::to_string(Core::GetInstance()->GetNModels());
+			std::string nModels = std::to_string(Core::GetInstance()->GetAssetManager()->GetNModels());
 
 			// create a cube shape with the specified properties
 			auto newCubeShape = std::make_shared<Shape>(
@@ -1175,7 +1184,7 @@ void GUI::drawAddCubeShapePopup()
 			);
 
 			// add the new cube shape to the engine
-			Core::GetInstance()->AddAsset(std::move(newCubeShape));
+			Core::GetInstance()->GetAssetManager()->AddAsset(std::move(newCubeShape));
 
 			ImGui::CloseCurrentPopup(); // close the popup
 		}
