@@ -63,6 +63,7 @@ void GLFWRenderer::SetCallbackFunctions() const
 	glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
 	glfwSetCursorPosCallback(window, cursorPosCallback);
 	glfwSetScrollCallback(window, scrollCallback);
+	glfwSetKeyCallback(window, keyCallback);
 }
 
 void GLFWRenderer::SetViewport(int width, int height) { glViewport(0, 0, width, height); }
@@ -84,15 +85,6 @@ bool GLFWRenderer::ShouldClose() { return glfwWindowShouldClose(window); }
 
 void GLFWRenderer::SetWindowShouldClose() { glfwSetWindowShouldClose(window, true); }
 
-const std::string GLFWRenderer::ProcessKeyboardInput()
-{
-	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-		return "Esc_pressed";
-	else if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS)
-		return "R_pressed";
-	return "";
-}
-
 void GLFWRenderer::InitGUI()
 {
 	gui = new GUI();
@@ -108,14 +100,16 @@ void GLFWRenderer::ShutdownGUI()
 	if (gui)
 	{
 		std::cout << "Shutting down GUI..." << std::endl;
+		// clean up the GUI resources and shutdown the GUI
 		gui->Shutdown();
-		delete gui;
-		gui = nullptr;
+		delete gui; // delete the GUI instance
+		gui = nullptr; // set the GUI pointer to nullptr to avoid dangling pointer
 	}
 }
 
 void GLFWRenderer::framebufferSizeCallback(GLFWwindow* window, int width, int height)
 {
+	// set the viewport to the new framebuffer size
 	Core::GetInstance()->FramebufferSizeCallback(width, height);
 }
 
@@ -123,15 +117,27 @@ void GLFWRenderer::cursorPosCallback(GLFWwindow* window, double xpos, double ypo
 {
 	std::string button;
 	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS)
-		button = "right_mouse_button_pressed";
+		button = "RMB_HOLD"; // right mouse button hold for rotation
 	else if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
-		button = "left_mouse_button_pressed";
+		button = "LMB_HOLD"; // left mouse button hold for translation
 	else
-		button = "no_mouse_button_pressed";
-	Core::GetInstance()->CursorPosCallback(xpos, ypos, button);
+		button = ""; // no button pressed
+
+	// delegate the cursor position callback to the InputManager
+	Core::GetInstance()->GetInputManager()->CursorPosCallback(xpos, ypos, button);
 }
 
 void GLFWRenderer::scrollCallback(GLFWwindow* window, double xoffset, double yoffset)
 {
-	Core::GetInstance()->ScrollCallback(xoffset, yoffset);
+	// delegate the scroll callback to the InputManager
+	Core::GetInstance()->GetInputManager()->ScrollCallback(xoffset, yoffset);
+}
+
+void GLFWRenderer::keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+	// delegate the key callback to the InputManager
+	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+		Core::GetInstance()->GetInputManager()->KeyCallback("ESC_PRESSED");
+	else if (key == GLFW_KEY_R && action == GLFW_PRESS)
+		Core::GetInstance()->GetInputManager()->KeyCallback("R_PRESSED");
 }

@@ -8,19 +8,26 @@
 
 #include <iostream>
 #include <memory> // for smart pointers
-#include <algorithm> // for std::for_each
+#include <algorithm>
 
 #include "Core.h"
+
 #include "gizmos/Line.h" // for directional light gizmo rendering
 #include "gizmos/RECTANGULAR_PLANE.h" // for directional light gizmo rendering
+
+// Static Instance initialization
+// ------------------------------
+Core* Core::m_instance{ nullptr };
 
 // Constructors
 // ------------
 Core::Core()
 	: m_renderer{ nullptr },
-	m_lastMouseX{ m_screenWidth / 2.0f }, m_lastMouseY{ m_screenHeight / 2.0f }, m_firstMouse{ true },
-	m_deltaTime{ 0.0f }, m_lastFrameTime{ 0.0f }, m_camera{ nullptr },
-	m_cameraControlEnabled{ false }
+	m_assetManager{ std::make_shared<AssetManager>() },
+	m_inputManager{ std::make_shared<InputManager>() },
+	m_sceneManager{ std::make_shared<SceneManager>() },
+	m_deltaTime{ 0.0f }, m_lastFrameTime{ 0.0f }, // initialize time settings
+	m_screenWidth{ 1400 }, m_screenHeight{ 1000 } // default screen settings 
 {}
 
 // Destructor
@@ -28,17 +35,7 @@ Core::Core()
 Core::~Core()
 {
 	std::cout << "Core destructor called" << std::endl;
-
-	// Deallocate all of the engine's resources
-	// ----------------------------------------
-	for (auto& assetType : m_assets)
-		for (auto& asset : assetType.second)
-			asset->DeallocateResources();
 }
-
-// Static Instance initialization
-// ------------------------------
-Core* Core::m_instance = nullptr;
 
 // Static Methods
 // --------------
@@ -58,10 +55,10 @@ void Core::DestroyInstance()
 	{
 		if (m_instance->m_renderer)
 		{
-			m_instance->m_renderer->ShutdownGUI(); // the GUI must be shut down before the renderer
 			std::cout << "Destroying renderer..." << std::endl;
+			m_instance->m_renderer->ShutdownGUI(); // the GUI must be shut down before the renderer
 			delete m_instance->m_renderer; // destroy the renderer before the Core instance
-			m_instance->m_renderer = nullptr;
+			m_instance->m_renderer = nullptr; // nullify the pointer to avoid dangling pointer issues
 		}
 		else
 		{
@@ -70,7 +67,7 @@ void Core::DestroyInstance()
 
 		std::cout << "Destroying Core instance..." << std::endl;
 		delete m_instance; // destroy the Core instance
-		m_instance = nullptr;
+		m_instance = nullptr; // nullify the pointer to avoid dangling pointer issues
 	}
 }
 
@@ -142,7 +139,7 @@ void Core::CompileShaders(const std::vector<std::string>& shaderNames,
 		auto shader = std::make_shared<Shader>(shaderNames[i],
 											   vertexShaderPaths[i].c_str(),
 											   fragmentShaderPaths[i].c_str());
-		AddAsset(std::move(shader));
+		m_assetManager->AddAsset(std::move(shader));
 	}
 }
 
@@ -157,7 +154,7 @@ void Core::CompileShaders(const std::vector<std::string>& shaderNames,
 											   vertexShaderPaths[i].c_str(),
 											   geometryShaderPaths[i].c_str(),
 											   fragmentShaderPaths[i].c_str());
-		AddAsset(std::move(shader));
+		m_assetManager->AddAsset(std::move(shader));
 	}
 }
 
@@ -168,7 +165,7 @@ void Core::LoadTextures(const std::vector<std::string>& textureNames,
 	for (GLuint i{}; i < textureNames.size(); i++)
 	{
 		auto texture = std::make_shared<Texture>(textureNames[i], texturePaths[i], TextureType::DIFFUSE);
-		AddAsset(std::move(texture));
+		m_assetManager->AddAsset(std::move(texture));
 	}
 }
 
@@ -176,22 +173,23 @@ void Core::MainLoop()
 {
 	// Retrieve and store the assets already loaded in the engine
 	// ----------------------------------------------------------
-	// set the main camera
-	m_camera = std::make_shared<Camera>(*dynamic_cast<Camera*>(m_assets["CAMERA"].front().get()));
-
-	// get raw pointers to the shader and light objects through dynamic casting
+	// get raw pointers to the shaders from the asset manager
+	auto camera = m_sceneManager->GetCamera(); // get the main camera from the scene manager
 	auto shaders = std::vector<Shader*>();
-	for (const auto& asset : m_assets["SHADER"])
-		shaders.push_back(dynamic_cast<Shader*>(asset.get()));
+	for (const auto& asset : m_assetManager->GetAssets(AssetType::SHADER))
+	{ // get all the shaders from the asset manager
+		if (auto shader = std::dynamic_pointer_cast<Shader>(asset))
+			shaders.push_back(shader.get()); // store the raw pointer to the shader
+		else
+			std::cerr << "Asset " << asset->GetName() << " is not a Shader!" << std::endl;
+	}
 
-	// declare pointers to the shaders to use in the rendering loop
-	// (provisional, allows us to get rid of shader indexes in the code, 
-	// but introduces raw pointer usage and name checking)
-	Shader* untexturedMattShapeShader = nullptr; // pointer to the untextured matt shape shader
-	Shader* assimpModelShader = nullptr; // pointer to the Assimp model shader
-	Shader* singleAlbedoShader = nullptr; // pointer to the single albedo shader
-	Shader* assimpModelOutlineShader = nullptr; // pointer to the Assimp model outline shader
-	Shader* shapeOutlineShader = nullptr; // pointer to the shape outline shader
+	// declare raw pointers to the shaders to use in the rendering loop
+	Shader* untexturedMattShapeShader{ nullptr }; // pointer to the untextured matt shape shader
+	Shader* assimpModelShader{ nullptr }; // pointer to the Assimp model shader
+	Shader* singleAlbedoShader{ nullptr }; // pointer to the single albedo shader
+	Shader* assimpModelOutlineShader{ nullptr }; // pointer to the Assimp model outline shader
+	Shader* shapeOutlineShader{ nullptr }; // pointer to the shape outline shader
 
 	// assign shaders to the local raw pointers based on their names
 	// (provisional, allows us to get rid of shader indexes in the code, 
@@ -300,10 +298,6 @@ void Core::MainLoop()
 		m_deltaTime = currentFrame - m_lastFrameTime;
 		m_lastFrameTime = currentFrame;
 
-		// Input
-		// -----
-		processInput(m_renderer->ProcessKeyboardInput());
-
 		// Per-frame shader configuration
 		// ------------------------------
 		// set clear color and clear the color, depth, and stencil buffers
@@ -312,10 +306,10 @@ void Core::MainLoop()
 
 		// compute view/projection transformations
 		glm::mat4 projection = glm::perspective(
-			glm::radians(m_camera->GetZoom()),
+			glm::radians(camera->GetZoom()),
 			static_cast<GLfloat>(m_screenWidth) / static_cast<GLfloat>(m_screenHeight),
 			0.1f, 100.0f);
-		glm::mat4 view = m_camera->GetViewMatrix();
+		glm::mat4 view = camera->GetViewMatrix();
 		// set the view and projection matrices for each shader program
 		for (auto& shader : shaders)
 		{
@@ -324,12 +318,13 @@ void Core::MainLoop()
 			shader->SetMat4("projection", projection);
 		}
 
-		// indices for lights whose properties are to be set (counters for each type of light)
-		GLuint pointLightIdx{}, spotlightIdx{}, directionalLightIdx{};
-		// iterate over the vector of assets of type "LIGHT" and set the properties of the lights
-		// for every model shader program (provisional, allows us to get rid of shader indexes in the code, 
-		// but forces us to set the uniforms for each model shader program separately)
-		std::for_each(m_assets["LIGHT"].begin(), m_assets["LIGHT"].end(),
+		// iterators for the asset vectors from the asset manager
+		auto& models = m_assetManager->GetAssets(AssetType::MODEL);
+		auto& lights = m_assetManager->GetAssets(AssetType::LIGHT);
+
+		// iterate over the vector of lights and set their properties
+		GLint pointLightIdx{}, spotlightIdx{}, directionalLightIdx{}; // counters for different light types
+		std::for_each(lights.begin(), lights.end(),
 					  [&](const std::shared_ptr<Asset>& asset)
 		{
 			// dynamically cast the asset to a Light object and get its type
@@ -477,14 +472,14 @@ void Core::MainLoop()
 		});
 		// set the current number of each type of light for the untextured matt shape shader
 		untexturedMattShapeShader->Use();
-		untexturedMattShapeShader->SetInt("nPointLights", static_cast<GLint>(pointLightIdx));
-		untexturedMattShapeShader->SetInt("nSpotlights", static_cast<GLint>(spotlightIdx));
-		untexturedMattShapeShader->SetInt("nDirectionalLights", static_cast<GLint>(directionalLightIdx));
+		untexturedMattShapeShader->SetInt("nPointLights", pointLightIdx);
+		untexturedMattShapeShader->SetInt("nSpotlights", spotlightIdx);
+		untexturedMattShapeShader->SetInt("nDirectionalLights", directionalLightIdx);
 		// set the current number of each type of light for the Assimp model shader
 		assimpModelShader->Use();
-		assimpModelShader->SetInt("nPointLights", static_cast<GLint>(pointLightIdx));
-		assimpModelShader->SetInt("nSpotlights", static_cast<GLint>(spotlightIdx));
-		assimpModelShader->SetInt("nDirectionalLights", static_cast<GLint>(directionalLightIdx));
+		assimpModelShader->SetInt("nPointLights", pointLightIdx);
+		assimpModelShader->SetInt("nSpotlights", spotlightIdx);
+		assimpModelShader->SetInt("nDirectionalLights", directionalLightIdx);
 
 		// I. First render pass: render the models as normal, writing to the stencil buffer
 		// stencil buffer configuration:
@@ -493,23 +488,21 @@ void Core::MainLoop()
 		glStencilFunc(GL_ALWAYS, 1, 0xFF);
 		glStencilMask(0xFF);
 
-		// iterate over the vector of assets of type "MODEL" and render the models
-		std::for_each(m_assets["MODEL"].begin(), m_assets["MODEL"].end(),
+		// iterate over the vector of models and render them
+		std::for_each(models.begin(), models.end(),
 					  [&](const std::shared_ptr<Asset>& asset)
 		{
+			// raw pointer meant to hold the current shader program for rendering
+			Shader* renderShader{ nullptr };
+
 			// dynamically cast the asset to a Model object
 			auto model = dynamic_cast<Model*>(asset.get());
-
-			GizmoType gizmoType = model->GetGizmoType(); // get the type of the model's gizmo
-
-			// declare a current shader pointer to use for rendering
-			Shader* currentShader = nullptr;
 
 			// switch based on the gizmo type to:
 			// - set the current shader program accordingly for rendering
 			// - set the appropiate properties for the model for rendering
 			// - set the polygon mode (fill or line) for rendering
-			switch (gizmoType)
+			switch (model->GetGizmoType())
 			{
 				case GizmoType::NONE: // if the model is not a gizmo
 				{
@@ -519,22 +512,22 @@ void Core::MainLoop()
 						case ModelType::ASSIMP_MODEL: // if the model is an Assimp model
 						{
 							// use the Assimp model shader
-							currentShader = assimpModelShader;
+							renderShader = assimpModelShader;
 
 							// activate the current shader program
-							currentShader->Use();
+							renderShader->Use();
 						}
 						break;
 						case ModelType::SHAPE: // if the model is an untextured matt shape 
 						{
 							// use the untextured matt shape shader
-							currentShader = untexturedMattShapeShader;
+							renderShader = untexturedMattShapeShader;
 
 							// activate the current shader program
-							currentShader->Use();
+							renderShader->Use();
 
 							// set the color of the shape based on the model's albedo
-							currentShader->SetVec3("material.albedo", model->GetAlbedo());
+							renderShader->SetVec3("material.albedo", model->GetAlbedo());
 						}
 						break;
 						default:
@@ -545,7 +538,7 @@ void Core::MainLoop()
 					}
 
 					// set the model matrix for the model
-					currentShader->SetMat4("model", model->GetModelMatrix());
+					renderShader->SetMat4("model", model->GetModelMatrix());
 
 					// set the polygon mode to fill for regular models
 					glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
@@ -556,16 +549,16 @@ void Core::MainLoop()
 				case GizmoType::SPOTLIGHT: // if the model is a spotlight gizmo
 				{
 					// use the single albedo shader
-					currentShader = singleAlbedoShader;
+					renderShader = singleAlbedoShader;
 
 					// activate the current shader program
-					currentShader->Use();
+					renderShader->Use();
 
 					// set the model matrix for the gizmo model
-					currentShader->SetMat4("model", model->GetModelMatrix());
+					renderShader->SetMat4("model", model->GetModelMatrix());
 
 					// set the color of the gizmo shape based on the model's albedo
-					currentShader->SetVec3("albedo", model->GetAlbedo());
+					renderShader->SetVec3("albedo", model->GetAlbedo());
 
 					// set the polygon mode to line for light gizmos
 					glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -577,23 +570,21 @@ void Core::MainLoop()
 			}
 
 			// draw the model using the current shader program
-			model->Draw(*currentShader);
+			model->Draw(*renderShader);
 		});
 
 		// set the polygon mode to line for the directional light gizmo lines
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
-		// iterate over the vector of assets of type "LIGHT" and render the directional light gizmo lines
-		std::for_each(m_assets["LIGHT"].begin(), m_assets["LIGHT"].end(),
+		// iterate over the vector of lights and render the directional light gizmo lines
+		std::for_each(lights.begin(), lights.end(),
 					  [&](const std::shared_ptr<Asset>& asset)
 		{
 			// dynamically cast the asset to a Light object
 			auto light = dynamic_cast<Light*>(asset.get());
 
-			LightType lightType = light->GetLightType(); // get the type of the light
-
 			// check if the light is a directional light
-			if (lightType == LightType::DIRECTIONAL_LIGHT)
+			if (light->GetLightType() == LightType::DIRECTIONAL_LIGHT)
 			{
 				// cast the light to a DirectionalLight object
 				auto dirLight = dynamic_cast<DirectionalLight*>(light);
@@ -648,14 +639,13 @@ void Core::MainLoop()
 		// set the polygon mode to fill for the outlines
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-		// activate the assimp model outline shader for rendering outlines of Assimp models
+		// activate the assimp model outline shader
 		assimpModelOutlineShader->Use();
 		// set the base outline thickness
 		assimpModelOutlineShader->SetFloat("outlineThickness", 0.5f);
 
-		// iterate over the vector of assets of type "MODEL" and render the outlines
-		// for the non-gizmo models that were rendered in the first pass
-		std::for_each(m_assets["MODEL"].begin(), m_assets["MODEL"].end(),
+		// iterate over the vector of assets and render the outlines for the non-gizmo models
+		std::for_each(models.begin(), models.end(),
 					  [&](const std::shared_ptr<Asset>& asset)
 		{
 			// dynamically cast the asset to a Model object
@@ -666,9 +656,9 @@ void Core::MainLoop()
 				return;
 
 			// depending on the model type, we may need to use a different outline shader
-			// and set different properties for the outline rendering, thus 
-			// the use of a raw pointer to the outline shader and a switch statement
-			Shader* outlineShader = nullptr; // pointer to the outline shader to use
+			// and set different properties for the outline rendering, thus the use of a raw pointer 
+			// that will point to the appropriate outline shader
+			Shader* outlineShader{ nullptr };
 
 			glm::mat4 modelMatrix = model->GetModelMatrix(); // get the model matrix for the outline
 
@@ -729,124 +719,25 @@ void Core::MainLoop()
 	}
 }
 
-void Core::AddAsset(std::shared_ptr<Asset> asset)
-{
-	// get the key for the asset type
-	std::string assetType;
-	switch (asset->GetType())
-	{
-		case AssetType::CAMERA:
-			assetType = "CAMERA";
-			break;
-		case AssetType::LIGHT:
-			assetType = "LIGHT";
-			break;
-		case AssetType::MODEL:
-			assetType = "MODEL";
-			break;
-		case AssetType::SHADER:
-			assetType = "SHADER";
-			break;
-		case AssetType::TEXTURE:
-			assetType = "TEXTURE";
-			break;
-		default:
-			std::cerr << "AssetType not defined!" << std::endl;
-			return;
-	}
-	// add asset to the corresponding vector in the map
-	m_assets[assetType].emplace_back(asset);
-	// print the type and name of the asset added to the console
-	std::cout << "Asset added: " << assetType << "\t| "
-		<< m_assets[assetType].back()->GetName() << std::endl;
-}
-
-const std::vector<std::shared_ptr<Asset>>& Core::GetAssets(const std::string& assetType) const
-{
-	// find the asset type in the map
-	auto it = m_assets.find(assetType);
-
-	if (it != m_assets.end()) // ensure at least one asset of the type exists
-		return it->second; // return the vector of assets of the specified type
-
-	// return an empty vector if the asset type is not found
-	static const std::vector<std::shared_ptr<Asset>> empty;
-	return empty;
-}
-
-const std::shared_ptr<Asset>& Core::GetAssetByIndex(const std::string& assetType, GLuint index) const
-{
-	// find the asset type in the map
-	auto it = m_assets.find(assetType);
-
-	if (it != m_assets.end()) // ensure at least one asset of the type exists
-		return it->second[index]; // return the asset of the specified type at the specified index
-
-	// return an empty shared_ptr if the asset type is not found
-	static const std::shared_ptr<Asset> empty;
-	return empty;
-}
-
 void Core::FramebufferSizeCallback(GLint width, GLint height)
 {
 	glViewport(0, 0, width, height);
-}
-
-void Core::CursorPosCallback(GLdouble xposIn, GLdouble yposIn, std::string input)
-{
-	static GLboolean rightMouseButtonPressed{ false };
-	static GLboolean leftMouseButtonPressed{ false };
-
-	if (input == "right_mouse_button_pressed")
-	{
-		rightMouseButtonPressed = true;
-		leftMouseButtonPressed = false;
-	}
-	else if (input == "left_mouse_button_pressed")
-	{
-		leftMouseButtonPressed = true;
-		rightMouseButtonPressed = false;
-	}
-	else
-	{
-		rightMouseButtonPressed = false;
-		leftMouseButtonPressed = false;
-	}
-
-	GLfloat xpos = static_cast<GLfloat>(xposIn);
-	GLfloat ypos = static_cast<GLfloat>(yposIn);
-
-	if (m_firstMouse)
-	{
-		m_lastMouseX = xpos;
-		m_lastMouseY = ypos;
-		m_firstMouse = false;
-	}
-
-	GLfloat xoffset = xpos - m_lastMouseX;
-	GLfloat yoffset = m_lastMouseY - ypos; // reversed since y-coordinates range from bottom to top
-	m_lastMouseX = xpos;
-	m_lastMouseY = ypos;
-
-	if (m_cameraControlEnabled) // only process mouse input if camera control is enabled
-		if (rightMouseButtonPressed) // the right mouse button is used to rotate the camera
-			m_camera->ProcessMouseRotation(xoffset, yoffset);
-		else if (leftMouseButtonPressed) // the left mouse button is used to translate the camera in 2D
-			m_camera->ProcessMouseTranslation(xoffset, yoffset, 0.025f);
-}
-
-void Core::ScrollCallback(GLdouble xoffset, GLdouble yoffset)
-{
-	if (m_cameraControlEnabled) // only process mouse scrolling if camera control is enabled
-		m_camera->ProcessMouseScroll(yoffset, 2.5f);
 }
 
 // Private Functions
 // -----------------
 void Core::processInput(std::string input)
 {
-	if (input == "Esc_pressed")
+	if (input == "ESC_PRESSED")
+	{
+		// if the escape key is pressed, set the window to close (debugging feature)
 		m_renderer->SetWindowShouldClose();
-	else if (input == "R_pressed")
-		m_camera->ResetCamera();
+		std::cout << "Escape key pressed, closing the window..." << std::endl;
+	}
+	else if (input == "R_PRESSED")
+	{
+		// if the 'R' key is pressed, reset the camera (debugging feature)
+		m_sceneManager->GetCamera()->ResetCamera();
+		std::cout << "Camera reset to default position and orientation" << std::endl;
+	}
 }

@@ -26,7 +26,6 @@ public:
 	virtual void SwapBuffers() = 0;
 	virtual void ClearBuffers() = 0;
 	virtual bool ShouldClose() = 0;
-	virtual const std::string ProcessKeyboardInput() = 0;
 
 	// Getters
 	virtual const char* GetProcAddress() const = 0;

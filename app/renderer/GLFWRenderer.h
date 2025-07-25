@@ -11,9 +11,11 @@
 #define GLFW_INCLUDE_NONE // prevent GLFW from including OpenGL headers
 #include <GLFW/glfw3.h>
 
+#include "../gui/Gui.h"
+
 #include "../core/Core.h"
 #include "../core/renderer/Renderer.h"
-#include "../gui/Gui.h"
+#include "../core/managers/InputManager.h"
 
 class GLFWRenderer : public Renderer
 {
@@ -35,7 +37,6 @@ public:
 	void SwapBuffers() override;
 	void ClearBuffers() override;
 	bool ShouldClose() override;
-	const std::string ProcessKeyboardInput() override;
 
 	// Getters
 	const char* GetProcAddress() const override;
@@ -64,5 +65,6 @@ private:
 	static void framebufferSizeCallback(GLFWwindow* window, int width, int height);
 	static void cursorPosCallback(GLFWwindow* window, double xpos, double ypos);
 	static void scrollCallback(GLFWwindow* window, double xoffset, double yoffset);
+	static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
 
 };

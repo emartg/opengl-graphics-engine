@@ -11,7 +11,6 @@
 #include <string>
 #include <vector>
 #include <memory> // for smart pointers
-#include <unordered_map>
 
 #include <glad/glad.h> // holds all OpenGL type declarations
 #include <glm/glm.hpp>
@@ -21,15 +20,9 @@
 
 #include "Asset.h"
 #include "camera/Camera.h"
-#include "light/Light.h"
-#include "light/PointLight.h"
-#include "light/Spotlight.h"
-#include "light/DirectionalLight.h"
-#include "model/Model.h"
-#include "model/Shape.h"
-#include "model/AssimpModel.h"
-#include "shader/Shader.h"
-#include "texture/Texture.h"
+#include "managers/AssetManager.h"
+#include "managers/InputManager.h"
+#include "managers/SceneManager.h"
 #include "renderer/Renderer.h"
 
 class Core
@@ -49,17 +42,19 @@ private:
 
 	// Private Attributes
 	// ------------------
-	Renderer* m_renderer; // current renderer object
-	GLuint m_screenWidth{ 1400 }, m_screenHeight{ 1000 }; // screen settings
+	Renderer* m_renderer;
+
+	// manager instances
+	std::shared_ptr<AssetManager> m_assetManager;
+	std::shared_ptr<InputManager> m_inputManager;
+	std::shared_ptr<SceneManager> m_sceneManager;
+
+	// screen settings
+	GLuint m_screenWidth{ 1400 }, m_screenHeight{ 1000 };
 
 	// engine-specific attributes
-	GLfloat m_lastMouseX, m_lastMouseY, m_firstMouse; // mouse settings
 	GLfloat m_deltaTime, m_lastFrameTime; // time settings
-	std::unordered_map<std::string, std::vector<std::shared_ptr<Asset>>> m_assets; // map of assets
-	std::shared_ptr<Camera> m_camera; // current camera object
 
-	// gui-related attributes
-	GLboolean m_cameraControlEnabled; // flag to disable camera control
 
 	// Private Functions
 	// -----------------
@@ -86,53 +81,20 @@ public:
 	// Public Methods
 	// --------------
 	// Getters
-	// get the screen width
-	const GLuint& GetScreenWidth() const { return m_screenWidth; }
-	// get the screen height
-	const GLuint& GetScreenHeight() const { return m_screenHeight; }
-	// get the renderer object
 	const Renderer* GetRenderer() const { return m_renderer; }
 
-	// get all the assets of a specific type
-	const std::vector<std::shared_ptr<Asset>>& GetAssets(const std::string& assetType) const;
-	// get an asset of a specific type by index
-	const std::shared_ptr<Asset>& GetAssetByIndex(const std::string& assetType, GLuint index) const;
-	// get the camera object
-	const std::shared_ptr<Camera>& GetCamera() { return m_camera; }
+	const std::shared_ptr<AssetManager>& GetAssetManager() const { return m_assetManager; }
+	const std::shared_ptr<InputManager>& GetInputManager() const { return m_inputManager; }
+	const std::shared_ptr<SceneManager>& GetSceneManager() const { return m_sceneManager; }
 
-	// get the number of assets in the scene
-	const GLuint GetNAssets() const { return Asset::GetNAssets(); }
-	// get number of lights in the scene
-	const GLuint GetNLights() const { return Light::GetNLights(); }
-	// get number of point lights in the scene
-	const GLuint GetNPointLights() const { return PointLight::GetNPointLights(); }
-	// get number of spotlights in the scene
-	const GLuint GetNSpotlights() const { return Spotlight::GetNSpotlights(); }
-	// get number of directional lights in the scene
-	const GLuint GetNDirectionalLights() const { return DirectionalLight::GetNDirectionalLights(); }
-	// get number of models in the scene
-	const GLuint GetNModels() const { return Model::GetNModels(); }
-	// get the number of Assimp models in the scene
-	const GLuint GetNAssimpModels() const { return AssimpModel::GetNAssimpModels(); }
-	// get number of shapes in the scene
-	const GLuint GetNShapes() const { return Shape::GetNShapes(); }
-
-	// get the camera control flag
-	const GLboolean& GetCameraControlEnabled() const { return m_cameraControlEnabled; }
+	const GLuint& GetScreenWidth() const { return m_screenWidth; }
+	const GLuint& GetScreenHeight() const { return m_screenHeight; }
 
 	// Setters
-	// set the screen width
-	void SetScreenWidth(GLuint width) { m_screenWidth = width; }
-	// set the screen height
-	void SetScreenHeight(GLuint height) { m_screenHeight = height; }
-	// set the renderer object
 	void SetRenderer(Renderer* renderer) { m_renderer = renderer; }
 
-	// set the camera object
-	void SetCamera(std::shared_ptr<Camera> camera) { m_camera = std::move(camera); }
-
-	// set the camera control flag
-	void SetCameraControlEnabled(GLboolean enabled) { m_cameraControlEnabled = enabled; }
+	void SetScreenWidth(GLuint width) { m_screenWidth = width; }
+	void SetScreenHeight(GLuint height) { m_screenHeight = height; }
 
 	// Initializes OpenGL
 	void InitOGL() const;
@@ -151,12 +113,7 @@ public:
 	// Main rendering loop of the engine (includes input processing)
 	void MainLoop();
 
-	// Adds an asset to the engine (e.g., a camera, light, model, etc.)
-	void AddAsset(std::shared_ptr<Asset> asset);
-
 	// Engine-specific callback functions
 	void FramebufferSizeCallback(GLint width, GLint height);
-	void CursorPosCallback(GLdouble xposIn, GLdouble yposIn, std::string input);
-	void ScrollCallback(GLdouble xoffset, GLdouble yoffset);
 
 };

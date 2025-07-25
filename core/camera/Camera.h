@@ -32,7 +32,7 @@ public:
 	Camera(const std::string& name,
 		   const GLfloat posX, const GLfloat posY, const GLfloat posZ,
 		   const GLfloat upX, const GLfloat upY, const GLfloat upZ,
-		   const GLfloat yaw, const GLfloat pitch);
+		   const GLfloat yaw = YAW, const GLfloat pitch = PITCH);
 
 	// Public Methods
 	// --------------
@@ -97,7 +97,7 @@ private:
 	// Private Static Attributes
 	// -------------------------
 	// default values for the camera attributes
-	static constexpr glm::vec3 POSITION = glm::vec3{ 20.0f, 12.0f, 20.0f };
+	static constexpr glm::vec3 POSITION = glm::vec3{ 22.0f, 12.0f, 17.5f };
 	static constexpr glm::vec3 UP = glm::vec3{ 0.0f, 1.0f, 0.0f };
 	static constexpr GLfloat YAW = -135.0f;
 	static constexpr GLfloat PITCH = -24.0f;
