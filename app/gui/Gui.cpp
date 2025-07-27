@@ -171,7 +171,6 @@ void GUI::Setup()
 								directionalLight->GetDirection().y,
 								directionalLight->GetDirection().z);
 
-
 					ImGui::PopID(); // use PopID to end the unique ID scope
 				}
 				break;
@@ -195,7 +194,6 @@ void GUI::Setup()
 								pointLight->GetPosition().x,
 								pointLight->GetPosition().y,
 								pointLight->GetPosition().z);
-
 
 					ImGui::PopID(); // use PopID to end the unique ID scope
 				}
@@ -228,7 +226,6 @@ void GUI::Setup()
 					// display the cut-off angles of the spotlight (in degrees)
 					ImGui::Text("Inner cut-off: %.3f", glm::degrees(glm::acos(spotlight->GetInnerCutOff())));
 					ImGui::Text("Outer cut-off: %.3f", glm::degrees(glm::acos(spotlight->GetOuterCutOff())));
-
 
 					ImGui::PopID(); // use PopID to end the unique ID scope
 				}
