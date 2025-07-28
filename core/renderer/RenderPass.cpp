@@ -65,23 +65,40 @@ void RenderPass::Create(const RenderPassSpecification& spec)
 
 		// allocate storage for the renderbuffer and attach it to the framebuffer
 		glRenderbufferStorage(GL_RENDERBUFFER, format, m_specification.Width, m_specification.Height);
-		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, m_rboId);
+		// attach the renderbuffer to the framebuffer as depth and/or stencil attachment 
+		// depending on the specification
+		if (m_specification.HasDepthAttachment && m_specification.HasStencilAttachment)
+		{ // if both depth and stencil attachments are specified 
+			glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, m_rboId);
+		}
+		else if (m_specification.HasDepthAttachment)
+		{ // if only depth attachment is specified 
+			glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, m_rboId);
+		}
+		else if (m_specification.HasStencilAttachment)
+		{ // if only stencil attachment is specified 
+			glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, m_rboId);
+		}
 	}
 
 	// set the draw buffers based on the number of color attachments specified
 	if (m_specification.ColorAttachmentCount > 1)
 	{ // if there are more than one color attachments
 		std::vector<GLenum> attachments;
-		for (int i = 0; i < m_specification.ColorAttachmentCount; ++i)
+		for (int i{}; i < m_specification.ColorAttachmentCount; ++i)
 			attachments.push_back(GL_COLOR_ATTACHMENT0 + i);
+
+		// set all attachments as draw buffers for multiple render targets (MRT)
 		glDrawBuffers(m_specification.ColorAttachmentCount, attachments.data());
+		// explicitly set the read buffer to the first color attachment
+		glReadBuffer(GL_COLOR_ATTACHMENT0);
 	}
 	else if (m_specification.ColorAttachmentCount == 1)
 	{ // if there is only one color attachment, set it as the draw and read buffer
 		glDrawBuffer(GL_COLOR_ATTACHMENT0);
 		glReadBuffer(GL_COLOR_ATTACHMENT0);
 	}
-	else if (m_specification.ColorAttachmentCount == 0)
+	else
 	{ // if there are no color attachments, set the draw and read buffers to none
 		glDrawBuffer(GL_NONE);
 		glReadBuffer(GL_NONE);
@@ -93,6 +110,34 @@ void RenderPass::Create(const RenderPassSpecification& spec)
 
 	// unbind the framebuffer
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+void RenderPass::SetAsDrawBuffer(GLint index) const
+{
+	// bind the framebuffer
+	glBindFramebuffer(GL_FRAMEBUFFER, m_fboId);
+	if (index >= 0 && index < m_colorAttachmentIds.size())
+	{ // if index is non-negative and within bounds
+		glDrawBuffer(GL_COLOR_ATTACHMENT0 + index); // set draw buffer to the specified color attachment
+	}
+	else
+	{ // if index is negative (sentinel value) or out of bounds
+		glDrawBuffer(GL_NONE); // set draw buffer to none
+	}
+}
+
+void RenderPass::SetAsReadBuffer(GLint index) const
+{
+	// bind the framebuffer
+	glBindFramebuffer(GL_FRAMEBUFFER, m_fboId);
+	if (index >= 0 && index < m_colorAttachmentIds.size())
+	{ // if index is non-negative and within bounds
+		glReadBuffer(GL_COLOR_ATTACHMENT0 + index); // set read buffer to the specified color attachment
+	}
+	else
+	{ // if index is negative (sentinel value) or out of bounds
+		glReadBuffer(GL_NONE); // set read buffer to none
+	}
 }
 
 void RenderPass::Bind() const

@@ -11,9 +11,7 @@
 
 #include <glad/glad.h> // holds all OpenGL type declarations
 
-// Forward declaration of the RenderPassSpecification struct
-// to avoid circular dependency issues.
-// This struct defines the specifications for the render pass
+// this struct defines the specifications for the render pass
 // such as width, height, number of color attachments, and depth/stencil attachments.
 struct RenderPassSpecification
 {
@@ -39,6 +37,10 @@ public:
 	// --------------
 	// Create a framebuffer object (FBO) with the specified render pass specification
 	void Create(const RenderPassSpecification& spec);
+	// Set the framebuffer as the draw buffer for rendering
+	void SetAsDrawBuffer(GLint index = 0) const;
+	// Set the framebuffer as the read buffer for reading back data
+	void SetAsReadBuffer(GLint index = 0) const;
 	// Bind the framebuffer for rendering
 	void Bind() const;
 	// Unbind the framebuffer
@@ -49,7 +51,7 @@ public:
 	// Getters
 	// -------
 	// Get the texture ID for the specified color attachment index
-	GLuint GetTextureId(GLuint index{ 0 }) const;
+	GLuint GetTextureId(GLuint index = 0) const;
 
 private:
 	// Private Attributes
