@@ -31,27 +31,24 @@ public:
 	// Public Methods
 	// --------------
 	bool Init() const override;
-	void CreateWindow(int width, int height, const char* title);
-	void ConfigureWindow() const;
-	void PollIOEvents() override;
-	void SwapBuffers() override;
-	void ClearBuffers() override;
-	bool ShouldClose() override;
+	void CreateWindow(int width, int height, const char* title) override;
+	void ConfigureWindow() const override;
+	void PollIOEvents() const override;
+	void SwapBuffers() const override;
+	bool ShouldClose() const override;
 
 	// Getters
 	const char* GetProcAddress() const override;
-	float GetTime() override;
+	float GetTime() const override;
 
 	// Setters
-	void SetCallbackFunctions() const;
-	void SetViewport(int width, int height) override;
-	void SetClearColor(float r, float g, float b, float a = 1.0f) override;
-	void SetWindowShouldClose() override;
+	void SetCallbackFunctions() const override;
+	void SetWindowShouldClose() const override;
 
 	// GUI
 	void InitGUI() override;
-	void SetupGUI() override;
-	void RenderGUI() override;
+	void SetupGUI() const override;
+	void RenderGUI() const override;
 	void ShutdownGUI() override;
 
 private:

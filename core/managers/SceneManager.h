@@ -30,7 +30,6 @@ public:
 	// Setters
 	void SetCamera(std::shared_ptr<Camera> camera) { m_camera = std::move(camera); }
 
-
 private:
 	std::shared_ptr<Camera> m_camera;
 

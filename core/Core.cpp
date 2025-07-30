@@ -109,25 +109,9 @@ void Core::InitOGL() const
 	// ------------------
 	m_renderer->InitGUI();
 
-	// OpenGL global state configuration
-	// ---------------------------------
-	// depth buffer configuration:
-	// 1. Enable the depth test
-	// 2. Set the depth function to GL_LESS, which is the default depth function,
-	//    i.e., discard fragments whose depth value is greater than or equal to 
-	//    the current fragment's depth value
-	glEnable(GL_DEPTH_TEST);
-	glDepthFunc(GL_LESS); // default depth function (discard fragments behind the current fragment)
-
-	// stencil buffer configuration:
-	// 1. Enable the stencil test
-	// 2. Set the stencil operation to replace the stencil value with the reference value 
-	//	  if both the stencil test and depth test pass
-	// 3. Set the stencil function to pass only if the stencil value is not equal 
-	//    to the reference value, which is set to 1 in this case
-	glEnable(GL_STENCIL_TEST);
-	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-	glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+	// OpenGL global configuration
+	// ---------------------------
+	m_renderer->ConfigOpenGL();
 }
 
 void Core::CompileShaders(const std::vector<std::string>& shaderNames,
@@ -188,8 +172,6 @@ void Core::MainLoop()
 	Shader* untexturedMattShapeShader{ nullptr }; // pointer to the untextured matt shape shader
 	Shader* assimpModelShader{ nullptr }; // pointer to the Assimp model shader
 	Shader* singleAlbedoShader{ nullptr }; // pointer to the single albedo shader
-	Shader* assimpModelOutlineShader{ nullptr }; // pointer to the Assimp model outline shader
-	Shader* shapeOutlineShader{ nullptr }; // pointer to the shape outline shader
 
 	// assign shaders to the local raw pointers based on their names
 	// (provisional, allows us to get rid of shader indexes in the code, 
@@ -202,10 +184,6 @@ void Core::MainLoop()
 			assimpModelShader = shader;
 		else if (strcmp(shader->GetName().c_str(), "Single Albedo Shader Program") == 0)
 			singleAlbedoShader = shader;
-		else if (strcmp(shader->GetName().c_str(), "Assimp Model Outline Shader Program") == 0)
-			assimpModelOutlineShader = shader;
-		else if (strcmp(shader->GetName().c_str(), "Shape Outline Shader Program") == 0)
-			shapeOutlineShader = shader;
 		else
 		{
 			std::cerr << "Unknown shader name: " << shader->GetName() << std::endl;
@@ -250,36 +228,6 @@ void Core::MainLoop()
 		return; // exit the function if the single albedo shader is not found
 	}
 
-	// assimp model outline shader configuration (if it exists)
-	if (assimpModelOutlineShader)
-	{
-		// activate the shader program
-		assimpModelOutlineShader->Use();
-		// vertex shader constant uniforms
-		assimpModelOutlineShader->SetFloat("outlineThickness", 0.5f); // default outline thickness
-		// fragment shader constant uniforms
-		assimpModelOutlineShader->SetVec3("outlineAlbedo", glm::vec3{ 0.8f }); // default outline color (light gray)
-	}
-	else
-	{
-		std::cerr << "Assimp Model Outline Shader Program not found!" << std::endl;
-		return; // exit the function if the Assimp model outline shader is not found
-	}
-
-	// shape outline shader configuration (if it exists)
-	if (shapeOutlineShader)
-	{
-		// activate the shader program
-		shapeOutlineShader->Use();
-		// fragment shader constant uniforms
-		assimpModelOutlineShader->SetVec3("outlineAlbedo", glm::vec3{ 0.8f }); // default outline color (light gray)
-	}
-	else
-	{
-		std::cerr << "Shape Outline Shader Program not found!" << std::endl;
-		return; // exit the function if the shape outline shader is not found
-	}
-
 	// Render loop
 	// -----------
 	while (!m_renderer->ShouldClose())
@@ -301,7 +249,7 @@ void Core::MainLoop()
 		// Per-frame shader configuration
 		// ------------------------------
 		// set clear color and clear the color, depth, and stencil buffers
-		m_renderer->SetClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+		m_renderer->SetClearColor(0.1f, 0.1f, 0.1f);
 		m_renderer->ClearBuffers();
 
 		// compute view/projection transformations
@@ -481,13 +429,6 @@ void Core::MainLoop()
 		assimpModelShader->SetInt("nSpotlights", spotlightIdx);
 		assimpModelShader->SetInt("nDirectionalLights", directionalLightIdx);
 
-		// I. First render pass: render the models as normal, writing to the stencil buffer
-		// stencil buffer configuration:
-		// 1. Set the stencil function to always pass
-		// 2. Set the stencil mask to write to the stencil buffer
-		glStencilFunc(GL_ALWAYS, 1, 0xFF);
-		glStencilMask(0xFF);
-
 		// iterate over the vector of models and render them
 		std::for_each(models.begin(), models.end(),
 					  [&](const std::shared_ptr<Asset>& asset)
@@ -616,98 +557,6 @@ void Core::MainLoop()
 				line->Draw();
 			}
 		});
-
-		// II. Second render pass: render outlines for the non-gizmo models
-		//     - Render outlines for the Assimp models by extruding vertices 
-		//       along their normals in the vertex shader. 
-		//       This creates a uniform outline around the objects, regardless of their shape or size.
-		//       It might not be consistent when working with Assimp models whose sizes differ significantly, 
-		//       but it is a simple and effective way to render outlines.
-		//	     The outline is rendered using a dedicated outline shader with a thickness value
-		//     - Render outlines for the Shape models by scaling them up slightly
-		//       and rendering them with a different color.
-		//       The outline is rendered using a dedicated outline shader (a simple vertex shader).
-		// stencil buffer configuration:
-		// 1. Set the stencil function to pass only if the stencil value is not equal 
-		//    to the reference value, which is set to 1 in this case
-		// 2. Set the stencil mask to not write to the stencil buffer
-		// 3. Disable the depth test to ensure the outline is rendered on top of the models
-		glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
-		glStencilMask(0x00);
-		glDisable(GL_DEPTH_TEST);
-
-		// set the polygon mode to fill for the outlines
-		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-
-		// activate the assimp model outline shader
-		assimpModelOutlineShader->Use();
-		// set the base outline thickness
-		assimpModelOutlineShader->SetFloat("outlineThickness", 0.5f);
-
-		// iterate over the vector of assets and render the outlines for the non-gizmo models
-		std::for_each(models.begin(), models.end(),
-					  [&](const std::shared_ptr<Asset>& asset)
-		{
-			// dynamically cast the asset to a Model object
-			auto model = dynamic_cast<Model*>(asset.get());
-
-			// skip rendering outlines for models that are gizmos
-			if (model->GetGizmoType() != GizmoType::NONE)
-				return;
-
-			// depending on the model type, we may need to use a different outline shader
-			// and set different properties for the outline rendering, thus the use of a raw pointer 
-			// that will point to the appropriate outline shader
-			Shader* outlineShader{ nullptr };
-
-			glm::mat4 modelMatrix = model->GetModelMatrix(); // get the model matrix for the outline
-
-			switch (model->GetModelType()) // switch based on the type of the model
-			{
-				case ModelType::ASSIMP_MODEL:
-				{
-					// use the Assimp model outline shader for Assimp models
-					outlineShader = assimpModelOutlineShader;
-
-					// activate the outline shader program
-					outlineShader->Use();
-				}
-				break;
-				case ModelType::SHAPE:
-				{
-					// use the shape outline shader for untextured matt shapes
-					outlineShader = shapeOutlineShader;
-
-					// activate the outline shader program
-					outlineShader->Use();
-
-					// scale the model matrix by 1.05 to create a slight outline effect
-					modelMatrix = glm::scale(modelMatrix, glm::vec3(1.05f));
-				}
-				break;
-				default:
-				{
-					std::cerr << "Unknown model type for model: " << model->GetName() << std::endl;
-					return; // exit the function if the model type is unknown
-				}
-			}
-
-			// set the outline color to light gray
-			outlineShader->SetVec3("outlineAlbedo", glm::vec3{ 0.8f });
-
-			// set the model matrix for the outline shader
-			outlineShader->SetMat4("model", modelMatrix);
-
-			model->Draw(*outlineShader);
-		});
-
-		// stencil buffer configuration
-		// 4. Re-enable writing to the stencil buffer
-		// 5. Set the stencil function to always pass again
-		// 6. Re-enable the depth test
-		glStencilMask(0xFF);
-		glStencilFunc(GL_ALWAYS, 1, 0xFF);
-		glEnable(GL_DEPTH_TEST);
 
 		// Render the GUI
 		// --------------
