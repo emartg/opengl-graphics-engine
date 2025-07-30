@@ -14,7 +14,7 @@
 #include <vector>
 #include <glad/glad.h> // holds all OpenGL type declarations
 
-// Number of vertices and indices in the rectangular plane (4 triangles × 3 vertices)
+// Number of vertices and indices in the rectangular plane (4 triangles x 3 vertices)
 const GLuint nRectangularPlaneVertices = 6, nRectangularPlaneIndices = 12;
 
 // Plane dimensions used in shape construction
@@ -51,12 +51,12 @@ const GLfloat rectangularPlaneTexCoordsArr[] = {
 	0.5f,	0.5f	// center
 };
 
-// Rectangular plane index data
+// Rectangular plane index data (6 triangles x 2 vertices)
 const GLuint rectangularPlaneIndicesArr[] = {
-	0,	1,	4,	// bottom
-	1,	2,	4,	// right
-	2,	3,	4,	// top
-	3,	0,	4	// left
+	0,	4,	1,	// bottom
+	1,	4,	2,	// right
+	2,	4,	3,	// top
+	3,	4,	0	// left
 };
 
 // Interleaved rectangular plane vertex data

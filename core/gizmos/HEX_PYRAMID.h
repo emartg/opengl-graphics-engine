@@ -14,7 +14,7 @@
 #include <vector>
 #include <glad/glad.h> // holds all OpenGL type declarations
 
-// Number of vertices and indices in the hexagonal pyramid (6 triangles × 3 vertices)
+// Number of vertices and indices in the hexagonal pyramid (6 triangles x 3 vertices)
 const GLuint nHexPyramidVertices = 18, nHexPyramidIndices = 18;
 
 // Radius and height used in shape construction
@@ -72,14 +72,14 @@ const GLfloat hexPyramidTexCoordsArr[] = {
 	0.5f,	1.0f,	0.0f,		0.0f,	1.0f,	0.0f
 };
 
-// Hexagonal pyramid index data (6 triangles × 3 vertices)
+// Hexagonal pyramid index data (6 triangles x 3 vertices)
 const GLuint hexPyramidIndicesArr[] = {
-	0,	1,	2,
-	3,	4,	5,
-	6,	7,	8,
-	9,	10,	11,
-	12,	13,	14,
-	15,	16,	17
+	0,	2,	1,
+	3,	5,	4,
+	6,	8,	7,
+	9,	11,	10,
+	12,	14,	13,
+	15,	17,	16
 };
 
 // Interleaved hexagonal pyramid vertex data (position, normal, texture coordinates)

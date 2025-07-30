@@ -15,7 +15,7 @@
 
 #include <glad/glad.h> // holds all OpenGL type declarations
 
-// Number of vertices and indices in the decahedron (10 triangles × 3 vertices)
+// Number of vertices and indices in the decahedron (10 triangles x 3 vertices)
 const GLuint nDecahedronVertices = 30, nDecahedronIndices = 30;
 
 // Decahedron vertex position data (pentagonal bipyramid: top, bottom, 5 base vertices)
@@ -94,18 +94,18 @@ const GLfloat decahedronTexCoordsArr[] = {
 	0.5f,	1.0f,		0.0f,	0.0f,		1.0f, 0.0f
 };
 
-// Decahedron index data (10 triangles × 3 vertices)
+// Decahedron index data (10 triangles x 3 vertices)
 const GLuint decahedronIndicesArr[] = {
 	0,	1,	2,
 	3,	4,	5,
 	6,	7,	8,
 	9,	10,	11,
 	12,	13,	14,
-	15,	16,	17,
-	18,	19,	20,
-	21,	22,	23,
-	24,	25,	26,
-	27,	28,	29
+	15,	17,	16,
+	18,	20,	19,
+	21,	23,	22,
+	24,	26,	25,
+	27,	29,	28
 };
 
 // Interleaved decahedron vertex data (position, normal, texture coordinates)

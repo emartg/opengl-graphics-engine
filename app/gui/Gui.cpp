@@ -617,7 +617,7 @@ void GUI::Setup()
 			ImGuiFileDialog::Instance()->OpenDialog(
 				"ChooseFileDlgKey", // unique key for the file dialog
 				"Choose Model File", // title of the file dialog
-				".obj, .fbx, .dae, .gltf, .glb, .stl, .ply, .3ds", // supported file extensions
+				".obj, .fbx, .dae, .gltf, .glb, .stl, .ply, .3ds, .max", // supported file extensions
 				fileDialogConfig // file dialog configuration
 			);
 		}
