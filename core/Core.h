@@ -52,14 +52,10 @@ private:
 	// screen settings
 	GLuint m_screenWidth{ 1400 }, m_screenHeight{ 1000 };
 
-	// engine-specific attributes
-	GLfloat m_deltaTime, m_lastFrameTime; // time settings
-
-
-	// Private Functions
-	// -----------------
-	// Input processing
-	void processInput(std::string input);
+	// Private Static Methods
+	// ----------------------
+	// Destroys the instance of the Core class (Singleton)
+	static void destroyInstance();
 
 public:
 	// Constructors
@@ -74,9 +70,6 @@ public:
 	// ---------------------
 	// Returns the instance of the Core class (Singleton)
 	static Core* GetInstance();
-
-	// Destroys the instance of the Core class (Singleton)
-	static void DestroyInstance();
 
 	// Public Methods
 	// --------------
@@ -96,24 +89,29 @@ public:
 	void SetScreenWidth(GLuint width) { m_screenWidth = width; }
 	void SetScreenHeight(GLuint height) { m_screenHeight = height; }
 
-	// Initializes OpenGL
-	void InitOGL() const;
-	// Builds and compiles the shaders and adds them to the engine
-	void CompileShaders(const std::vector<std::string>& shaderNames,
+	// Initializes the core engine (OpenGL, window, GUI, etc.)
+	bool Init() const;
+	// Runs the main loop of the engine until the renderer signals that the window should close
+	void Run();
+	// Frees resources in the correct order and shuts down the engine, destroying the Core instance
+	void Shutdown();
+
+	// Creates the shader programs, and delegates the shader compilation and program linking to the renderer.
+	// Returns true if compilation and linking were successful, false otherwise
+	bool CompileShaders(const std::vector<std::string>& shaderNames,
 						const std::vector<std::string>& vertexShaderPaths,
 						const std::vector<std::string>& fragmentShaderPaths);
-	void CompileShaders(const std::vector<std::string>& shaderNames,
+	bool CompileShaders(const std::vector<std::string>& shaderNames,
 						const std::vector<std::string>& vertexShaderPaths,
 						const std::vector<std::string>& geometryShaderPaths,
 						const std::vector<std::string>& fragmentShaderPaths);
+
 	// Loads the textures and adds them to the engine
 	void LoadTextures(const std::vector<std::string>& textureNames,
 					  const std::vector<std::string>& texturePaths,
 					  const std::vector<std::string>& textureTypes);
-	// Main rendering loop of the engine (includes input processing)
-	void MainLoop();
 
-	// Engine-specific callback functions
+	// Callback functions
 	void FramebufferSizeCallback(GLint width, GLint height);
 
 };
