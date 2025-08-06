@@ -13,7 +13,6 @@
 
 #include "../gui/Gui.h"
 
-#include "../core/Core.h"
 #include "../core/renderer/Renderer.h"
 #include "../core/managers/InputManager.h"
 

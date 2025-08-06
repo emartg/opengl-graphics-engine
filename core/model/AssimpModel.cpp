@@ -41,7 +41,9 @@ void AssimpModel::loadAssimpModel(std::string const& path)
 	// check for errors in the importing process
 	if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
 	{
-		std::cerr << "ERROR::Assimp::" << importer.GetErrorString() << std::endl;
+		std::cerr << "[ERROR::ASSIMPMODEL::loadAssimpModel] "
+			<< "Assimp failed to load model from:\n\t" << path
+			<< "\n\tImporter error: " << importer.GetErrorString() << std::endl;
 		return;
 	}
 	// store the directory of the model file
@@ -53,7 +55,8 @@ void AssimpModel::loadAssimpModel(std::string const& path)
 	// calculate the bounding box of the model based on the vertices of the meshes
 	calculateBoundingBox();
 
-	std::cout << "Assimp model loaded successfully at path: " << path << std::endl;
+	std::cout << "[SUCCESS::ASSIMPMODEL::loadAssimpModel] Model loaded successfully from:\n\t"
+		<< path << std::endl;
 }
 
 void AssimpModel::processNode(aiNode* node, const aiScene* scene)

@@ -58,9 +58,9 @@ void GUI::Setup()
 	ImGui::NewFrame();
 
 	// get the asset manager, the input manager, and the scene manager from the Core instance
-	auto assetManager = Core::GetInstance()->GetAssetManager();
-	auto inputManager = Core::GetInstance()->GetInputManager();
-	auto sceneManager = Core::GetInstance()->GetSceneManager();
+	auto& assetManager = Core::GetInstance()->GetAssetManager();
+	auto& inputManager = Core::GetInstance()->GetInputManager();
+	auto& sceneManager = Core::GetInstance()->GetSceneManager();
 
 	// get ImGuiIO object to access the display size later
 	ImGuiIO& io = ImGui::GetIO();
@@ -350,8 +350,7 @@ void GUI::Setup()
 						directionalLight->SyncGizmoPositionFromLight(); // set the new position of the gizmo
 					}
 
-					// get a reference to the gizmo of the directional light 
-					// and its rotation in Euler angles
+					// retrieve the gizmo of the directional light and its rotation in Euler angles
 					auto gizmo = directionalLight->GetGizmo();
 					glm::vec3 rotDegrees = gizmo->GetRotationInEulerAngles();
 					// create a control for the x, y, and z components of the directional light's rotation
@@ -364,7 +363,6 @@ void GUI::Setup()
 						// without causing the gizmo to be re-oriented by SetForward() again
 						directionalLight->SetDirectionOnly(gizmo->GetForward());
 					}
-
 
 					ImGui::PopID(); // use PopID to end the unique ID scope
 
@@ -436,7 +434,7 @@ void GUI::Setup()
 						spotlight->SyncGizmoPositionFromLight(); // set the new position of the gizmo
 					}
 
-					// get a reference to the gizmo of the spotlight and its rotation in Euler angles
+					// retrieve the gizmo of the spotlight and its rotation in Euler angles
 					auto gizmo = spotlight->GetGizmo();
 					glm::vec3 rotDegrees = gizmo->GetRotationInEulerAngles();
 					// create a control for the x, y, and z components of the spotlight's rotation

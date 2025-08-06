@@ -57,11 +57,11 @@ void InputManager::KeyCallback(std::string input)
 	if (input == "ESC_PRESSED") // if the Escape key is pressed, close the window
 	{
 		const_cast<Renderer*>(Core::GetInstance()->GetRenderer())->SetWindowShouldClose();
-		std::cout << "Escape key pressed, closing the window..." << std::endl;
+		std::cout << "[INFO::INPUTMANAGER::KeyCallback] Escape key pressed, closing window" << std::endl;
 	}
 	else if (input == "R_PRESSED") // if the 'R' key is pressed, reset the camera
 	{
 		Core::GetInstance()->GetSceneManager()->GetCamera()->ResetCamera();
-		std::cout << "Camera reset to default position and orientation" << std::endl;
+		std::cout << "[INFO::INPUTMANAGER::KeyCallback] Camera reset to default values" << std::endl;
 	}
 }

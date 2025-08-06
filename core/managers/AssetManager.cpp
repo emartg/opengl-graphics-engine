@@ -12,13 +12,12 @@
 // ----------
 AssetManager::~AssetManager()
 {
+	// for each asset type in the map, iterate through the vector of assets and deallocate resources
 	for (auto& [assetType, assets] : m_assets)
 		for (auto& asset : assets)
-			if (asset)
-				// Deallocate resources for each asset
-				asset->DeallocateResources();
+			if (asset) // check if the asset is not null
+				asset->DeallocateResources(); // deallocate resources for the asset
 }
-
 
 // Public Methods
 // --------------
@@ -73,8 +72,8 @@ void AssetManager::AddAsset(std::shared_ptr<Asset> asset)
 	m_assets[assetType].emplace_back(asset);
 
 	// print the type and name of the asset added to the console
-	std::cout << "Asset added: " << assetType << "\t| "
-		<< m_assets[assetType].back()->GetName() << std::endl;
+	std::cout << "[INFO::ASSETMANAGER::AddAsset] Added "
+		<< assetType << " asset: " << asset->GetName() << std::endl;
 }
 
 // Private Methods

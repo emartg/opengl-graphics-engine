@@ -49,12 +49,14 @@ GLuint Texture::LoadTextureFromFile(const GLchar* path)
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-		std::cout << "Texture loaded successfully at path: " << path << std::endl;
+		std::cout << "[SUCCESS::TEXTURE::LoadTextureFromFile] Texture loaded successfully from:\n\t"
+			<< path << std::endl;
 		stbi_image_free(data);
 	}
 	else
 	{
-		std::cerr << "Texture failed to load at path: " << path << std::endl;
+		std::cerr << "[ERROR::TEXTURE::LoadTextureFromFile] Failed to load texture from:\n\t"
+			<< path << "\n\tFailure reason: " << stbi_failure_reason() << std::endl;
 		stbi_image_free(data);
 		textureID = 0; // return 0 if texture failed to load
 	}

@@ -12,17 +12,19 @@ GLFWRenderer::~GLFWRenderer()
 {
 	if (window)
 	{
+		std::cout << "[INFO::GLFWRENDERER::~GLFWRenderer] Shutting down GLFW..." << std::endl;
 		glfwDestroyWindow(window);
 		window = nullptr;
 	}
 	glfwTerminate();
+	std::cout << "[INFO::GLFWRENDERER::~GLFWRenderer] GLFW shut down successfully" << std::endl;
 }
 
 bool GLFWRenderer::Init() const
 {
 	if (glfwInit() == GLFW_FALSE)
 	{
-		std::cerr << "Failed to initialize GLFW" << std::endl;
+		std::cerr << "[ERROR::GLFWRENDERER::Init] Failed to initialize GLFW" << std::endl;
 		return false;
 	}
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
@@ -33,6 +35,7 @@ bool GLFWRenderer::Init() const
 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
 
+	std::cout << "[SUCCESS::GLFWRENDERER::Init] GLFW initialized successfully" << std::endl;
 	return true;
 }
 
@@ -41,7 +44,7 @@ void GLFWRenderer::CreateWindow(int width, int height, const char* title)
 	window = glfwCreateWindow(width, height, title, nullptr, nullptr);
 	if (!window)
 	{
-		std::cerr << "Failed to create GLFW window" << std::endl;
+		std::cerr << "[ERROR::GLFWRENDERER::CreateWindow] Failed to create GLFW window" << std::endl;
 		glfwTerminate();
 	}
 	glfwMakeContextCurrent(window);
@@ -89,13 +92,15 @@ void GLFWRenderer::RenderGUI() const { gui->Render(); }
 void GLFWRenderer::ShutdownGUI()
 {
 	if (gui)
-	{
-		std::cout << "Shutting down GUI..." << std::endl;
+	{ // check if the GUI instance is not null before shutting it down
+		std::cout << "[INFO::GLFWRENDERER::ShutdownGUI] Shutting down GUI..." << std::endl;
 		// clean up the GUI resources and shutdown the GUI
 		gui->Shutdown();
 		delete gui; // delete the GUI instance
 		gui = nullptr; // set the GUI pointer to nullptr to avoid dangling pointer
 	}
+
+	std::cout << "[INFO::GLFWRENDERER::ShutdownGUI] GUI shut down successfully" << std::endl;
 }
 
 void GLFWRenderer::framebufferSizeCallback(GLFWwindow* window, int width, int height)
