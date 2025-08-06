@@ -104,9 +104,9 @@ void RenderPass::Create(const RenderPassSpecification& spec)
 		glReadBuffer(GL_NONE);
 	}
 
-	// check if the framebuffer is complete
+	// check if the framebuffer is complete, if not, print an error message
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-		std::cerr << "ERROR::FRAMEBUFFER::Framebuffer is not complete!" << std::endl;
+		std::cerr << "[ERROR::RenderPass::Create] Framebuffer is not complete!" << std::endl;
 
 	// unbind the framebuffer
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -167,6 +167,17 @@ void RenderPass::DeallocateResources()
 	// reset the identifiers to zero after deallocation
 	m_fboId = 0;
 	m_rboId = 0;
+}
+
+std::string RenderPass::GetSpecificationStr() const
+{
+	// return a string representation of the render pass specification
+	return "[INFO::RenderPass::GetSpecification] Render Pass Specification:" + std::string("") + "\n" +
+		"Width: " + std::to_string(m_specification.Width) + "\n" +
+		"Height: " + std::to_string(m_specification.Height) + "\n" +
+		"Color Attachment Count: " + std::to_string(m_specification.ColorAttachmentCount) + "\n" +
+		"Has Depth Attachment: " + (m_specification.HasDepthAttachment ? "Yes" : "No") + "\n" +
+		"Has Stencil Attachment: " + (m_specification.HasStencilAttachment ? "Yes" : "No");
 }
 
 GLuint RenderPass::GetTextureId(GLuint index) const

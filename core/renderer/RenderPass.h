@@ -6,8 +6,9 @@
 
 #pragma once
 
-#include <vector>
 #include <iostream>
+#include <string>
+#include <vector>
 
 #include <glad/glad.h> // holds all OpenGL type declarations
 
@@ -49,7 +50,12 @@ public:
 	void DeallocateResources();
 
 	// Getters
-	// -------
+	// Get the render pass specification as a string
+	std::string GetSpecificationStr() const;
+	// Get the framebuffer object ID
+	GLuint GetFboId() const { return m_fboId; }
+	// Get the renderbuffer object ID
+	GLuint GetRboId() const { return m_rboId; }
 	// Get the texture ID for the specified color attachment index
 	GLuint GetTextureId(GLuint index = 0) const;
 
