@@ -1,7 +1,8 @@
 /*
 * Shader.h
 * This file defines the Shader class (a derived class of Asset),
-* which is used to read, compile, and link shaders.
+* which is used to read, compile, and link shaders to a shader program.
+* It also provides methods to set uniform variables in the shader program.
 */
 
 #pragma once
@@ -22,17 +23,26 @@ class Shader : public Asset
 public:
 	// Public Attributes
 	// -----------------
-	GLuint ID; // the shader program ID
+	GLuint shaderProgramId;
 
 	// Constructors
 	// ------------
-	// Constructor that reads and builds the shader with a vertex and fragment shader
+	// Constructor without geometry shader
 	Shader(const std::string& name,
-		   const GLchar* vertexPath, const GLchar* fragmentPath);
-	// Constructor that reads and builds the shader with a geometry shader 
-	// in addition to the vertex and fragment shaders
+		   const std::string& vertexPath,
+		   const std::string& fragmentPath,
+		   const GLboolean deferredCompilation = true);
+
+	// Constructor with geometry shader
 	Shader(const std::string& name,
-		   const GLchar* vertexPath, const GLchar* geometryPath, const GLchar* fragmentPath);
+		   const std::string& vertexPath,
+		   const std::string& geometryPath,
+		   const std::string& fragmentPath,
+		   const GLboolean deferredCompilation = true);
+
+	// Destructor
+	// ----------
+	~Shader() { nShaders--; } // decrement the number of shaders
 
 	// Public Methods
 	// --------------
@@ -40,10 +50,20 @@ public:
 	void Load() override {}
 
 	// Deallocates all the resources of the shader
-	void DeallocateResources() override { glDeleteProgram(ID); }
+	void DeallocateResources() override { glDeleteProgram(shaderProgramId); }
+
+	// Compiles the shader from the source code and links it to a shader program
+	// Returns true if compilation and linking were successful, false otherwise
+	bool Compile();
 
 	// Activates the shader program
-	void Use();
+	void Use() const;
+
+	// Getters
+	GLuint GetShaderProgramId() const { return shaderProgramId; }
+	std::string GetVertexPath() const { return m_vertexPath; }
+	std::string GetGeometryPath() const { return m_geometryPath; }
+	std::string GetFragmentPath() const { return m_fragmentPath; }
 
 	// Uniform setters
 	void SetBool(const std::string& name, GLboolean value) const;
@@ -52,10 +72,25 @@ public:
 	void SetVec3(const std::string& name, const glm::vec3& vec) const;
 	void SetMat4(const std::string& name, const glm::mat4& mat) const;
 
+	// Public Static Methods
+	// ---------------------
+	static GLuint GetNModels() { return nShaders; }
+
 private:
+	// Private Static Attributes
+	// -------------------------
+	static GLuint nShaders; // number of shaders in the scene
+
+	// Private Attributes
+	// ------------------
+	std::string m_vertexPath;   // path to the vertex shader file
+	std::string m_geometryPath; // path to the geometry shader file (optional)
+	std::string m_fragmentPath; // path to the fragment shader file
+
 	// Private Methods
 	// ---------------
 	// Utility method to check for shader compilation/linking errors
-	void checkCompileErrors(GLuint shader, std::string type);
+	// Returns true if there were compilation/linking errors, false otherwise
+	bool checkCompileErrors(GLuint shader, std::string type) const;
 
 };
