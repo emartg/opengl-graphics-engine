@@ -69,7 +69,7 @@ void GUI::BuildGUI()
 
 void GUI::RenderGUI()
 {
-	ImGui::Render();
+	ImGui::Render(); // render the ImGui draw data
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
 
@@ -77,7 +77,7 @@ void GUI::ShutdownGUI() const
 {
 	ImGui_ImplOpenGL3_Shutdown();
 	ImGui_ImplGlfw_Shutdown();
-	ImGui::DestroyContext();
+	ImGui::DestroyContext(); // destroy the ImGui context
 }
 
 // Private methods
@@ -221,9 +221,14 @@ void GUI::drawSceneSettingsWindow()
 			// dynamically cast the asset to a Model object
 			auto model = dynamic_cast<Model*>(asset.get());
 
+			// if the model is not a gizmo, draw its controls,
+			// otherwise skip it, as gizmos are not editable (variable properties handled in light controls)
+			if (model->GetGizmoType() == GizmoType::NONE)
+			{
 			drawModelControls(model); // draw controls for each model in the scene
 
 			ImGui::Separator(); // add a separator between models
+			}
 		});
 
 		ImGui::End(); // end the Scene Settings window
@@ -485,7 +490,7 @@ void GUI::drawModelsInformation() const
 		ImGui::PushID(model->GetName().c_str()); // use PushID to create a unique ID for each model
 
 		// display the attributes of the model
-		ImGui::Text("Name: %s", model->GetName().c_str());
+		ImGui::Text("%s", model->GetName().c_str());
 		ImGui::Text("\tColor: (%.3f, %.3f, %.3f)",
 					model->GetAlbedo().x,
 					model->GetAlbedo().y,
