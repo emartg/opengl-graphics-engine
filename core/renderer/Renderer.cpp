@@ -137,7 +137,7 @@ void Renderer::FrameStartConfig()
 {
 	PollIOEvents(); // poll input events (keyboard, mouse, etc.)
 
-	SetupGUI(); // setup the GUI for the current frame
+	BuildGUI(); // setup the GUI for the current frame
 
 	// per-frame time logic
 	GLfloat currentFrame = static_cast<GLfloat>(GetTime());

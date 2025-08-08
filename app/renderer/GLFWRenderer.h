@@ -46,7 +46,7 @@ public:
 
 	// GUI
 	void InitGUI() override;
-	void SetupGUI() const override;
+	void BuildGUI() const override;
 	void RenderGUI() const override;
 	void ShutdownGUI() override;
 

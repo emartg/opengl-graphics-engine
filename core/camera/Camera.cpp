@@ -7,6 +7,10 @@
 
 #include "Camera.h"
 
+// Private Static Attributes
+// -------------------------
+GLuint Camera::nCameras{}; // initialize the number of cameras in the scene to 0
+
 // Constructors
 // ------------
 Camera::Camera(const std::string& name,
@@ -16,6 +20,7 @@ Camera::Camera(const std::string& name,
 	front{ glm::vec3(0.0f, 0.0f, -1.0f) }, position{ position }, worldUp{ up }, yaw{ yaw }, pitch{ pitch },
 	movementSpeed{ SPEED }, mouseSensitivity{ SENSITIVITY }, zoom{ ZOOM }
 {
+	nCameras++; // increment the number of cameras
 	updateCameraVectors();
 }
 
@@ -24,7 +29,9 @@ Camera::Camera(const std::string& name,
 			   const GLfloat upX, const GLfloat upY, const GLfloat upZ,
 			   const GLfloat yaw, const GLfloat pitch)
 	: Camera(name, glm::vec3(posX, posY, posZ), glm::vec3(upX, upY, upZ), yaw, pitch)
-{}
+{
+	nCameras++; // increment the number of cameras
+}
 
 // Public Methods
 // --------------

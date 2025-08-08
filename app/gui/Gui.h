@@ -36,14 +36,14 @@ public:
 
 	// Public Methods
 	// --------------
-	// Initializes the GUI
-	void Init(GLFWwindow* window, const char* glslVersion);
-	// Sets up the GUI (e.g., creates windows, buttons, etc.)
-	void Setup();
-	// Renders the GUI
-	void Render();
-	// Cleans up the GUI
-	void Shutdown() const;
+	// Initializes the GUI with the given GLFW window and GLSL version
+	void InitGUI(GLFWwindow* window, const char* glslVersion);
+	// Builds the GUI by starting a new ImGui frame and setting up the layout
+	void BuildGUI();
+	// Renders the GUI by drawing the ImGui windows and handling input events
+	void RenderGUI();
+	// Shuts down the GUI and cleans up resources
+	void ShutdownGUI() const;
 
 private:
 	// Private Attributes
@@ -55,55 +55,83 @@ private:
 	glm::vec3 m_newAlbedo, m_newPosition, m_newDirection;
 	float m_newInnerCutOff, m_newOuterCutOff;
 
+	// parameters for the windows (left and right)
+	// relative widths and heights of the windows relative to the display size
+	float m_informationWindowRelativeWidth, m_informationWindowRelativeHeight;
+	float m_addObjectWindowRelativeWidth, m_addObjectWindowRelativeHeight;
+	float m_settingsWindowRelativeWidth, m_settingsWindowRelativeHeight;
+	// offsets the windows from the edges of the display
+	float m_informationWindowXOffset, m_informationWindowYOffset;
+	float m_settingsWindowXOffset, m_settingsWindowYOffset;
+	float m_addObjectWindowXOffset, m_addObjectWindowYOffset;
+	// padding of the windows from the edges of the display
+	ImVec2 m_windowPositionPadding, m_windowSizePadding;
+	// positions and sizes of the windows in the display
+	ImVec2 m_settingsWindowPosition, m_informationWindowPosition, m_addObjectWindowPosition;
+	ImVec2 m_settingsWindowSize, m_informationWindowSize, m_addObjectWindowSize;
+
 	// Private Static Attributes
 	// -------------------------
 	static bool s_proportionalScaling; // flag for enabling/disabling proportional scaling
 
-	// default values for controls and other GUI parameters
-	static constexpr float DEFAULT_ITEM_WIDTH{ 225.0f };
-	static constexpr float DEFAULT_ITEM_HEIGHT{ 20.0f };
-	static constexpr float DEFAULT_INPUT_FIELD_WIDTH{ 60.0f };
-	static constexpr float DEFAULT_INPUT_FIELD_HEIGHT{ 20.0f };
-	static constexpr float DEFAULT_BUTTON_WIDTH{ 60.0f };
-	static constexpr float DEFAULT_BUTTON_HEIGHT{ 20.0f };
-	static constexpr float DEFAULT_POPUP_BUTTON_WIDTH{ 120.0f };
-	static constexpr float DEFAULT_POPUP_BUTTON_HEIGHT{ 20.0f };
-
-	static constexpr float DEFAULT_MIN_POSITION_VALUE{ -15.0f };
-	static constexpr float DEFAULT_MAX_POSITION_VALUE{ 15.0f };
-	static constexpr float DEFAULT_MIN_ROTATION_VALUE{ -360.0f };
-	static constexpr float DEFAULT_MAX_ROTATION_VALUE{ 360.0f };
-	static constexpr float DEFAULT_MIN_SCALE_VALUE{ 0.001f };
-	static constexpr float DEFAULT_MAX_SCALE_VALUE{ 10.0f };
-	static constexpr float DEFAULT_MIN_CUTOFF_VALUE{ 0.0f };
-	static constexpr float DEFAULT_MAX_CUTOFF_VALUE{ 45.0f };
-
-	static constexpr float DEFAULT_MIN_DISTANCE_FROM_ORIGIN{ 4.0f };
-	static constexpr float DEFAULT_MAX_DISTANCE_FROM_ORIGIN{ 15.0f };
-
-	static constexpr float DEFAULT_INNER_CUTOFF_VALUE{ 12.5f };
-	static constexpr float DEFAULT_OUTER_CUTOFF_VALUE{ 32.5f };
+	// default values for ImGui widgets
+	static constexpr float ITEM_WIDTH{ 225.0f }, ITEM_HEIGHT{ 20.0f };
+	static constexpr float INPUT_FIELD_WIDTH{ 60.0f }, INPUT_FIELD_HEIGHT{ 20.0f };
+	static constexpr float BUTTON_WIDTH{ 60.0f }, BUTTON_HEIGHT{ 20.0f };
+	static constexpr float POPUP_BUTTON_WIDTH{ 120.0f }, POPUP_BUTTON_HEIGHT{ 20.0f };
+	static constexpr float POPUP_WIDTH{ 400.0f }, POPUP_HEIGHT{ 300.0f };
+	static constexpr float FILE_DIALOG_POPUP_WIDTH{ 1000.0f }, FILE_DIALOG_POPUP_HEIGHT{ 600.0f };
+	// default values for ImGui controls
+	static constexpr float MIN_POSITION_VALUE{ -15.0f }, MAX_POSITION_VALUE{ 15.0f };
+	static constexpr float MIN_ROTATION_VALUE{ -360.0f }, MAX_ROTATION_VALUE{ 360.0f };
+	static constexpr float MIN_SCALE_VALUE{ 0.001f }, MAX_SCALE_VALUE{ 10.0f };
+	static constexpr float MIN_CUTOFF_VALUE{ 0.0f }, MAX_CUTOFF_VALUE{ 45.0f };
+	// default values for distances from the origin
+	static constexpr float MIN_DISTANCE_TO_ORIGIN{ 4.0f }, MAX_DISTANCE_TO_ORIGIN{ 15.0f };
+	// default values for parameters of new objects
+	static constexpr float INNER_CUTOFF_VALUE{ 12.5f }, OUTER_CUTOFF_VALUE{ 32.5f };
 
 	// Private Methods
 	// ---------------
-	// Creates a color picker with sliders for RGB components
-	// and returns true if the color was changed
-	bool drawColorControl(const std::string& label, glm::vec3& color,
-						  float colorControlWidth = DEFAULT_ITEM_WIDTH);
-	// Creates a 3-component vector control with input fields and buttons
-	// and returns true if any of the components were changed
-	bool drawVec3Control(const std::string& label, glm::vec3& values, bool scaleControls,
-						 float minInputFieldValue, float maxInputFieldValue,
-						 float inputFieldWidth = DEFAULT_INPUT_FIELD_WIDTH,
-						 float speed = 0.1f,
-						 float resetValue = 0.0f, float resetButtonWidth = DEFAULT_BUTTON_WIDTH);
-	// Draws a float control with an input field and arrow buttons
-	// and returns true if the value was changed
-	bool drawFloatControl(const std::string& label, float& value,
-						  float minInputFieldValue, float maxInputFieldValue,
-						  float inputFieldWidth = DEFAULT_INPUT_FIELD_WIDTH,
-						  float speed = 0.1f,
-						  float resetValue = 0.0f, float resetButtonWidth = DEFAULT_BUTTON_WIDTH);
+	// Initializes the GUI layout attributes that do not depend on the display size
+	void initGUILayoutAttributes();
+
+	// Starts a new ImGui frame and configures the ImGui style
+	void beginGUIFrame() const;
+	// Configures the ImGui style (fonts, colors, etc.)
+	void configureGUIStyle() const;
+	// Sets the GUI layout attributes based on the current display size
+	void configureGUILayout();
+	// Draws the GUI windows
+	void drawGUIWindows();
+	// Handles input events for ImGui
+	void handleImGuiInput() const;
+
+	// Draws the information window with information about the objects in the scene
+	void drawSceneInformationWindow() const;
+	// Draws the settings window with controls for the objects in the scene
+	void drawSceneSettingsWindow();
+	// Draws the window with buttons to add new objects to the scene
+	void drawAddObjectWindow();
+
+	// Draws information about the cameras in the scene
+	void drawCamerasInformation() const;
+	// Draws information about the lights in the scene
+	void drawLightsInformation() const;
+	// Draws information about the models in the scene
+	void drawModelsInformation() const;
+
+	// Draws controls for a light. Depending on the type of light, 
+	// it will call dynamically cast to the appropriate light type and draw the corresponding controls
+	void drawLightControls(Light* light);
+	// Draws controls for a directional light
+	void drawDirectionalLightControls(DirectionalLight* directionalLight);
+	// Draws controls for a point light
+	void drawPointLightControls(PointLight* pointLight);
+	// Draws controls for a spotlight
+	void drawSpotlightControls(Spotlight* spotlight);
+	// Draws controls for a model
+	void drawModelControls(Model* model);
 
 	// Draws a pop-up modal window to add a new directional light
 	void drawAddDirectionalLightPopup();
@@ -113,5 +141,24 @@ private:
 	void drawAddSpotlightPopup();
 	// Draws a pop-up modal window to add a new cube shape
 	void drawAddCubeShapePopup();
+	// Draws a pop-up modal window to import a model from a file
+	void drawImportModelPopup();
+
+	// Creates a color picker with sliders for RGB components
+	// and returns true if the color was changed
+	bool drawColorControl(const std::string& label, glm::vec3& color,
+						  float colorControlWidth = ITEM_WIDTH);
+	// Creates a 3-component vector control with input fields and buttons
+	// and returns true if any of the components were changed
+	bool drawVec3Control(const std::string& label, glm::vec3& values, bool scaleControls,
+						 float minInputFieldValue, float maxInputFieldValue,
+						 float inputFieldWidth = INPUT_FIELD_WIDTH, float speed = 0.1f,
+						 float resetValue = 0.0f, float resetButtonWidth = BUTTON_WIDTH);
+	// Draws a float control with an input field and arrow buttons
+	// and returns true if the value was changed
+	bool drawFloatControl(const std::string& label, float& value,
+						  float minInputFieldValue, float maxInputFieldValue,
+						  float inputFieldWidth = INPUT_FIELD_WIDTH, float speed = 0.1f,
+						  float resetValue = 0.0f, float resetButtonWidth = BUTTON_WIDTH);
 
 };

@@ -16,6 +16,7 @@
 #include <glad/glad.h> // holds OpenGL type definitions
 
 #include "../Asset.h"
+#include "../camera/Camera.h"
 #include "../light/Light.h"
 #include "../light/PointLight.h"
 #include "../light/Spotlight.h"
@@ -48,6 +49,7 @@ public:
 
 	// Getters for the number of assets of different types
 	const GLuint GetNAssets() const { return Asset::GetNAssets(); }
+	const GLuint GetNCameras() const { return Camera::GetNCameras(); }
 	const GLuint GetNLights() const { return Light::GetNLights(); }
 	const GLuint GetNPointLights() const { return PointLight::GetNPointLights(); }
 	const GLuint GetNSpotlights() const { return Spotlight::GetNSpotlights(); }

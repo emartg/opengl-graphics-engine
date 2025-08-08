@@ -78,7 +78,7 @@ public:
 
 	// GUI
 	virtual void InitGUI() {};
-	virtual void SetupGUI() const {};
+	virtual void BuildGUI() const {};
 	virtual void RenderGUI() const {};
 	virtual void ShutdownGUI() {};
 

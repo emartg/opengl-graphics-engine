@@ -34,6 +34,10 @@ public:
 		   const GLfloat upX, const GLfloat upY, const GLfloat upZ,
 		   const GLfloat yaw = YAW, const GLfloat pitch = PITCH);
 
+	// Destructor
+	// ----------
+	~Camera() { nCameras--; } // decrement the number of cameras
+
 	// Public Methods
 	// --------------
 	// Loads the camera
@@ -77,7 +81,15 @@ public:
 	// Resets the camera to its default values
 	void ResetCamera();
 
+	// Public Static Methods
+	// ---------------------
+	static GLuint GetNCameras() { return nCameras; }
+
 private:
+	// Private Static Attributes
+	// -------------------------
+	static GLuint nCameras; // number of cameras in the scene
+
 	// Private Attributes
 	// ------------------
 	// Camera attributes
