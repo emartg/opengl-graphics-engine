@@ -399,6 +399,17 @@ void GUI::drawCreationWindow()
 		}
 		drawCreateDirectionalLightPopup(); // draw the popup to create a new directional light
 
+		// button to create a new point light to the scene
+		if (ImGui::Button("Create Point Light", ImVec2(ITEM_WIDTH, 0.0f)))
+		{ // if the button is clicked
+			ImGui::OpenPopup("Create Point Light");
+			// set random initial values
+			m_newAlbedo = m_randomizer->GenerateRandomColor();
+			m_newPosition = m_randomizer->GenerateRandomPosition(
+				glm::vec3(0.0f), MIN_DISTANCE_TO_ORIGIN, MAX_DISTANCE_TO_ORIGIN);
+		}
+		drawCreatePointLightPopup(); // draw the popup to create a new point light
+
 		// button to create a new spotlight to the scene
 		if (ImGui::Button("Create Spotlight", ImVec2(ITEM_WIDTH, 0.0f)))
 		{ // if the button is clicked
@@ -410,17 +421,6 @@ void GUI::drawCreationWindow()
 			m_newDirection = m_randomizer->GenerateRandomDirection();
 		}
 		drawCreateSpotlightPopup(); // draw the popup to create a new spotlight
-
-		// button to create a new point light to the scene
-		if (ImGui::Button("Create Point Light", ImVec2(ITEM_WIDTH, 0.0f)))
-		{ // if the button is clicked
-			ImGui::OpenPopup("Create Point Light");
-			// set random initial values
-			m_newAlbedo = m_randomizer->GenerateRandomColor();
-			m_newPosition = m_randomizer->GenerateRandomPosition(
-				glm::vec3(0.0f), MIN_DISTANCE_TO_ORIGIN, MAX_DISTANCE_TO_ORIGIN);
-		}
-		drawCreatePointLightPopup(); // draw the popup to create a new point light
 
 		// buttom to create a new cube shape to the scene
 		if (ImGui::Button("Create Cube Shape", ImVec2(ITEM_WIDTH, 0.0f)))
@@ -438,7 +438,7 @@ void GUI::drawCreationWindow()
 		{ // if the button is clicked
 			// file dialog configuration
 			IGFD::FileDialogConfig fileDialogConfig;
-			fileDialogConfig.path = "./assets/models"; // initial directory to open the file dialog
+			fileDialogConfig.path = "./resources/models"; // initial directory to open the file dialog
 			fileDialogConfig.countSelectionMax = 1; // for now, allow only one file to be selected
 			fileDialogConfig.flags = ImGuiFileDialogFlags_Modal; // no special flags for the file dialog
 
