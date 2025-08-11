@@ -47,6 +47,9 @@ public:
 	// Adds an asset to the asset manager
 	void AddAsset(std::shared_ptr<Asset> asset);
 
+	// Removes an asset from the asset manager by its ID
+	void RemoveAssetById(std::uint32_t id);
+
 	// Getters for the number of assets of different types
 	const GLuint GetNAssets() const { return Asset::GetNAssets(); }
 	const GLuint GetNCameras() const { return Camera::GetNCameras(); }

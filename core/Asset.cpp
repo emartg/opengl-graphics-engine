@@ -8,4 +8,5 @@
 
 // Static Private Attributes
 // -------------------------
+std::uint32_t Asset::assetsCount{}; // initialize the total number of assets created to 0
 std::uint32_t Asset::nAssets{}; // initialize the number of assets in the scene to 0

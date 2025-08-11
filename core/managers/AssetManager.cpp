@@ -71,9 +71,30 @@ void AssetManager::AddAsset(std::shared_ptr<Asset> asset)
 	// add asset to the corresponding vector in the map
 	m_assets[assetType].emplace_back(asset);
 
-	// print the type and name of the asset added to the console
+	// print the type, id, and name of the added asset
 	std::cout << "[INFO::ASSETMANAGER::AddAsset] Added "
-		<< assetType << " asset: " << asset->GetName() << std::endl;
+		<< assetType << " asset with ID " << asset->GetId() << " and name " << asset->GetName() << std::endl;
+}
+
+void AssetManager::RemoveAssetById(std::uint32_t id)
+{
+	for (auto& [assetType, assets] : m_assets)
+	{ // iterate through each asset of each type in the map
+		// try to find the asset with the specified ID in the vector of assets of the current type
+		auto it = std::remove_if(assets.begin(), assets.end(),
+								 [id](const std::shared_ptr<Asset>& asset) { return asset->GetId() == id; });
+
+		if (it != assets.end())
+		{ // if an asset with the ID was found, print a message and erase it
+			std::cout << "[INFO::ASSETMANAGER::RemoveAssetById] Removed "
+				<< assetType << " asset with ID: " << id << std::endl;
+			assets.erase(it, assets.end());
+			return; // exit after removing the asset
+		}
+	}
+
+	// if no asset with the specified ID was found, print an error message
+	std::cerr << "[ERROR::ASSETMANAGER::RemoveAssetById] No asset found with ID: " << id << std::endl;
 }
 
 // Private Methods

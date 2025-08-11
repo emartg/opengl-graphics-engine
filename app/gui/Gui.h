@@ -14,9 +14,10 @@
 #define GLFW_INCLUDE_NONE // prevent GLFW from including OpenGL headers
 #include <GLFW/glfw3.h>
 
-#include "imgui.h"
-#include "backends/imgui_impl_glfw.h"
-#include "backends/imgui_impl_opengl3.h"
+#include <imgui.h>
+#include <imgui_internal.h>
+#include <backends/imgui_impl_glfw.h>
+#include <backends/imgui_impl_opengl3.h>
 
 #include "../core/Core.h"
 #include "../core/managers/AssetManager.h"
@@ -48,7 +49,6 @@ public:
 private:
 	// Private Attributes
 	// ------------------
-	ImVec4 m_clearColor; // clear color for the background
 	std::unique_ptr<Random> m_randomizer; // random generator to get random colors, positions, etc.
 
 	// attributes for the new objects to be created
@@ -58,17 +58,23 @@ private:
 	// parameters for the windows (left and right)
 	// relative widths and heights of the windows relative to the display size
 	float m_informationWindowRelativeWidth, m_informationWindowRelativeHeight;
-	float m_addObjectWindowRelativeWidth, m_addObjectWindowRelativeHeight;
-	float m_settingsWindowRelativeWidth, m_settingsWindowRelativeHeight;
+	float m_creationWindowRelativeWidth, m_creationWindowRelativeHeight;
+	float m_propertiesWindowRelativeWidth, m_propertiesWindowRelativeHeight;
 	// offsets the windows from the edges of the display
 	float m_informationWindowXOffset, m_informationWindowYOffset;
-	float m_settingsWindowXOffset, m_settingsWindowYOffset;
-	float m_addObjectWindowXOffset, m_addObjectWindowYOffset;
+	float m_propertiesWindowXOffset, m_propertiesWindowYOffset;
+	float m_creationWindowXOffset, m_creationWindowYOffset;
 	// padding of the windows from the edges of the display
 	ImVec2 m_windowPositionPadding, m_windowSizePadding;
 	// positions and sizes of the windows in the display
-	ImVec2 m_settingsWindowPosition, m_informationWindowPosition, m_addObjectWindowPosition;
-	ImVec2 m_settingsWindowSize, m_informationWindowSize, m_addObjectWindowSize;
+	ImVec2 m_propertiesWindowPosition, m_informationWindowPosition, m_creationWindowPosition;
+	ImVec2 m_propertiesWindowSize, m_informationWindowSize, m_creationWindowSize;
+	// flags for the windows to prevent focus on the first frame (indicating that the window just appeared)
+	bool m_informationWindowJustAppeared, m_propertiesWindowJustAppeared, m_creationWindowJustAppeared;
+
+	// style attributes for the GUI
+	ImFont* m_mediumFont; // medium font for the GUI (default font)
+	ImFont* m_boldFont; // bold font for the GUI
 
 	// Private Static Attributes
 	// -------------------------
@@ -77,7 +83,7 @@ private:
 	// default values for ImGui widgets
 	static constexpr float ITEM_WIDTH{ 225.0f }, ITEM_HEIGHT{ 20.0f };
 	static constexpr float INPUT_FIELD_WIDTH{ 60.0f }, INPUT_FIELD_HEIGHT{ 20.0f };
-	static constexpr float BUTTON_WIDTH{ 60.0f }, BUTTON_HEIGHT{ 20.0f };
+	static constexpr float BUTTON_WIDTH{ 56.0f }, BUTTON_HEIGHT{ 22.5f };
 	static constexpr float POPUP_BUTTON_WIDTH{ 120.0f }, POPUP_BUTTON_HEIGHT{ 20.0f };
 	static constexpr float POPUP_WIDTH{ 400.0f }, POPUP_HEIGHT{ 300.0f };
 	static constexpr float FILE_DIALOG_POPUP_WIDTH{ 1000.0f }, FILE_DIALOG_POPUP_HEIGHT{ 600.0f };
@@ -96,10 +102,11 @@ private:
 	// Initializes the GUI layout attributes that do not depend on the display size
 	void initGUILayoutAttributes();
 
+	// Configures the ImGui style (fonts, colors, etc.)
+	void configureGUIStyle();
+
 	// Starts a new ImGui frame and configures the ImGui style
 	void beginGUIFrame() const;
-	// Configures the ImGui style (fonts, colors, etc.)
-	void configureGUIStyle() const;
 	// Sets the GUI layout attributes based on the current display size
 	void configureGUILayout();
 	// Draws the GUI windows
@@ -107,12 +114,12 @@ private:
 	// Handles input events for ImGui
 	void handleImGuiInput() const;
 
-	// Draws the information window with information about the objects in the scene
-	void drawSceneInformationWindow() const;
-	// Draws the settings window with controls for the objects in the scene
-	void drawSceneSettingsWindow();
-	// Draws the window with buttons to add new objects to the scene
-	void drawAddObjectWindow();
+	// Draws the Information Window with information about the objects in the scene
+	void drawInformationWindow();
+	// Draws the Properties Window with controls for the objects in the scene
+	void drawPropertiesWindow();
+	// Draws the window with buttons to create new objects to the scene
+	void drawCreationWindow();
 
 	// Draws information about the cameras in the scene
 	void drawCamerasInformation() const;
@@ -133,14 +140,19 @@ private:
 	// Draws controls for a model
 	void drawModelControls(Model* model);
 
-	// Draws a pop-up modal window to add a new directional light
-	void drawAddDirectionalLightPopup();
-	// Draws a pop-up modal window to add a new point light
-	void drawAddPointLightPopup();
-	// Draws a pop-up modal window to add a new spotlight
-	void drawAddSpotlightPopup();
-	// Draws a pop-up modal window to add a new cube shape
-	void drawAddCubeShapePopup();
+	// Draws a remove button for an asset and adds its Id to the vector of assets marked for removal
+	void drawRemoveAssetButton(Asset* asset, std::vector<std::uint32_t>& assetsToRemoveIds,
+							   const std::string& label = "Remove",
+							   float buttonWidth = BUTTON_WIDTH, float buttonHeight = BUTTON_HEIGHT);
+
+	// Draws a pop-up modal window to create a new directional light
+	void drawCreateDirectionalLightPopup();
+	// Draws a pop-up modal window to create a new point light
+	void drawCreatePointLightPopup();
+	// Draws a pop-up modal window to create a new spotlight
+	void drawCreateSpotlightPopup();
+	// Draws a pop-up modal window to create a new cube shape
+	void drawCreateCubeShapePopup();
 	// Draws a pop-up modal window to import a model from a file
 	void drawImportModelPopup();
 
@@ -152,13 +164,15 @@ private:
 	// and returns true if any of the components were changed
 	bool drawVec3Control(const std::string& label, glm::vec3& values, bool scaleControls,
 						 float minInputFieldValue, float maxInputFieldValue,
-						 float inputFieldWidth = INPUT_FIELD_WIDTH, float speed = 0.1f,
-						 float resetValue = 0.0f, float resetButtonWidth = BUTTON_WIDTH);
+						 float inputFieldWidth = INPUT_FIELD_WIDTH,
+						 float speed = 0.1f, float resetValue = 0.0f,
+						 float resetButtonWidth = BUTTON_WIDTH, float resetButtonHeight = BUTTON_HEIGHT);
 	// Draws a float control with an input field and arrow buttons
 	// and returns true if the value was changed
 	bool drawFloatControl(const std::string& label, float& value,
 						  float minInputFieldValue, float maxInputFieldValue,
-						  float inputFieldWidth = INPUT_FIELD_WIDTH, float speed = 0.1f,
-						  float resetValue = 0.0f, float resetButtonWidth = BUTTON_WIDTH);
+						  float inputFieldWidth = INPUT_FIELD_WIDTH,
+						  float speed = 0.1f, float resetValue = 0.0f,
+						  float resetButtonWidth = BUTTON_WIDTH, float resetButtonHeight = BUTTON_HEIGHT);
 
 };

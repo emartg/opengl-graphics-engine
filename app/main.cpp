@@ -102,9 +102,9 @@ std::tuple<std::vector<std::string>,
 		"Single Albedo Shader"
 	};
 	std::vector<std::string> vertexShaderPaths = {
-		"shaders/untextured_matt_shape.vert.glsl",
-		"shaders/assimp_model.vert.glsl",
-		"shaders/single_albedo.vert.glsl"
+		"resources/shaders/untextured_matt_shape.vert.glsl",
+		"resources/shaders/assimp_model.vert.glsl",
+		"resources/shaders/single_albedo.vert.glsl"
 	};
 	std::vector<std::string> geometryShaderPaths = {
 		"", // no custom geometry shader for the untextured matt shape shader
@@ -112,9 +112,9 @@ std::tuple<std::vector<std::string>,
 		""  // no custom geometry shader for the single albedo shader
 	};
 	std::vector<std::string> fragmentShaderPaths = {
-		"shaders/untextured_matt_shape.frag.glsl",
-		"shaders/assimp_model.frag.glsl",
-		"shaders/single_albedo.frag.glsl"
+		"resources/shaders/untextured_matt_shape.frag.glsl",
+		"resources/shaders/assimp_model.frag.glsl",
+		"resources/shaders/single_albedo.frag.glsl"
 	};
 	return { shaderNames, vertexShaderPaths, geometryShaderPaths, fragmentShaderPaths };
 }
@@ -177,7 +177,7 @@ void SetupInitialScene(Core* engine)
 	assetManager->AddAsset(std::move(spotlightGizmo));
 
 	// load a model from an specific filepath and add it to the asset manager
-	std::string filepath = "assets/models/traffic_cone/gltf/traffic_cone.gltf";
+	std::string filepath = "resources/models/traffic_cone/gltf/traffic_cone.gltf";
 	if (std::filesystem::exists(filepath))
 	{ // check if the file exists before loading it
 		std::string filename = std::filesystem::path(filepath).filename().string();

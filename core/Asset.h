@@ -15,11 +15,12 @@ class Asset
 public:
 	// Constructors
 	// ------------
-	// This constructor initializes the asset with a unique ID, a name, and an asset type.
-	// The ID is pre-incremented to ensure each asset has a unique identifier starting from 1,
-	// since 0 is reserved as a sentinel value to indicate that no asset is selected
+	// This constructor initializes the asset with a unique id, a name, and an asset type.
+	// The id is based on a static counter that increments each time a new asset is created.
+	// It is pre-incremented to ensure the first asset has id 1, not 0 (since 0 is reserved
+	// as a sentinel value for undefined assets, e.g., when no assets are selected)
 	Asset(const std::string& name, const AssetType type)
-		: id{ ++nAssets }, name{ name }, type{ type } {}
+		: id{ ++assetsCount }, name{ name }, type{ type } { nAssets++; }
 
 	// Virtual destructor
 	// ------------------
@@ -45,12 +46,14 @@ public:
 
 	// Static Public Functions
 	// -----------------------
+	static std::uint32_t GetAssetsCount() { return assetsCount; }
 	static std::uint32_t GetNAssets() { return nAssets; }
 
 private:
 	// Static Private Attributes
 	// -------------------------
-	static std::uint32_t nAssets; // number of assets in the scene
+	static std::uint32_t assetsCount; // total number of assets created
+	static std::uint32_t nAssets; // current number of assets in the scene
 
 protected:
 	// Protected Attributes

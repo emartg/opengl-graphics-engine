@@ -1,9 +1,9 @@
 /*
-* GUI.h
+* GUI.cpp
 * This file implements the GUI class, which is used to create a graphical user interface
 * using the ImGui library.
 * The engine will use this class to create a windows to display information about the scene
-* and allow the user to interact with it, e.g. change certain parameters or add new objects.
+* and allow the user to interact with it, e.g. change certain parameters or create new objects.
 */
 
 #include "Gui.h"
@@ -17,21 +17,26 @@ bool GUI::s_proportionalScaling{ true }; // propertional scaling flag is true by
 // Constructors
 // ------------
 GUI::GUI()
-	: m_clearColor{ 0.45f, 0.55f, 0.60f, 1.00f }, // set the clear color to a light gray by default
-	m_randomizer{ std::make_unique<Random>() }, // create a random number generator
+	: m_randomizer{ std::make_unique<Random>() }, // create a random number generator
 	m_newAlbedo{ 0.8f }, // default albedo color for new objects is light gray
 	m_newPosition{ 0.0f }, // default position for new objects is the origin
 	m_newDirection{ 0.0f, 0.0f, -1.0f }, // default direction for new objects is negative z-axis
 	m_newInnerCutOff{ 12.5f }, // default inner cutoff angle for new spotlights
-	m_newOuterCutOff{ 32.5f } // default outer cutoff angle for new spotlights
+	m_newOuterCutOff{ 32.5f }, // default outer cutoff angle for new spotlights
+	m_mediumFont{ nullptr }, // medium font for the GUI (default font) is nullptr initially
+	m_boldFont{ nullptr } // bold font for the GUI is nullptr initially
 {
-	initGUILayoutAttributes(); // initialize the screen size-independent layout attributes
+	initGUILayoutAttributes(); // initialize the display size-independent layout attributes
 	// initialize the positions and sizes of the GUI windows to default values
 	// (since they require the ImGui context to be created first to access the ImGui IO object)
-	m_informationWindowPosition, m_informationWindowPosition, m_addObjectWindowPosition =
+	m_informationWindowPosition, m_informationWindowPosition, m_creationWindowPosition =
 		ImVec2{ 0.0f, 0.0f };
-	m_informationWindowSize, m_settingsWindowSize, m_addObjectWindowSize =
+	m_informationWindowSize, m_propertiesWindowSize, m_creationWindowSize =
 		ImVec2{ 0.0f, 0.0f };
+	// initialize the flags for the windows to prevent focus on the first frame
+	m_informationWindowJustAppeared = true;
+	m_propertiesWindowJustAppeared = true;
+	m_creationWindowJustAppeared = true;
 }
 
 // Destructor
@@ -50,8 +55,7 @@ void GUI::InitGUI(GLFWwindow* window, const char* glslVersion)
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // enable keyboard controls
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad; // enable gamepad controls
 
-	// setup Dear ImGui style
-	ImGui::StyleColorsDark();
+	configureGUIStyle(); // configure the ImGui style (fonts, colors, etc.)
 
 	// setup platform/renderer bindings
 	ImGui_ImplGlfw_InitForOpenGL(window, true);
@@ -61,9 +65,8 @@ void GUI::InitGUI(GLFWwindow* window, const char* glslVersion)
 void GUI::BuildGUI()
 {
 	beginGUIFrame(); // start a new ImGui frame
-	configureGUIStyle(); // configure the ImGui style (optional, can be customized)
 	configureGUILayout(); // configure the layout of the GUI windows based on the display size
-	drawGUIWindows(); // draw the GUI windows (information, settings, and add object windows)
+	drawGUIWindows(); // draw the GUI windows (information, settings, and Create Windows)
 	handleImGuiInput(); // handle ImGui input (mouse and keyboard)
 }
 
@@ -87,19 +90,121 @@ void GUI::initGUILayoutAttributes()
 	// set the private variables for the GUI layout
 	m_informationWindowRelativeWidth = 0.3f;
 	m_informationWindowRelativeHeight = 1.0f;
-	m_settingsWindowRelativeWidth = 0.2f;
-	m_settingsWindowRelativeHeight = 0.8f;
-	m_addObjectWindowRelativeWidth = 0.2f;
-	m_addObjectWindowRelativeHeight = 0.2f;
+	m_propertiesWindowRelativeWidth = 0.2f;
+	m_propertiesWindowRelativeHeight = 0.8f;
+	m_creationWindowRelativeWidth = 0.2f;
+	m_creationWindowRelativeHeight = 0.2f;
 
 	m_informationWindowXOffset = 0.0f;
 	m_informationWindowYOffset = 0.0f;
-	m_settingsWindowXOffset = 1.0f - m_settingsWindowRelativeWidth;
-	m_settingsWindowYOffset = 0.0f;
-	m_addObjectWindowXOffset = 1.0f - m_addObjectWindowRelativeWidth;
-	m_addObjectWindowYOffset = 1.0f - m_addObjectWindowRelativeHeight;
+	m_propertiesWindowXOffset = 1.0f - m_propertiesWindowRelativeWidth;
+	m_propertiesWindowYOffset = 0.0f;
+	m_creationWindowXOffset = 1.0f - m_creationWindowRelativeWidth;
+	m_creationWindowYOffset = 1.0f - m_creationWindowRelativeHeight;
 	m_windowPositionPadding = ImVec2{ 10.f, 10.0f };
 	m_windowSizePadding = ImVec2{ 20.f, 20.0f };
+}
+
+void GUI::configureGUIStyle()
+{
+	ImGuiIO& io = ImGui::GetIO(); // get ImGui IO object for font and style settings
+	ImGuiStyle& style = ImGui::GetStyle(); // get the ImGui style object
+
+	// add custom fonts to the ImGui context, setting one as the default font
+	io.Fonts->AddFontDefault();
+	ImFont* mediumFont = io.Fonts->AddFontFromFileTTF("resources/fonts/RobotoMono-Medium.ttf", 16.0f);
+	ImFont* boldFont = io.Fonts->AddFontFromFileTTF("resources/fonts/RobotoMono-Bold.ttf", 16.0f);
+	io.FontDefault = mediumFont; // set the medium font as the default font
+	// set the member fonts for the GUI class
+	m_mediumFont = mediumFont;
+	m_boldFont = boldFont;
+
+	// soften the edges of the ImGui windows and frames
+	style.WindowRounding = 5.0f;
+	style.FrameRounding = 5.0f;
+	style.ScrollbarRounding = 5.0f;
+	style.GrabRounding = 5.0f;
+
+	// set the padding for the ImGui style
+	style.WindowPadding = ImVec2(12.0f, 12.0f); // padding inside windows
+	style.FramePadding = ImVec2(4.0f, 2.0f); // padding inside frames
+
+	// set the ImGui color scheme to dark mode by default
+	ImGui::StyleColorsDark();
+	// change the color for all ImGui elements with an accent color to a purple hue,
+	// leaving the rest of the colors unchanged
+	ImVec4* colors = style.Colors;
+	colors[ImGuiCol_Text] = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
+	colors[ImGuiCol_TextDisabled] = ImVec4(0.50f, 0.50f, 0.50f, 1.00f);
+	colors[ImGuiCol_WindowBg] = ImVec4(0.06f, 0.06f, 0.06f, 0.94f);
+	colors[ImGuiCol_ChildBg] = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
+	colors[ImGuiCol_PopupBg] = ImVec4(0.10f, 0.08f, 0.15f, 0.94f);
+	colors[ImGuiCol_Border] = ImVec4(0.33f, 0.28f, 0.40f, 0.60f);
+	colors[ImGuiCol_BorderShadow] = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
+
+	colors[ImGuiCol_FrameBg] = ImVec4(0.26f, 0.19f, 0.38f, 0.54f);
+	colors[ImGuiCol_FrameBgHovered] = ImVec4(0.36f, 0.29f, 0.58f, 0.40f);
+	colors[ImGuiCol_FrameBgActive] = ImVec4(0.36f, 0.29f, 0.58f, 0.67f);
+
+	colors[ImGuiCol_TitleBg] = ImVec4(0.10f, 0.04f, 0.18f, 1.00f);
+	colors[ImGuiCol_TitleBgActive] = ImVec4(0.26f, 0.19f, 0.38f, 1.00f);
+	colors[ImGuiCol_TitleBgCollapsed] = ImVec4(0.08f, 0.00f, 0.14f, 0.51f);
+
+	colors[ImGuiCol_MenuBarBg] = ImVec4(0.18f, 0.10f, 0.22f, 1.00f);
+
+	colors[ImGuiCol_ScrollbarBg] = ImVec4(0.18f, 0.10f, 0.22f, 0.60f);
+	colors[ImGuiCol_ScrollbarGrab] = ImVec4(0.31f, 0.21f, 0.41f, 1.00f);
+	colors[ImGuiCol_ScrollbarGrabHovered] = ImVec4(0.41f, 0.31f, 0.51f, 1.00f);
+	colors[ImGuiCol_ScrollbarGrabActive] = ImVec4(0.51f, 0.41f, 0.61f, 1.00f);
+
+	colors[ImGuiCol_CheckMark] = ImVec4(0.46f, 0.29f, 0.68f, 1.00f);
+	colors[ImGuiCol_SliderGrab] = ImVec4(0.44f, 0.32f, 0.78f, 1.00f);
+	colors[ImGuiCol_SliderGrabActive] = ImVec4(0.46f, 0.29f, 0.68f, 1.00f);
+
+	colors[ImGuiCol_Button] = ImVec4(0.56f, 0.39f, 0.78f, 0.60f);
+	colors[ImGuiCol_ButtonHovered] = ImVec4(0.66f, 0.49f, 0.88f, 1.00f);
+	colors[ImGuiCol_ButtonActive] = ImVec4(0.46f, 0.39f, 0.78f, 1.00f);
+
+	colors[ImGuiCol_Header] = ImVec4(0.36f, 0.29f, 0.58f, 0.31f);
+	colors[ImGuiCol_HeaderHovered] = ImVec4(0.36f, 0.29f, 0.58f, 0.80f);
+	colors[ImGuiCol_HeaderActive] = ImVec4(0.36f, 0.29f, 0.58f, 1.00f);
+
+	colors[ImGuiCol_Separator] = colors[ImGuiCol_Border];
+	colors[ImGuiCol_SeparatorHovered] = ImVec4(0.30f, 0.20f, 0.55f, 0.78f);
+	colors[ImGuiCol_SeparatorActive] = ImVec4(0.30f, 0.20f, 0.55f, 1.00f);
+
+	colors[ImGuiCol_ResizeGrip] = ImVec4(0.36f, 0.29f, 0.58f, 0.20f);
+	colors[ImGuiCol_ResizeGripHovered] = ImVec4(0.36f, 0.29f, 0.58f, 0.67f);
+	colors[ImGuiCol_ResizeGripActive] = ImVec4(0.36f, 0.29f, 0.58f, 0.95f);
+
+	colors[ImGuiCol_TabHovered] = colors[ImGuiCol_HeaderHovered];
+	colors[ImGuiCol_Tab] = ImLerp(colors[ImGuiCol_Header], colors[ImGuiCol_TitleBgActive], 0.80f);
+	colors[ImGuiCol_TabSelected] = ImLerp(
+		colors[ImGuiCol_HeaderActive], colors[ImGuiCol_TitleBgActive], 0.60f);
+	colors[ImGuiCol_TabSelectedOverline] = colors[ImGuiCol_HeaderActive];
+	colors[ImGuiCol_TabDimmed] = ImLerp(colors[ImGuiCol_Tab], colors[ImGuiCol_TitleBg], 0.80f);
+	colors[ImGuiCol_TabDimmedSelected] = ImLerp(
+		colors[ImGuiCol_TabSelected], colors[ImGuiCol_TitleBg], 0.40f);
+	colors[ImGuiCol_TabDimmedSelectedOverline] = ImVec4(0.50f, 0.50f, 0.50f, 0.00f);
+
+	colors[ImGuiCol_PlotLines] = ImVec4(0.61f, 0.61f, 0.61f, 1.00f);
+	colors[ImGuiCol_PlotLinesHovered] = ImVec4(1.00f, 0.43f, 0.35f, 1.00f);
+	colors[ImGuiCol_PlotHistogram] = ImVec4(0.90f, 0.70f, 0.00f, 1.00f);
+	colors[ImGuiCol_PlotHistogramHovered] = ImVec4(1.00f, 0.60f, 0.00f, 1.00f);
+
+	colors[ImGuiCol_TableHeaderBg] = ImVec4(0.15f, 0.13f, 0.22f, 1.00f);
+	colors[ImGuiCol_TableBorderStrong] = ImVec4(0.21f, 0.21f, 0.25f, 1.00f);
+	colors[ImGuiCol_TableBorderLight] = ImVec4(0.13f, 0.13f, 0.15f, 1.00f);
+	colors[ImGuiCol_TableRowBg] = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
+	colors[ImGuiCol_TableRowBgAlt] = ImVec4(1.00f, 1.00f, 1.00f, 0.06f);
+
+	colors[ImGuiCol_TextLink] = colors[ImGuiCol_HeaderActive];
+	colors[ImGuiCol_TextSelectedBg] = ImVec4(0.36f, 0.29f, 0.58f, 0.35f);
+	colors[ImGuiCol_DragDropTarget] = ImVec4(1.00f, 1.00f, 0.00f, 0.90f);
+	colors[ImGuiCol_NavCursor] = ImVec4(0.36f, 0.29f, 0.58f, 1.00f);
+	colors[ImGuiCol_NavWindowingHighlight] = ImVec4(1.00f, 1.00f, 1.00f, 0.70f);
+	colors[ImGuiCol_NavWindowingDimBg] = ImVec4(0.80f, 0.80f, 0.80f, 0.20f);
+	colors[ImGuiCol_ModalWindowDimBg] = ImVec4(0.80f, 0.80f, 0.80f, 0.35f);
 }
 
 void GUI::beginGUIFrame() const
@@ -108,53 +213,49 @@ void GUI::beginGUIFrame() const
 	ImGui_ImplGlfw_NewFrame();
 	ImGui::NewFrame();
 }
-void GUI::configureGUIStyle() const
-{
-
-}
 void GUI::configureGUILayout()
 {
 	ImGuiIO& io = ImGui::GetIO(); // get ImGui IO object for font and style settings
 
-	// position of the information window (top left corner with padding)
+	// position of the Information Window (top left corner with padding)
 	m_informationWindowPosition = ImVec2{
 		io.DisplaySize.x * m_informationWindowXOffset + m_windowPositionPadding.x, // x position
 		io.DisplaySize.y * m_informationWindowYOffset + m_windowPositionPadding.y // y position
 	};
-	// position of the settings window (top right corner with padding)
-	m_settingsWindowPosition = ImVec2{
-		io.DisplaySize.x * m_settingsWindowXOffset + m_windowPositionPadding.x, // x position
-		io.DisplaySize.y * m_settingsWindowYOffset + m_windowPositionPadding.y // y position
+	// position of the Properties Window (top right corner with padding)
+	m_propertiesWindowPosition = ImVec2{
+		io.DisplaySize.x * m_propertiesWindowXOffset + m_windowPositionPadding.x, // x position
+		io.DisplaySize.y * m_propertiesWindowYOffset + m_windowPositionPadding.y // y position
 	};
-	// position of the add object window (bottom right corner with padding)
-	m_addObjectWindowPosition = ImVec2{
-		io.DisplaySize.x * m_addObjectWindowXOffset + m_windowPositionPadding.x, // x position
-		io.DisplaySize.y * m_addObjectWindowYOffset + m_windowPositionPadding.y // y position
+	// position of the Create Window (bottom right corner with padding)
+	m_creationWindowPosition = ImVec2{
+		io.DisplaySize.x * m_creationWindowXOffset + m_windowPositionPadding.x, // x position
+		io.DisplaySize.y * m_creationWindowYOffset + m_windowPositionPadding.y // y position
 	};
-	// size (width and height) of the information window
+	// size (width and height) of the Information Window
 	m_informationWindowSize = ImVec2{
 		io.DisplaySize.x * m_informationWindowRelativeWidth - m_windowSizePadding.x, // width
 		io.DisplaySize.y * m_informationWindowRelativeHeight - m_windowSizePadding.y // height
 	};
-	// size (width and height) of the settings window
-	m_settingsWindowSize = ImVec2{
-		io.DisplaySize.x * m_settingsWindowRelativeWidth - m_windowSizePadding.x, // width
-		io.DisplaySize.y * m_settingsWindowRelativeHeight - m_windowSizePadding.y * 0.5f // height
+	// size (width and height) of the Properties Window
+	m_propertiesWindowSize = ImVec2{
+		io.DisplaySize.x * m_propertiesWindowRelativeWidth - m_windowSizePadding.x, // width
+		io.DisplaySize.y * m_propertiesWindowRelativeHeight - m_windowSizePadding.y * 0.5f // height
 	};
-	// size (width and height) of the add object window
-	m_addObjectWindowSize = ImVec2{
-		io.DisplaySize.x * m_addObjectWindowRelativeWidth - m_windowSizePadding.x, // width
-		io.DisplaySize.y * m_addObjectWindowRelativeHeight - m_windowSizePadding.y // height
+	// size (width and height) of the Create Window
+	m_creationWindowSize = ImVec2{
+		io.DisplaySize.x * m_creationWindowRelativeWidth - m_windowSizePadding.x, // width
+		io.DisplaySize.y * m_creationWindowRelativeHeight - m_windowSizePadding.y // height
 	};
 }
 void GUI::drawGUIWindows()
 {
-	// draw the information window
-	drawSceneInformationWindow();
-	// draw the settings window
-	drawSceneSettingsWindow();
-	// draw the add object window
-	drawAddObjectWindow();
+	// draw the Information Window
+	drawInformationWindow();
+	// draw the Properties Window
+	drawPropertiesWindow();
+	// draw the Create Window
+	drawCreationWindow();
 }
 void GUI::handleImGuiInput() const
 {
@@ -168,16 +269,20 @@ void GUI::handleImGuiInput() const
 		inputManager->SetCameraControlEnabled(true);
 }
 
-void GUI::drawSceneInformationWindow() const
+void GUI::drawInformationWindow()
 {
-	// set initial size and position for the information window
+	// set initial size and position for the Information Window
 	ImGui::SetNextWindowSize(m_informationWindowSize, ImGuiCond_Appearing);
 	ImGui::SetNextWindowPos(m_informationWindowPosition, ImGuiCond_Appearing);
-	// set the information window to be collapsed (i.e. minimized)
+	// set the Information Window to be collapsed (i.e. minimized)
 	ImGui::SetNextWindowCollapsed(true, ImGuiCond_Appearing);
 
 	{ // show a window that displays all information about the assets in the scene
-		ImGui::Begin("Scene Information");
+		// begin the Scene Information window
+		ImGui::PushFont(m_boldFont);
+		ImGui::Begin("OBJECT INFORMATION", nullptr,
+					 ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoFocusOnAppearing);
+		ImGui::PopFont();
 
 		drawCamerasInformation(); // display information about the cameras in the scene
 		ImGui::Separator();
@@ -185,22 +290,34 @@ void GUI::drawSceneInformationWindow() const
 		ImGui::Separator();
 		drawModelsInformation(); // display information about the models in the scene
 
-		ImGui::End(); // end the Scene Information window
+		ImGui::End(); // end the Information window
+
+		if (m_informationWindowJustAppeared)
+		{ // if the window just appeared (first frame), prevent it from being focused
+			ImGui::SetWindowFocus(nullptr); // set focus to no window
+			m_informationWindowJustAppeared = false; // no longer the first frame
+		}
 	}
 }
-void GUI::drawSceneSettingsWindow()
+void GUI::drawPropertiesWindow()
 {
 	// get the asset manager, the input manager, and the scene manager from the Core instance
 	auto& assetManager = Core::GetInstance()->GetAssetManager();
 
-	// set initial size and position for the settings window
-	ImGui::SetNextWindowSize(m_settingsWindowSize, ImGuiCond_Appearing);
-	ImGui::SetNextWindowPos(m_settingsWindowPosition, ImGuiCond_Appearing);
-	// set the settings window to be expanded (i.e. not minimized)
+	// set initial size and position for the Properties Window
+	ImGui::SetNextWindowSize(m_propertiesWindowSize, ImGuiCond_Appearing);
+	ImGui::SetNextWindowPos(m_propertiesWindowPosition, ImGuiCond_Appearing);
+	// set the Properties Window to be expanded (i.e. not minimized)
 	ImGui::SetNextWindowCollapsed(false, ImGuiCond_Appearing);
 
 	{ // show a window that allows the user to change the properties of the assets in the scene
-		ImGui::Begin("Scene Settings");
+		ImGui::PushFont(m_boldFont);
+		ImGui::Begin("PROPERTIES", nullptr,
+					 ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoFocusOnAppearing);
+		ImGui::PopFont();
+
+		// vector to collect the identifiers of the assets to be removed after the loops
+		std::vector<std::uint32_t> assetsToRemove;
 
 		std::for_each(assetManager->GetAssets("LIGHT").begin(),
 					  assetManager->GetAssets("LIGHT").end(),
@@ -209,7 +326,13 @@ void GUI::drawSceneSettingsWindow()
 			// dynamically cast the asset to a Light object
 			auto light = dynamic_cast<Light*>(asset.get());
 
-			drawLightControls(light); // draw controls for each light in the scene
+			if (!light) return; // if the light is not valid, skip it
+
+			// draw controls to change the properties of the light
+			drawLightControls(light);
+
+			// draw a button to mark the light and its gizmo for removal from the scene
+			drawRemoveAssetButton(light, assetsToRemove, light->GetName(), ITEM_WIDTH);
 
 			ImGui::Separator(); // add a separator between lights
 		});
@@ -221,100 +344,124 @@ void GUI::drawSceneSettingsWindow()
 			// dynamically cast the asset to a Model object
 			auto model = dynamic_cast<Model*>(asset.get());
 
+			if (!model) return; // if the model is not valid, skip it
+
 			// if the model is not a gizmo, draw its controls,
 			// otherwise skip it, as gizmos are not editable (variable properties handled in light controls)
 			if (model->GetGizmoType() == GizmoType::NONE)
 			{
-			drawModelControls(model); // draw controls for each model in the scene
+				// draw controls to change the properties of the model
+				drawModelControls(model);
 
-			ImGui::Separator(); // add a separator between models
+				// draw a button to mark the model for removal from the scene
+				drawRemoveAssetButton(model, assetsToRemove, model->GetName(), ITEM_WIDTH);
+
+				ImGui::Separator(); // add a separator between models
 			}
 		});
 
-		ImGui::End(); // end the Scene Settings window
+		// remove the assets that were marked for removal
+		for (const auto& assetId : assetsToRemove)
+			assetManager->RemoveAssetById(assetId); // remove the asset from the asset manager
+
+		ImGui::End(); // end the Properties window
+
+		if (m_propertiesWindowJustAppeared)
+		{ // if the window just appeared (first frame), prevent it from being focused
+			ImGui::SetWindowFocus(nullptr); // set focus to no window
+			m_propertiesWindowJustAppeared = false; // no longer the first frame
+		}
 	}
 }
-void GUI::drawAddObjectWindow()
+void GUI::drawCreationWindow()
 {
-	// set initial size and position for the add object window
-	ImGui::SetNextWindowSize(m_addObjectWindowSize, ImGuiCond_Appearing);
-	ImGui::SetNextWindowPos(m_addObjectWindowPosition, ImGuiCond_Appearing);
-	// set the add object window to be expanded (i.e. not minimized)
+	// set initial size and position for the Create Window
+	ImGui::SetNextWindowSize(m_creationWindowSize, ImGuiCond_Appearing);
+	ImGui::SetNextWindowPos(m_creationWindowPosition, ImGuiCond_Appearing);
+	// set the Create Window to be expanded (i.e. not minimized)
 	ImGui::SetNextWindowCollapsed(false, ImGuiCond_Appearing);
 
-	{ // show a window that contains buttons to add new objects to the scene
-		ImGui::Begin("Add Objects");
+	{ // show a window that contains buttons to create new objects to the scene
+		ImGui::PushFont(m_boldFont);
+		ImGui::Begin("CREATION", nullptr,
+					 ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoFocusOnAppearing);
+		ImGui::PopFont();
 
-		// button to add a new directional light to the scene
-		if (ImGui::Button("Add Directional Light", ImVec2(ITEM_WIDTH, 0.0f)))
+		// button to create a new directional light to the scene
+		if (ImGui::Button("Create Directional Light", ImVec2(ITEM_WIDTH, 0.0f)))
 		{ // if the button is clicked
-			ImGui::OpenPopup("Add Directional Light");
+			ImGui::OpenPopup("Create Directional Light");
 			// set random initial values
 			m_newAlbedo = m_randomizer->GenerateRandomColor();
-			m_newPosition = m_randomizer->GenerateRandomPosition(glm::vec3(0.0f),
-																 MIN_DISTANCE_TO_ORIGIN,
-																 MAX_DISTANCE_TO_ORIGIN);
+			m_newPosition = m_randomizer->GenerateRandomPosition(
+				glm::vec3(0.0f), MIN_DISTANCE_TO_ORIGIN, MAX_DISTANCE_TO_ORIGIN);
 			m_newDirection = m_randomizer->GenerateRandomDirection();
 		}
-		drawAddDirectionalLightPopup(); // draw the popup for adding a new directional light
+		drawCreateDirectionalLightPopup(); // draw the popup to create a new directional light
 
-		// button to add a new spotlight to the scene
-		if (ImGui::Button("Add Spotlight", ImVec2(ITEM_WIDTH, 0.0f)))
+		// button to create a new spotlight to the scene
+		if (ImGui::Button("Create Spotlight", ImVec2(ITEM_WIDTH, 0.0f)))
 		{ // if the button is clicked
-			ImGui::OpenPopup("Add Spotlight");
+			ImGui::OpenPopup("Create Spotlight");
 			// set random initial values
 			m_newAlbedo = m_randomizer->GenerateRandomColor();
-			m_newPosition = m_randomizer->GenerateRandomPosition(glm::vec3(0.0f),
-																 MIN_DISTANCE_TO_ORIGIN,
-																 MAX_DISTANCE_TO_ORIGIN);
+			m_newPosition = m_randomizer->GenerateRandomPosition(
+				glm::vec3(0.0f), MIN_DISTANCE_TO_ORIGIN, MAX_DISTANCE_TO_ORIGIN);
 			m_newDirection = m_randomizer->GenerateRandomDirection();
 		}
-		drawAddSpotlightPopup(); // draw the popup for adding a new spotlight
+		drawCreateSpotlightPopup(); // draw the popup to create a new spotlight
 
-		// button to add a new point light to the scene
-		if (ImGui::Button("Add Point Light", ImVec2(ITEM_WIDTH, 0.0f)))
+		// button to create a new point light to the scene
+		if (ImGui::Button("Create Point Light", ImVec2(ITEM_WIDTH, 0.0f)))
 		{ // if the button is clicked
-			ImGui::OpenPopup("Add Point Light");
+			ImGui::OpenPopup("Create Point Light");
 			// set random initial values
 			m_newAlbedo = m_randomizer->GenerateRandomColor();
-			m_newPosition = m_randomizer->GenerateRandomPosition(glm::vec3(0.0f),
-																 MIN_DISTANCE_TO_ORIGIN,
-																 MAX_DISTANCE_TO_ORIGIN);
+			m_newPosition = m_randomizer->GenerateRandomPosition(
+				glm::vec3(0.0f), MIN_DISTANCE_TO_ORIGIN, MAX_DISTANCE_TO_ORIGIN);
 		}
-		drawAddPointLightPopup(); // draw the popup for adding a new point light
+		drawCreatePointLightPopup(); // draw the popup to create a new point light
 
-		// buttom to add a new cube shape to the scene
-		if (ImGui::Button("Add Cube Shape", ImVec2(ITEM_WIDTH, 0.0f)))
+		// buttom to create a new cube shape to the scene
+		if (ImGui::Button("Create Cube Shape", ImVec2(ITEM_WIDTH, 0.0f)))
 		{ // if the button is clicked
-			ImGui::OpenPopup("Add Cube Shape");
+			ImGui::OpenPopup("Create Cube Shape");
 			// set random initial values
 			m_newAlbedo = m_randomizer->GenerateRandomColor();
-			m_newPosition = m_randomizer->GenerateRandomPosition(glm::vec3(0.0f),
-																 MIN_DISTANCE_TO_ORIGIN,
-																 MAX_DISTANCE_TO_ORIGIN);
+			m_newPosition = m_randomizer->GenerateRandomPosition(
+				glm::vec3(0.0f), MIN_DISTANCE_TO_ORIGIN, MAX_DISTANCE_TO_ORIGIN);
 		}
-		drawAddCubeShapePopup(); // draw the popup for adding a new cube shape
+		drawCreateCubeShapePopup(); // draw the popup to create a new cube shape
 
 		// button to import a new model from a file
 		if (ImGui::Button("Import 3D Model", ImVec2(ITEM_WIDTH, 0.0f)))
 		{ // if the button is clicked
 			// file dialog configuration
 			IGFD::FileDialogConfig fileDialogConfig;
-			fileDialogConfig.path = "."; // initial directory to open the file dialog
+			fileDialogConfig.path = "./assets/models"; // initial directory to open the file dialog
 			fileDialogConfig.countSelectionMax = 1; // for now, allow only one file to be selected
 			fileDialogConfig.flags = ImGuiFileDialogFlags_Modal; // no special flags for the file dialog
 
 			// open a file dialog to select a model file
 			ImGuiFileDialog::Instance()->OpenDialog(
 				"ChooseFileDlgKey", // unique key for the file dialog
-				"Choose Model File", // title of the file dialog
+				"Choose 3D Model File", // title of the file dialog
 				".obj, .fbx, .dae, .gltf, .glb, .stl, .ply, .3ds, .max", // supported file extensions
 				fileDialogConfig // file dialog configuration
 			);
 		}
 		drawImportModelPopup(); // draw the popup for importing a new model
 
-		ImGui::End(); // end the Add Objects window
+		// create a dummy button to fill the remaining space in the window and test the layout
+		ImGui::Button(" ", ImVec2(ITEM_WIDTH, 0.0f)); // create a dummy button with no action
+
+		ImGui::End(); // end the Create Objects window
+
+		if (m_creationWindowJustAppeared)
+		{ // if the window just appeared (first frame), prevent it from being focused
+			ImGui::SetWindowFocus(nullptr); // set focus to no window
+			m_creationWindowJustAppeared = false; // no longer the first frame
+		}
 	}
 }
 
@@ -324,46 +471,69 @@ void GUI::drawCamerasInformation() const
 	auto& assetManager = Core::GetInstance()->GetAssetManager();
 	auto& sceneManager = Core::GetInstance()->GetSceneManager();
 
+	ImGui::PushFont(m_boldFont);
+	ImGui::Text("CAMERAS");
+	ImGui::PopFont();
+
 	// get the number of cameras in the scene
 	unsigned int nCameras = assetManager->GetNCameras();
 	// display the number of cameras in the scene
-	ImGui::Text("\n");
-	ImGui::Text("Number of Cameras: %d", nCameras);
+	ImGui::PushFont(m_boldFont);
+	ImGui::Text("\nNumber of Cameras in the scene: %d", nCameras);
+	ImGui::PopFont();
 
-	// get the camera object
-	auto& camera = sceneManager->GetCamera();
-	// display the name of the camera and its position
-	ImGui::Text("\n");
-	ImGui::Text("CAMERAS");
-	ImGui::Text("\n");
-	ImGui::Text("%s", camera->GetName().c_str());
-	ImGui::Text("Camera Position: (%.3f, %.3f, %.3f)",
-				camera->GetPosition().x,
-				camera->GetPosition().y,
-				camera->GetPosition().z);
-	ImGui::Text("\n");
+	// display the attributes of each camera in the scene
+	ImGui::Text("\nCameras in the scene:");
+	std::for_each(assetManager->GetAssets("CAMERA").begin(),
+				  assetManager->GetAssets("CAMERA").end(),
+				  [&](const std::shared_ptr<Asset>& asset)
+	{ // iterate over all cameras in the asset manager and display their attributes
+		// dynamically cast the asset to a Camera object
+		auto camera = dynamic_cast<Camera*>(asset.get());
+
+		// use PushID to create a unique ID for each camera
+		ImGui::PushID(camera->GetName().c_str());
+
+		// display the attributes of the camera
+		ImGui::PushFont(m_boldFont);
+		ImGui::TextWrapped("\t%s", camera->GetName().c_str());
+		ImGui::PopFont();
+		ImGui::Text("\t\tPosition: (%.3f, %.3f, %.3f)",
+					camera->GetPosition().x,
+					camera->GetPosition().y,
+					camera->GetPosition().z);
+		ImGui::Text("\t\tFront: (%.3f, %.3f, %.3f)",
+					camera->GetFront().x,
+					camera->GetFront().y,
+					camera->GetFront().z);
+
+		ImGui::PopID(); // use PopID to end the unique ID scope
+	});
 }
 void GUI::drawLightsInformation() const
 {
 	// get the asset manager from the Core instance
 	auto& assetManager = Core::GetInstance()->GetAssetManager();
 
+	ImGui::PushFont(m_boldFont);
+	ImGui::Text("LIGHTS");
+	ImGui::PopFont();
+
 	// get the number of lights and of each type of light in the scene
 	unsigned int nLights = assetManager->GetNLights();
+	unsigned int nDirectionalLights = assetManager->GetNDirectionalLights();
 	unsigned int nPointLights = assetManager->GetNPointLights();
 	unsigned int nSpotlights = assetManager->GetNSpotlights();
-	unsigned int nDirectionalLights = assetManager->GetNDirectionalLights();
 	// display the number of lights and each type of light in the scene
-	ImGui::Text("\n");
-	ImGui::Text("Number of Lights: %d", nLights);
-	ImGui::Text("Number of Point Lights: %d", nPointLights);
-	ImGui::Text("Number of Spotlights: %d", nSpotlights);
-	ImGui::Text("Number of Directional Lights: %d", nDirectionalLights);
+	ImGui::PushFont(m_boldFont);
+	ImGui::Text("\nNumber of Lights in the scene: %d", nLights);
+	ImGui::PopFont();
+	ImGui::Text("\tNumber of Directional Lights in the scene: %d", nDirectionalLights);
+	ImGui::Text("\tNumber of Point Lights in the scene: %d", nPointLights);
+	ImGui::Text("\tNumber of Spotlights in the scene: %d", nSpotlights);
 
 	// display the attributes of each light in the scene
-	ImGui::Text("\n");
-	ImGui::Text("LIGHTS:");
-	ImGui::Text("\n");
+	ImGui::Text("\nLights in the scene:");
 	std::for_each(assetManager->GetAssets("LIGHT").begin(),
 				  assetManager->GetAssets("LIGHT").end(),
 				  [&](const std::shared_ptr<Asset>& asset)
@@ -382,16 +552,18 @@ void GUI::drawLightsInformation() const
 				ImGui::PushID(directionalLight->GetName().c_str());
 
 				// display the attributes of the directional light (position is just for visualization)
-				ImGui::Text("%s", directionalLight->GetName().c_str());
-				ImGui::Text("\tColor: (%.3f, %.3f, %.3f)",
+				ImGui::PushFont(m_boldFont);
+				ImGui::TextWrapped("\t%s", directionalLight->GetName().c_str());
+				ImGui::PopFont();
+				ImGui::Text("\t\tColor: (%.3f, %.3f, %.3f)",
 							directionalLight->GetDiffuse().x,
 							directionalLight->GetDiffuse().y,
 							directionalLight->GetDiffuse().z);
-				ImGui::Text("\tPosition: (%.3f, %.3f, %.3f)",
+				ImGui::Text("\t\tPosition: (%.3f, %.3f, %.3f)",
 							directionalLight->GetPosition().x,
 							directionalLight->GetPosition().y,
 							directionalLight->GetPosition().z);
-				ImGui::Text("\tDirection: (%.3f, %.3f, %.3f)",
+				ImGui::Text("\t\tDirection: (%.3f, %.3f, %.3f)",
 							directionalLight->GetDirection().x,
 							directionalLight->GetDirection().y,
 							directionalLight->GetDirection().z);
@@ -408,12 +580,14 @@ void GUI::drawLightsInformation() const
 				ImGui::PushID(pointLight->GetName().c_str());
 
 				// display the attributes of the point light
-				ImGui::Text("%s", pointLight->GetName().c_str());
-				ImGui::Text("\tColor: (%.3f, %.3f, %.3f)",
+				ImGui::PushFont(m_boldFont);
+				ImGui::TextWrapped("\t%s", pointLight->GetName().c_str());
+				ImGui::PopFont();
+				ImGui::Text("\t\tColor: (%.3f, %.3f, %.3f)",
 							pointLight->GetDiffuse().x,
 							pointLight->GetDiffuse().y,
 							pointLight->GetDiffuse().z);
-				ImGui::Text("\tPosition: (%.3f, %.3f, %.3f)",
+				ImGui::Text("\t\tPosition: (%.3f, %.3f, %.3f)",
 							pointLight->GetPosition().x,
 							pointLight->GetPosition().y,
 							pointLight->GetPosition().z);
@@ -430,21 +604,23 @@ void GUI::drawLightsInformation() const
 				ImGui::PushID(spotlight->GetName().c_str());
 
 				// display the attributes of the spotlight
-				ImGui::Text("%s", spotlight->GetName().c_str());
-				ImGui::Text("\tColor: (%.3f, %.3f, %.3f)",
+				ImGui::PushFont(m_boldFont);
+				ImGui::TextWrapped("\t%s", spotlight->GetName().c_str());
+				ImGui::PopFont();
+				ImGui::Text("\t\tColor: (%.3f, %.3f, %.3f)",
 							spotlight->GetDiffuse().x,
 							spotlight->GetDiffuse().y,
 							spotlight->GetDiffuse().z);
-				ImGui::Text("\tPosition: (%.3f, %.3f, %.3f)",
+				ImGui::Text("\t\tPosition: (%.3f, %.3f, %.3f)",
 							spotlight->GetPosition().x,
 							spotlight->GetPosition().y,
 							spotlight->GetPosition().z);
-				ImGui::Text("\tDirection: (%.3f, %.3f, %.3f)",
+				ImGui::Text("\t\tDirection: (%.3f, %.3f, %.3f)",
 							spotlight->GetDirection().x,
 							spotlight->GetDirection().y,
 							spotlight->GetDirection().z);
-				ImGui::Text("\tInner cut-off: %.3f", glm::degrees(glm::acos(spotlight->GetInnerCutOff())));
-				ImGui::Text("\tOuter cut-off: %.3f", glm::degrees(glm::acos(spotlight->GetOuterCutOff())));
+				ImGui::Text("\t\tInner cut-off: %.3f", glm::degrees(glm::acos(spotlight->GetInnerCutOff())));
+				ImGui::Text("\t\tOuter cut-off: %.3f", glm::degrees(glm::acos(spotlight->GetOuterCutOff())));
 
 				ImGui::PopID(); // use PopID to end the unique ID scope
 			}
@@ -466,20 +642,23 @@ void GUI::drawModelsInformation() const
 	// get the asset manager from the Core instance
 	auto& assetManager = Core::GetInstance()->GetAssetManager();
 
+	ImGui::PushFont(m_boldFont);
+	ImGui::Text("MODELS");
+	ImGui::PopFont();
+
 	// get the number of models and of each type of model in the scene
 	unsigned int nModels = assetManager->GetNModels();
-	unsigned int nShapes = assetManager->GetNShapes();
 	unsigned int nAssimpModels = assetManager->GetNAssimpModels();
+	unsigned int nShapes = assetManager->GetNShapes();
 	// display the number of models and each type of model in the scene
-	ImGui::Text("\n");
-	ImGui::Text("Number of Models: %d", nModels);
-	ImGui::Text("\tNumber of Shapes: %d", nShapes);
-	ImGui::Text("\tNumber of Assimp models: %d", nAssimpModels);
+	ImGui::PushFont(m_boldFont);
+	ImGui::Text("\nNumber of Models in the scene: %d", nModels);
+	ImGui::PopFont();
+	ImGui::Text("\tNumber of Assimp models in the scene: %d", nAssimpModels);
+	ImGui::Text("\tNumber of Shapes in the scene: %d", nShapes);
 
 	// display the attributes of each model in the scene
-	ImGui::Text("\n");
-	ImGui::Text("MODELS:");
-	ImGui::Text("\n");
+	ImGui::Text("\nModels in the scene:");
 	std::for_each(assetManager->GetAssets("MODEL").begin(),
 				  assetManager->GetAssets("MODEL").end(),
 				  [&](const std::shared_ptr<Asset>& asset)
@@ -490,24 +669,30 @@ void GUI::drawModelsInformation() const
 		ImGui::PushID(model->GetName().c_str()); // use PushID to create a unique ID for each model
 
 		// display the attributes of the model
-		ImGui::Text("%s", model->GetName().c_str());
-		ImGui::Text("\tColor: (%.3f, %.3f, %.3f)",
-					model->GetAlbedo().x,
-					model->GetAlbedo().y,
-					model->GetAlbedo().z);
-		ImGui::Text("\tPosition: (%.3f, %.3f, %.3f)",
+		ImGui::PushFont(m_boldFont);
+		ImGui::TextWrapped("\t%s", model->GetName().c_str());
+		ImGui::PopFont();
+
+		if (model->GetModelType() == ModelType::SHAPE)
+		{ // only display the albedo color for shapes
+			ImGui::Text("\t\tColor: (%.3f, %.3f, %.3f)",
+						model->GetAlbedo().x,
+						model->GetAlbedo().y,
+						model->GetAlbedo().z);
+		}
+		ImGui::Text("\t\tPosition: (%.3f, %.3f, %.3f)",
 					model->GetPosition().x,
 					model->GetPosition().y,
 					model->GetPosition().z);
-		ImGui::Text("\tRotation: (%.3f, %.3f, %.3f)",
+		ImGui::Text("\t\tRotation: (%.3f, %.3f, %.3f)",
 					model->GetRotationInEulerAngles().x,
 					model->GetRotationInEulerAngles().y,
 					model->GetRotationInEulerAngles().z);
-		ImGui::Text("\tScale: (%.3f, %.3f, %.3f)",
+		ImGui::Text("\t\tScale: (%.3f, %.3f, %.3f)",
 					model->GetScale().x,
 					model->GetScale().y,
 					model->GetScale().z);
-		ImGui::Text("\tForward: (%.3f, %.3f, %.3f)",
+		ImGui::Text("\t\tForward: (%.3f, %.3f, %.3f)",
 					model->GetForward().x,
 					model->GetForward().y,
 					model->GetForward().z);
@@ -561,7 +746,9 @@ void GUI::drawDirectionalLightControls(DirectionalLight* directionalLight)
 	ImGui::PushID(directionalLight->GetName().c_str());
 
 	// display the name of the directional light
-	ImGui::Text("%s", directionalLight->GetName().c_str());
+	ImGui::PushFont(m_boldFont);
+	ImGui::TextWrapped("%s", directionalLight->GetName().c_str());
+	ImGui::PopFont();
 
 	// get the color of the directional light
 	glm::vec3 color = directionalLight->GetDiffuse();
@@ -604,7 +791,9 @@ void GUI::drawPointLightControls(PointLight* pointLight)
 	ImGui::PushID(pointLight->GetName().c_str());
 
 	// display the name of the point light
-	ImGui::Text("%s", pointLight->GetName().c_str());
+	ImGui::PushFont(m_boldFont);
+	ImGui::TextWrapped("%s", pointLight->GetName().c_str());
+	ImGui::PopFont();
 
 	// get the color of the point light
 	glm::vec3 color = pointLight->GetDiffuse();
@@ -633,7 +822,9 @@ void GUI::drawSpotlightControls(Spotlight* spotlight)
 	ImGui::PushID(spotlight->GetName().c_str());
 
 	// display the name of the spotlight
+	ImGui::PushFont(m_boldFont);
 	ImGui::Text("%s", spotlight->GetName().c_str());
+	ImGui::PopFont();
 
 	// get the color of the spotlight
 	glm::vec3 color = spotlight->GetDiffuse();
@@ -700,7 +891,9 @@ void GUI::drawModelControls(Model* model)
 	ImGui::PushID(model->GetName().c_str());
 
 	// display the name of the model
-	ImGui::Text("%s", model->GetName().c_str());
+	ImGui::PushFont(m_boldFont);
+	ImGui::TextWrapped("%s", model->GetName().c_str());
+	ImGui::PopFont();
 
 	// only if the model is a shape, display the color picker
 	if (model->GetModelType() == ModelType::SHAPE)
@@ -746,15 +939,18 @@ void GUI::drawModelControls(Model* model)
 	ImGui::PopID(); // use PopID to end the unique ID scope
 }
 
-void GUI::drawAddDirectionalLightPopup()
+void GUI::drawCreateDirectionalLightPopup()
 {
 	// get the asset manager from the Core instance
 	auto& assetManager = Core::GetInstance()->GetAssetManager();
 
-	if (ImGui::BeginPopupModal("Add Directional Light", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+	if (ImGui::BeginPopupModal("Create Directional Light", NULL, ImGuiWindowFlags_AlwaysAutoResize))
 	{ // if the popup is open
 		// display a message to the user
-		ImGui::Text("Set initial properties for the new Directional Light.\n");
+		ImGui::PushFont(m_boldFont);
+		ImGui::Text("Set initial properties for the new Directional Light\n");
+		ImGui::PopFont();
+
 		ImGui::Separator();
 
 		// display controls to set the color, position, and direction of the new directional light
@@ -776,7 +972,7 @@ void GUI::drawAddDirectionalLightPopup()
 			m_newDirection = m_randomizer->GenerateRandomDirection();
 		}
 
-		// display a button to create the new directional light
+		// display a button to add the new directional light
 		ImGui::SameLine();
 		if (ImGui::Button("Create", ImVec2(POPUP_BUTTON_WIDTH, 0.0f)))
 		{ // if the Create button is clicked
@@ -792,13 +988,13 @@ void GUI::drawAddDirectionalLightPopup()
 				m_newPosition, m_newDirection
 			);
 
-			// get the gizmo of the new directional light before adding the light to the engine
+			// get the gizmo of the new directional light before creating the light to the engine
 			auto newDirectionalLightGizmo = newDirectionalLight->GetGizmo();
 			// add the new directional light to the engine
 			assetManager->AddAsset(std::move(newDirectionalLight));
 			// set the name of the gizmo to include the model number
 			newDirectionalLightGizmo->SetName(newDirectionalLightGizmo->GetName() + " (Model " + nModels + ")");
-			// add the gizmo of the new directional light to the engine
+			// create the gizmo of the new directional light to the engine
 			assetManager->AddAsset(std::move(newDirectionalLightGizmo));
 
 			ImGui::CloseCurrentPopup(); // close the popup
@@ -814,15 +1010,18 @@ void GUI::drawAddDirectionalLightPopup()
 		ImGui::EndPopup();
 	}
 }
-void GUI::drawAddPointLightPopup()
+void GUI::drawCreatePointLightPopup()
 {
 	// get the asset manager from the Core instance
 	auto& assetManager = Core::GetInstance()->GetAssetManager();
 
-	if (ImGui::BeginPopupModal("Add Point Light", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+	if (ImGui::BeginPopupModal("Create Point Light", NULL, ImGuiWindowFlags_AlwaysAutoResize))
 	{ // if the popup is open
 		// display a message to the user
+		ImGui::PushFont(m_boldFont);
 		ImGui::Text("Set initial properties for the new Point Light\n");
+		ImGui::PopFont();
+
 		ImGui::Separator();
 
 		// display controls to set the color and position of the new point light
@@ -843,7 +1042,7 @@ void GUI::drawAddPointLightPopup()
 		}
 
 		ImGui::SameLine();
-		// display a button to create the new point light
+		// display a button to add the new point light
 		if (ImGui::Button("Create", ImVec2(POPUP_BUTTON_WIDTH, 0.0f)))
 		{ // if the Create button is clicked
 			// get the number of models and point lights in the scene
@@ -857,13 +1056,13 @@ void GUI::drawAddPointLightPopup()
 				m_newPosition
 			);
 
-			// get the gizmo of the new point light before adding the light to the engine
+			// get the gizmo of the new point light before creating the light to the engine
 			auto newPointLightGizmo = newPointLight->GetGizmo();
 			// add the new point light to the engine
 			assetManager->AddAsset(std::move(newPointLight));
 			// set the name of the gizmo to include the model number
 			newPointLightGizmo->SetName(newPointLightGizmo->GetName() + " (Model " + nModels + ")");
-			// add the gizmo of the new point light to the engine
+			// create the gizmo of the new point light to the engine
 			assetManager->AddAsset(std::move(newPointLightGizmo));
 
 			ImGui::CloseCurrentPopup(); // close the popup
@@ -878,15 +1077,18 @@ void GUI::drawAddPointLightPopup()
 		ImGui::EndPopup();
 	}
 }
-void GUI::drawAddSpotlightPopup()
+void GUI::drawCreateSpotlightPopup()
 {
 	// get the asset manager from the Core instance
 	auto& assetManager = Core::GetInstance()->GetAssetManager();
 
-	if (ImGui::BeginPopupModal("Add Spotlight", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+	if (ImGui::BeginPopupModal("Create Spotlight", NULL, ImGuiWindowFlags_AlwaysAutoResize))
 	{ // if the popup is open
 		// display a message to the user
+		ImGui::PushFont(m_boldFont);
 		ImGui::Text("Set initial properties for the new Spotlight\n");
+		ImGui::PopFont();
+
 		ImGui::Separator();
 
 		// display controls to set the color, position, direction, and cut-off angles of the new spotlight
@@ -922,7 +1124,7 @@ void GUI::drawAddSpotlightPopup()
 				MAX_CUTOFF_VALUE);
 		}
 
-		// display a button to create the new spotlight
+		// display a button to add the new spotlight
 		ImGui::SameLine();
 		if (ImGui::Button("Create", ImVec2(POPUP_BUTTON_WIDTH, 0.0f)))
 		{ // if the Create button is clicked
@@ -937,13 +1139,13 @@ void GUI::drawAddSpotlightPopup()
 				m_newPosition, m_newDirection
 			);
 
-			// get the gizmo of the new spotlight before adding the light to the engine
+			// get the gizmo of the new spotlight before creating the light to the engine
 			auto newSpotlightGizmo = newSpotlight->GetGizmo();
 			// add the new spotlight to the engine
 			assetManager->AddAsset(std::move(newSpotlight));
 			// set the name of the gizmo to include the model number
 			newSpotlightGizmo->SetName(newSpotlightGizmo->GetName() + " (Model " + nModels + ")");
-			// add the gizmo of the new spotlight to the engine
+			// create the gizmo of the new spotlight to the engine
 			assetManager->AddAsset(std::move(newSpotlightGizmo));
 
 			ImGui::CloseCurrentPopup(); // close the popup
@@ -959,15 +1161,18 @@ void GUI::drawAddSpotlightPopup()
 		ImGui::EndPopup();
 	}
 }
-void GUI::drawAddCubeShapePopup()
+void GUI::drawCreateCubeShapePopup()
 {
 	// get the asset manager from the Core instance
 	auto& assetManager = Core::GetInstance()->GetAssetManager();
 
-	if (ImGui::BeginPopupModal("Add Cube Shape", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+	if (ImGui::BeginPopupModal("Create Cube Shape", NULL, ImGuiWindowFlags_AlwaysAutoResize))
 	{ // if the popup is open
 		// display a message to the user
+		ImGui::PushFont(m_boldFont);
 		ImGui::Text("Set initial properties for the new Cube Shape\n");
+		ImGui::PopFont();
+
 		ImGui::Separator();
 
 		// display controls to set the color and position of the new cube shape
@@ -987,7 +1192,7 @@ void GUI::drawAddCubeShapePopup()
 																 MAX_DISTANCE_TO_ORIGIN);
 		}
 
-		// display a button to create the new cube shape
+		// display a button to add the new cube shape
 		ImGui::SameLine();
 		if (ImGui::Button("Create", ImVec2(POPUP_BUTTON_WIDTH, 0.0f)))
 		{ // if the Create button is clicked
@@ -1085,9 +1290,8 @@ bool GUI::drawColorControl(const std::string& label, glm::vec3& color,
 	return value_changed; // return whether the color has changed
 }
 bool GUI::drawVec3Control(const std::string& label, glm::vec3& values, bool scaleControls,
-						  float minInputFieldValue, float maxInputFieldValue,
-						  float inputFieldWidth, float speed,
-						  float resetValue, float resetButtonWidth)
+						  float minInputFieldValue, float maxInputFieldValue, float inputFieldWidth,
+						  float speed, float resetValue, float resetButtonWidth, float resetButtonHeight)
 {
 	bool value_changed{ false }; // flag to indicate if any value has changed
 
@@ -1134,7 +1338,7 @@ bool GUI::drawVec3Control(const std::string& label, glm::vec3& values, bool scal
 		value_changed = true; // set the value_changed flag to true
 	}
 	ImGui::SameLine();
-	if (ImGui::Button("Reset", ImVec2(resetButtonWidth, 20.0f)))
+	if (ImGui::Button("Reset", ImVec2(resetButtonWidth, resetButtonHeight)))
 	{ // if the Reset button is pressed
 		values.x = resetValue; // reset the x component to the reset value
 		value_changed = true; // set the value_changed flag to true
@@ -1173,7 +1377,7 @@ bool GUI::drawVec3Control(const std::string& label, glm::vec3& values, bool scal
 		value_changed = true; // set the value_changed flag to true
 	}
 	ImGui::SameLine();
-	if (ImGui::Button("Reset", ImVec2(resetButtonWidth, 20.0f)))
+	if (ImGui::Button("Reset", ImVec2(resetButtonWidth, resetButtonHeight)))
 	{ // if the Reset button is pressed
 		values.y = resetValue; // reset the y component to the reset value
 		value_changed = true; // set the value_changed flag to true
@@ -1212,7 +1416,7 @@ bool GUI::drawVec3Control(const std::string& label, glm::vec3& values, bool scal
 		value_changed = true; // set the value_changed flag to true
 	}
 	ImGui::SameLine();
-	if (ImGui::Button("Reset", ImVec2(resetButtonWidth, 20.0f)))
+	if (ImGui::Button("Reset", ImVec2(resetButtonWidth, resetButtonHeight)))
 	{ // if the Reset button is pressed
 		values.z = resetValue; // reset the z component to the reset value
 		value_changed = true; // set the value_changed flag to true
@@ -1253,9 +1457,8 @@ bool GUI::drawVec3Control(const std::string& label, glm::vec3& values, bool scal
 	return value_changed;
 }
 bool GUI::drawFloatControl(const std::string& label, float& value,
-						   float minInputFieldValue, float maxInputFieldValue,
-						   float inputFieldWidth, float speed,
-						   float resetValue, float resetButtonWidth)
+						   float minInputFieldValue, float maxInputFieldValue, float inputFieldWidth,
+						   float speed, float resetValue, float resetButtonWidth, float resetButtonHeight)
 {
 	bool value_changed{ false }; // flag to indicate if the value has changed
 
@@ -1295,7 +1498,7 @@ bool GUI::drawFloatControl(const std::string& label, float& value,
 	}
 
 	ImGui::SameLine();
-	if (ImGui::Button("Reset", ImVec2(resetButtonWidth, 20.0f)))
+	if (ImGui::Button("Reset", ImVec2(resetButtonWidth, resetButtonHeight)))
 	{ // if the Reset button is pressed
 		value = resetValue; // reset the value to the reset value
 		value_changed = true; // set the value_changed flag to true
@@ -1307,4 +1510,24 @@ bool GUI::drawFloatControl(const std::string& label, float& value,
 	ImGui::PopID(); // end the unique ID scope for the label
 
 	return value_changed;
+}
+void GUI::drawRemoveAssetButton(Asset* asset, std::vector<uint32_t>& assetsToRemoveIds,
+								const std::string& label, float buttonWidth, float buttonHeight)
+{
+	std::string buttonLabel = "Remove " + label;
+	if (ImGui::Button(buttonLabel.c_str(), ImVec2(buttonWidth, buttonHeight)))
+	{ // if the button is clicked
+		if (asset->GetType() == AssetType::LIGHT)
+		{ // if the asset is a light, also add its gizmo to the list of assets to remove
+			auto light = static_cast<Light*>(asset); // cast the asset to a Light pointer
+			auto& gizmo = light->GetGizmo(); // get the gizmo from the light
+			uint32_t gizmoId = gizmo->GetId(); // get the id of the gizmo
+			assetsToRemoveIds.push_back(gizmoId); // add the gizmo id to the list of assets to remove
+			std::cout << "[INFO::GUI::drawRemoveAssetButton] "
+				<< gizmo->GetName() << " with ID " << gizmoId << " marked for removal" << std::endl;
+		}
+		assetsToRemoveIds.push_back(asset->GetId()); // add the asset id to the list of assets to remove
+		std::cout << "[INFO::GUI::drawRemoveAssetButton] "
+			<< asset->GetName() << " with ID " << asset->GetId() << " marked for removal" << std::endl;
+	}
 }
