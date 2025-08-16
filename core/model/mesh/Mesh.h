@@ -37,6 +37,9 @@ public:
 	// Binds the textures of the mesh
 	void BindTextures(Shader& shader) const;
 
+	// Sets up a screen quad mesh for post-processing effects
+	void ScreenQuadMeshSetup();
+
 	// Deletes all the buffer objects/arrays
 	void DeallocateResources();
 

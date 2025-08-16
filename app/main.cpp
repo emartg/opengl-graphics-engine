@@ -99,22 +99,26 @@ std::tuple<std::vector<std::string>,
 	std::vector<std::string> shaderNames = {
 		"Untextured Matt Shape Shader",
 		"Assimp Model Shader",
-		"Single Albedo Shader"
+		"Single Albedo Shader",
+		"Screen Shader"
 	};
 	std::vector<std::string> vertexShaderPaths = {
 		"resources/shaders/untextured_matt_shape.vert.glsl",
 		"resources/shaders/assimp_model.vert.glsl",
-		"resources/shaders/single_albedo.vert.glsl"
+		"resources/shaders/single_albedo.vert.glsl",
+		"resources/shaders/screen_quad.vert.glsl"
 	};
 	std::vector<std::string> geometryShaderPaths = {
 		"", // no custom geometry shader for the untextured matt shape shader
 		"", // no custom geometry shader for the assimp model shader
 		""  // no custom geometry shader for the single albedo shader
+		"", // no custom geometry shader for the screen shader
 	};
 	std::vector<std::string> fragmentShaderPaths = {
 		"resources/shaders/untextured_matt_shape.frag.glsl",
 		"resources/shaders/assimp_model.frag.glsl",
-		"resources/shaders/single_albedo.frag.glsl"
+		"resources/shaders/single_albedo.frag.glsl",
+		"resources/shaders/screen_quad.frag.glsl"
 	};
 	return { shaderNames, vertexShaderPaths, geometryShaderPaths, fragmentShaderPaths };
 }

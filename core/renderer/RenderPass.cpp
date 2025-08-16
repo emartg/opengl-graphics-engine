@@ -36,14 +36,24 @@ void RenderPass::Create(const RenderPassSpecification& spec)
 		// generate a texture for each color attachment
 		glGenTextures(m_specification.ColorAttachmentCount, m_colorAttachmentIds.data());
 
-		// bind each texture and set its parameters
+		// bind each texture, set its parameters and attach it to the framebuffer
 		for (int i = 0; i < m_specification.ColorAttachmentCount; ++i)
 		{
 			glBindTexture(GL_TEXTURE_2D, m_colorAttachmentIds[i]);
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_specification.Width, m_specification.Height,
-						 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, // prefer sized internal format for color attachments
+						 m_specification.Width, m_specification.Height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+
+			// set texture parameters for filtering and wrapping
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			// clamp to edge to avoid sampling fringes
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+			// no mipmaps for render targets to avoid unnecessary overhead
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
+
+			// attach the texture to the framebuffer as a color attachment with the appropriate index
 			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D,
 								   m_colorAttachmentIds[i], 0);
 		}
@@ -106,7 +116,7 @@ void RenderPass::Create(const RenderPassSpecification& spec)
 
 	// check if the framebuffer is complete, if not, print an error message
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-		std::cerr << "[ERROR::RenderPass::Create] Framebuffer is not complete!" << std::endl;
+		std::cerr << "[ERROR::RENDERPASS::Create] Framebuffer is not complete!" << std::endl;
 
 	// unbind the framebuffer
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -116,7 +126,7 @@ void RenderPass::SetAsDrawBuffer(GLint index) const
 {
 	// bind the framebuffer
 	glBindFramebuffer(GL_FRAMEBUFFER, m_fboId);
-	if (index >= 0 && index < m_colorAttachmentIds.size())
+	if (index >= 0 && index < static_cast<GLint>(m_colorAttachmentIds.size()))
 	{ // if index is non-negative and within bounds
 		glDrawBuffer(GL_COLOR_ATTACHMENT0 + index); // set draw buffer to the specified color attachment
 	}
@@ -130,7 +140,7 @@ void RenderPass::SetAsReadBuffer(GLint index) const
 {
 	// bind the framebuffer
 	glBindFramebuffer(GL_FRAMEBUFFER, m_fboId);
-	if (index >= 0 && index < m_colorAttachmentIds.size())
+	if (index >= 0 && index < static_cast<GLint>(m_colorAttachmentIds.size()))
 	{ // if index is non-negative and within bounds
 		glReadBuffer(GL_COLOR_ATTACHMENT0 + index); // set read buffer to the specified color attachment
 	}
@@ -172,12 +182,12 @@ void RenderPass::DeallocateResources()
 std::string RenderPass::GetSpecificationStr() const
 {
 	// return a string representation of the render pass specification
-	return "[INFO::RenderPass::GetSpecification] Render Pass Specification:" + std::string("") + "\n" +
-		"Width: " + std::to_string(m_specification.Width) + "\n" +
-		"Height: " + std::to_string(m_specification.Height) + "\n" +
-		"Color Attachment Count: " + std::to_string(m_specification.ColorAttachmentCount) + "\n" +
-		"Has Depth Attachment: " + (m_specification.HasDepthAttachment ? "Yes" : "No") + "\n" +
-		"Has Stencil Attachment: " + (m_specification.HasStencilAttachment ? "Yes" : "No");
+	return "{\n\tWidth: " + std::to_string(m_specification.Width) + "\n" +
+		"\tHeight: " + std::to_string(m_specification.Height) + "\n" +
+		"\tColor Attachment Count: " + std::to_string(m_specification.ColorAttachmentCount) + "\n" +
+		"\tHas Depth Attachment: " + (m_specification.HasDepthAttachment ? "Yes" : "No") + "\n" +
+		"\tHas Stencil Attachment: " + (m_specification.HasStencilAttachment ? "Yes" : "No")
+		+ "\n}";
 }
 
 GLuint RenderPass::GetTextureId(GLuint index) const

@@ -15,13 +15,13 @@
 #include "Renderer.h"
 
 #include "../Core.h"
+#include "SCREEN_QUAD.h" // screen-quad vertex data
 
 // Constructor
 // -----------
 Renderer::Renderer()
 	: m_mainRenderPass{ new RenderPass() },
-	m_deltaTime{ 0.0f }, m_lastFrameTime{ 0.0f },
-	m_untexturedMattShapeShader{ nullptr }, m_assimpModelShader{ nullptr }, m_singleAlbedoShader{ nullptr }
+	m_deltaTime{ 0.0f }, m_lastFrameTime{ 0.0f }
 {}
 
 // Destructor
@@ -29,11 +29,16 @@ Renderer::Renderer()
 Renderer::~Renderer()
 {
 	// deallocate the main render pass and nullify the pointer to avoid dangling pointer issues
-	if (m_mainRenderPass) // check if the main render pass is not null
+	if (m_mainRenderPass)
 	{
-		delete m_mainRenderPass; // deallocate the main render pass
-		m_mainRenderPass = nullptr; // nullify the pointer to avoid dangling pointer issues
+		delete m_mainRenderPass;
+		m_mainRenderPass = nullptr;
 	}
+
+	// delete screen-quad GL objects if created
+	if (m_screenQuadEBO) glDeleteBuffers(1, &m_screenQuadEBO);
+	if (m_screenQuadVBO) glDeleteBuffers(1, &m_screenQuadVBO);
+	if (m_screenQuadVAO) glDeleteVertexArrays(1, &m_screenQuadVAO);
 
 	std::cout << "[RENDERER::~Renderer] Renderer destructor called" << std::endl;
 }
@@ -64,8 +69,8 @@ void Renderer::ConfigOpenGL() const
 
 void Renderer::ClearBuffers(BufferType bufferType) const
 {
-	GLbitfield mask = 0; // initialize the mask to zero (no buffers cleared by default)
-	switch (bufferType) // determine which buffers to clear based on the buffer type
+	GLbitfield mask = 0;
+	switch (bufferType)
 	{
 		case BufferType::COLOR:
 			mask |= GL_COLOR_BUFFER_BIT;
@@ -95,36 +100,43 @@ void Renderer::ClearBuffers(BufferType bufferType) const
 
 void Renderer::SetViewport(int width, int height) const
 {
-	// set the viewport to the specified width and height
 	glViewport(0, 0, width, height);
 }
 
 void Renderer::SetClearColor(float r, float g, float b, float a) const
 {
-	// set the clear color to the specified RGBA values (alpha defaults to 1.0f)
-	glClearColor(r, g, b, a);
+	glClearColor(r, g, b, a); // alpha is optional, default is 1.0f
 }
 
 bool Renderer::SetShaderByName(const std::string& name, const std::shared_ptr<Shader>& shader)
 {
-	if (shader)
-	{ // check if the shader is not null before proceeding
-		// assign the shader to the appropriate member variable based on the name
-		if (strcmp(name.c_str(), "Untextured Matt Shape Shader") == 0)
-			m_untexturedMattShapeShader = shader;
-		else if (strcmp(name.c_str(), "Assimp Model Shader") == 0)
-			m_assimpModelShader = shader;
-		else if (strcmp(name.c_str(), "Single Albedo Shader") == 0)
-			m_singleAlbedoShader = shader;
-		else
-		{ // if the shader name is unknown, print an error message and return false
-			std::cerr << "[ERROR::RENDERER::SetShader] Unknown shader name: " << name << std::endl;
-			return false;
-		}
-	}
-	else
+	if (!shader)
 	{ // if the shader is null, print an error message and return false
 		std::cerr << "[ERROR::RENDERER::SetShader] Shader is null for name: " << name << std::endl;
+		return false;
+	}
+
+	// check if the shader name matches any of the known shaders, and if so,
+	// assign the shader to the corresponding member variable
+	if (strcmp(name.c_str(), "Untextured Matt Shape Shader") == 0)
+	{
+		m_untexturedMattShapeShader = shader;
+	}
+	else if (strcmp(name.c_str(), "Assimp Model Shader") == 0)
+	{
+		m_assimpModelShader = shader;
+	}
+	else if (strcmp(name.c_str(), "Single Albedo Shader") == 0)
+	{
+		m_singleAlbedoShader = shader;
+	}
+	else if (strcmp(name.c_str(), "Screen Shader") == 0)
+	{
+		m_screenShader = shader;
+	}
+	else
+	{ // if the shader name is unknown, print an error message and return false
+		std::cerr << "[ERROR::RENDERER::SetShader] Unknown shader name: " << name << std::endl;
 		return false;
 	}
 
@@ -135,18 +147,21 @@ bool Renderer::SetShaderByName(const std::string& name, const std::shared_ptr<Sh
 
 void Renderer::FrameStartConfig()
 {
-	PollIOEvents(); // poll input events (keyboard, mouse, etc.)
+	PollIOEvents(); // poll IO events (keyboard, mouse, etc.)
 
-	BuildGUI(); // setup the GUI for the current frame
+	BuildGUI(); // set up the GUI for the frame
 
-	// per-frame time logic
+	// update time attributes
 	GLfloat currentFrame = static_cast<GLfloat>(GetTime());
 	m_deltaTime = currentFrame - m_lastFrameTime;
 	m_lastFrameTime = currentFrame;
 
-	// per-frame shader configuration
+	EnsureOffscreenRenderPass(); // ensure offscreen target matches current window size
+
+	// bind offscreen FBO and clear it
+	m_mainRenderPass->Bind();
 	SetClearColor(0.1f, 0.1f, 0.1f);
-	ClearBuffers();
+	ClearBuffers(BufferType::ALL);
 }
 
 void Renderer::RenderScene()
@@ -486,9 +501,138 @@ void Renderer::RenderScene()
 			line->Draw();
 		}
 	});
+
+	// after the scene is rendered offscreen, composite to the default framebuffer
+	CompositeToScreen();
 }
 
 void Renderer::FrameEndConfig() const
 {
-	SwapBuffers(); // swap the front and back buffers to display the rendered content
+	SwapBuffers();
+}
+
+// Protected Methods
+// -----------------
+void Renderer::EnsureOffscreenRenderPass()
+{
+	// get the core instance and screen dimensions
+	auto core = Core::GetInstance();
+	const int width = core->GetScreenWidth();
+	const int height = core->GetScreenHeight();
+
+	if (width <= 0 || height <= 0) return; // ensure valid dimensions
+
+	// if the dimensions have changed or the FBO is not created yet, 
+	// recreate the offscreen render pass with the new dimensions
+	if (width != m_offscreenWidth || height != m_offscreenHeight || m_mainRenderPass->GetFboId() == 0)
+	{
+		// reset the specification and set new values
+		RenderPassSpecification spec{};
+		spec.Width = width;
+		spec.Height = height;
+		spec.ColorAttachmentCount = 1;
+		spec.HasDepthAttachment = true;
+		spec.HasStencilAttachment = true;
+		// create the main render pass with the new specification and dimensions
+		m_mainRenderPass->Create(spec);
+		m_offscreenWidth = width;
+		m_offscreenHeight = height;
+
+		// print a message indicating the offscreen render pass has been recreated
+		std::cout << "[INFO::RENDERER::EnsureOffscreenRenderPass] "
+			"\nOffscreen render pass recreated with updated dimensions:\n"
+			<< m_mainRenderPass->GetSpecificationStr() << std::endl;
+	}
+
+	InitScreenQuad(); // initialize the screen quad if it hasn't been initialized yet
+}
+
+void Renderer::InitScreenQuad()
+{
+	if (m_screenQuadVAO) return; // if the screen quad VAO is already initialized, return
+
+	// create the screen quad VAO, VBO, and EBO
+	glGenVertexArrays(1, &m_screenQuadVAO);
+	glGenBuffers(1, &m_screenQuadVBO);
+	glGenBuffers(1, &m_screenQuadEBO);
+
+	glBindVertexArray(m_screenQuadVAO); // bind the VAO to set up the vertex attributes
+
+	// bind the VBO and EBO, and send the screen quad vertex and index data to the GPU
+	glBindBuffer(GL_ARRAY_BUFFER, m_screenQuadVBO);
+	glBufferData(GL_ARRAY_BUFFER,
+				 static_cast<GLsizeiptr>(screenQuadVerticesVec.size() * sizeof(GLfloat)),
+				 screenQuadVerticesVec.data(), GL_STATIC_DRAW);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_screenQuadEBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER,
+				 static_cast<GLsizeiptr>(screenQuadIndicesVec.size() * sizeof(GLuint)),
+				 screenQuadIndicesVec.data(), GL_STATIC_DRAW);
+
+	// set the vertex attribute pointers for the screen quad
+	// compute a local stride for the vertex attributes (5 floats per vertex: 3 pos, 2 tex coords)
+	const GLsizei stride = static_cast<GLsizei>(5 * sizeof(GLfloat));
+	// position attribute at index 0 (3 floats)
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, reinterpret_cast<void*>(0));
+	// texture coordinate attribute at index 1 (2 floats)
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, stride, reinterpret_cast<void*>(3 * sizeof(GLfloat)));
+
+	glBindVertexArray(0); // unbind the VAO to avoid accidental modifications
+}
+
+void Renderer::CompositeToScreen()
+{
+	// get the core instance and screen dimensions
+	auto core = Core::GetInstance();
+	const GLuint width = core->GetScreenWidth();
+	const GLuint height = core->GetScreenHeight();
+
+	// unbind offscreen target, effectively switching back to the default framebuffer
+	m_mainRenderPass->Unbind();
+
+	// draw the offscreen color texture to the back buffer via a screen quad
+	glViewport(0, 0, width, height); // set the viewport to the screen dimensions
+	glDisable(GL_DEPTH_TEST); // depth test is not needed for screen quad rendering
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); // ensure we are in fill mode for the screen quad
+
+	// clear the default framebuffer color (keep depth and stencil buffers intact)
+	ClearBuffers(BufferType::COLOR);
+
+	if (!m_screenShader)
+	{ // if the screen shader is not set, print an error message and return
+		std::cerr << "[ERROR::RENDERER::CompositeToScreen] Screen Shader not set" << std::endl;
+		return;
+	}
+
+	// use the screen shader and set the texture to be rendered
+	m_screenShader->Use();
+	// set the screen texture uniform to the texture unit 0
+	m_screenShader->SetInt("screenTexture", 0);
+	// declare and set debug mode parameters for the screen shader
+	GLuint debugMode = 2; // set the debug mode to 2 (inverted scene albedo)
+	glm::vec3 solidColor{ 0.75f, 0.25f, 0.25f }; // set the solid color to a light red
+	GLuint nLines = 10; // set the number of lines in the grid overlay to 10
+	GLfloat lineWidth = 0.02f; // set the line width for the grid overlay to 0.2f
+	GLfloat bgColor = 0.25f; // set the background color for the grid overlay to a dark gray
+	GLfloat fgColor = 0.75f; // set the foreground color for the grid overlay to a light gray
+	std::string prefix = "debugModeParams."; // prefix for the debug mode parameters in the shader
+	m_screenShader->SetInt(prefix + "debugMode", debugMode);
+	m_screenShader->SetVec3(prefix + "solidColor", solidColor);
+	m_screenShader->SetInt(prefix + "nLines", nLines);
+	m_screenShader->SetFloat(prefix + "lineWidth", lineWidth);
+	m_screenShader->SetFloat(prefix + "bgColor", bgColor);
+	m_screenShader->SetFloat(prefix + "fgColor", fgColor);
+
+	// bind the offscreen render pass texture to texture unit 0 and set it as the active texture
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, m_mainRenderPass->GetTextureId(0));
+	// bind the screen quad VAO and draw the screen quad
+	glBindVertexArray(m_screenQuadVAO);
+	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
+	glBindVertexArray(0);
+	// unbind the texture to avoid accidental modifications
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	glEnable(GL_DEPTH_TEST); // re-enable the depth test for subsequent rendering
 }

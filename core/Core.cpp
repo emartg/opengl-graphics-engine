@@ -108,7 +108,7 @@ void Core::Run()
 	while (!m_renderer->ShouldClose())
 	{
 		m_renderer->FrameStartConfig(); // start of the frame configuration
-		m_renderer->RenderScene(); // render the scene
+		m_renderer->RenderScene(); // composite the scene
 		m_renderer->RenderGUI(); // render the GUI
 		m_renderer->FrameEndConfig(); // end of the frame configuration
 	}

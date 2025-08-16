@@ -91,12 +91,25 @@ protected:
 	// Protected Attributes
 	// --------------------
 	RenderPass* m_mainRenderPass;
-
 	GLfloat m_deltaTime, m_lastFrameTime; // time settings
 
 	// shader programs' smart pointers
 	std::shared_ptr<Shader> m_untexturedMattShapeShader;
 	std::shared_ptr<Shader> m_assimpModelShader;
 	std::shared_ptr<Shader> m_singleAlbedoShader;
+
+	// screen-quad post-process shader and its buffers
+	std::shared_ptr<Shader> m_screenShader;
+	GLuint m_screenQuadVAO{}, m_screenQuadVBO{}, m_screenQuadEBO{};
+	GLuint m_offscreenWidth{}, m_offscreenHeight{};
+
+	// Protected Methods
+	// -----------------
+	// Ensures the offscreen render pass is created with the current window size
+	void EnsureOffscreenRenderPass();
+	// Initializes the screen quad if it has not been initialized yet
+	void InitScreenQuad();
+	// Configures OpenGL state for rendering to the screen
+	void CompositeToScreen();
 
 };
