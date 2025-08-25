@@ -58,6 +58,10 @@ public:
 	GLfloat GetMouseSensitivity() const { return mouseSensitivity; }
 	GLfloat GetZoom() const { return zoom; }
 
+	// Setters
+	void SetYaw(GLfloat yaw) { this->yaw = yaw; }
+	void SetPitch(GLfloat pitch) { this->pitch = pitch; }
+
 	// Returns the view matrix calculated using Euler Angles and the LookAt Matrix
 	glm::mat4 GetViewMatrix() const;
 
@@ -92,27 +96,36 @@ private:
 
 	// Private Attributes
 	// ------------------
-	// Camera attributes
+	// camera attributes
 	glm::vec3 position;
 	glm::vec3 front;
 	glm::vec3 up;
 	glm::vec3 right;
 	glm::vec3 worldUp;
-	// Euler angles
+
+	// euler angles
 	GLfloat yaw;
 	GLfloat pitch;
-	// Camera options
+
+	// camera options
 	GLfloat movementSpeed;
 	GLfloat mouseSensitivity;
 	GLfloat zoom;
+
+	// initial values for camera reset
+	glm::vec3 initialPosition;
+	glm::vec3 initialUp;
+	GLfloat initialYaw;
+	GLfloat initialPitch;
 
 	// Private Static Attributes
 	// -------------------------
 	// default values for the camera attributes
 	static constexpr glm::vec3 POSITION = glm::vec3{ 22.0f, 12.0f, 17.5f };
+	static constexpr glm::vec3 FRONT = glm::vec3{ 0.0f, 0.0f, -1.0f };
 	static constexpr glm::vec3 UP = glm::vec3{ 0.0f, 1.0f, 0.0f };
 	static constexpr GLfloat YAW = -135.0f;
-	static constexpr GLfloat PITCH = -24.0f;
+	static constexpr GLfloat PITCH = -25.0f;
 	static constexpr GLfloat SPEED = 2.5f;
 	static constexpr GLfloat SENSITIVITY = 0.1f;
 	static constexpr GLfloat ZOOM = 45.0f;

@@ -40,6 +40,19 @@ class Core;
 class Renderer
 {
 public:
+	// Public Types
+	// ------------
+	// struct to hold screen debug parameters to test screen-to-texture rendering (with default values)
+	struct ScreenDebugParams
+	{
+		GLuint debugMode{ 0 }; // 0: regular rendering, 1: solid color, 2: grid overlay, 3: inverted colors
+		glm::vec3 solidColor{ 0.75f, 0.25f, 0.25f }; // solid color for debug mode 1
+		GLuint gridLineCount{ 50 }; // number of lines for the grid overlay for debug mode 2
+		GLfloat gridLineThickness{ 1.50f }; // line thickness in pixels for the grid overlay for debug mode 2
+		glm::vec3 gridBgColor{ 0.25f }; // background color for the grid overlay for debug mode 2
+		glm::vec3 gridLineColor{ 0.75f }; // line color for the grid overlay for debug mode 2
+	};
+
 	// Constructor
 	// -----------
 	Renderer();
@@ -60,16 +73,28 @@ public:
 	virtual void ClearBuffers(BufferType bufferType = BufferType::ALL) const;
 	virtual bool ShouldClose() const = 0;
 
+	// Blocks the main thread until an event occurs 
+	// (mouse movement, key press, asset manipulation via GUI, etc.)
+	// Keeps held widgets responsive in event-driven mode
+	virtual void WaitForEvents() const = 0;
+
+	// Toggles between event-driven and continuous modes
+	void ToggleEventDrivenMode() const;
+
 	// Getters
 	virtual const char* GetProcAddress() const = 0;
 	virtual float GetTime() const = 0;
 	virtual float GetDeltaTime() const { return m_deltaTime; }
+
+	virtual ScreenDebugParams& GetScreenDebugParams() { return m_screenDebugParams; }
 
 	// Setters
 	virtual void SetCallbackFunctions() const = 0;
 	virtual void SetViewport(int width, int height) const;
 	virtual void SetClearColor(float r, float g, float b, float a = 1.0f) const;
 	virtual void SetWindowShouldClose() const = 0;
+
+	virtual void SetScreenDebugParams(const ScreenDebugParams& params) { m_screenDebugParams = params; }
 
 	// Assigns the shader program with the specified name to the appropriate member variable
 	// for further use in the renderer
@@ -102,6 +127,9 @@ protected:
 	std::shared_ptr<Shader> m_screenShader;
 	GLuint m_screenQuadVAO{}, m_screenQuadVBO{}, m_screenQuadEBO{};
 	GLuint m_offscreenWidth{}, m_offscreenHeight{};
+
+	// screen debug parameters for testing screen-to-texture rendering
+	ScreenDebugParams m_screenDebugParams;
 
 	// Protected Methods
 	// -----------------

@@ -50,7 +50,14 @@ private:
 	std::shared_ptr<SceneManager> m_sceneManager;
 
 	// screen settings
-	GLuint m_screenWidth{ 1400 }, m_screenHeight{ 1000 };
+	GLuint m_screenWidth{ 1400 }, m_screenHeight{ 1000 }; // default screen width and height
+
+	// event-driven mode controls
+	// flag to indicate whether the engine is in event-driven mode or continuous mode:
+	// - in event-driven mode, the main loop waits for events (mouse movement, key presses, etc.)
+	//   and processes them as they occur, only rendering when an event is triggered
+	// - in continuous mode, the main loop runs continuously, rendering frames at a fixed rate
+	bool m_eventDriven{ true }; // default to event-driven mode
 
 	// Private Static Methods
 	// ----------------------
@@ -74,7 +81,7 @@ public:
 	// Public Methods
 	// --------------
 	// Getters
-	const Renderer* GetRenderer() const { return m_renderer; }
+	Renderer* GetRenderer() const { return m_renderer; }
 
 	const std::shared_ptr<AssetManager>& GetAssetManager() const { return m_assetManager; }
 	const std::shared_ptr<InputManager>& GetInputManager() const { return m_inputManager; }
@@ -83,11 +90,15 @@ public:
 	const GLuint& GetScreenWidth() const { return m_screenWidth; }
 	const GLuint& GetScreenHeight() const { return m_screenHeight; }
 
+	const bool& GetEventDriven() const { return m_eventDriven; }
+
 	// Setters
 	void SetRenderer(Renderer* renderer) { m_renderer = renderer; }
 
 	void SetScreenWidth(GLuint width) { m_screenWidth = width; }
 	void SetScreenHeight(GLuint height) { m_screenHeight = height; }
+
+	void SetEventDriven(bool eventDriven) { m_eventDriven = eventDriven; }
 
 	// Initializes the core engine (OpenGL, window, GUI, etc.)
 	bool Init() const;

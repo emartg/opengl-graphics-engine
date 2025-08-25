@@ -17,11 +17,19 @@ Camera::Camera(const std::string& name,
 			   const glm::vec3 position, const glm::vec3 up,
 			   const GLfloat yaw, const GLfloat pitch)
 	: Asset(name, AssetType::CAMERA),
-	front{ glm::vec3(0.0f, 0.0f, -1.0f) }, position{ position }, worldUp{ up }, yaw{ yaw }, pitch{ pitch },
+	position{ position }, front{ FRONT }, worldUp{ up }, yaw{ yaw }, pitch{ pitch },
 	movementSpeed{ SPEED }, mouseSensitivity{ SENSITIVITY }, zoom{ ZOOM }
 {
-	nCameras++; // increment the number of cameras
+	// store the initial values for camera reset
+	initialPosition = position;
+	initialUp = up;
+	initialYaw = yaw;
+	initialPitch = pitch;
+
+	// update the camera vectors based on the initial values
 	updateCameraVectors();
+
+	nCameras++; // increment the number of cameras
 }
 
 Camera::Camera(const std::string& name,
@@ -96,11 +104,11 @@ void Camera::ProcessMouseScroll(GLfloat yoffset, GLfloat sensitivity)
 
 void Camera::ResetCamera()
 {
-	position = POSITION;
-	worldUp = UP;
-	front = glm::vec3(0.0f, 0.0f, -1.0f);
-	yaw = YAW;
-	pitch = PITCH;
+	position = initialPosition;
+	front = FRONT;
+	worldUp = initialUp;
+	yaw = initialYaw;
+	pitch = initialPitch;
 	movementSpeed = SPEED;
 	mouseSensitivity = SENSITIVITY;
 	zoom = ZOOM;

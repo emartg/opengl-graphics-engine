@@ -145,6 +145,21 @@ bool Renderer::SetShaderByName(const std::string& name, const std::shared_ptr<Sh
 	return true;
 }
 
+void Renderer::ToggleEventDrivenMode() const
+{
+	auto core = Core::GetInstance(); // get the core instance
+	if (!core) // ensure the core instance is valid before proceeding
+	{ // if the core instance is null, print an error message and return
+		std::cerr << "[ERROR::RENDERER::ToggleEventDrivenMode] Core instance is null" << std::endl;
+		return;
+	}
+
+	// toggle the event-driven mode
+	core->SetEventDriven(!core->GetEventDriven());
+	std::cout << "[INFO::RENDERER::ToggleEventDrivenMode] Rendering mode changed to: "
+		<< (core->GetEventDriven() ? "Event-Driven" : "Continuous") << std::endl;
+}
+
 void Renderer::FrameStartConfig()
 {
 	PollIOEvents(); // poll IO events (keyboard, mouse, etc.)
@@ -607,22 +622,18 @@ void Renderer::CompositeToScreen()
 
 	// use the screen shader and set the texture to be rendered
 	m_screenShader->Use();
-	// set the screen texture uniform to the texture unit 0
+	// set the screen texture uniform to texture unit 0
 	m_screenShader->SetInt("screenTexture", 0);
-	// declare and set debug mode parameters for the screen shader
-	GLuint debugMode = 2; // set the debug mode to 2 (inverted scene albedo)
-	glm::vec3 solidColor{ 0.75f, 0.25f, 0.25f }; // set the solid color to a light red
-	GLuint nLines = 10; // set the number of lines in the grid overlay to 10
-	GLfloat lineWidth = 0.02f; // set the line width for the grid overlay to 0.2f
-	GLfloat bgColor = 0.25f; // set the background color for the grid overlay to a dark gray
-	GLfloat fgColor = 0.75f; // set the foreground color for the grid overlay to a light gray
-	std::string prefix = "debugModeParams."; // prefix for the debug mode parameters in the shader
-	m_screenShader->SetInt(prefix + "debugMode", debugMode);
-	m_screenShader->SetVec3(prefix + "solidColor", solidColor);
-	m_screenShader->SetInt(prefix + "nLines", nLines);
-	m_screenShader->SetFloat(prefix + "lineWidth", lineWidth);
-	m_screenShader->SetFloat(prefix + "bgColor", bgColor);
-	m_screenShader->SetFloat(prefix + "fgColor", fgColor);
+	// set screen debug parameters as uniforms in the screen fragment shader
+	std::string prefix = "screenDebugParams."; // prefix for the screen debug parameters (to avoid repetition)
+	m_screenShader->SetInt(prefix + "debugMode", m_screenDebugParams.debugMode);
+	m_screenShader->SetVec3(prefix + "solidColor", m_screenDebugParams.solidColor);
+	m_screenShader->SetInt(prefix + "gridLineCount", m_screenDebugParams.gridLineCount);
+	m_screenShader->SetFloat(prefix + "gridLineThickness", m_screenDebugParams.gridLineThickness);
+	m_screenShader->SetVec3(prefix + "gridBgColor", m_screenDebugParams.gridBgColor);
+	m_screenShader->SetVec3(prefix + "gridLineColor", m_screenDebugParams.gridLineColor);
+	// set the screen dimensions as a uniform in the screen fragment shader
+	m_screenShader->SetVec2("screenSize", glm::vec2(width, height));
 
 	// bind the offscreen render pass texture to texture unit 0 and set it as the active texture
 	glActiveTexture(GL_TEXTURE0);

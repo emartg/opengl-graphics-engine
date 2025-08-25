@@ -56,6 +56,14 @@ void GLFWRenderer::ConfigureWindow() const
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 }
 
+void GLFWRenderer::PollIOEvents() const { glfwPollEvents(); }
+
+void GLFWRenderer::SwapBuffers() const { glfwSwapBuffers(window); }
+
+bool GLFWRenderer::ShouldClose() const { return glfwWindowShouldClose(window); }
+
+float GLFWRenderer::GetTime() const { return glfwGetTime(); }
+
 const char* GLFWRenderer::GetProcAddress() const
 {
 	return reinterpret_cast<const char*>(glfwGetProcAddress);
@@ -69,15 +77,50 @@ void GLFWRenderer::SetCallbackFunctions() const
 	glfwSetKeyCallback(window, keyCallback);
 }
 
-float GLFWRenderer::GetTime() const { return glfwGetTime(); }
-
-void GLFWRenderer::PollIOEvents() const { glfwPollEvents(); }
-
-void GLFWRenderer::SwapBuffers() const { glfwSwapBuffers(window); }
-
-bool GLFWRenderer::ShouldClose() const { return glfwWindowShouldClose(window); }
-
 void GLFWRenderer::SetWindowShouldClose() const { glfwSetWindowShouldClose(window, true); }
+
+void GLFWRenderer::WaitForEvents() const
+{
+	ImGuiIO& io = ImGui::GetIO();
+
+	// consider as interactions:
+	// - mouse buttons pressed or held down (left, right, middle)
+	// - any key pressed (e.g. when typing in a text field or using keyboard shortcuts)
+	// - any widget is active (e.g. when a slider is being dragged or a button is pressed)
+	bool mouseDown = io.MouseDown[0] || io.MouseDown[1] || io.MouseDown[2];
+	bool keyPressed = false;
+	for (int i = 0; i < ImGuiKey_NamedKey_COUNT; ++i)
+	{ // iterate through all named keys
+		if (io.KeysData[i].Down)
+		{ // if any key is pressed, set keyPressed to true and break the loop
+			keyPressed = true;
+			break;
+		}
+	}
+	bool widgetActive = ImGui::IsAnyItemActive();
+	// determine if the user is interacting based on the above conditions
+	const bool interacting = mouseDown || keyPressed || widgetActive;
+
+	// check if the Core instance is in event-driven mode
+	const bool eventDriven = Core::GetInstance()->GetEventDriven();
+
+	// define timeouts for event-driven and continuous modes
+	constexpr float eventDrivenTimeout = 1.0f / 120.0f; // ~120 Hz while interacting in event-driven mode
+	constexpr float continuousTimeout = 1.0f / 120.0f; // ~120 Hz as throttle in continuous mode
+
+	if (eventDriven)
+	{ // if the Core instance is in event-driven mode
+		if (interacting) // while interacting, wake at ~120 Hz to keep repeat/drag responsive
+			glfwWaitEventsTimeout(eventDrivenTimeout);
+		else // when idle, fully block until the next OS event
+			glfwWaitEvents();
+	}
+	else
+	{ // if the Core instance is in continuous mode
+		// throttle by timeout to reduce CPU/GPU usage, waking at ~120 Hz
+		glfwWaitEventsTimeout(continuousTimeout);
+	}
+}
 
 void GLFWRenderer::InitGUI()
 {
@@ -136,4 +179,6 @@ void GLFWRenderer::keyCallback(GLFWwindow* window, int key, int scancode, int ac
 		Core::GetInstance()->GetInputManager()->KeyCallback("ESC_PRESSED");
 	else if (key == GLFW_KEY_R && action == GLFW_PRESS)
 		Core::GetInstance()->GetInputManager()->KeyCallback("R_PRESSED");
+	else if (key == GLFW_KEY_T && action == GLFW_PRESS)
+		Core::GetInstance()->GetInputManager()->KeyCallback("T_PRESSED");
 }

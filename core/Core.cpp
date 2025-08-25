@@ -25,8 +25,7 @@ Core::Core()
 	: m_renderer{ nullptr },
 	m_assetManager{ std::make_shared<AssetManager>() },
 	m_inputManager{ std::make_shared<InputManager>() },
-	m_sceneManager{ std::make_shared<SceneManager>() },
-	m_screenWidth{ 1400 }, m_screenHeight{ 1000 } // default screen settings 
+	m_sceneManager{ std::make_shared<SceneManager>() }
 {}
 
 // Destructor
@@ -107,6 +106,11 @@ void Core::Run()
 	std::cout << "[INFO::CORE::Run] Starting main loop..." << std::endl;
 	while (!m_renderer->ShouldClose())
 	{
+		// always wait for events first, since the renderer internally adapts
+		// the waiting system depending on the mode (event-driven or continuous),
+		// fully blocking or throttling the CPU/GPU usage to improve performance
+		m_renderer->WaitForEvents();
+
 		m_renderer->FrameStartConfig(); // start of the frame configuration
 		m_renderer->RenderScene(); // composite the scene
 		m_renderer->RenderGUI(); // render the GUI

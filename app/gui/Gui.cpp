@@ -20,7 +20,9 @@ GUI::GUI()
 	: m_randomizer{ std::make_unique<Random>() }, // create a random number generator
 	m_newAlbedo{ 0.8f }, // default albedo color for new objects is light gray
 	m_newPosition{ 0.0f }, // default position for new objects is the origin
+	m_newRotation{ 0.0f }, // default rotation for new objects is no rotation (identity quaternion)
 	m_newDirection{ 0.0f, 0.0f, -1.0f }, // default direction for new objects is negative z-axis
+	m_newScale{ 1.0f }, // default scale for new objects is 1.0
 	m_newInnerCutOff{ 12.5f }, // default inner cutoff angle for new spotlights
 	m_newOuterCutOff{ 32.5f }, // default outer cutoff angle for new spotlights
 	m_mediumFont{ nullptr }, // medium font for the GUI (default font) is nullptr initially
@@ -29,12 +31,13 @@ GUI::GUI()
 	initGUILayoutAttributes(); // initialize the display size-independent layout attributes
 	// initialize the positions and sizes of the GUI windows to default values
 	// (since they require the ImGui context to be created first to access the ImGui IO object)
-	m_informationWindowPosition, m_informationWindowPosition, m_creationWindowPosition =
-		ImVec2{ 0.0f, 0.0f };
-	m_informationWindowSize, m_propertiesWindowSize, m_creationWindowSize =
-		ImVec2{ 0.0f, 0.0f };
+	m_informationWindowPosition, m_debugWindowPosition, m_creationWindowPosition, m_propertiesWindowPosition
+		= ImVec2{ 0.0f, 0.0f };
+	m_informationWindowSize, m_debugWindowSize, m_creationWindowSize, m_propertiesWindowSize
+		= ImVec2{ 0.0f, 0.0f };
 	// initialize the flags for the windows to prevent focus on the first frame
 	m_informationWindowJustAppeared = true;
+	m_debugWindowJustAppeared = true;
 	m_propertiesWindowJustAppeared = true;
 	m_creationWindowJustAppeared = true;
 }
@@ -54,6 +57,11 @@ void GUI::InitGUI(GLFWwindow* window, const char* glslVersion)
 	ImGuiIO& io = ImGui::GetIO(); (void)io;
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // enable keyboard controls
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad; // enable gamepad controls
+
+	// button behavior configuration
+	// faster button repeat when held down
+	io.KeyRepeatDelay = 0.25f; // delay before repeating starts (in seconds)
+	io.KeyRepeatRate = 0.05f; // rate at which the button is repeated (seconds between repeats)
 
 	configureGUIStyle(); // configure the ImGui style (fonts, colors, etc.)
 
@@ -89,7 +97,9 @@ void GUI::initGUILayoutAttributes()
 {
 	// set the private variables for the GUI layout
 	m_informationWindowRelativeWidth = 0.3f;
-	m_informationWindowRelativeHeight = 1.0f;
+	m_informationWindowRelativeHeight = 0.6f;
+	m_debugWindowRelativeWidth = 0.3f;
+	m_debugWindowRelativeHeight = 0.4f;
 	m_propertiesWindowRelativeWidth = 0.2f;
 	m_propertiesWindowRelativeHeight = 0.8f;
 	m_creationWindowRelativeWidth = 0.2f;
@@ -97,6 +107,8 @@ void GUI::initGUILayoutAttributes()
 
 	m_informationWindowXOffset = 0.0f;
 	m_informationWindowYOffset = 0.0f;
+	m_debugWindowXOffset = 0.0f;
+	m_debugWindowYOffset = 1.0f - m_debugWindowRelativeHeight;
 	m_propertiesWindowXOffset = 1.0f - m_propertiesWindowRelativeWidth;
 	m_propertiesWindowYOffset = 0.0f;
 	m_creationWindowXOffset = 1.0f - m_creationWindowRelativeWidth;
@@ -207,12 +219,14 @@ void GUI::configureGUIStyle()
 	colors[ImGuiCol_ModalWindowDimBg] = ImVec4(0.80f, 0.80f, 0.80f, 0.35f);
 }
 
+
 void GUI::beginGUIFrame() const
 {
 	ImGui_ImplOpenGL3_NewFrame();
 	ImGui_ImplGlfw_NewFrame();
 	ImGui::NewFrame();
 }
+
 void GUI::configureGUILayout()
 {
 	ImGuiIO& io = ImGui::GetIO(); // get ImGui IO object for font and style settings
@@ -222,25 +236,35 @@ void GUI::configureGUILayout()
 		io.DisplaySize.x * m_informationWindowXOffset + m_windowPositionPadding.x, // x position
 		io.DisplaySize.y * m_informationWindowYOffset + m_windowPositionPadding.y // y position
 	};
+	// size (width and height) of the Information Window
+	m_informationWindowSize = ImVec2{
+		io.DisplaySize.x * m_informationWindowRelativeWidth - m_windowSizePadding.x, // width
+		io.DisplaySize.y * m_informationWindowRelativeHeight - m_windowSizePadding.y * 0.5f // height
+	};
+	// position of the Debug Window (bottom left corner with padding)
+	m_debugWindowPosition = ImVec2{
+		io.DisplaySize.x * m_debugWindowXOffset + m_windowPositionPadding.x, // x position
+		io.DisplaySize.y * m_debugWindowYOffset + m_windowPositionPadding.y // y position
+	};
+	// size (width and height) of the Debug Window
+	m_debugWindowSize = ImVec2{
+		io.DisplaySize.x * m_debugWindowRelativeWidth - m_windowSizePadding.x, // width
+		io.DisplaySize.y * m_debugWindowRelativeHeight - m_windowSizePadding.y // height
+	};
 	// position of the Properties Window (top right corner with padding)
 	m_propertiesWindowPosition = ImVec2{
 		io.DisplaySize.x * m_propertiesWindowXOffset + m_windowPositionPadding.x, // x position
 		io.DisplaySize.y * m_propertiesWindowYOffset + m_windowPositionPadding.y // y position
 	};
-	// position of the Create Window (bottom right corner with padding)
-	m_creationWindowPosition = ImVec2{
-		io.DisplaySize.x * m_creationWindowXOffset + m_windowPositionPadding.x, // x position
-		io.DisplaySize.y * m_creationWindowYOffset + m_windowPositionPadding.y // y position
-	};
-	// size (width and height) of the Information Window
-	m_informationWindowSize = ImVec2{
-		io.DisplaySize.x * m_informationWindowRelativeWidth - m_windowSizePadding.x, // width
-		io.DisplaySize.y * m_informationWindowRelativeHeight - m_windowSizePadding.y // height
-	};
 	// size (width and height) of the Properties Window
 	m_propertiesWindowSize = ImVec2{
 		io.DisplaySize.x * m_propertiesWindowRelativeWidth - m_windowSizePadding.x, // width
 		io.DisplaySize.y * m_propertiesWindowRelativeHeight - m_windowSizePadding.y * 0.5f // height
+	};
+	// position of the Create Window (bottom right corner with padding)
+	m_creationWindowPosition = ImVec2{
+		io.DisplaySize.x * m_creationWindowXOffset + m_windowPositionPadding.x, // x position
+		io.DisplaySize.y * m_creationWindowYOffset + m_windowPositionPadding.y // y position
 	};
 	// size (width and height) of the Create Window
 	m_creationWindowSize = ImVec2{
@@ -248,15 +272,15 @@ void GUI::configureGUILayout()
 		io.DisplaySize.y * m_creationWindowRelativeHeight - m_windowSizePadding.y // height
 	};
 }
+
 void GUI::drawGUIWindows()
 {
-	// draw the Information Window
 	drawInformationWindow();
-	// draw the Properties Window
+	drawDebugWindow();
 	drawPropertiesWindow();
-	// draw the Create Window
 	drawCreationWindow();
 }
+
 void GUI::handleImGuiInput() const
 {
 	// get the input manager from the Core instance
@@ -269,26 +293,30 @@ void GUI::handleImGuiInput() const
 		inputManager->SetCameraControlEnabled(true);
 }
 
+
 void GUI::drawInformationWindow()
 {
 	// set initial size and position for the Information Window
 	ImGui::SetNextWindowSize(m_informationWindowSize, ImGuiCond_Appearing);
 	ImGui::SetNextWindowPos(m_informationWindowPosition, ImGuiCond_Appearing);
-	// set the Information Window to be collapsed (i.e. minimized)
-	ImGui::SetNextWindowCollapsed(true, ImGuiCond_Appearing);
+	// set the Information Window to be expanded (i.e. not minimized)
+	ImGui::SetNextWindowCollapsed(false, ImGuiCond_Appearing);
 
 	{ // show a window that displays all information about the assets in the scene
-		// begin the Scene Information window
+		// begin the Information window
 		ImGui::PushFont(m_boldFont);
 		ImGui::Begin("OBJECT INFORMATION", nullptr,
 					 ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoFocusOnAppearing);
 		ImGui::PopFont();
 
-		drawCamerasInformation(); // display information about the cameras in the scene
+		drawCamerasInformation();
+		ImGui::Text("\n");
 		ImGui::Separator();
-		drawLightsInformation(); // display information about the lights in the scene
+		drawLightsInformation();
+		ImGui::Text("\n");
 		ImGui::Separator();
-		drawModelsInformation(); // display information about the models in the scene
+		drawModelsInformation();
+		ImGui::Text("\n");
 
 		ImGui::End(); // end the Information window
 
@@ -299,9 +327,164 @@ void GUI::drawInformationWindow()
 		}
 	}
 }
+
+void GUI::drawDebugWindow()
+{
+	// set initial size and position for the Debug Window
+	ImGui::SetNextWindowSize(m_debugWindowSize, ImGuiCond_Appearing);
+	ImGui::SetNextWindowPos(m_debugWindowPosition, ImGuiCond_Appearing);
+	// set the Debug Window to be expanded (i.e. not minimized)
+	ImGui::SetNextWindowCollapsed(false, ImGuiCond_Appearing);
+
+	{ // show a window that contains debug information and controls
+		// begin the Debug window
+		ImGui::PushFont(m_boldFont);
+		ImGui::Begin("DEBUG", nullptr,
+					 ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoFocusOnAppearing);
+		ImGui::PopFont();
+
+		// rendering settings section title
+		ImGui::PushFont(m_boldFont);
+		ImGui::Text("RENDERING INFORMATION");
+		ImGui::PopFont();
+
+		// draw the current rendering mode (event-driven or continuous)
+		bool eventDriven = Core::GetInstance()->GetEventDriven();
+		ImGui::Text("Rendering Mode: %s", eventDriven ? "Event-driven" : "Continuous");
+
+		// rendering settings section title
+		ImGui::PushFont(m_boldFont);
+		ImGui::Text("RENDERING SETTINGS");
+		ImGui::PopFont();
+
+		// draw a checkbox to toggle between event-driven and continuous rendering
+		ImGui::Text("Event-Driven Rendering"); // draw the label before the checkbox
+		ImGui::SameLine(); // keep the checkbox on the same line as the label
+		if (ImGui::Checkbox("##Event-Driven Rendering", &eventDriven)) // '##' to hide the label
+		{ // if the checkbox is clicked, toggle the rendering mode
+			Core::GetInstance()->SetEventDriven(eventDriven);
+		}
+
+		// get the renderer screen debug params from the Core instance
+		auto renderer = Core::GetInstance()->GetRenderer();
+		auto& params = renderer->GetScreenDebugParams();
+		// vector of strings that represent the different debug modes
+		std::vector<std::string> debugModes = { "Normal", "Solid Color", "Grid Overlay", "Inverted Colors" };
+		int debugModeIndex = static_cast<int>(params.debugMode); // current debug mode index
+		bool paramsChanged{ false }; // dirty flag to check if any of the params were changed
+
+		ImGui::Text("Screen Texture Debug Mode");
+		ImGui::SameLine(); // keep the combo box on the same line as the label
+		// make the combo box take the full width of the window
+		ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+		// draw a combo box to select the screen texture debug mode (with the current mode as preview)
+		if (ImGui::BeginCombo("##ScreenTextureDebugMode", debugModes[debugModeIndex].c_str(),
+							  ImGuiComboFlags_HeightSmall))
+		{ // if the combo box is opened
+			for (int n{}; n < debugModes.size(); n++)
+			{ // iterate through all debug modes
+				bool isSelected = (debugModeIndex == n); // check if the current mode is selected
+				if (ImGui::Selectable(debugModes[n].c_str(), isSelected))
+				{ // if a mode is selected, update the current debug mode locally and in the renderer
+					debugModeIndex = n;
+					params.debugMode = debugModeIndex;
+					paramsChanged = true; // mark the params as changed
+				}
+				if (isSelected) // whatever mode is selected, set it as the default focus
+					ImGui::SetItemDefaultFocus();
+			}
+			ImGui::EndCombo(); // end the combo box
+		}
+
+		// depending on the selected debug mode, draw additional controls
+		switch (debugModeIndex)
+		{
+			case 0: // Normal mode
+				break; // no additional controls needed
+			case 1: // Solid Color mode
+			{ // draw a color picker to select the solid color
+				ImGui::Text("\tConfiguration");
+				ImGui::Text("\t\t"); // add some vertical spacing for better visual separation
+				ImGui::SameLine();
+				// disable the alpha channel and the inputs (only show an RGB color picker)
+				if (ImGui::ColorEdit3("Solid Color", (float*)&params.solidColor,
+									  ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoAlpha))
+				{
+					paramsChanged = true; // mark the params as changed
+				}
+			}
+			break;
+			case 2: // Grid Overlay mode
+			{ // draw controls for each parameter
+				ImGui::Text("\tConfiguration");
+				ImGui::Text("\t\t"); // add some vertical spacing for better visual separation
+				ImGui::SameLine();
+				ImGui::SetNextItemWidth(100.0f); // set a fixed width for the input field
+				if (ImGui::InputInt("Grid Line Count", (int*)&params.gridLineCount,
+									1, 10)) // set step values for the input field (normal and fast)
+				{ // if the input field is changed, update the number of grid lines
+					// clamp the value to a reasonable range [2, 1000]
+					if (params.gridLineCount < 2)
+						params.gridLineCount = 2;
+					else if (params.gridLineCount > 1000)
+						params.gridLineCount = 1000;
+
+					// update the number of grid lines in the params
+					params.gridLineCount = params.gridLineCount;
+					paramsChanged = true; // mark the params as changed
+				}
+				ImGui::Text("\t\t"); // add some vertical spacing for better visual separation
+				ImGui::SameLine();
+				ImGui::SetNextItemWidth(100.0f); // set a fixed width for the input field
+				if (ImGui::InputFloat("Grid Line Thickness", &params.gridLineThickness,
+									  0.05f, 0.5f, // set step values for the input field (normal and fast)
+									  "%.2f"))
+				{ // if the input field is changed, update the grid line thickness
+					// clamp the value to a reasonable range [1.0, 10.0]
+					params.gridLineThickness = std::clamp(params.gridLineThickness, 1.0f, 10.0f);
+					paramsChanged = true; // mark the params as changed
+				}
+
+				ImGui::Text("\t\t"); // add some vertical spacing for better visual separation
+				ImGui::SameLine();
+				// for the background color and the line color,
+				// disable the alpha channel and the inputs (only show an RGB color picker)
+				if (ImGui::ColorEdit3("Grid Background Color", (float*)&params.gridBgColor,
+									  ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoAlpha))
+					paramsChanged = true; // mark the params as changed
+				ImGui::Text("\t\t"); // add some vertical spacing for better visual separation
+				ImGui::SameLine();
+				if (ImGui::ColorEdit3("Grid Line Color", (float*)&params.gridLineColor,
+									  ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoAlpha))
+					paramsChanged = true; // mark the params as changed
+			}
+			break;
+			case 3: // Inverted Colors mode
+				break; // no additional controls needed
+			default:
+				std::cerr << "[ERROR::GUI::DrawDebugWindow] Unknown screen texture debug mode: "
+					<< params.debugMode << std::endl;
+				break;
+		}
+
+		if (paramsChanged)
+		{ // if any of the renderer debug params were changed, apply the changes to the renderer
+			renderer->SetScreenDebugParams(params);
+		}
+
+		ImGui::End(); // end the Debug window
+
+		if (m_debugWindowJustAppeared)
+		{ // if the window just appeared (first frame), prevent it from being focused
+			ImGui::SetWindowFocus(nullptr); // set focus to no window
+			m_debugWindowJustAppeared = false; // no longer the first frame
+		}
+	}
+}
+
 void GUI::drawPropertiesWindow()
 {
-	// get the asset manager, the input manager, and the scene manager from the Core instance
+	// get the asset manager from the Core instance
 	auto& assetManager = Core::GetInstance()->GetAssetManager();
 
 	// set initial size and position for the Properties Window
@@ -311,6 +494,7 @@ void GUI::drawPropertiesWindow()
 	ImGui::SetNextWindowCollapsed(false, ImGuiCond_Appearing);
 
 	{ // show a window that allows the user to change the properties of the assets in the scene
+		// begin the Properties window
 		ImGui::PushFont(m_boldFont);
 		ImGui::Begin("PROPERTIES", nullptr,
 					 ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoFocusOnAppearing);
@@ -373,6 +557,7 @@ void GUI::drawPropertiesWindow()
 		}
 	}
 }
+
 void GUI::drawCreationWindow()
 {
 	// set initial size and position for the Create Window
@@ -382,13 +567,14 @@ void GUI::drawCreationWindow()
 	ImGui::SetNextWindowCollapsed(false, ImGuiCond_Appearing);
 
 	{ // show a window that contains buttons to create new objects to the scene
+		// begin the Creation window
 		ImGui::PushFont(m_boldFont);
 		ImGui::Begin("CREATION", nullptr,
 					 ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoFocusOnAppearing);
 		ImGui::PopFont();
 
 		// button to create a new directional light to the scene
-		if (ImGui::Button("Create Directional Light", ImVec2(ITEM_WIDTH, 0.0f)))
+		if (ImGui::Button("Create Directional Light", ImVec2(ImGui::GetContentRegionAvail().x, 0.0f)))
 		{ // if the button is clicked
 			ImGui::OpenPopup("Create Directional Light");
 			// set random initial values
@@ -400,7 +586,7 @@ void GUI::drawCreationWindow()
 		drawCreateDirectionalLightPopup(); // draw the popup to create a new directional light
 
 		// button to create a new point light to the scene
-		if (ImGui::Button("Create Point Light", ImVec2(ITEM_WIDTH, 0.0f)))
+		if (ImGui::Button("Create Point Light", ImVec2(ImGui::GetContentRegionAvail().x, 0.0f)))
 		{ // if the button is clicked
 			ImGui::OpenPopup("Create Point Light");
 			// set random initial values
@@ -411,7 +597,7 @@ void GUI::drawCreationWindow()
 		drawCreatePointLightPopup(); // draw the popup to create a new point light
 
 		// button to create a new spotlight to the scene
-		if (ImGui::Button("Create Spotlight", ImVec2(ITEM_WIDTH, 0.0f)))
+		if (ImGui::Button("Create Spotlight", ImVec2(ImGui::GetContentRegionAvail().x, 0.0f)))
 		{ // if the button is clicked
 			ImGui::OpenPopup("Create Spotlight");
 			// set random initial values
@@ -423,18 +609,21 @@ void GUI::drawCreationWindow()
 		drawCreateSpotlightPopup(); // draw the popup to create a new spotlight
 
 		// buttom to create a new cube shape to the scene
-		if (ImGui::Button("Create Cube Shape", ImVec2(ITEM_WIDTH, 0.0f)))
+		if (ImGui::Button("Create Cube Shape", ImVec2(ImGui::GetContentRegionAvail().x, 0.0f)))
 		{ // if the button is clicked
 			ImGui::OpenPopup("Create Cube Shape");
-			// set random initial values
+			// randomize the albedo and position of the new cube shape
 			m_newAlbedo = m_randomizer->GenerateRandomColor();
 			m_newPosition = m_randomizer->GenerateRandomPosition(
 				glm::vec3(0.0f), MIN_DISTANCE_TO_ORIGIN, MAX_DISTANCE_TO_ORIGIN);
+			// initialize the rotation and scale of the new cube shape with default values
+			m_newRotation = glm::vec3{ 0.0f };
+			m_newScale = glm::vec3{ 1.0f };
 		}
 		drawCreateCubeShapePopup(); // draw the popup to create a new cube shape
 
 		// button to import a new model from a file
-		if (ImGui::Button("Import 3D Model", ImVec2(ITEM_WIDTH, 0.0f)))
+		if (ImGui::Button("Import 3D Model", ImVec2(ImGui::GetContentRegionAvail().x, 0.0f)))
 		{ // if the button is clicked
 			// file dialog configuration
 			IGFD::FileDialogConfig fileDialogConfig;
@@ -453,7 +642,7 @@ void GUI::drawCreationWindow()
 		drawImportModelPopup(); // draw the popup for importing a new model
 
 		// create a dummy button to fill the remaining space in the window and test the layout
-		ImGui::Button(" ", ImVec2(ITEM_WIDTH, 0.0f)); // create a dummy button with no action
+		ImGui::Button(" ", ImVec2(ImGui::GetContentRegionAvail().x, 0.0f)); // create a dummy button with no action
 
 		ImGui::End(); // end the Create Objects window
 
@@ -464,6 +653,7 @@ void GUI::drawCreationWindow()
 		}
 	}
 }
+
 
 void GUI::drawCamerasInformation() const
 {
@@ -506,10 +696,28 @@ void GUI::drawCamerasInformation() const
 					camera->GetFront().x,
 					camera->GetFront().y,
 					camera->GetFront().z);
+		ImGui::Text("\t\tUp: (%.3f, %.3f, %.3f)",
+					camera->GetUp().x,
+					camera->GetUp().y,
+					camera->GetUp().z);
+		ImGui::Text("\t\tRight: (%.3f, %.3f, %.3f)",
+					camera->GetRight().x,
+					camera->GetRight().y,
+					camera->GetRight().z);
+		ImGui::Text("\t\tWorld Up: (%.3f, %.3f, %.3f)",
+					camera->GetWorldUp().x,
+					camera->GetWorldUp().y,
+					camera->GetWorldUp().z);
+		ImGui::Text("\t\tYaw: %.3f", camera->GetYaw());
+		ImGui::Text("\t\tPitch: %.3f", camera->GetPitch());
+		ImGui::Text("\t\tMovement Speed: %.3f", camera->GetMovementSpeed());
+		ImGui::Text("\t\tMouse Sensitivity: %.3f", camera->GetMouseSensitivity());
+		ImGui::Text("\t\tZoom: %.3f", camera->GetZoom());
 
 		ImGui::PopID(); // use PopID to end the unique ID scope
 	});
 }
+
 void GUI::drawLightsInformation() const
 {
 	// get the asset manager from the Core instance
@@ -635,8 +843,8 @@ void GUI::drawLightsInformation() const
 				return;
 		}
 	});
-	ImGui::Text("\n");
 }
+
 void GUI::drawModelsInformation() const
 {
 	// get the asset manager from the Core instance
@@ -699,8 +907,8 @@ void GUI::drawModelsInformation() const
 
 		ImGui::PopID(); // use PopID to end the unique ID scope
 	});
-	ImGui::Text("\n");
 }
+
 
 void GUI::drawLightControls(Light* light)
 {
@@ -740,6 +948,7 @@ void GUI::drawLightControls(Light* light)
 			return;
 	}
 }
+
 void GUI::drawDirectionalLightControls(DirectionalLight* directionalLight)
 {
 	// use PushID to create a unique ID for each directional light 
@@ -763,7 +972,8 @@ void GUI::drawDirectionalLightControls(DirectionalLight* directionalLight)
 	glm::vec3 pos = directionalLight->GetPosition();
 	// create a control for the x, y, and z components of the directional light's position
 	if (drawVec3Control("Position", pos, false, // is not the scale control
-						MIN_POSITION_VALUE, MAX_POSITION_VALUE))
+						MIN_POSITION_VALUE, MAX_POSITION_VALUE,
+						INPUT_FIELD_WIDTH, POSITION_SPEED, POSITION_RESET_VALUE))
 	{ // if the control is used
 		directionalLight->SetPosition(pos); // set the new position of the directional light
 		directionalLight->SyncGizmoPositionFromLight(); // set the new position of the gizmo
@@ -774,7 +984,8 @@ void GUI::drawDirectionalLightControls(DirectionalLight* directionalLight)
 	glm::vec3 rotDegrees = gizmo->GetRotationInEulerAngles();
 	// create a control for the x, y, and z components of the directional light's rotation
 	if (drawVec3Control("Rotation", rotDegrees, false, // is not the scale control
-						MIN_ROTATION_VALUE, MAX_ROTATION_VALUE))
+						MIN_ROTATION_VALUE, MAX_ROTATION_VALUE,
+						INPUT_FIELD_WIDTH, ROTATION_SPEED, ROTATION_RESET_VALUE))
 	{ // if the control is used
 					// set the new rotation of the directional light's gizmo
 		gizmo->SetRotationInEulerAngles(rotDegrees);
@@ -785,6 +996,7 @@ void GUI::drawDirectionalLightControls(DirectionalLight* directionalLight)
 
 	ImGui::PopID(); // use PopID to end the unique ID scope
 }
+
 void GUI::drawPointLightControls(PointLight* pointLight)
 {
 	// use PushID to create a unique ID for each point light 
@@ -808,7 +1020,8 @@ void GUI::drawPointLightControls(PointLight* pointLight)
 	glm::vec3 pos = pointLight->GetPosition();
 	// create a control for the x, y, and z components of the point light's position
 	if (drawVec3Control("Position", pos, false, // is not the scale control
-						MIN_POSITION_VALUE, MAX_POSITION_VALUE))
+						MIN_POSITION_VALUE, MAX_POSITION_VALUE,
+						INPUT_FIELD_WIDTH, POSITION_SPEED, POSITION_RESET_VALUE))
 	{ // if the control is used
 		pointLight->SetPosition(pos); // set the new position of the point light
 		pointLight->SyncGizmoPositionFromLight(); // set the new position of the gizmo
@@ -816,6 +1029,7 @@ void GUI::drawPointLightControls(PointLight* pointLight)
 
 	ImGui::PopID(); // use PopID to end the unique ID scope
 }
+
 void GUI::drawSpotlightControls(Spotlight* spotlight)
 {
 	// use PushID to create a unique ID for each spotlight
@@ -839,7 +1053,8 @@ void GUI::drawSpotlightControls(Spotlight* spotlight)
 	glm::vec3 pos = spotlight->GetPosition();
 	// create a control for the x, y, and z components of the spotlight's position
 	if (drawVec3Control("Position", pos, false, // is not the scale control
-						MIN_POSITION_VALUE, MAX_POSITION_VALUE))
+						MIN_POSITION_VALUE, MAX_POSITION_VALUE,
+						INPUT_FIELD_WIDTH, POSITION_SPEED, POSITION_RESET_VALUE))
 	{ // if the control is used
 		spotlight->SetPosition(pos); // set the new position of the spotlight
 		spotlight->SyncGizmoPositionFromLight(); // set the new position of the gizmo
@@ -851,7 +1066,7 @@ void GUI::drawSpotlightControls(Spotlight* spotlight)
 	// create a control for the x, y, and z components of the spotlight's rotation
 	if (drawVec3Control("Rotation", rotDegrees, false, // is not the scale control
 						MIN_ROTATION_VALUE, MAX_ROTATION_VALUE,
-						INPUT_FIELD_WIDTH, 0.75f))
+						INPUT_FIELD_WIDTH, ROTATION_SPEED, ROTATION_RESET_VALUE))
 	{ // if the control are used
 					// set the new rotation of the spotlight's gizmo
 		gizmo->SetRotationInEulerAngles(rotDegrees);
@@ -868,7 +1083,7 @@ void GUI::drawSpotlightControls(Spotlight* spotlight)
 	ImGui::Text("Cut-off Angles (in degrees):");
 	if (drawFloatControl("Inner", innerCutOff,
 						 MIN_CUTOFF_VALUE, outerCutOff, // innerCutOff <= outerCutOff
-						 INPUT_FIELD_WIDTH, 0.1f, INNER_CUTOFF_VALUE))
+						 INPUT_FIELD_WIDTH, CUTOFF_ANGLES_SPEED, INNER_CUTOFF_RESET_VALUE))
 	{ // if the control is used
 					// convert back to radians and cosine and
 					// set the new inner cut-off angle for the spotlight
@@ -876,7 +1091,7 @@ void GUI::drawSpotlightControls(Spotlight* spotlight)
 	}
 	if (drawFloatControl("Outer", outerCutOff,
 						 innerCutOff, MAX_CUTOFF_VALUE, // outerCutOff >= innerCutOff
-						 INPUT_FIELD_WIDTH, 0.1f, OUTER_CUTOFF_VALUE))
+						 INPUT_FIELD_WIDTH, CUTOFF_ANGLES_SPEED, OUTER_CUTOFF_RESET_VALUE))
 	{ // if the control is used
 					// convert back to radians and cosine and
 					// set the new outer cut-off angle for the spotlight
@@ -885,6 +1100,7 @@ void GUI::drawSpotlightControls(Spotlight* spotlight)
 
 	ImGui::PopID(); // use PopID to end the unique ID scope
 }
+
 void GUI::drawModelControls(Model* model)
 {
 	// use PushID to create a unique ID for each model
@@ -911,7 +1127,8 @@ void GUI::drawModelControls(Model* model)
 	glm::vec3 pos = model->GetPosition();
 	// create a control for the x, y, and z components of the model's position
 	if (drawVec3Control("Position", pos, false, // is not the scale control
-						MIN_POSITION_VALUE, MAX_POSITION_VALUE))
+						MIN_POSITION_VALUE, MAX_POSITION_VALUE,
+						INPUT_FIELD_WIDTH, POSITION_SPEED, POSITION_RESET_VALUE))
 	{ // if the control is used
 		model->SetPosition(pos); // set the new position of the model
 	}
@@ -921,23 +1138,26 @@ void GUI::drawModelControls(Model* model)
 	// create a control for the x, y, and z components of the model's rotation
 	if (drawVec3Control("Rotation", rotDegrees, false, // is not the scale control
 						MIN_ROTATION_VALUE, MAX_ROTATION_VALUE,
-						INPUT_FIELD_WIDTH, 0.5f))
+						INPUT_FIELD_WIDTH, ROTATION_SPEED, ROTATION_RESET_VALUE))
 	{ // if the control is used
 		model->SetRotationInEulerAngles(rotDegrees); // set the new rotation of the model
 	}
 
 	// get the scale of the model
 	glm::vec3 scale = model->GetScale();
+	// if the model is a shape, use a faster speed for scaling, otherwise use the default speed
+	float speed = model->GetModelType() == ModelType::SHAPE ? SCALE_SPEED * 5.0f : SCALE_SPEED;
 	// create a control for the x, y, and z components of the model's scale
 	if (drawVec3Control("Scale", scale, true, // is the scale control
 						MIN_SCALE_VALUE, MAX_SCALE_VALUE,
-						INPUT_FIELD_WIDTH, 0.0005f, 1.0f))
+						INPUT_FIELD_WIDTH, speed, SCALE_RESET_VALUE))
 	{ // if the control is used
 		model->SetScale(scale); // set the new scale of the model
 	}
 
 	ImGui::PopID(); // use PopID to end the unique ID scope
 }
+
 
 void GUI::drawCreateDirectionalLightPopup()
 {
@@ -956,8 +1176,11 @@ void GUI::drawCreateDirectionalLightPopup()
 		// display controls to set the color, position, and direction of the new directional light
 		drawColorControl("Color", m_newAlbedo);
 		drawVec3Control("Position", m_newPosition, false,
-						MIN_POSITION_VALUE, MAX_POSITION_VALUE);
-		drawVec3Control("Direction", m_newDirection, false, -1.0f, 1.0f);
+						MIN_POSITION_VALUE, MAX_POSITION_VALUE,
+						INPUT_FIELD_WIDTH, POSITION_SPEED, POSITION_RESET_VALUE);
+		drawVec3Control("Direction", m_newDirection, false,
+						MIN_DIRECTION_VALUE, MAX_DIRECTION_VALUE,
+						INPUT_FIELD_WIDTH, DIRECTION_SPEED, DIRECTION_RESET_VALUE);
 
 		ImGui::Separator();
 
@@ -966,9 +1189,8 @@ void GUI::drawCreateDirectionalLightPopup()
 		{ // if the Randomize button is clicked
 			// generate random values for the new directional light's properties
 			m_newAlbedo = m_randomizer->GenerateRandomColor();
-			m_newPosition = m_randomizer->GenerateRandomPosition(glm::vec3(0.0f), // origin
-																 MIN_DISTANCE_TO_ORIGIN,
-																 MAX_DISTANCE_TO_ORIGIN);
+			m_newPosition = m_randomizer->GenerateRandomPosition(
+				glm::vec3(0.0f), MIN_DISTANCE_TO_ORIGIN, MAX_DISTANCE_TO_ORIGIN);
 			m_newDirection = m_randomizer->GenerateRandomDirection();
 		}
 
@@ -984,8 +1206,7 @@ void GUI::drawCreateDirectionalLightPopup()
 			// create a new directional light with the specified properties
 			auto newDirectionalLight = std::make_shared<DirectionalLight>(
 				"Directional Light " + nDirectionalLights,
-				glm::vec3{ 0.1f }, m_newAlbedo, glm::vec3{ 1.0f },
-				m_newPosition, m_newDirection
+				glm::vec3{ 0.1f }, m_newAlbedo, glm::vec3{ 1.0f }, m_newPosition, m_newDirection
 			);
 
 			// get the gizmo of the new directional light before creating the light to the engine
@@ -1010,6 +1231,7 @@ void GUI::drawCreateDirectionalLightPopup()
 		ImGui::EndPopup();
 	}
 }
+
 void GUI::drawCreatePointLightPopup()
 {
 	// get the asset manager from the Core instance
@@ -1027,7 +1249,8 @@ void GUI::drawCreatePointLightPopup()
 		// display controls to set the color and position of the new point light
 		drawColorControl("Color", m_newAlbedo);
 		drawVec3Control("Position", m_newPosition, false,
-						MIN_POSITION_VALUE, MAX_POSITION_VALUE);
+						MIN_POSITION_VALUE, MAX_POSITION_VALUE,
+						INPUT_FIELD_WIDTH, POSITION_SPEED, POSITION_RESET_VALUE);
 
 		ImGui::Separator();
 
@@ -1036,9 +1259,8 @@ void GUI::drawCreatePointLightPopup()
 		{ // if the Randomize button is clicked
 			// generate random values for the new point light's properties
 			m_newAlbedo = m_randomizer->GenerateRandomColor();
-			m_newPosition = m_randomizer->GenerateRandomPosition(glm::vec3(0.0f), // origin
-																 MIN_DISTANCE_TO_ORIGIN,
-																 MAX_DISTANCE_TO_ORIGIN);
+			m_newPosition = m_randomizer->GenerateRandomPosition(
+				glm::vec3(0.0f), MIN_DISTANCE_TO_ORIGIN, MAX_DISTANCE_TO_ORIGIN);
 		}
 
 		ImGui::SameLine();
@@ -1052,8 +1274,7 @@ void GUI::drawCreatePointLightPopup()
 			// create a new point light with the specified properties
 			auto newPointLight = std::make_shared<PointLight>(
 				"Point Light " + nPointLights,
-				glm::vec3{ 0.1f }, m_newAlbedo, glm::vec3{ 1.0f },
-				m_newPosition
+				glm::vec3{ 0.1f }, m_newAlbedo, glm::vec3{ 1.0f }, m_newPosition
 			);
 
 			// get the gizmo of the new point light before creating the light to the engine
@@ -1077,6 +1298,7 @@ void GUI::drawCreatePointLightPopup()
 		ImGui::EndPopup();
 	}
 }
+
 void GUI::drawCreateSpotlightPopup()
 {
 	// get the asset manager from the Core instance
@@ -1094,16 +1316,19 @@ void GUI::drawCreateSpotlightPopup()
 		// display controls to set the color, position, direction, and cut-off angles of the new spotlight
 		drawColorControl("Color", m_newAlbedo);
 		drawVec3Control("Position", m_newPosition, false,
-						MIN_POSITION_VALUE, MAX_POSITION_VALUE);
-		drawVec3Control("Direction", m_newDirection, false, -1.0f, 1.0f);
+						MIN_POSITION_VALUE, MAX_POSITION_VALUE,
+						INPUT_FIELD_WIDTH, POSITION_SPEED, POSITION_RESET_VALUE);
+		drawVec3Control("Direction", m_newDirection, false,
+						DIRECTION_RESET_VALUE, DIRECTION_RESET_VALUE,
+						INPUT_FIELD_WIDTH, DIRECTION_SPEED, DIRECTION_RESET_VALUE);
 		ImGui::Text("Cut-Off Angles (in degrees):");
 		// initialize the inner and outer cut-off angles with default values before drawing the controls
 		drawFloatControl("Inner", m_newInnerCutOff,
 						 MIN_CUTOFF_VALUE, MAX_CUTOFF_VALUE, // innerCutOff <= outerCutOff
-						 INPUT_FIELD_WIDTH, 0.1f, INNER_CUTOFF_VALUE);
+						 INPUT_FIELD_WIDTH, CUTOFF_ANGLES_SPEED, INNER_CUTOFF_RESET_VALUE);
 		drawFloatControl("Outer", m_newOuterCutOff,
 						 m_newInnerCutOff, MAX_CUTOFF_VALUE, // outerCutOff >= innerCutOff
-						 INPUT_FIELD_WIDTH, 0.1f, OUTER_CUTOFF_VALUE);
+						 INPUT_FIELD_WIDTH, CUTOFF_ANGLES_SPEED, OUTER_CUTOFF_RESET_VALUE);
 
 		ImGui::Separator();
 
@@ -1112,9 +1337,8 @@ void GUI::drawCreateSpotlightPopup()
 		{ // if the Randomize button is clicked
 			// generate random values for the new spotlight's properties
 			m_newAlbedo = m_randomizer->GenerateRandomColor();
-			m_newPosition = m_randomizer->GenerateRandomPosition(glm::vec3(0.0f), // origin
-																 MIN_DISTANCE_TO_ORIGIN,
-																 MAX_DISTANCE_TO_ORIGIN);
+			m_newPosition = m_randomizer->GenerateRandomPosition(
+				glm::vec3(0.0f), MIN_DISTANCE_TO_ORIGIN, MAX_DISTANCE_TO_ORIGIN);
 			m_newDirection = m_randomizer->GenerateRandomDirection();
 			m_newInnerCutOff = m_randomizer->GenerateRandomFloat(
 				MIN_CUTOFF_VALUE,
@@ -1135,8 +1359,7 @@ void GUI::drawCreateSpotlightPopup()
 			// create a new spotlight with the specified properties
 			auto newSpotlight = std::make_shared<Spotlight>(
 				"Spotlight " + nSpotlights,
-				glm::vec3{ 0.1f }, m_newAlbedo, glm::vec3{ 1.0f },
-				m_newPosition, m_newDirection
+				glm::vec3{ 0.1f }, m_newAlbedo, glm::vec3{ 1.0f }, m_newPosition, m_newDirection
 			);
 
 			// get the gizmo of the new spotlight before creating the light to the engine
@@ -1161,6 +1384,7 @@ void GUI::drawCreateSpotlightPopup()
 		ImGui::EndPopup();
 	}
 }
+
 void GUI::drawCreateCubeShapePopup()
 {
 	// get the asset manager from the Core instance
@@ -1175,10 +1399,17 @@ void GUI::drawCreateCubeShapePopup()
 
 		ImGui::Separator();
 
-		// display controls to set the color and position of the new cube shape
+		// display controls to set the color, position, and size of the new cube shape
 		drawColorControl("Color", m_newAlbedo);
 		drawVec3Control("Position", m_newPosition, false,
-						MIN_POSITION_VALUE, MAX_POSITION_VALUE);
+						MIN_POSITION_VALUE, MAX_POSITION_VALUE,
+						INPUT_FIELD_WIDTH, POSITION_SPEED, POSITION_RESET_VALUE);
+		drawVec3Control("Rotation", m_newRotation, false, // is not the scale control
+						MIN_ROTATION_VALUE, MAX_ROTATION_VALUE,
+						INPUT_FIELD_WIDTH, ROTATION_SPEED, ROTATION_RESET_VALUE);
+		drawVec3Control("Scale", m_newScale, true,
+						MIN_SCALE_VALUE, MAX_SCALE_VALUE,
+						INPUT_FIELD_WIDTH, SCALE_SPEED * 5.0f, SCALE_RESET_VALUE);
 
 		ImGui::Separator();
 
@@ -1187,9 +1418,8 @@ void GUI::drawCreateCubeShapePopup()
 		{ // if the Randomize button is clicked
 			// generate random values for the new cube shape's properties
 			m_newAlbedo = m_randomizer->GenerateRandomColor();
-			m_newPosition = m_randomizer->GenerateRandomPosition(glm::vec3(0.0f), // origin
-																 MIN_DISTANCE_TO_ORIGIN,
-																 MAX_DISTANCE_TO_ORIGIN);
+			m_newPosition = m_randomizer->GenerateRandomPosition(
+				glm::vec3(0.0f), MIN_DISTANCE_TO_ORIGIN, MAX_DISTANCE_TO_ORIGIN);
 		}
 
 		// display a button to add the new cube shape
@@ -1203,9 +1433,10 @@ void GUI::drawCreateCubeShapePopup()
 			auto newCubeShape = std::make_shared<Shape>(
 				"Cube (Model " + nModels + ")",
 				cubeVerticesVec, cubeIndicesVec,
-				m_newAlbedo,
-				m_newPosition
+				m_newAlbedo, m_newPosition, glm::quat{ 1.0f, 0.0f, 0.0f, 0.0f }, m_newScale
 			);
+			// set the rotation of the new cube shape
+			newCubeShape->SetRotationInEulerAngles(m_newRotation);
 
 			// add the new cube shape to the engine
 			assetManager->AddAsset(std::move(newCubeShape));
@@ -1223,6 +1454,7 @@ void GUI::drawCreateCubeShapePopup()
 		ImGui::EndPopup();
 	}
 }
+
 void GUI::drawImportModelPopup()
 {
 	// get the asset manager from the Core instance
@@ -1267,6 +1499,7 @@ void GUI::drawImportModelPopup()
 	}
 }
 
+
 bool GUI::drawColorControl(const std::string& label, glm::vec3& color,
 						   float colorControlWidth)
 {
@@ -1279,7 +1512,7 @@ bool GUI::drawColorControl(const std::string& label, glm::vec3& color,
 
 	ImGui::Text("%s", label.c_str()); // display the label for the control
 
-	ImGui::SetNextItemWidth(colorControlWidth); // set the width of the color picker
+	ImGui::SetNextItemWidth(colorControlWidth); // set the width of the color picker's input fields
 	if (ImGui::ColorEdit3("##color", (float*)&color))
 	{ // if the color picker is used
 		value_changed = true; // set the value_changed flag to true
@@ -1289,6 +1522,7 @@ bool GUI::drawColorControl(const std::string& label, glm::vec3& color,
 
 	return value_changed; // return whether the color has changed
 }
+
 bool GUI::drawVec3Control(const std::string& label, glm::vec3& values, bool scaleControls,
 						  float minInputFieldValue, float maxInputFieldValue, float inputFieldWidth,
 						  float speed, float resetValue, float resetButtonWidth, float resetButtonHeight)
@@ -1311,18 +1545,17 @@ bool GUI::drawVec3Control(const std::string& label, glm::vec3& values, bool scal
 	ImGui::Text("  X  "); // display the label for the x component
 	ImGui::SameLine();
 	ImGui::SetNextItemWidth(inputFieldWidth); // set the width of the input field for the x component
-	if (ImGui::InputFloat("##x", &values.x, 0.0f, 0.0f, "%.3f"))
+	if (ImGui::InputFloat("##x", &values.x,
+						  0.0f, 0.0f, // no step buttons
+						  "%.3f"))
 	{ // if the input field is used
 		value_changed = true; // set the value_changed flag to true
 	}
 	ImGui::SameLine();
+	// enable repeat mode for the arrow buttons (allows holding down the button to change value continuously)
+	ImGui::PushButtonRepeat(true);
 	if (ImGui::ArrowButton("##upX", ImGuiDir_Up))
 	{ // if the up arrow button is pressed
-		values.x += speed; // increase the x component by speed
-		value_changed = true; // set the value_changed flag to true
-	}
-	if (ImGui::IsItemActive())
-	{ // if the up arrow button is active (held down)
 		values.x += speed; // increase the x component by speed
 		value_changed = true; // set the value_changed flag to true
 	}
@@ -1332,11 +1565,7 @@ bool GUI::drawVec3Control(const std::string& label, glm::vec3& values, bool scal
 		values.x -= speed; // decrease the x component by speed
 		value_changed = true; // set the value_changed flag to true
 	}
-	if (ImGui::IsItemActive()) // if the down arrow button is active (held down)
-	{
-		values.x -= speed; // decrease the x component by speed
-		value_changed = true; // set the value_changed flag to true
-	}
+	ImGui::PopButtonRepeat(); // end the repeat mode for the arrow buttons
 	ImGui::SameLine();
 	if (ImGui::Button("Reset", ImVec2(resetButtonWidth, resetButtonHeight)))
 	{ // if the Reset button is pressed
@@ -1350,18 +1579,17 @@ bool GUI::drawVec3Control(const std::string& label, glm::vec3& values, bool scal
 	ImGui::Text("  Y  "); // display the label for the y component
 	ImGui::SameLine();
 	ImGui::SetNextItemWidth(inputFieldWidth); // set the width of the input field for the y component
-	if (ImGui::InputFloat("##y", &values.y, 0.0f, 0.0f, "%.3f"))
+	if (ImGui::InputFloat("##y", &values.y,
+						  0.0f, 0.0f, // no step buttons
+						  "%.3f"))
 	{ // if the input field is used
 		value_changed = true; // set the value_changed flag to true
 	}
 	ImGui::SameLine();
+	// enable repeat mode for the arrow buttons (allows holding down the button to change value continuously)
+	ImGui::PushButtonRepeat(true);
 	if (ImGui::ArrowButton("##upY", ImGuiDir_Up))
 	{ // if the up arrow button is pressed
-		values.y += speed; // increase the y component by speed
-		value_changed = true; // set the value_changed flag to true
-	}
-	if (ImGui::IsItemActive())
-	{ // if the up arrow button is active (held down)
 		values.y += speed; // increase the y component by speed
 		value_changed = true; // set the value_changed flag to true
 	}
@@ -1371,11 +1599,7 @@ bool GUI::drawVec3Control(const std::string& label, glm::vec3& values, bool scal
 		values.y -= speed; // decrease the y component by speed
 		value_changed = true; // set the value_changed flag to true
 	}
-	if (ImGui::IsItemActive())
-	{ // if the down arrow button is active (held down)
-		values.y -= speed; // decrease the y component by speed
-		value_changed = true; // set the value_changed flag to true
-	}
+	ImGui::PopButtonRepeat(); // end the repeat mode for the arrow buttons
 	ImGui::SameLine();
 	if (ImGui::Button("Reset", ImVec2(resetButtonWidth, resetButtonHeight)))
 	{ // if the Reset button is pressed
@@ -1389,32 +1613,28 @@ bool GUI::drawVec3Control(const std::string& label, glm::vec3& values, bool scal
 	ImGui::Text("  Z  "); // display the label for the z component
 	ImGui::SameLine();
 	ImGui::SetNextItemWidth(inputFieldWidth); // set the width of the input field for the z component
-	if (ImGui::InputFloat("##z", &values.z, 0.0f, 0.0f, "%.3f"))
+	if (ImGui::InputFloat("##z", &values.z,
+						  0.0f, 0.0f, // no step buttons
+						  "%.3f"))
 	{ // if the input field is used
 		value_changed = true; // set the value_changed flag to true
 	}
 	ImGui::SameLine();
+	// enable repeat mode for the arrow buttons (allows holding down the button to change value continuously)
+	ImGui::PushButtonRepeat(true);
 	if (ImGui::ArrowButton("##upZ", ImGuiDir_Up))
 	{ // if the up arrow button is pressed
 		values.z += speed; // increase the z component by speed
 		value_changed = true; // set the value_changed flag to true
 	}
-	if (ImGui::IsItemActive()) // if the up arrow button is active (held down)
-	{
-		values.z += speed; // increase the z component by speed
-		value_changed = true; // set the value_changed flag to true
-	}
 	ImGui::SameLine();
+	// enable repeat mode for the arrow buttons (allows holding down the button to change value continuously)
 	if (ImGui::ArrowButton("##downZ", ImGuiDir_Down))
 	{ // if the down arrow button is pressed
 		values.z -= speed; // decrease the z component by speed
 		value_changed = true; // set the value_changed flag to true
 	}
-	if (ImGui::IsItemActive()) // if the down arrow button is active (held down)
-	{
-		values.z -= speed; // decrease the z component by speed
-		value_changed = true; // set the value_changed flag to true
-	}
+	ImGui::PopButtonRepeat(); // end the repeat mode for the arrow buttons
 	ImGui::SameLine();
 	if (ImGui::Button("Reset", ImVec2(resetButtonWidth, resetButtonHeight)))
 	{ // if the Reset button is pressed
@@ -1456,6 +1676,7 @@ bool GUI::drawVec3Control(const std::string& label, glm::vec3& values, bool scal
 
 	return value_changed;
 }
+
 bool GUI::drawFloatControl(const std::string& label, float& value,
 						   float minInputFieldValue, float maxInputFieldValue, float inputFieldWidth,
 						   float speed, float resetValue, float resetButtonWidth, float resetButtonHeight)
@@ -1468,35 +1689,28 @@ bool GUI::drawFloatControl(const std::string& label, float& value,
 
 	ImGui::SameLine();
 	ImGui::SetNextItemWidth(inputFieldWidth); // set the width of the input field
-	if (ImGui::InputFloat("##val", &value, 0.0f, 0.0f, "%.2f"))
+	if (ImGui::InputFloat("##val", &value,
+						  0.0f, 0.0f, // no step buttons
+						  "%.2f"))
 	{ // if the input field is used
 		value_changed = true;
 	} // set the value_changed flag to true
 
+	// enable repeat mode for the arrow buttons (allows holding down the button to change value continuously)
+	ImGui::PushButtonRepeat(true);
 	ImGui::SameLine();
 	if (ImGui::ArrowButton("##up", ImGuiDir_Up))
 	{ // if the up arrow button is pressed
 		value += speed; // increase the value by speed
 		value_changed = true; // set the value_changed flag to true
 	}
-	if (ImGui::IsItemActive())
-	{ // if the up arrow button is active (held down)
-		value += speed; // increase the value by speed
-		value_changed = true; // set the value_changed flag to true
-	}
-
 	ImGui::SameLine();
 	if (ImGui::ArrowButton("##down", ImGuiDir_Down))
 	{ // if the down arrow button is pressed
 		value -= speed; // decrease the value by speed
 		value_changed = true; // set the value_changed flag to true
 	}
-	if (ImGui::IsItemActive())
-	{ // if the down arrow button is active (held down)
-		value -= speed; // decrease the value by speed
-		value_changed = true; // set the value_changed flag to true
-	}
-
+	ImGui::PopButtonRepeat(); // end the repeat mode for the arrow buttons
 	ImGui::SameLine();
 	if (ImGui::Button("Reset", ImVec2(resetButtonWidth, resetButtonHeight)))
 	{ // if the Reset button is pressed
@@ -1511,6 +1725,7 @@ bool GUI::drawFloatControl(const std::string& label, float& value,
 
 	return value_changed;
 }
+
 void GUI::drawRemoveAssetButton(Asset* asset, std::vector<uint32_t>& assetsToRemoveIds,
 								const std::string& label, float buttonWidth, float buttonHeight)
 {

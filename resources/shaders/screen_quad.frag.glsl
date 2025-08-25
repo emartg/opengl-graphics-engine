@@ -1,70 +1,79 @@
 #version 420 core
 out vec4 FragColor;
 
-struct DebugModeParams
+struct ScreenDebugParams
 {
-	int debugMode;		// debug mode (0: normal, 1: solid color, 2: inverted color, 3: grid overlay)
-	vec3 solidColor;	// color to use when the debug mode is 1
-	int nLines;			// number of lines in the grid overlay when the debug mode is 3
-	float lineWidth;	// width of the lines in the grid overlay when the debug mode is 3
-	float bgColor;		// background color for the grid overlay when the debug mode is 3
-	float fgColor;		// foreground color for the grid overlay when the debug mode is 3 (line color)
+	int debugMode;				// debug mode (0: normal, 1: solid color, 2: grid overlay, 3: inverted colors)
+	vec3 solidColor;			// color to use when the debug mode is 1
+	int gridLineCount;			// number of lines in the grid overlay when the debug mode is 2
+	float gridLineThickness;	// thickness of the lines in the grid overlay when the debug mode is 2
+	vec3 gridBgColor;			// background color for the grid overlay when the debug mode is 2
+	vec3 gridLineColor;			// line color for the grid overlay when the debug mode is 2
 };
 
 in vec2 TexCoords;
 
 uniform sampler2D screenTexture;
-uniform DebugModeParams debugModeParams;
+uniform ScreenDebugParams screenDebugParams;
+uniform vec2 screenSize; // size of the screen in pixels
 
-// Function to create a grid overlay on the UV coordinates
-// Parameters:
-// - uv: the UV coordinates of the fragment
-// - lines: number of lines in the grid
-// - lineWidth: width of the lines in the grid
-// - bgColor: color for the background of the grid
-// - fgColor: color for the grid lines
-vec3 grid(vec2 uv, int nLines, float lineWidth, float bgColor, float fgColor);
+// Function to create a grid overlay on the UV coordinates with the screen size and specified parameters
+vec3 grid(vec2 uv, int gridLineCount, float gridLineThickness, vec3 gridBgColor, vec3 gridLineColor);
 
 void main()
 {
-	if (debugModeParams.debugMode == 0)
+	if (screenDebugParams.debugMode == 0)
 	{ // normal rendering: sample the screen texture
 		FragColor = texture(screenTexture, TexCoords);
 	}
-	else if (debugModeParams.debugMode == 1)
+	else if (screenDebugParams.debugMode == 1)
 	{ // solid color rendering: use the solid color specified in the debug mode parameters
-		FragColor = vec4(debugModeParams.solidColor, 1.0);
+		FragColor = vec4(screenDebugParams.solidColor, 1.0);
 	}
-	else if (debugModeParams.debugMode == 2)
+	else if (screenDebugParams.debugMode == 2)
+	{ // grid overlay rendering: create a grid overlay on the UV coordinates with the specified parameters
+		int count = max(screenDebugParams.gridLineCount, 1); // ensure at least 1 line
+		float thickness = max(screenDebugParams.gridLineThickness, 1.0f); // ensure at least 1 pixel thickness
+		// compute the grid color based on the UV coordinates and the screen size
+		vec3 color = grid(TexCoords, count, thickness, 
+						  screenDebugParams.gridBgColor, screenDebugParams.gridLineColor);
+		FragColor = vec4(color, 1.0);
+	}
+	else if (screenDebugParams.debugMode == 3)
 	{ // inverted color rendering: sample the screen texture and invert the color
 		vec4 color = texture(screenTexture, TexCoords);
 		FragColor = vec4(1.0 - color.rgb, 1.0);
 	}
-	else if (debugModeParams.debugMode == 3)
-	{ // grid overlay rendering: create a grid overlay on the UV coordinates with the specified parameters
-		vec2 uv = TexCoords; // use the texture coordinates as UV coordinates
-		// create the grid color based on the UV coordinates and the grid parameters
-		vec3 gridColor = grid(uv, debugModeParams.nLines, debugModeParams.lineWidth, 
-								  debugModeParams.bgColor, debugModeParams.fgColor);
-		FragColor = vec4(gridColor, 1.0); // set the fragment color to the grid color with full opacity
-	}
 	else
-	{ // unrecognized debugMode: default to black
+	{ // unrecognized debugMode: default to black solid color
 		FragColor = vec4(0.0, 0.0, 0.0, 1.0);
 	}
 }
 
-vec3 grid(vec2 uv, int nLines, float lineWidth, float bgColor, float fgColor)
+vec3 grid(vec2 uv, int gridLineCount, float gridLineThickness, vec3 gridBgColor, vec3 gridLineColor)
 {
-	vec2 g = fract(uv * nLines); // get the fractional part of the UV coords scaled by the number of lines
+	// convert UV coordinates to pixels using the screen size
+	vec2 pixelCoords = uv * screenSize;
 
-	// use step to create a grid pattern by checking if the fractional part is less than the line width,
-	// so that 'line' is 1.0 if we are within the line width and 0.0 otherwise
-	float line = step(g.x, lineWidth) + step(g.y, lineWidth);
-	// use clamp to ensure the line value is between 0.0 and 1.0,
-	// so that 'mask' is 1.0 if we are within the line width and 0.0 otherwise
-	float mask = clamp(line, 0.0, 1.0); // clamp the line value to be between 0 and 1
+	// calculate the cell size in pixels (non-integer values are allowed)
+	float cellWidth = screenSize.x / float(gridLineCount);
+	float cellHeight = screenSize.y / float(gridLineCount);
+	// calculate the position within the cell in pixels
+	float cellPosX = mod(pixelCoords.x, cellWidth);
+	float cellPosY = mod(pixelCoords.y, cellHeight);
 
-	// mix the background and foreground colors based on the mask and return the resulting color
-	return mix(vec3(bgColor), vec3(fgColor), mask);
+	// compute the distance to the nearest vertical/horizontal grid line
+	float distToVerticalLine = min(cellPosX, cellWidth - cellPosX);
+	float distToHorizontalLine = min(cellPosY, cellHeight - cellPosY);
+	float distToLine = min(distToVerticalLine, distToHorizontalLine);
+
+	// ensure at least 0.5 pixel half-thickness (i.e. 1 pixel full thickness)
+	float halfThickness = max(gridLineThickness * 0.5, 0.5);
+
+	// anti-alias the grid lines based on the derivative of the pixel coordinates
+	float aaSmoothness = 1.0;
+	float mask = 1.0 - smoothstep(halfThickness - aaSmoothness, halfThickness + aaSmoothness, distToLine);
+
+	// mix the background color and the line color based on the mask (ensure the mask is between 0 and 1)
+	return mix(gridBgColor, gridLineColor, clamp(mask, 0.0, 1.0));
 }

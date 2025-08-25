@@ -52,25 +52,30 @@ private:
 	std::unique_ptr<Random> m_randomizer; // random generator to get random colors, positions, etc.
 
 	// attributes for the new objects to be created
-	glm::vec3 m_newAlbedo, m_newPosition, m_newDirection;
+	glm::vec3 m_newAlbedo, m_newPosition, m_newRotation, m_newDirection, m_newScale;
 	float m_newInnerCutOff, m_newOuterCutOff;
 
 	// parameters for the windows (left and right)
 	// relative widths and heights of the windows relative to the display size
 	float m_informationWindowRelativeWidth, m_informationWindowRelativeHeight;
+	float m_debugWindowRelativeWidth, m_debugWindowRelativeHeight;
 	float m_creationWindowRelativeWidth, m_creationWindowRelativeHeight;
 	float m_propertiesWindowRelativeWidth, m_propertiesWindowRelativeHeight;
 	// offsets the windows from the edges of the display
 	float m_informationWindowXOffset, m_informationWindowYOffset;
+	float m_debugWindowXOffset, m_debugWindowYOffset;
 	float m_propertiesWindowXOffset, m_propertiesWindowYOffset;
 	float m_creationWindowXOffset, m_creationWindowYOffset;
 	// padding of the windows from the edges of the display
 	ImVec2 m_windowPositionPadding, m_windowSizePadding;
 	// positions and sizes of the windows in the display
-	ImVec2 m_propertiesWindowPosition, m_informationWindowPosition, m_creationWindowPosition;
-	ImVec2 m_propertiesWindowSize, m_informationWindowSize, m_creationWindowSize;
+	ImVec2 m_informationWindowPosition, m_debugWindowPosition,
+		m_creationWindowPosition, m_propertiesWindowPosition;
+	ImVec2 m_informationWindowSize, m_debugWindowSize,
+		m_creationWindowSize, m_propertiesWindowSize;
 	// flags for the windows to prevent focus on the first frame (indicating that the window just appeared)
-	bool m_informationWindowJustAppeared, m_propertiesWindowJustAppeared, m_creationWindowJustAppeared;
+	bool m_informationWindowJustAppeared, m_debugWindowJustAppeared,
+		m_creationWindowJustAppeared, m_propertiesWindowJustAppeared;
 
 	// style attributes for the GUI
 	ImFont* m_mediumFont; // medium font for the GUI (default font)
@@ -82,20 +87,24 @@ private:
 
 	// default values for ImGui widgets
 	static constexpr float ITEM_WIDTH{ 225.0f }, ITEM_HEIGHT{ 20.0f };
-	static constexpr float INPUT_FIELD_WIDTH{ 60.0f }, INPUT_FIELD_HEIGHT{ 20.0f };
-	static constexpr float BUTTON_WIDTH{ 56.0f }, BUTTON_HEIGHT{ 22.5f };
+	static constexpr float INPUT_FIELD_WIDTH{ 70.0f }, INPUT_FIELD_HEIGHT{ 20.0f };
+	static constexpr float BUTTON_WIDTH{ 46.0f }, BUTTON_HEIGHT{ 22.5f };
 	static constexpr float POPUP_BUTTON_WIDTH{ 120.0f }, POPUP_BUTTON_HEIGHT{ 20.0f };
 	static constexpr float POPUP_WIDTH{ 400.0f }, POPUP_HEIGHT{ 300.0f };
 	static constexpr float FILE_DIALOG_POPUP_WIDTH{ 1000.0f }, FILE_DIALOG_POPUP_HEIGHT{ 600.0f };
 	// default values for ImGui controls
 	static constexpr float MIN_POSITION_VALUE{ -15.0f }, MAX_POSITION_VALUE{ 15.0f };
 	static constexpr float MIN_ROTATION_VALUE{ -360.0f }, MAX_ROTATION_VALUE{ 360.0f };
+	static constexpr float MIN_DIRECTION_VALUE{ -1.0f }, MAX_DIRECTION_VALUE{ 1.0f };
 	static constexpr float MIN_SCALE_VALUE{ 0.001f }, MAX_SCALE_VALUE{ 10.0f };
 	static constexpr float MIN_CUTOFF_VALUE{ 0.0f }, MAX_CUTOFF_VALUE{ 45.0f };
+	static constexpr float POSITION_SPEED{ 0.15f }, ROTATION_SPEED{ 1.0f },
+		DIRECTION_SPEED{ 0.01f }, SCALE_SPEED{ 0.002f }, CUTOFF_ANGLES_SPEED{ 0.25f };
+	static constexpr float POSITION_RESET_VALUE{ 0.0f }, ROTATION_RESET_VALUE{ 0.0f },
+		DIRECTION_RESET_VALUE{ 0.0f }, SCALE_RESET_VALUE{ 1.0f },
+		INNER_CUTOFF_RESET_VALUE{ 12.5f }, OUTER_CUTOFF_RESET_VALUE{ 32.5f };
 	// default values for distances from the origin
 	static constexpr float MIN_DISTANCE_TO_ORIGIN{ 4.0f }, MAX_DISTANCE_TO_ORIGIN{ 15.0f };
-	// default values for parameters of new objects
-	static constexpr float INNER_CUTOFF_VALUE{ 12.5f }, OUTER_CUTOFF_VALUE{ 32.5f };
 
 	// Private Methods
 	// ---------------
@@ -116,6 +125,8 @@ private:
 
 	// Draws the Information Window with information about the objects in the scene
 	void drawInformationWindow();
+	// Draws the Debug Window with debug information and controls
+	void drawDebugWindow();
 	// Draws the Properties Window with controls for the objects in the scene
 	void drawPropertiesWindow();
 	// Draws the window with buttons to create new objects to the scene

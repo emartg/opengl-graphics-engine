@@ -54,14 +54,38 @@ void InputManager::ScrollCallback(GLdouble xoffset, GLdouble yoffset)
 
 void InputManager::KeyCallback(std::string input)
 {
-	if (input == "ESC_PRESSED") // if the Escape key is pressed, close the window
-	{
-		const_cast<Renderer*>(Core::GetInstance()->GetRenderer())->SetWindowShouldClose();
-		std::cout << "[INFO::INPUTMANAGER::KeyCallback] Escape key pressed, closing window" << std::endl;
+	auto core = Core::GetInstance(); // get the Core instance
+	if (!core) // ensure the Core instance is valid before proceeding
+	{ // if the Core instance is null, print an error message and return
+		std::cerr << "[ERROR::INPUTMANAGER::KeyCallback] Core instance is null" << std::endl;
+		return;
 	}
-	else if (input == "R_PRESSED") // if the 'R' key is pressed, reset the camera
-	{
-		Core::GetInstance()->GetSceneManager()->GetCamera()->ResetCamera();
+	auto renderer = core->GetRenderer(); // get the Renderer instance
+	if (!renderer) // ensure the Renderer instance is valid before proceeding
+	{ // if the Renderer instance is null, print an error message and return
+		std::cerr << "[ERROR::INPUTMANAGER::KeyCallback] Renderer instance is null" << std::endl;
+		return;
+	}
+
+	// handle key inputs
+	if (input == "ESC_PRESSED")
+	{ // if the 'Escape' key is pressed, set the window to close
+		const_cast<Renderer*>(renderer)->SetWindowShouldClose();
+		std::cout << "[INFO::INPUTMANAGER::KeyCallback] Escape key pressed, closing window..." << std::endl;
+	}
+	else if (input == "R_PRESSED")
+	{ // if the 'R' key is pressed, reset the camera to its default values
+		core->GetSceneManager()->GetCamera()->ResetCamera();
 		std::cout << "[INFO::INPUTMANAGER::KeyCallback] Camera reset to default values" << std::endl;
+	}
+	else if (input == "T_PRESSED")
+	{ // if the 'T' key is pressed, toggle between event-driven and continuous rendering modes
+		renderer->ToggleEventDrivenMode();
+		std::cout << "[INFO::INPUTMANAGER::KeyCallback] Toggled rendering mode to: "
+			<< (Core::GetInstance()->GetEventDriven() ? "Event-Driven" : "Continuous") << std::endl;
+	}
+	else
+	{ // if the input is not recognized, print an error message
+		std::cerr << "[ERROR::INPUTMANAGER::KeyCallback] Unknown key input: " << input << std::endl;
 	}
 }

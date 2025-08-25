@@ -36,6 +36,8 @@ public:
 	void SwapBuffers() const override;
 	bool ShouldClose() const override;
 
+	void WaitForEvents() const override;
+
 	// Getters
 	const char* GetProcAddress() const override;
 	float GetTime() const override;
