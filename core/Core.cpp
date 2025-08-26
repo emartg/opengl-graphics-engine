@@ -106,9 +106,9 @@ void Core::Run()
 	std::cout << "[INFO::CORE::Run] Starting main loop..." << std::endl;
 	while (!m_renderer->ShouldClose())
 	{
-		// always wait for events first, since the renderer internally adapts
-		// the waiting system depending on the mode (event-driven or continuous),
-		// fully blocking or throttling the CPU/GPU usage to improve performance
+		// always wait for events first: the renderer fully blocks until an event occurs,
+		// and when that happens, the renderer processes frames but throttles the frame rate,
+		// reducing CPU / GPU usage and improving performance
 		m_renderer->WaitForEvents();
 
 		m_renderer->FrameStartConfig(); // start of the frame configuration

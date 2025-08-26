@@ -75,11 +75,9 @@ public:
 
 	// Blocks the main thread until an event occurs 
 	// (mouse movement, key press, asset manipulation via GUI, etc.)
-	// Keeps held widgets responsive in event-driven mode
+	// Keeps held widgets responsive thanks to a reasonable throttle refresh rate
+	// when events are being processed
 	virtual void WaitForEvents() const = 0;
-
-	// Toggles between event-driven and continuous modes
-	void ToggleEventDrivenMode() const;
 
 	// Getters
 	virtual const char* GetProcAddress() const = 0;

@@ -101,25 +101,13 @@ void GLFWRenderer::WaitForEvents() const
 	// determine if the user is interacting based on the above conditions
 	const bool interacting = mouseDown || keyPressed || widgetActive;
 
-	// check if the Core instance is in event-driven mode
-	const bool eventDriven = Core::GetInstance()->GetEventDriven();
+	// define timeout for event waiting when interacting
+	constexpr float eventWaitTimeout = 1.0f / 60.0f; // ~60 Hz
 
-	// define timeouts for event-driven and continuous modes
-	constexpr float eventDrivenTimeout = 1.0f / 120.0f; // ~120 Hz while interacting in event-driven mode
-	constexpr float continuousTimeout = 1.0f / 120.0f; // ~120 Hz as throttle in continuous mode
-
-	if (eventDriven)
-	{ // if the Core instance is in event-driven mode
-		if (interacting) // while interacting, wake at ~120 Hz to keep repeat/drag responsive
-			glfwWaitEventsTimeout(eventDrivenTimeout);
-		else // when idle, fully block until the next OS event
-			glfwWaitEvents();
-	}
-	else
-	{ // if the Core instance is in continuous mode
-		// throttle by timeout to reduce CPU/GPU usage, waking at ~120 Hz
-		glfwWaitEventsTimeout(continuousTimeout);
-	}
+	if (interacting) // while interacting, wake at ~60 Hz to keep repeat/drag responsive
+		glfwWaitEventsTimeout(eventWaitTimeout);
+	else // when idle, fully block until the next OS event
+		glfwWaitEvents();
 }
 
 void GLFWRenderer::InitGUI()

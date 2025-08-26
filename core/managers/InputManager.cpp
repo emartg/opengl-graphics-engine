@@ -78,12 +78,6 @@ void InputManager::KeyCallback(std::string input)
 		core->GetSceneManager()->GetCamera()->ResetCamera();
 		std::cout << "[INFO::INPUTMANAGER::KeyCallback] Camera reset to default values" << std::endl;
 	}
-	else if (input == "T_PRESSED")
-	{ // if the 'T' key is pressed, toggle between event-driven and continuous rendering modes
-		renderer->ToggleEventDrivenMode();
-		std::cout << "[INFO::INPUTMANAGER::KeyCallback] Toggled rendering mode to: "
-			<< (Core::GetInstance()->GetEventDriven() ? "Event-Driven" : "Continuous") << std::endl;
-	}
 	else
 	{ // if the input is not recognized, print an error message
 		std::cerr << "[ERROR::INPUTMANAGER::KeyCallback] Unknown key input: " << input << std::endl;

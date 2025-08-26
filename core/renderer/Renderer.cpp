@@ -145,21 +145,6 @@ bool Renderer::SetShaderByName(const std::string& name, const std::shared_ptr<Sh
 	return true;
 }
 
-void Renderer::ToggleEventDrivenMode() const
-{
-	auto core = Core::GetInstance(); // get the core instance
-	if (!core) // ensure the core instance is valid before proceeding
-	{ // if the core instance is null, print an error message and return
-		std::cerr << "[ERROR::RENDERER::ToggleEventDrivenMode] Core instance is null" << std::endl;
-		return;
-	}
-
-	// toggle the event-driven mode
-	core->SetEventDriven(!core->GetEventDriven());
-	std::cout << "[INFO::RENDERER::ToggleEventDrivenMode] Rendering mode changed to: "
-		<< (core->GetEventDriven() ? "Event-Driven" : "Continuous") << std::endl;
-}
-
 void Renderer::FrameStartConfig()
 {
 	PollIOEvents(); // poll IO events (keyboard, mouse, etc.)

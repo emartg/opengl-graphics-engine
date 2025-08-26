@@ -343,28 +343,6 @@ void GUI::drawDebugWindow()
 					 ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoFocusOnAppearing);
 		ImGui::PopFont();
 
-		// rendering settings section title
-		ImGui::PushFont(m_boldFont);
-		ImGui::Text("RENDERING INFORMATION");
-		ImGui::PopFont();
-
-		// draw the current rendering mode (event-driven or continuous)
-		bool eventDriven = Core::GetInstance()->GetEventDriven();
-		ImGui::Text("Rendering Mode: %s", eventDriven ? "Event-driven" : "Continuous");
-
-		// rendering settings section title
-		ImGui::PushFont(m_boldFont);
-		ImGui::Text("RENDERING SETTINGS");
-		ImGui::PopFont();
-
-		// draw a checkbox to toggle between event-driven and continuous rendering
-		ImGui::Text("Event-Driven Rendering"); // draw the label before the checkbox
-		ImGui::SameLine(); // keep the checkbox on the same line as the label
-		if (ImGui::Checkbox("##Event-Driven Rendering", &eventDriven)) // '##' to hide the label
-		{ // if the checkbox is clicked, toggle the rendering mode
-			Core::GetInstance()->SetEventDriven(eventDriven);
-		}
-
 		// get the renderer screen debug params from the Core instance
 		auto renderer = Core::GetInstance()->GetRenderer();
 		auto& params = renderer->GetScreenDebugParams();
@@ -372,6 +350,46 @@ void GUI::drawDebugWindow()
 		std::vector<std::string> debugModes = { "Normal", "Solid Color", "Grid Overlay", "Inverted Colors" };
 		int debugModeIndex = static_cast<int>(params.debugMode); // current debug mode index
 		bool paramsChanged{ false }; // dirty flag to check if any of the params were changed
+
+		// rendering settings section title
+		ImGui::PushFont(m_boldFont);
+		ImGui::Text("RENDERING INFORMATION");
+		ImGui::PopFont();
+
+		// display the current frame time and FPS
+		ImGui::Text("Frame Time: %.3f ms/frame", 1000.0f / ImGui::GetIO().Framerate);
+		ImGui::Text("FPS: %.1f", ImGui::GetIO().Framerate);
+
+		// display the screen texture debug mode currently in use and the values of its parameters
+		ImGui::Text("Screen Texture Debug Mode: %s", debugModes[debugModeIndex].c_str());
+		switch (debugModeIndex)
+		{
+			case 0: // Normal mode
+				break; // no parameters to display
+			case 1: // Solid Color mode
+				ImGui::Text("\tSolid Color: (%.3f, %.3f, %.3f)",
+							params.solidColor.r, params.solidColor.g, params.solidColor.b);
+				break;
+			case 2: // Grid Overlay mode
+				ImGui::Text("\tGrid Line Count: %d", params.gridLineCount);
+				ImGui::Text("\tGrid Line Thickness: %.2f", params.gridLineThickness);
+				ImGui::Text("\tGrid Background Color: (%.3f, %.3f, %.3f)",
+							params.gridBgColor.r, params.gridBgColor.g, params.gridBgColor.b);
+				ImGui::Text("\tGrid Line Color: (%.3f, %.3f, %.3f)",
+							params.gridLineColor.r, params.gridLineColor.g, params.gridLineColor.b);
+				break;
+			case 3: // Inverted Colors mode
+				break; // no parameters to display
+			default:
+				std::cerr << "[ERROR::GUI::drawDebugWindow] Unknown screen texture debug mode index: "
+					<< debugModeIndex << std::endl;
+				break;
+		}
+
+		// rendering settings section title
+		ImGui::PushFont(m_boldFont);
+		ImGui::Text("RENDERING SETTINGS");
+		ImGui::PopFont();
 
 		ImGui::Text("Screen Texture Debug Mode");
 		ImGui::SameLine(); // keep the combo box on the same line as the label
@@ -462,8 +480,8 @@ void GUI::drawDebugWindow()
 			case 3: // Inverted Colors mode
 				break; // no additional controls needed
 			default:
-				std::cerr << "[ERROR::GUI::DrawDebugWindow] Unknown screen texture debug mode: "
-					<< params.debugMode << std::endl;
+				std::cerr << "[ERROR::GUI::drawDebugWindow] Unknown screen texture debug mode: "
+					<< debugModeIndex << std::endl;
 				break;
 		}
 
