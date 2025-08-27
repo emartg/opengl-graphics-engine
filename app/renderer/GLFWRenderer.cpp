@@ -86,27 +86,20 @@ void GLFWRenderer::WaitForEvents() const
 	// consider as interactions:
 	// - mouse buttons pressed or held down (left, right, middle)
 	// - any key pressed (e.g. when typing in a text field or using keyboard shortcuts)
-	// - any widget is active (e.g. when a slider is being dragged or a button is pressed)
-	bool mouseDown = io.MouseDown[0] || io.MouseDown[1] || io.MouseDown[2];
-	bool keyPressed = false;
-	for (int i = 0; i < ImGuiKey_NamedKey_COUNT; ++i)
-	{ // iterate through all named keys
-		if (io.KeysData[i].Down)
-		{ // if any key is pressed, set keyPressed to true and break the loop
-			keyPressed = true;
-			break;
-		}
-	}
+	// - any ImGui widget active (e.g. sliders, buttons, text fields, etc.)
+	bool mouseButtonDown = io.MouseDown[0] || io.MouseDown[1] || io.MouseDown[2];
+	bool keyPressed = std::any_of(io.KeysData, io.KeysData + ImGuiKey_NamedKey_COUNT,
+								  [](const ImGuiKeyData& k) { return k.Down; });
 	bool widgetActive = ImGui::IsAnyItemActive();
 	// determine if the user is interacting based on the above conditions
-	const bool interacting = mouseDown || keyPressed || widgetActive;
+	const bool interacting = mouseButtonDown || keyPressed || widgetActive;
 
 	// define timeout for event waiting when interacting
 	constexpr float eventWaitTimeout = 1.0f / 60.0f; // ~60 Hz
 
-	if (interacting) // while interacting, wake at ~60 Hz to keep repeat/drag responsive
+	if (interacting) // while interacting, wake at ~60 Hz to maintain responsiveness
 		glfwWaitEventsTimeout(eventWaitTimeout);
-	else // when idle, fully block until the next OS event
+	else // when idle, fully block until the next OS event (e.g., passive mouse motion)
 		glfwWaitEvents();
 }
 
