@@ -365,13 +365,13 @@ void Renderer::RenderScene()
 		}
 	});
 	m_untexturedMattShapeShader->Use();
+	m_untexturedMattShapeShader->SetInt("nDirectionalLights", directionalLightIdx);
 	m_untexturedMattShapeShader->SetInt("nPointLights", pointLightIdx);
 	m_untexturedMattShapeShader->SetInt("nSpotlights", spotlightIdx);
-	m_untexturedMattShapeShader->SetInt("nDirectionalLights", directionalLightIdx);
 	m_assimpModelShader->Use();
+	m_assimpModelShader->SetInt("nDirectionalLights", directionalLightIdx);
 	m_assimpModelShader->SetInt("nPointLights", pointLightIdx);
 	m_assimpModelShader->SetInt("nSpotlights", spotlightIdx);
-	m_assimpModelShader->SetInt("nDirectionalLights", directionalLightIdx);
 
 	// iterate over the vector of models and render them
 	auto& models = assetManager->GetAssets(AssetType::MODEL);

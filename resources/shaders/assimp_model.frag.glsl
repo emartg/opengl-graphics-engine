@@ -1,6 +1,12 @@
 #version 420 core
 out vec4 FragColor;
 
+// maximum number of lights in the scene (same as in the vertex shader)
+#define MAX_N_DIR_LIGHTS 3
+#define MAX_N_POINT_LIGHTS 3
+#define MAX_N_SPOTLIGHTS 3
+
+// structs to hold light properties
 struct DirectionalLight
 {
     // lighting components
@@ -39,6 +45,7 @@ struct Spotlight
     float outerCutOff;  // outer cut-off angle of the spotlight cone
 };
 
+// struct to hold material properties
 struct Material
 {
 	sampler2D albedoMap;    // texture sampler for the albedo map (i.e. the diffuse Map)
@@ -46,64 +53,77 @@ struct Material
 	float shininess;
 };
 
-#define MAX_N_DIR_LIGHTS 3      // maximum number of directional lights in the scene (same as in the vertex shader)
-#define MAX_N_POINT_LIGHTS 3    // maximum number of point lights in the scene (same as in the vertex shader)
-#define MAX_N_SPOTLIGHTS 3      // maximum number of spotlights in the scene (same as in the vertex shader)
-
-in vec3 DirectionalLightDir[MAX_N_DIR_LIGHTS];  // statically sized array of directional light directions in view space
-in vec3 PointLightPos[MAX_N_POINT_LIGHTS];      // statically sized array of point light positions in view space
-in vec3 SpotlightPos[MAX_N_SPOTLIGHTS];         // statically sized array of spotlight positions in view space
-in vec3 SpotlightDir[MAX_N_SPOTLIGHTS];         // statically sized array of spotlight directions in view space
-in vec3 FragPos;                                // fragment position already in view space
-in vec3 Normal;                                 // normal already in view space
+// fragment position, normal and texture coordinates in view space passed from the vertex shader
+in vec3 FragPos;
+in vec3 Normal;
 in vec2 TexCoords;
 
-uniform DirectionalLight directionalLights[MAX_N_DIR_LIGHTS];   // statically sized array of directional light structs
-uniform PointLight pointLights[MAX_N_POINT_LIGHTS];             // statically sized array of point light structs
-uniform Spotlight spotlights[MAX_N_SPOTLIGHTS];                 // statically sized array of spotlight structs
-uniform int nDirectionalLights;			                        // actual number of directional lights currently in the scene
-uniform int nPointLights;			                            // actual number of point lights currently in the scene
-uniform int nSpotlights;			                            // actual number of spotlights currently in the scene
+// statically sized arrays of light attributes in view space passed from the vertex shader
+in vec3 DirectionalLightDir[MAX_N_DIR_LIGHTS];
+in vec3 PointLightPos[MAX_N_POINT_LIGHTS];
+in vec3 SpotlightPos[MAX_N_SPOTLIGHTS];
+in vec3 SpotlightDir[MAX_N_SPOTLIGHTS];
+
+// number of lights currently in the scene
+uniform int nDirectionalLights;
+uniform int nPointLights;
+uniform int nSpotlights;
+
+// statically sized arrays of light structs
+uniform DirectionalLight directionalLights[MAX_N_DIR_LIGHTS]; 
+uniform PointLight pointLights[MAX_N_POINT_LIGHTS];
+uniform Spotlight spotlights[MAX_N_SPOTLIGHTS];
+
+// material properties struct
 uniform Material material;
 
-// calculates the color of a single directional light given the light properties (including the direction),
-// the normal and the view direction (all in view space)
-vec3 computeDirectionalLightColor(DirectionalLight light, vec3 directionalLightDir, vec3 normal, vec3 viewDir);
+// Calculates the color of a single directional light given the light properties (including the direction),
+// the normal, and the view direction (all in view space)
+vec3 computeDirectionalLightColor(DirectionalLight light, vec3 directionalLightDir, 
+                                  vec3 normal, vec3 viewDir);
 
-// calculates the color of a single point light given the light properties (including the position),
-// the fragment position, the normal and the view direction (all in view space)
-vec3 computePointLightColor(PointLight light, vec3 pointLightPos, vec3 normal, vec3 fragPos, vec3 viewDir);
+// Calculates the color of a single point light given the light properties (including the position),
+// the fragment position, the normal, and the view direction (all in view space)
+vec3 computePointLightColor(PointLight light, vec3 pointLightPos, 
+                            vec3 normal, vec3 fragPos, vec3 viewDir);
 
-// canculates the color of a single spotlight given the light properties (including the position and direction),
-// the fragment position, the normal and the view direction (all in view space)
-vec3 computeSpotlightColor(Spotlight light, vec3 spotlightPos, vec3 spotlightDir, vec3 normal, vec3 fragPos, vec3 viewDir);
+// Calculates the color of a single spotlight given the light properties 
+// (including the position and direction), the fragment position, the normal,
+// and the view direction (all in view space)
+vec3 computeSpotlightColor(Spotlight light, vec3 spotlightPos, vec3 spotlightDir, 
+                           vec3 normal, vec3 fragPos, vec3 viewDir);
 
 void main()
 {
     // light properties
     vec3 normal     = normalize(Normal);
-    vec3 viewDir    = normalize(-FragPos);  // since lighting is being calculated in view space, viewPos is (0, 0, 0)
+    vec3 viewDir    = normalize(-FragPos);  // since lighting is being calculated in view space, 
+                                            // viewPos is (0, 0, 0)
 
     // initialize fragment color
     vec3 result = vec3(0.0);
 
     // loop through all directional lights and accumulate their contributions
     for (int i = 0; i < nDirectionalLights; i++)
-        result  += computeDirectionalLightColor(directionalLights[i], DirectionalLightDir[i], normal, viewDir);
+        result  += computeDirectionalLightColor(directionalLights[i], DirectionalLightDir[i], 
+                                                normal, viewDir);
 
     // loop through all point lights and accumulate their contributions
     for (int i = 0; i < nPointLights; i++)
-        result  += computePointLightColor(pointLights[i], PointLightPos[i], normal, FragPos, viewDir);
+        result  += computePointLightColor(pointLights[i], PointLightPos[i], 
+                                          normal, FragPos, viewDir);
 
     // loop through all spotlights and accumulate their contributions
     for (int i = 0; i < nSpotlights; i++)
-        result  += computeSpotlightColor(spotlights[i], SpotlightPos[i], SpotlightDir[i], normal, FragPos, viewDir);
+        result  += computeSpotlightColor(spotlights[i], SpotlightPos[i], SpotlightDir[i], 
+                                         normal, FragPos, viewDir);
 
     // set the fragment color
     FragColor   = vec4(result, 1.0);
 }
 
-vec3 computeDirectionalLightColor(DirectionalLight light, vec3 directionalLightDir, vec3 normal, vec3 viewDir)
+vec3 computeDirectionalLightColor(DirectionalLight light, vec3 directionalLightDir, 
+                                  vec3 normal, vec3 viewDir)
 {
     vec3 lightDir = normalize(-directionalLightDir);
 
@@ -121,7 +141,8 @@ vec3 computeDirectionalLightColor(DirectionalLight light, vec3 directionalLightD
     return (ambient + diffuse + specular);
 }
 
-vec3 computePointLightColor(PointLight light, vec3 pointLightPos, vec3 normal, vec3 fragPos, vec3 viewDir)
+vec3 computePointLightColor(PointLight light, vec3 pointLightPos, 
+                            vec3 normal, vec3 fragPos, vec3 viewDir)
 {
     vec3 lightDir = normalize(pointLightPos - fragPos);
 
@@ -146,7 +167,8 @@ vec3 computePointLightColor(PointLight light, vec3 pointLightPos, vec3 normal, v
     return (ambient + diffuse + specular);
 }
 
-vec3 computeSpotlightColor(Spotlight light, vec3 spotlightPos, vec3 spotlightDir, vec3 normal, vec3 fragPos, vec3 viewDir)
+vec3 computeSpotlightColor(Spotlight light, vec3 spotlightPos, vec3 spotlightDir, 
+                           vec3 normal, vec3 fragPos, vec3 viewDir)
 {
     vec3 lightDir = normalize(spotlightPos - fragPos);
 

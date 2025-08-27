@@ -1,6 +1,7 @@
 #version 420 core
 out vec4 FragColor;
 
+// struct to hold screen debug mode parameters
 struct ScreenDebugParams
 {
 	int debugMode;				// debug mode (0: normal, 1: solid color, 2: grid overlay, 3: inverted colors)
@@ -11,13 +12,17 @@ struct ScreenDebugParams
 	vec3 gridLineColor;			// line color for the grid overlay when the debug mode is 2
 };
 
+// texture coordinates in clip space passed from the vertex shader
 in vec2 TexCoords;
 
+// screen dimensions and screen texture to be sampled
+uniform vec2 screenSize;
 uniform sampler2D screenTexture;
-uniform ScreenDebugParams screenDebugParams;
-uniform vec2 screenSize; // size of the screen in pixels
 
-// Function to create a grid overlay on the UV coordinates with the screen size and specified parameters
+// screen debug mode parameters to control the rendering mode
+uniform ScreenDebugParams screenDebugParams;
+
+// Creates a grid overlay on the UV coordinates with the screen size and specified parameters
 vec3 grid(vec2 uv, int gridLineCount, float gridLineThickness, vec3 gridBgColor, vec3 gridLineColor);
 
 void main()
@@ -33,8 +38,8 @@ void main()
 	else if (screenDebugParams.debugMode == 2)
 	{ // grid overlay rendering: create a grid overlay on the UV coordinates with the specified parameters
 		int count = max(screenDebugParams.gridLineCount, 1); // ensure at least 1 line
-		float thickness = max(screenDebugParams.gridLineThickness, 1.0f); // ensure at least 1 pixel thickness
-		// compute the grid color based on the UV coordinates and the screen size
+		float thickness = max(screenDebugParams.gridLineThickness, 1.0f); // ensure at least 1 px thickness
+		// compute the grid color based on the texture coords as UV coords and other parameters
 		vec3 color = grid(TexCoords, count, thickness, 
 						  screenDebugParams.gridBgColor, screenDebugParams.gridLineColor);
 		FragColor = vec4(color, 1.0);

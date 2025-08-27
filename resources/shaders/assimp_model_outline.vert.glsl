@@ -2,7 +2,10 @@
 layout(location = 0) in vec3 aPos;
 layout(location = 1) in vec3 aNormal;
 
+// outline thickness value in world space units to extrude the vertices
 uniform float outlineThickness;
+
+// transformation matrices
 uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
