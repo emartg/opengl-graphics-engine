@@ -65,4 +65,8 @@ target_link_libraries(App Core ${LIBS})
 
 # Copy asset files to the runtime directory
 message(STATUS "[APP] Copying asset files to the runtime directory...")
-file(INSTALL ${CMAKE_SOURCE_DIR}/resources/ DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/resources/)
+if(CMAKE_RUNTIME_OUTPUT_DIRECTORY)
+    file(INSTALL ${CMAKE_SOURCE_DIR}/resources/ DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/resources/)
+else()
+    file(INSTALL ${CMAKE_SOURCE_DIR}/resources/ DESTINATION ${CMAKE_BINARY_DIR}/resources/)
+endif()

@@ -7,6 +7,7 @@
 #pragma once
 
 #include <string>
+#include <cstdint>
 
 enum class AssetType { UNDEFINED = 0, CAMERA, LIGHT, MODEL, SHADER, TEXTURE };
 
