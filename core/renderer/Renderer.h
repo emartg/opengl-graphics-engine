@@ -108,6 +108,7 @@ public:
 	// Render Passes
 	virtual void FrameStartConfig();
 	virtual void RenderScene();
+	virtual void RenderPickingPass(); // new method for color picking pass
 	virtual void FrameEndConfig() const;
 
 protected:
@@ -120,6 +121,7 @@ protected:
 	std::shared_ptr<Shader> m_untexturedMattShapeShader;
 	std::shared_ptr<Shader> m_assimpModelShader;
 	std::shared_ptr<Shader> m_singleAlbedoShader;
+	std::shared_ptr<Shader> m_colorPickingShader;
 
 	// screen-quad post-process shader and its buffers
 	std::shared_ptr<Shader> m_screenShader;

@@ -502,8 +502,10 @@ void GUI::drawDebugWindow()
 
 void GUI::drawPropertiesWindow()
 {
-	// get the asset manager from the Core instance
-	auto& assetManager = Core::GetInstance()->GetAssetManager();
+	// get the core instance and its managers
+	auto core = Core::GetInstance();
+	auto& assetManager = core->GetAssetManager();
+	auto& pickingManager = core->GetPickingManager();
 
 	// set initial size and position for the Properties Window
 	ImGui::SetNextWindowSize(m_propertiesWindowSize, ImGuiCond_Appearing);
@@ -511,60 +513,92 @@ void GUI::drawPropertiesWindow()
 	// set the Properties Window to be expanded (i.e. not minimized)
 	ImGui::SetNextWindowCollapsed(false, ImGuiCond_Appearing);
 
-	{ // show a window that allows the user to change the properties of the assets in the scene
+	{ // show a window that displays properties of the selected asset (inspector pattern)
 		// begin the Properties window
 		ImGui::PushFont(m_boldFont);
-		ImGui::Begin("PROPERTIES", nullptr,
+		ImGui::Begin("INSPECTOR", nullptr,
 					 ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoFocusOnAppearing);
 		ImGui::PopFont();
 
-		// vector to collect the identifiers of the assets to be removed after the loops
-		std::vector<std::uint32_t> assetsToRemove;
-
-		std::for_each(assetManager->GetAssets("LIGHT").begin(),
-					  assetManager->GetAssets("LIGHT").end(),
-					  [&](const std::shared_ptr<Asset>& asset)
-		{ // iterate through all lights in the scene and draw their settings
-			// dynamically cast the asset to a Light object
-			auto light = dynamic_cast<Light*>(asset.get());
-
-			if (!light) return; // if the light is not valid, skip it
-
-			// draw controls to change the properties of the light
-			drawLightControls(light);
-
-			// draw a button to mark the light and its gizmo for removal from the scene
-			drawRemoveAssetButton(light, assetsToRemove, light->GetName(), ITEM_WIDTH);
-
-			ImGui::Separator(); // add a separator between lights
-		});
-
-		std::for_each(assetManager->GetAssets("MODEL").begin(),
-					  assetManager->GetAssets("MODEL").end(),
-					  [&](const std::shared_ptr<Asset>& asset)
-		{ // iterate through all models in the scene and draw their settings
-			// dynamically cast the asset to a Model object
-			auto model = dynamic_cast<Model*>(asset.get());
-
-			if (!model) return; // if the model is not valid, skip it
-
-			// if the model is not a gizmo, draw its controls,
-			// otherwise skip it, as gizmos are not editable (variable properties handled in light controls)
-			if (model->GetGizmoType() == GizmoType::NONE)
+		// check if there's a selected object
+		if (pickingManager->HasSelection())
+		{
+			std::uint32_t selectedId = pickingManager->GetSelectedObjectId();
+			
+			// find the selected asset
+			std::shared_ptr<Asset> selectedAsset = nullptr;
+			
+			// search through all asset types
+			for (const auto& assetType : {"LIGHT", "MODEL"})
 			{
-				// draw controls to change the properties of the model
-				drawModelControls(model);
-
-				// draw a button to mark the model for removal from the scene
-				drawRemoveAssetButton(model, assetsToRemove, model->GetName(), ITEM_WIDTH);
-
-				ImGui::Separator(); // add a separator between models
+				const auto& assets = assetManager->GetAssets(assetType);
+				for (const auto& asset : assets)
+				{
+					if (asset->GetId() == selectedId)
+					{
+						selectedAsset = asset;
+						break;
+					}
+				}
+				if (selectedAsset) break;
 			}
-		});
-
-		// remove the assets that were marked for removal
-		for (const auto& assetId : assetsToRemove)
-			assetManager->RemoveAssetById(assetId); // remove the asset from the asset manager
+			
+			if (selectedAsset)
+			{
+				// display the selected asset's properties
+				ImGui::TextWrapped("Selected Object:");
+				ImGui::PushFont(m_boldFont);
+				ImGui::TextWrapped("%s (ID: %u)", selectedAsset->GetName().c_str(), selectedId);
+				ImGui::PopFont();
+				ImGui::Separator();
+				
+				// vector to collect the identifiers of the assets to be removed
+				std::vector<std::uint32_t> assetsToRemove;
+				
+				// check if it's a light
+				auto light = dynamic_cast<Light*>(selectedAsset.get());
+				if (light)
+				{
+					// draw controls to change the properties of the light
+					drawLightControls(light);
+					
+					// draw a button to mark the light for removal from the scene
+					drawRemoveAssetButton(light, assetsToRemove, light->GetName(), ITEM_WIDTH);
+				}
+				else
+				{
+					// check if it's a model
+					auto model = dynamic_cast<Model*>(selectedAsset.get());
+					if (model && model->GetGizmoType() == GizmoType::NONE)
+					{
+						// draw controls to change the properties of the model
+						drawModelControls(model);
+						
+						// draw a button to mark the model for removal from the scene
+						drawRemoveAssetButton(model, assetsToRemove, model->GetName(), ITEM_WIDTH);
+					}
+				}
+				
+				// remove the asset if it was marked for removal
+				for (const auto& assetId : assetsToRemove)
+				{
+					assetManager->RemoveAssetById(assetId);
+					pickingManager->ClearSelection(); // clear selection when object is deleted
+				}
+			}
+			else
+			{
+				// selected object not found (maybe deleted)
+				ImGui::TextWrapped("Selected object not found.");
+				pickingManager->ClearSelection();
+			}
+		}
+		else
+		{
+			// no object selected
+			ImGui::TextWrapped("No object selected.");
+			ImGui::TextWrapped("Click on an object in the scene to select it.");
+		}
 
 		ImGui::End(); // end the Properties window
 

@@ -32,6 +32,7 @@ public:
 	void CursorPosCallback(GLdouble xpos, GLdouble ypos, std::string input);
 	void ScrollCallback(GLdouble xoffset, GLdouble yoffset);
 	void KeyCallback(std::string input);
+	void MouseButtonCallback(GLint x, GLint y, std::string input);
 
 private:
 	GLfloat m_lastMouseX, m_lastMouseY, m_mouseSensitivity;

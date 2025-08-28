@@ -23,6 +23,7 @@
 #include "managers/AssetManager.h"
 #include "managers/InputManager.h"
 #include "managers/SceneManager.h"
+#include "managers/PickingManager.h"
 #include "renderer/Renderer.h"
 
 class Core
@@ -48,6 +49,7 @@ private:
 	std::shared_ptr<AssetManager> m_assetManager;
 	std::shared_ptr<InputManager> m_inputManager;
 	std::shared_ptr<SceneManager> m_sceneManager;
+	std::shared_ptr<PickingManager> m_pickingManager;
 
 	// screen settings
 	GLuint m_screenWidth{ 1400 }, m_screenHeight{ 1000 }; // default screen width and height
@@ -79,6 +81,7 @@ public:
 	const std::shared_ptr<AssetManager>& GetAssetManager() const { return m_assetManager; }
 	const std::shared_ptr<InputManager>& GetInputManager() const { return m_inputManager; }
 	const std::shared_ptr<SceneManager>& GetSceneManager() const { return m_sceneManager; }
+	const std::shared_ptr<PickingManager>& GetPickingManager() const { return m_pickingManager; }
 
 	const GLuint& GetScreenWidth() const { return m_screenWidth; }
 	const GLuint& GetScreenHeight() const { return m_screenHeight; }

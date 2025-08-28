@@ -75,6 +75,7 @@ void GLFWRenderer::SetCallbackFunctions() const
 	glfwSetCursorPosCallback(window, cursorPosCallback);
 	glfwSetScrollCallback(window, scrollCallback);
 	glfwSetKeyCallback(window, keyCallback);
+	glfwSetMouseButtonCallback(window, mouseButtonCallback);
 }
 
 void GLFWRenderer::SetWindowShouldClose() const { glfwSetWindowShouldClose(window, true); }
@@ -162,4 +163,20 @@ void GLFWRenderer::keyCallback(GLFWwindow* window, int key, int scancode, int ac
 		Core::GetInstance()->GetInputManager()->KeyCallback("R_PRESSED");
 	else if (key == GLFW_KEY_T && action == GLFW_PRESS)
 		Core::GetInstance()->GetInputManager()->KeyCallback("T_PRESSED");
+	else if (key == GLFW_KEY_DELETE && action == GLFW_PRESS)
+		Core::GetInstance()->GetInputManager()->KeyCallback("DELETE_PRESSED");
+}
+
+void GLFWRenderer::mouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
+{
+	// delegate the mouse button callback to the InputManager
+	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
+	{
+		// get the current cursor position
+		double xpos, ypos;
+		glfwGetCursorPos(window, &xpos, &ypos);
+		
+		// delegate to the InputManager with cursor position
+		Core::GetInstance()->GetInputManager()->MouseButtonCallback(static_cast<GLint>(xpos), static_cast<GLint>(ypos), "LMB_PRESSED");
+	}
 }

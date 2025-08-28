@@ -134,6 +134,10 @@ bool Renderer::SetShaderByName(const std::string& name, const std::shared_ptr<Sh
 	{
 		m_screenShader = shader;
 	}
+	else if (strcmp(name.c_str(), "Color Picking Shader") == 0)
+	{
+		m_colorPickingShader = shader;
+	}
 	else
 	{ // if the shader name is unknown, print an error message and return false
 		std::cerr << "[ERROR::RENDERER::SetShader] Unknown shader name: " << name << std::endl;
@@ -504,6 +508,86 @@ void Renderer::RenderScene()
 
 	// after the scene is rendered offscreen, composite to the default framebuffer
 	CompositeToScreen();
+}
+
+void Renderer::RenderPickingPass()
+{
+	// get the Core instance and its managers
+	auto core = Core::GetInstance();
+	if (!core) return;
+	
+	auto assetManager = core->GetAssetManager();
+	auto sceneManager = core->GetSceneManager();
+	auto pickingManager = core->GetPickingManager();
+	if (!assetManager || !sceneManager || !pickingManager) return;
+	
+	// get the active camera
+	auto camera = sceneManager->GetCamera();
+	
+	// ensure camera and picking shader are valid before proceeding
+	if (!camera || !m_colorPickingShader)
+	{
+		std::cerr << "[ERROR::RENDERER::RenderPickingPass] Camera or color picking shader not set up correctly" << std::endl;
+		return;
+	}
+	
+	// get the picking render pass and bind it
+	auto pickingRenderPass = pickingManager->GetPickingRenderPass();
+	if (!pickingRenderPass)
+	{
+		std::cerr << "[ERROR::RENDERER::RenderPickingPass] Picking render pass not initialized" << std::endl;
+		return;
+	}
+	
+	// bind the picking framebuffer for rendering
+	pickingRenderPass->Bind();
+	
+	// clear the picking buffer with black (object ID 0 = no object)
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	
+	// enable depth testing
+	glEnable(GL_DEPTH_TEST);
+	
+	// compute view and projection transformations (same as regular rendering)
+	glm::mat4 projection = glm::perspective(
+		glm::radians(camera->GetZoom()),
+		static_cast<GLfloat>(core->GetScreenWidth()) / static_cast<GLfloat>(core->GetScreenHeight()),
+		0.1f, 100.0f);
+	glm::mat4 view = camera->GetViewMatrix();
+	
+	// use the color picking shader
+	m_colorPickingShader->Use();
+	m_colorPickingShader->SetMat4("view", view);
+	m_colorPickingShader->SetMat4("projection", projection);
+	
+	// render all models with unique colors
+	auto& models = assetManager->GetAssets(AssetType::MODEL);
+	std::for_each(models.begin(), models.end(),
+		[&](const std::shared_ptr<Asset>& asset)
+		{
+			// dynamically cast the asset to a Model object
+			auto model = dynamic_cast<Model*>(asset.get());
+			if (!model) return; // if the model is not valid, skip it
+			
+			// skip gizmos in the picking pass (they shouldn't be selectable)
+			if (model->GetGizmoType() != GizmoType::NONE) return;
+			
+			// convert object ID to unique color
+			glm::vec3 objectColor = PickingManager::ObjectIdToColor(model->GetId());
+			
+			// set the unique color for this object
+			m_colorPickingShader->SetVec3("objectColor", objectColor);
+			
+			// set the model matrix
+			m_colorPickingShader->SetMat4("model", model->GetModelMatrix());
+			
+			// render the model
+			model->Draw();
+		});
+	
+	// unbind the picking framebuffer
+	pickingRenderPass->Unbind();
 }
 
 void Renderer::FrameEndConfig() const

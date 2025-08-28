@@ -25,7 +25,8 @@ Core::Core()
 	: m_renderer{ nullptr },
 	m_assetManager{ std::make_shared<AssetManager>() },
 	m_inputManager{ std::make_shared<InputManager>() },
-	m_sceneManager{ std::make_shared<SceneManager>() }
+	m_sceneManager{ std::make_shared<SceneManager>() },
+	m_pickingManager{ std::make_shared<PickingManager>() }
 {}
 
 // Destructor
@@ -95,6 +96,9 @@ bool Core::Init() const
 	m_renderer->ConfigOpenGL();
 	// initialize the user interface
 	m_renderer->InitGUI();
+	
+	// initialize the picking manager
+	m_pickingManager->Init(m_screenWidth, m_screenHeight);
 
 	// if all the initializations are successful, print a success message and return true
 	std::cout << "[SUCCESS::CORE::Init] Core initialized successfully" << std::endl;
@@ -113,6 +117,7 @@ void Core::Run()
 
 		m_renderer->FrameStartConfig(); // start of the frame configuration
 		m_renderer->RenderScene(); // composite the scene
+		m_renderer->RenderPickingPass(); // render the picking pass for object selection
 		m_renderer->RenderGUI(); // render the GUI
 		m_renderer->FrameEndConfig(); // end of the frame configuration
 	}
@@ -238,4 +243,12 @@ void Core::LoadTextures(const std::vector<std::string>& textureNames,
 void Core::FramebufferSizeCallback(GLint width, GLint height)
 {
 	glViewport(0, 0, width, height);
+	
+	// update screen dimensions
+	m_screenWidth = width;
+	m_screenHeight = height;
+	
+	// resize the picking manager buffer
+	if (m_pickingManager)
+		m_pickingManager->Resize(width, height);
 }
