@@ -134,6 +134,10 @@ bool Renderer::SetShaderByName(const std::string& name, const std::shared_ptr<Sh
 	{
 		m_screenShader = shader;
 	}
+	else if (strcmp(name.c_str(), "Picking Shader") == 0)
+	{
+		m_pickingShader = shader;
+	}
 	else
 	{ // if the shader name is unknown, print an error message and return false
 		std::cerr << "[ERROR::RENDERER::SetShader] Unknown shader name: " << name << std::endl;
@@ -157,6 +161,11 @@ void Renderer::FrameStartConfig()
 	m_lastFrameTime = currentFrame;
 
 	EnsureOffscreenRenderPass(); // ensure offscreen target matches current window size
+
+	// process pending picking request before main scene rendering
+	auto core = Core::GetInstance();
+	auto& camera = core->GetSceneManager()->GetCamera();
+	core->GetSelectionManager()->ProcessPendingPick(camera.get(), core->GetAssetManager().get());
 
 	// bind offscreen FBO and clear it
 	m_mainRenderPass->Bind();

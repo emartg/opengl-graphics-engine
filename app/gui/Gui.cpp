@@ -504,6 +504,7 @@ void GUI::drawPropertiesWindow()
 {
 	// get the asset manager from the Core instance
 	auto& assetManager = Core::GetInstance()->GetAssetManager();
+	auto& selectionManager = Core::GetInstance()->GetSelectionManager();
 
 	// set initial size and position for the Properties Window
 	ImGui::SetNextWindowSize(m_propertiesWindowSize, ImGuiCond_Appearing);
@@ -518,53 +519,42 @@ void GUI::drawPropertiesWindow()
 					 ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoFocusOnAppearing);
 		ImGui::PopFont();
 
-		// vector to collect the identifiers of the assets to be removed after the loops
-		std::vector<std::uint32_t> assetsToRemove;
+		auto selected = selectionManager->GetSelectedAsset(assetManager.get());
+		if (!selected)
+		{ // if no asset is selected, display a message
+			ImGui::Text("No asset selected.\nClick an object to inspect it.");
+		}
+		else
+		{ // if an asset is selected, display its name and ID, and draw its controls
+			// display the name and ID of the selected asset in bold font
+			ImGui::PushFont(m_boldFont);
+			ImGui::TextWrapped("%s\n(ID: %u)", selected->GetName().c_str(), selected->GetId());
+			ImGui::PopFont();
 
-		std::for_each(assetManager->GetAssets("LIGHT").begin(),
-					  assetManager->GetAssets("LIGHT").end(),
-					  [&](const std::shared_ptr<Asset>& asset)
-		{ // iterate through all lights in the scene and draw their settings
-			// dynamically cast the asset to a Light object
-			auto light = dynamic_cast<Light*>(asset.get());
+			ImGui::Separator();
 
-			if (!light) return; // if the light is not valid, skip it
-
-			// draw controls to change the properties of the light
-			drawLightControls(light);
-
-			// draw a button to mark the light and its gizmo for removal from the scene
-			drawRemoveAssetButton(light, assetsToRemove, light->GetName(), ITEM_WIDTH);
-
-			ImGui::Separator(); // add a separator between lights
-		});
-
-		std::for_each(assetManager->GetAssets("MODEL").begin(),
-					  assetManager->GetAssets("MODEL").end(),
-					  [&](const std::shared_ptr<Asset>& asset)
-		{ // iterate through all models in the scene and draw their settings
-			// dynamically cast the asset to a Model object
-			auto model = dynamic_cast<Model*>(asset.get());
-
-			if (!model) return; // if the model is not valid, skip it
-
-			// if the model is not a gizmo, draw its controls,
-			// otherwise skip it, as gizmos are not editable (variable properties handled in light controls)
-			if (model->GetGizmoType() == GizmoType::NONE)
-			{
-				// draw controls to change the properties of the model
-				drawModelControls(model);
-
-				// draw a button to mark the model for removal from the scene
-				drawRemoveAssetButton(model, assetsToRemove, model->GetName(), ITEM_WIDTH);
-
-				ImGui::Separator(); // add a separator between models
+			// depending on the type of the selected asset, draw the corresponding controls
+			if (selected->GetType() == AssetType::LIGHT)
+			{ // if the selected asset is a light, draw the light controls
+				auto light = dynamic_cast<Light*>(selected.get()); // dynamic cast to Light object
+				drawLightControls(light); // draw the light controls
 			}
-		});
+			else if (selected->GetType() == AssetType::MODEL)
+			{ // if the selected asset is a model, draw the model controls
+				auto model = dynamic_cast<Model*>(selected.get()); // dynamic cast to Model object
+				// only draw the model controls if the model is not a gizmo, since that is handled
+				// with its corresponding light controls above
+				if (model->GetGizmoType() == GizmoType::NONE)
+					drawModelControls(model); // draw the model controls
+			}
 
-		// remove the assets that were marked for removal
-		for (const auto& assetId : assetsToRemove)
-			assetManager->RemoveAssetById(assetId); // remove the asset from the asset manager
+			ImGui::Separator();
+
+			if (ImGui::Button("Delete", ImVec2(ImGui::GetContentRegionAvail().x, 0.0f)))
+			{ // if the Delete button is clicked, delete the selected asset via the selection manager
+				selectionManager->DeleteSelected(assetManager.get());
+			}
+		}
 
 		ImGui::End(); // end the Properties window
 
@@ -972,11 +962,6 @@ void GUI::drawDirectionalLightControls(DirectionalLight* directionalLight)
 	// use PushID to create a unique ID for each directional light 
 	ImGui::PushID(directionalLight->GetName().c_str());
 
-	// display the name of the directional light
-	ImGui::PushFont(m_boldFont);
-	ImGui::TextWrapped("%s", directionalLight->GetName().c_str());
-	ImGui::PopFont();
-
 	// get the color of the directional light
 	glm::vec3 color = directionalLight->GetDiffuse();
 	// create a color picker for the directional light's color
@@ -1020,11 +1005,6 @@ void GUI::drawPointLightControls(PointLight* pointLight)
 	// use PushID to create a unique ID for each point light 
 	ImGui::PushID(pointLight->GetName().c_str());
 
-	// display the name of the point light
-	ImGui::PushFont(m_boldFont);
-	ImGui::TextWrapped("%s", pointLight->GetName().c_str());
-	ImGui::PopFont();
-
 	// get the color of the point light
 	glm::vec3 color = pointLight->GetDiffuse();
 	// create a color picker for the point light's color
@@ -1052,11 +1032,6 @@ void GUI::drawSpotlightControls(Spotlight* spotlight)
 {
 	// use PushID to create a unique ID for each spotlight
 	ImGui::PushID(spotlight->GetName().c_str());
-
-	// display the name of the spotlight
-	ImGui::PushFont(m_boldFont);
-	ImGui::Text("%s", spotlight->GetName().c_str());
-	ImGui::PopFont();
 
 	// get the color of the spotlight
 	glm::vec3 color = spotlight->GetDiffuse();
@@ -1123,11 +1098,6 @@ void GUI::drawModelControls(Model* model)
 {
 	// use PushID to create a unique ID for each model
 	ImGui::PushID(model->GetName().c_str());
-
-	// display the name of the model
-	ImGui::PushFont(m_boldFont);
-	ImGui::TextWrapped("%s", model->GetName().c_str());
-	ImGui::PopFont();
 
 	// only if the model is a shape, display the color picker
 	if (model->GetModelType() == ModelType::SHAPE)

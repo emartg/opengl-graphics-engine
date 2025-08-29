@@ -75,6 +75,7 @@ void GLFWRenderer::SetCallbackFunctions() const
 	glfwSetCursorPosCallback(window, cursorPosCallback);
 	glfwSetScrollCallback(window, scrollCallback);
 	glfwSetKeyCallback(window, keyCallback);
+	glfwSetMouseButtonCallback(window, mouseButtonCallback);
 }
 
 void GLFWRenderer::SetWindowShouldClose() const { glfwSetWindowShouldClose(window, true); }
@@ -162,4 +163,28 @@ void GLFWRenderer::keyCallback(GLFWwindow* window, int key, int scancode, int ac
 		Core::GetInstance()->GetInputManager()->KeyCallback("R_PRESSED");
 	else if (key == GLFW_KEY_T && action == GLFW_PRESS)
 		Core::GetInstance()->GetInputManager()->KeyCallback("T_PRESSED");
+	else if (key == GLFW_KEY_DELETE && action == GLFW_PRESS)
+		Core::GetInstance()->GetInputManager()->KeyCallback("DEL_PRESSED");
+}
+
+void GLFWRenderer::mouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
+{
+	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
+	{ // if the left mouse button is pressed, perform object picking
+		ImGuiIO& io = ImGui::GetIO(); // get the ImGui IO structure
+
+		if (io.WantCaptureMouse)
+			return; // ignore clicks over GUI
+
+		// get the current cursor position
+		double xpos, ypos;
+		glfwGetCursorPos(window, &xpos, &ypos);
+
+		// queue a pick request in the SelectionManager
+		auto core = Core::GetInstance();
+		core->GetSelectionManager()->QueuePick(
+			xpos, ypos,
+			core->GetScreenWidth(), core->GetScreenHeight()
+		);
+	}
 }

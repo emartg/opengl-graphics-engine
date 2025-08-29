@@ -78,6 +78,12 @@ void InputManager::KeyCallback(std::string input)
 		core->GetSceneManager()->GetCamera()->ResetCamera();
 		std::cout << "[INFO::INPUTMANAGER::KeyCallback] Camera reset to default values" << std::endl;
 	}
+	else if (input == "DEL_PRESSED")
+	{ // if the 'Delete' key is pressed, delete the currently selected asset (if any)
+		auto selectionMgr = core->GetSelectionManager();
+		selectionMgr->DeleteSelected(core->GetAssetManager().get());
+		std::cout << "[INFO::INPUTMANAGER::KeyCallback] Delete pressed, attempting to delete selection" << std::endl;
+	}
 	else
 	{ // if the input is not recognized, print an error message
 		std::cerr << "[ERROR::INPUTMANAGER::KeyCallback] Unknown key input: " << input << std::endl;

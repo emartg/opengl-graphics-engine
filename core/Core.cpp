@@ -25,7 +25,8 @@ Core::Core()
 	: m_renderer{ nullptr },
 	m_assetManager{ std::make_shared<AssetManager>() },
 	m_inputManager{ std::make_shared<InputManager>() },
-	m_sceneManager{ std::make_shared<SceneManager>() }
+	m_sceneManager{ std::make_shared<SceneManager>() },
+	m_selectionManager{ std::make_shared<SelectionManager>() }
 {}
 
 // Destructor
@@ -91,6 +92,10 @@ bool Core::Init() const
 
 	// set the viewport to the window size
 	m_renderer->SetViewport(m_screenWidth, m_screenHeight);
+
+	// initialize selection manager picking FBO with current window size
+	if (m_selectionManager)
+		m_selectionManager->Resize(m_screenWidth, m_screenHeight);
 	// configure OpenGL global state
 	m_renderer->ConfigOpenGL();
 	// initialize the user interface
@@ -178,6 +183,14 @@ bool Core::CompileShaders(const std::vector<std::string>& shaderNames,
 
 		// add the compiled shader to the asset manager
 		m_assetManager->AddAsset(std::move(shader));
+
+		// if this is the picking shader, set it in the selection manager
+		if (shaderNames[i] == "Picking Shader" && m_selectionManager)
+		{
+			auto added = std::dynamic_pointer_cast<Shader>(m_assetManager->GetAssets(AssetType::SHADER).back());
+			m_selectionManager->SetPickingShader(added);
+			std::cout << "[INFO::CORE::CompileShaders] Picking Shader assigned to SelectionManager" << std::endl;
+		}
 	}
 
 	// if all shaders are compiled successfully, print a success message and return true
@@ -238,4 +251,6 @@ void Core::LoadTextures(const std::vector<std::string>& textureNames,
 void Core::FramebufferSizeCallback(GLint width, GLint height)
 {
 	glViewport(0, 0, width, height);
+	if (m_selectionManager) // keep picking FBO in sync with window size
+		m_selectionManager->Resize(width, height);
 }

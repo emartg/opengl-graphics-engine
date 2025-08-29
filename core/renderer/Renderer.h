@@ -120,9 +120,10 @@ protected:
 	std::shared_ptr<Shader> m_untexturedMattShapeShader;
 	std::shared_ptr<Shader> m_assimpModelShader;
 	std::shared_ptr<Shader> m_singleAlbedoShader;
-
-	// screen-quad post-process shader and its buffers
 	std::shared_ptr<Shader> m_screenShader;
+	std::shared_ptr<Shader> m_pickingShader;
+
+	// buffers for the screen quad (for rendering the offscreen texture to the screen)
 	GLuint m_screenQuadVAO{}, m_screenQuadVBO{}, m_screenQuadEBO{};
 	GLuint m_offscreenWidth{}, m_offscreenHeight{};
 
