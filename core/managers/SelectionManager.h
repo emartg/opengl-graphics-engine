@@ -38,6 +38,9 @@ public:
 	// Called from the renderer at frame start to perform the queued pick (if any)
 	void ProcessPendingPick(const Camera* camera, AssetManager* assetManager);
 
+	// Renders (or re-renders) the full picking buffer for visualization (no selection readback)
+	void RenderPickingVisualization(const Camera* camera, AssetManager* assetManager);
+
 	// Get currently selected asset id (0 means none)
 	std::uint32_t GetSelectedAssetId() const { return m_selectedAssetId; }
 
@@ -55,6 +58,9 @@ public:
 
 	// Sets picking shader (obtained after compilation)
 	void SetPickingShader(const std::shared_ptr<Shader>& shader) { m_pickingShader = shader; }
+
+	// Returns the texture id of the picking color attachment (0 if unavailable or FBO not created)
+	GLuint GetPickingTextureId() const;
 
 private:
 	// Private Attributes

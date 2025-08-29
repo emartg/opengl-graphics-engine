@@ -347,7 +347,13 @@ void GUI::drawDebugWindow()
 		auto renderer = Core::GetInstance()->GetRenderer();
 		auto& params = renderer->GetScreenDebugParams();
 		// vector of strings that represent the different debug modes
-		std::vector<std::string> debugModes = { "Normal", "Solid Color", "Grid Overlay", "Inverted Colors" };
+		std::vector<std::string> debugModes = {
+			"Normal",
+			"Solid Color",
+			"Grid Overlay",
+			"Inverted Colors",
+			"Picking Colors"
+		};
 		int debugModeIndex = static_cast<int>(params.debugMode); // current debug mode index
 		bool paramsChanged{ false }; // dirty flag to check if any of the params were changed
 
@@ -356,9 +362,9 @@ void GUI::drawDebugWindow()
 		ImGui::Text("RENDERING INFORMATION");
 		ImGui::PopFont();
 
-		// display the current frame time and FPS
-		ImGui::Text("Frame Time: %.3f ms/frame", 1000.0f / ImGui::GetIO().Framerate);
+		// display the current FPS and frame time
 		ImGui::Text("FPS: %.1f", ImGui::GetIO().Framerate);
+		ImGui::Text("Frame Time: %.3f ms/frame", 1000.0f / ImGui::GetIO().Framerate);
 
 		// display the screen texture debug mode currently in use and the values of its parameters
 		ImGui::Text("Screen Texture Debug Mode: %s", debugModes[debugModeIndex].c_str());
@@ -380,6 +386,10 @@ void GUI::drawDebugWindow()
 				break;
 			case 3: // Inverted Colors mode
 				break; // no parameters to display
+			case 4: // Picking Colors (raw picking buffer visualization)
+				// no parameters to display, draw a text to explain what is shown
+				ImGui::Text("\tShowing per-object encoded IDs as colors");
+				break;
 			default:
 				std::cerr << "[ERROR::GUI::drawDebugWindow] Unknown screen texture debug mode index: "
 					<< debugModeIndex << std::endl;
@@ -478,6 +488,8 @@ void GUI::drawDebugWindow()
 			}
 			break;
 			case 3: // Inverted Colors mode
+				break; // no additional controls needed
+			case 4: // Picking Colors (raw picking buffer visualization)
 				break; // no additional controls needed
 			default:
 				std::cerr << "[ERROR::GUI::drawDebugWindow] Unknown screen texture debug mode: "

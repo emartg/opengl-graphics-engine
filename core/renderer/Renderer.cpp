@@ -597,6 +597,16 @@ void Renderer::CompositeToScreen()
 	const GLuint width = core->GetScreenWidth();
 	const GLuint height = core->GetScreenHeight();
 
+	// get the selection manager from the core instance
+	auto selectionManager = core->GetSelectionManager();
+
+	// if debug mode is Picking Visualization (mode 4), render the picking buffer every frame
+	if (m_screenDebugParams.debugMode == 4 && selectionManager)
+	{
+		auto camera = core->GetSceneManager()->GetCamera();
+		selectionManager->RenderPickingVisualization(camera.get(), core->GetAssetManager().get());
+	}
+
 	// unbind offscreen target, effectively switching back to the default framebuffer
 	m_mainRenderPass->Unbind();
 
@@ -619,7 +629,7 @@ void Renderer::CompositeToScreen()
 	// set the screen texture uniform to texture unit 0
 	m_screenShader->SetInt("screenTexture", 0);
 	// set screen debug parameters as uniforms in the screen fragment shader
-	std::string prefix = "screenDebugParams."; // prefix for the screen debug parameters (to avoid repetition)
+	std::string prefix = "screenDebugParams."; // prefix for the screen debug parameters
 	m_screenShader->SetInt(prefix + "debugMode", m_screenDebugParams.debugMode);
 	m_screenShader->SetVec3(prefix + "solidColor", m_screenDebugParams.solidColor);
 	m_screenShader->SetInt(prefix + "gridLineCount", m_screenDebugParams.gridLineCount);
@@ -631,11 +641,30 @@ void Renderer::CompositeToScreen()
 
 	// bind the offscreen render pass texture to texture unit 0 and set it as the active texture
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, m_mainRenderPass->GetTextureId(0));
+
+	// if debug mode is Picking Visualization (4) and the picking texture is available, bind it;
+	// otherwise, bind the main render pass color texture
+	if (m_screenDebugParams.debugMode == 4 && selectionManager->GetPickingTextureId() != 0)
+	{ // if the picking texture is available, bind it
+		glBindTexture(GL_TEXTURE_2D, selectionManager->GetPickingTextureId());
+	}
+	else if (m_screenDebugParams.debugMode == 4 && selectionManager
+			 && selectionManager->GetPickingTextureId() == 0)
+	{ // if the picking texture is not available, print a warning and bind the main color texture instead
+		std::cerr << "[WARNING::RENDERER::CompositeToScreen] Picking texture not available, "
+			"binding main render pass color texture instead" << std::endl;
+		glBindTexture(GL_TEXTURE_2D, m_mainRenderPass->GetTextureId(0));
+	}
+	else
+	{ // otherwise, bind the main render pass color texture
+		glBindTexture(GL_TEXTURE_2D, m_mainRenderPass->GetTextureId(0));
+	}
+
 	// bind the screen quad VAO and draw the screen quad
 	glBindVertexArray(m_screenQuadVAO);
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
 	glBindVertexArray(0);
+
 	// unbind the texture to avoid accidental modifications
 	glBindTexture(GL_TEXTURE_2D, 0);
 

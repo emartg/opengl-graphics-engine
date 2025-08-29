@@ -161,8 +161,6 @@ void GLFWRenderer::keyCallback(GLFWwindow* window, int key, int scancode, int ac
 		Core::GetInstance()->GetInputManager()->KeyCallback("ESC_PRESSED");
 	else if (key == GLFW_KEY_R && action == GLFW_PRESS)
 		Core::GetInstance()->GetInputManager()->KeyCallback("R_PRESSED");
-	else if (key == GLFW_KEY_T && action == GLFW_PRESS)
-		Core::GetInstance()->GetInputManager()->KeyCallback("T_PRESSED");
 	else if (key == GLFW_KEY_DELETE && action == GLFW_PRESS)
 		Core::GetInstance()->GetInputManager()->KeyCallback("DEL_PRESSED");
 }
