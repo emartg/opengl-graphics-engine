@@ -600,9 +600,19 @@ void Renderer::CompositeToScreen()
 	// get the selection manager from the core instance
 	auto selectionManager = core->GetSelectionManager();
 
-	// if debug mode is Picking Visualization (mode 4), render the picking buffer every frame
-	if (m_screenDebugParams.debugMode == 4 && selectionManager)
+	// depending on the debug mode and whether there is a selection,
+	// render the outline mask or the picking visualization
+	if (m_screenDebugParams.debugMode <= 1 && selectionManager)
 	{
+		// if debug mode is either Normal mode (1) or Inverted Colors mode (3)
+		// and there is a selection, render the outline mask
+		auto camera = core->GetSceneManager()->GetCamera();
+		selectionManager->RenderOutlineMask(camera.get(), core->GetAssetManager().get());
+	}
+	else if (m_screenDebugParams.debugMode == 4 && selectionManager)
+	{
+		// if debug mode is the Picking Colors mode (4) and there is a selection, 
+		// render picking visualization
 		auto camera = core->GetSceneManager()->GetCamera();
 		selectionManager->RenderPickingVisualization(camera.get(), core->GetAssetManager().get());
 	}
@@ -642,23 +652,54 @@ void Renderer::CompositeToScreen()
 	// bind the offscreen render pass texture to texture unit 0 and set it as the active texture
 	glActiveTexture(GL_TEXTURE0);
 
-	// if debug mode is Picking Visualization (4) and the picking texture is available, bind it;
-	// otherwise, bind the main render pass color texture
-	if (m_screenDebugParams.debugMode == 4 && selectionManager->GetPickingTextureId() != 0)
-	{ // if the picking texture is available, bind it
-		glBindTexture(GL_TEXTURE_2D, selectionManager->GetPickingTextureId());
-	}
-	else if (m_screenDebugParams.debugMode == 4 && selectionManager
-			 && selectionManager->GetPickingTextureId() == 0)
-	{ // if the picking texture is not available, print a warning and bind the main color texture instead
-		std::cerr << "[WARNING::RENDERER::CompositeToScreen] Picking texture not available, "
-			"binding main render pass color texture instead" << std::endl;
-		glBindTexture(GL_TEXTURE_2D, m_mainRenderPass->GetTextureId(0));
+	// if debug mode is Picking Colors mode (4), depending on whether the picking texture is available,
+	// bind the picking texture or the main color texture; otherwise, bind the main color texture
+	if (m_screenDebugParams.debugMode == 4)
+	{
+		if (selectionManager->GetPickingTextureId() != 0)
+		{ // if the picking texture is available, bind it
+			glBindTexture(GL_TEXTURE_2D, selectionManager->GetPickingTextureId());
+		}
+		else
+		{ // if the picking texture is not available, print a warning and bind the main color texture instead
+			std::cerr << "[WARNING::RENDERER::CompositeToScreen] Picking texture not available, "
+				"binding main render pass color texture instead" << std::endl;
+			glBindTexture(GL_TEXTURE_2D, m_mainRenderPass->GetTextureId(0));
+		}
 	}
 	else
 	{ // otherwise, bind the main render pass color texture
 		glBindTexture(GL_TEXTURE_2D, m_mainRenderPass->GetTextureId(0));
 	}
+
+	// local variables for outline parameters
+	// there is only and outline if there is a selected asset and the outline mask texture is available
+	const bool hasOutline =
+		selectionManager->GetSelectedAssetId() != 0 && selectionManager->GetOutlineMaskTextureId() != 0;
+	glm::vec3 outlineColor{ 0.0f };
+	GLuint outlineThickness = 0;
+
+	auto& params = selectionManager->GetOutlineParams(); // get the outline parameters
+	if (m_screenDebugParams.debugMode <= 1 && hasOutline)
+	{
+		// if debug mode is either Normal mode (1) or Inverted Colors mode (2)
+		// and there is a selection, use the outline parameters from the selection manager
+		outlineColor = params.color;
+		outlineThickness = params.thickness;
+	}
+
+	// set outline parameters as uniforms in the screen fragment shader
+	m_screenShader->SetInt("hasOutline", hasOutline);
+	m_screenShader->SetVec3("outlineColor", outlineColor);
+	m_screenShader->SetInt("outlineThickness", outlineThickness);
+
+	// bind the outline mask texture to texture unit 1 and set it as the active texture
+	glActiveTexture(GL_TEXTURE1);
+	m_screenShader->SetInt("outlineMaskTexture", 1);
+	if (hasOutline) // if there is an outline to render, bind the outline mask texture
+		glBindTexture(GL_TEXTURE_2D, selectionManager->GetOutlineMaskTextureId());
+	else // otherwise, bind texture 0 to avoid undefined behavior in the shader
+		glBindTexture(GL_TEXTURE_2D, 0);
 
 	// bind the screen quad VAO and draw the screen quad
 	glBindVertexArray(m_screenQuadVAO);

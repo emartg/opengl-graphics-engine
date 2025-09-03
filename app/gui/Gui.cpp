@@ -349,10 +349,10 @@ void GUI::drawDebugWindow()
 		// vector of strings that represent the different debug modes
 		std::vector<std::string> debugModes = {
 			"Normal",
-			"Solid Color",
-			"Grid Overlay",
 			"Inverted Colors",
-			"Picking Colors"
+			"Picking Colors",
+			"Solid Color",
+			"Grid Overlay"
 		};
 		int debugModeIndex = static_cast<int>(params.debugMode); // current debug mode index
 		bool paramsChanged{ false }; // dirty flag to check if any of the params were changed
@@ -372,23 +372,23 @@ void GUI::drawDebugWindow()
 		{
 			case 0: // Normal mode
 				break; // no parameters to display
-			case 1: // Solid Color mode
+			case 1: // Inverted Colors mode
+				break; // no parameters to display
+			case 2: // Picking Colors (raw picking buffer visualization)
+				// no parameters to display, draw a text to explain what is shown
+				ImGui::Text("\tShowing per-object encoded IDs as colors");
+				break;
+			case 3: // Solid Color mode
 				ImGui::Text("\tSolid Color: (%.3f, %.3f, %.3f)",
 							params.solidColor.r, params.solidColor.g, params.solidColor.b);
 				break;
-			case 2: // Grid Overlay mode
+			case 4: // Grid Overlay mode
 				ImGui::Text("\tGrid Line Count: %d", params.gridLineCount);
 				ImGui::Text("\tGrid Line Thickness: %.2f", params.gridLineThickness);
 				ImGui::Text("\tGrid Background Color: (%.3f, %.3f, %.3f)",
 							params.gridBgColor.r, params.gridBgColor.g, params.gridBgColor.b);
 				ImGui::Text("\tGrid Line Color: (%.3f, %.3f, %.3f)",
 							params.gridLineColor.r, params.gridLineColor.g, params.gridLineColor.b);
-				break;
-			case 3: // Inverted Colors mode
-				break; // no parameters to display
-			case 4: // Picking Colors (raw picking buffer visualization)
-				// no parameters to display, draw a text to explain what is shown
-				ImGui::Text("\tShowing per-object encoded IDs as colors");
 				break;
 			default:
 				std::cerr << "[ERROR::GUI::drawDebugWindow] Unknown screen texture debug mode index: "
@@ -429,7 +429,11 @@ void GUI::drawDebugWindow()
 		{
 			case 0: // Normal mode
 				break; // no additional controls needed
-			case 1: // Solid Color mode
+			case 1: // Inverted Colors mode
+				break; // no additional controls needed
+			case 2: // Picking Colors mode (raw picking buffer visualization)
+				break; // no additional controls needed
+			case 3: // Solid Color mode
 			{ // draw a color picker to select the solid color
 				ImGui::Text("\tConfiguration");
 				ImGui::Text("\t\t"); // add some vertical spacing for better visual separation
@@ -442,7 +446,7 @@ void GUI::drawDebugWindow()
 				}
 			}
 			break;
-			case 2: // Grid Overlay mode
+			case 4: // Grid Overlay mode
 			{ // draw controls for each parameter
 				ImGui::Text("\tConfiguration");
 				ImGui::Text("\t\t"); // add some vertical spacing for better visual separation
@@ -487,10 +491,6 @@ void GUI::drawDebugWindow()
 					paramsChanged = true; // mark the params as changed
 			}
 			break;
-			case 3: // Inverted Colors mode
-				break; // no additional controls needed
-			case 4: // Picking Colors (raw picking buffer visualization)
-				break; // no additional controls needed
 			default:
 				std::cerr << "[ERROR::GUI::drawDebugWindow] Unknown screen texture debug mode: "
 					<< debugModeIndex << std::endl;

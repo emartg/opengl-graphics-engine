@@ -21,7 +21,12 @@ SelectionManager::SelectionManager() : m_width{ 0 }, m_height{ 0 }, m_selectedAs
 
 // Destructor
 // ----------
-SelectionManager::~SelectionManager() { m_pickingPass.DeallocateResources(); }
+SelectionManager::~SelectionManager()
+{
+	// deallocate resources for each render pass
+	m_pickingPass.DeallocateResources();
+	m_outlinePass.DeallocateResources();
+}
 
 // Public Methods
 // --------------
@@ -43,9 +48,8 @@ void SelectionManager::ProcessPendingPick(const Camera* camera, AssetManager* as
 		std::cerr << "[WARNING::SELECTIONMANAGER::ProcessPendingPick] Picking shader not set" << std::endl;
 		return;
 	}
+	if (m_width == 0 || m_height == 0) return; // if the window is zero-sized, return
 
-	// if the window is zero-sized, return
-	if (m_width == 0 || m_height == 0) return;
 	// ensure FBO exists (just in case Resize was not called yet)
 	if (m_pickingPass.GetFboId() == 0)
 		ensurePickingPass();
@@ -230,23 +234,46 @@ void SelectionManager::Resize(GLuint width, GLuint height)
 {
 	// if the window size is zero, return
 	if (width == 0 || height == 0) return;
-	// if the window size is unchanged and FBO is valid (i.e. already created), return
-	if (width == m_width && height == m_height && m_pickingPass.GetFboId() != 0) return;
 
+	bool sizeChanged = width != m_width || height != m_height; // flag for size change
+
+	// if the window size is unchanged and the FBOs are already created, return
+	if (!sizeChanged && m_pickingPass.GetFboId() != 0 && m_outlinePass.GetFboId() != 0)
+		return;
+
+	// update internal width and height
 	m_width = width;
 	m_height = height;
 
-	// update the specification, recreate the picking FBO and print info
-	RenderPassSpecification spec{};
-	spec.Width = m_width;
-	spec.Height = m_height;
-	spec.ColorAttachmentCount = 1;
-	spec.HasDepthAttachment = true;
-	spec.HasStencilAttachment = false; // not needed for picking pass
+	// recreate the picking pass with an updated specification and print info
+	{
+		RenderPassSpecification spec{};
+		spec.Width = m_width;
+		spec.Height = m_height;
+		spec.ColorAttachmentCount = 1;		// single channel for id encoding
+		spec.HasDepthAttachment = true;		// need depth for correct occlusion
+		spec.HasStencilAttachment = false;	// not needed for picking pass
 
-	m_pickingPass.Create(spec);
-	std::cout << "[INFO::SELECTIONMANAGER::Resize] Picking pass resized to "
-		<< m_width << "x" << m_height << std::endl;
+		m_pickingPass.Create(spec);			// create or recreate the picking pass
+
+		std::cout << "[INFO::SELECTIONMANAGER::Resize] Picking pass resized to "
+			<< m_width << "x" << m_height << std::endl;
+	}
+
+	// recreate the outline pass with an updated specification and print info
+	{
+		RenderPassSpecification spec{};
+		spec.Width = m_width;
+		spec.Height = m_height;
+		spec.ColorAttachmentCount = 1;		// single channel for mask
+		spec.HasDepthAttachment = true;		// need depth for correct occlusion
+		spec.HasStencilAttachment = false;	// not needed for outline pass
+
+		m_outlinePass.Create(spec);			// create or recreate the outline pass
+
+		std::cout << "[INFO::SELECTIONMANAGER::Resize] Outline pass resized to "
+			<< m_width << "x" << m_height << std::endl;
+	}
 }
 
 GLuint SelectionManager::GetPickingTextureId() const
@@ -255,6 +282,67 @@ GLuint SelectionManager::GetPickingTextureId() const
 	if (m_pickingPass.GetFboId() == 0) return 0;
 	// otherwise, return the texture id of the first color attachment (0 if invalid index)
 	return m_pickingPass.GetTextureId(0);
+}
+
+void SelectionManager::RenderOutlineMask(const Camera* camera, AssetManager* assetManager)
+{
+	if (m_selectedAssetId == 0) return; // no selection, nothing to outline, return
+	if (!camera || !assetManager) return; // if no camera or asset manager, return
+	if (m_width == 0 || m_height == 0) return; // if the window is zero-sized, return
+
+	// get the selected asset by id, if not found return
+	auto selected = findAssetById(assetManager, m_selectedAssetId);
+	if (!selected) return;
+
+	// only apply to models (lights are represented by their gizmos, which are models)
+	if (selected->GetType() != AssetType::MODEL) return;
+
+	// dynamically cast the selected asset to a Model object
+	auto model = dynamic_cast<Model*>(selected.get());
+	// if the cast fails or the model is a gizmo, return
+	// (gizmos should not be outlined for now; only actual scene models, which are filled, not wireframe)
+	if (!model || model->GetGizmoType() != GizmoType::NONE) return;
+
+	// ensure FBO exists (just in case Resize was not called yet)
+	if (m_outlinePass.GetFboId() == 0) ensureOutlinePass();
+
+	// reuse picking shader for geometry submission with encodedId = 1 (mask)
+	if (!m_pickingShader)
+	{ // if no picking shader is set, print a warning and return
+		std::cerr << "[WARNING::SELECTIONMANAGER::RenderOutlineMask] Picking shader not set;\n"
+			"cannot build outline mask" << std::endl;
+		return;
+	}
+
+	// bind outline FBO, enable depth testing for correct occlusion, and clear buffers
+	m_outlinePass.Bind();
+	glEnable(GL_DEPTH_TEST);
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f); // black means no outline (mask = 0)
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	// compute view and projection matrices from the camera
+	glm::mat4 projection = glm::perspective(
+		glm::radians(camera->GetZoom()),
+		static_cast<float>(m_width) / static_cast<float>(m_height),
+		0.1f, 100.0f);
+	glm::mat4 view = camera->GetViewMatrix();
+
+	// render only the selected model with a constant mask value of 1
+	m_pickingShader->Use();
+	m_pickingShader->SetMat4("view", view);
+	m_pickingShader->SetMat4("projection", projection);
+	m_pickingShader->SetMat4("model", model->GetModelMatrix());
+	m_pickingShader->SetInt("encodedId", 1); // constant mask value
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); // ensure solid fill for outline mask
+	model->Draw(*m_pickingShader);
+
+	m_outlinePass.Unbind(); // unbind FBO after rendering
+}
+
+GLuint SelectionManager::GetOutlineMaskTextureId() const
+{
+	if (m_outlinePass.GetFboId() == 0) return 0; // if the outline FBO is not created, return 0
+	return m_outlinePass.GetTextureId(0); // otherwise, return the texture id of the first color attachment
 }
 
 // Private Methods
@@ -273,8 +361,27 @@ void SelectionManager::ensurePickingPass()
 	spec.HasStencilAttachment = false; // not needed for picking pass
 
 	m_pickingPass.Create(spec);
+
 	std::cout << "[INFO::SELECTIONMANAGER::ensurePickingPass] Picking pass created with dimensions "
 		<< m_width << "x" << m_height << std::endl;
+}
+
+void SelectionManager::ensureOutlinePass()
+{
+	// if the outline FBO is already created and valid, return
+	if (m_outlinePass.GetFboId() != 0) return;
+
+	// create the outline FBO with the current window size among other specs and print info
+	RenderPassSpecification spec{};
+	spec.Width = m_width;
+	spec.Height = m_height;
+	spec.ColorAttachmentCount = 1;
+	spec.HasDepthAttachment = true;
+	spec.HasStencilAttachment = false;
+
+	m_outlinePass.Create(spec);
+
+	std::cout << "[INFO::SELECTIONMANAGER::ensureOutlinePass] Outline pass created (" << m_width << "x" << m_height << ")" << std::endl;
 }
 
 std::uint32_t SelectionManager::readPixelId(GLint x, GLint y) const
