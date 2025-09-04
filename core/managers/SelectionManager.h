@@ -55,8 +55,8 @@ public:
 	// Returns a shared_ptr to the currently selected asset (may be null)
 	std::shared_ptr<Asset> GetSelectedAsset(AssetManager* assetManager) const;
 
-	// Clears the selection
-	void ClearSelection() { m_selectedAssetId = 0; }
+	// Clears the selection and explicitly clears the outline mask
+	void ClearSelection();
 
 	// Deletes currently selected asset (and associated gizmo if a light)
 	void DeleteSelected(AssetManager* assetManager);
@@ -106,6 +106,12 @@ private:
 	// Ensures the outline pass is created
 	void ensureOutlinePass();
 
+	// Clears the outline mask FBO (used when selection changes to a non-outline-eligible asset or is cleared)
+	void clearOutlineMask();
+
+	// Returns true if the asset should have an outline mask generated (real scene model, not a gizmo)
+	bool isOutlineEligible(const std::shared_ptr<Asset>& asset) const;
+
 	// Reads the pixel id at the given coordinates from the picking FBO
 	std::uint32_t readPixelId(GLint x, GLint y) const;
 
@@ -115,4 +121,5 @@ private:
 	// If the given asset is a gizmo model, resolves it to the owning light asset
 	std::shared_ptr<Asset> resolveGizmoToLight(AssetManager* assetManager,
 											   const std::shared_ptr<Asset>& gizmoModel) const;
+
 };

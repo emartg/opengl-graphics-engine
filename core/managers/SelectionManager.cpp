@@ -56,12 +56,16 @@ void SelectionManager::ProcessPendingPick(const Camera* camera, AssetManager* as
 
 	// previous selection state (for change detection and logging)
 	std::uint32_t previousSelectedId = m_selectedAssetId;
+	std::shared_ptr<Asset> previousAsset;
 	std::string previousSelectedName;
 	if (previousSelectedId != 0)
 	{ // if there was a previous selection, get its name for logging
-		if (auto prevAsset = findAssetById(assetManager, previousSelectedId))
-			previousSelectedName = prevAsset->GetName();
+		previousAsset = findAssetById(assetManager, previousSelectedId);
+		if (previousAsset) // if the asset still exists, get its name
+			previousSelectedName = previousAsset->GetName();
 	}
+	// check if previous selection was outline-eligible, i.e. a real model (not a gizmo)
+	bool previousOutlineEligible = isOutlineEligible(previousAsset);
 
 	// bind picking FBO, enable depth testing for correct occlusion, and clear buffers
 	m_pickingPass.Bind();
@@ -111,23 +115,23 @@ void SelectionManager::ProcessPendingPick(const Camera* camera, AssetManager* as
 	// a picked id of 0 means no selection, 
 	// i.e. the user clicked on empty space or there was no previous selection
 	if (pickedId == 0)
-	{ // if no object was picked, clear selection and log deselection if any
+	{ // if no object was picked, log deselection (if any) and clear selection if needed
 		if (previousSelectedId != 0)
-		{ // if there was a previous selection, clear it and log the deselection
-			m_selectedAssetId = 0; // clear selection
+		{ // if there was a previous selection, log its deselection
 			std::cout << "[INFO::SELECTIONMANAGER::ProcessPendingPick] Deselected asset "
 				<< previousSelectedName << " (ID " << previousSelectedId << ")" << std::endl;
 		}
+		ClearSelection(); // ensures stale outline mask cannot persist
 		return;
 	}
 
 	// if the user clicked on an object, find the corresponding asset by id
 	auto pickedAsset = findAssetById(assetManager, pickedId);
 	if (!pickedAsset)
-	{ // if no asset with that id exists, print a warning and clear selection
-		m_selectedAssetId = 0;
+	{ // if no asset with that id exists, print a warning and clear selection (also clears outline mask)
 		std::cout << "[WARNING::SELECTIONMANAGER::ProcessPendingPick] No asset with id "
 			<< pickedId << std::endl;
+		ClearSelection(); // ensures stale outline mask cannot persist
 		return;
 	}
 
@@ -139,10 +143,18 @@ void SelectionManager::ProcessPendingPick(const Camera* camera, AssetManager* as
 			pickedAsset = resolved;
 	}
 
-	// only update and print a info message if the selection changed
+	// check if the newly picked asset is outline-eligible, i.e. a real model (not a gizmo)
+	bool newOutlineEligible = isOutlineEligible(pickedAsset);
+
+	// update only if changed
 	if (pickedAsset->GetId() != previousSelectedId)
-	{ // if the selection changed, update the selected asset id and log the changes
+	{ // if the selection changed, update the selected asset id, clear outline if needed, and log the change
 		m_selectedAssetId = pickedAsset->GetId();
+
+		// if we are transitioning FROM outline-eligible TO non-eligible, clear stale outline mask
+		if (previousOutlineEligible && !newOutlineEligible)
+			clearOutlineMask();
+
 		if (previousSelectedId != 0)
 		{ // if switching from another selection, print implicit deselection as well
 			std::cout << "[INFO::SELECTIONMANAGER::ProcessPendingPick] Deselected asset "
@@ -152,7 +164,7 @@ void SelectionManager::ProcessPendingPick(const Camera* camera, AssetManager* as
 		std::cout << "[INFO::SELECTIONMANAGER::ProcessPendingPick] Selected asset "
 			<< pickedAsset->GetName() << " (ID " << m_selectedAssetId << ")" << std::endl;
 	}
-	// else clicking the same selected asset: no logging and no state change
+	// clicking same selected asset leads to no logging or state change
 }
 
 void SelectionManager::RenderPickingVisualization(const Camera* camera, AssetManager* assetManager)
@@ -206,16 +218,31 @@ std::shared_ptr<Asset> SelectionManager::GetSelectedAsset(AssetManager* assetMan
 	return findAssetById(assetManager, m_selectedAssetId);
 }
 
+void SelectionManager::ClearSelection()
+{
+	if (m_selectedAssetId != 0)
+	{ // if there was a selection, clear it and print info
+		m_selectedAssetId = 0;
+		std::cout << "[INFO::SELECTIONMANAGER::ClearSelection] Cleared selection" << std::endl;
+	}
+	clearOutlineMask(); // explicit mask clear to prevent stale outline persistence
+}
+
 void SelectionManager::DeleteSelected(AssetManager* assetManager)
 {
 	if (m_selectedAssetId == 0) return; // no selection, nothing to delete
-	// find the selected asset by id, if not found clear selection and return
-	auto asset = findAssetById(assetManager, m_selectedAssetId);
-	if (!asset) { m_selectedAssetId = 0; return; }
 
-	// if the selected asset is a light, also delete its gizmo model (if any)
+	// find the selected asset by id and check validity, if invalid clear selection and return
+	auto asset = findAssetById(assetManager, m_selectedAssetId);
+	if (!asset) { ClearSelection(); return; }
+
+	// if deleting an outlined model, clear outline before removal (avoid one-frame ghost)
+	bool wasOutlineEligible = isOutlineEligible(asset);
+	if (wasOutlineEligible)
+		clearOutlineMask();
+
 	if (asset->GetType() == AssetType::LIGHT)
-	{
+	{ // if the selected asset is a light, also remove its gizmo model (if any)
 		// dynamically cast the asset to a Light object
 		auto light = static_cast<Light*>(asset.get());
 		// if the light has a gizmo model, remove it from the asset manager
@@ -290,20 +317,20 @@ void SelectionManager::RenderOutlineMask(const Camera* camera, AssetManager* ass
 	if (!camera || !assetManager) return; // if no camera or asset manager, return
 	if (m_width == 0 || m_height == 0) return; // if the window is zero-sized, return
 
-	// get the selected asset by id, if not found return
+	// find the selected asset; if it vanished, clear mask (avoid ghost) and return
 	auto selected = findAssetById(assetManager, m_selectedAssetId);
-	if (!selected) return;
+	if (!selected)
+	{ // if the selected asset no longer exists, clear mask (if any) and return
+		clearOutlineMask();
+		return;
+	}
+	if (!isOutlineEligible(selected))
+	{ // if current selection is not outline eligible (light / gizmo), clear mask (if any) and return
+		clearOutlineMask();
+		return;
+	}
 
-	// only apply to models (lights are represented by their gizmos, which are models)
-	if (selected->GetType() != AssetType::MODEL) return;
-
-	// dynamically cast the selected asset to a Model object
-	auto model = dynamic_cast<Model*>(selected.get());
-	// if the cast fails or the model is a gizmo, return
-	// (gizmos should not be outlined for now; only actual scene models, which are filled, not wireframe)
-	if (!model || model->GetGizmoType() != GizmoType::NONE) return;
-
-	// ensure FBO exists (just in case Resize was not called yet)
+	// ensure FBO exists
 	if (m_outlinePass.GetFboId() == 0) ensureOutlinePass();
 
 	// reuse picking shader for geometry submission with encodedId = 1 (mask)
@@ -319,6 +346,10 @@ void SelectionManager::RenderOutlineMask(const Camera* camera, AssetManager* ass
 	glEnable(GL_DEPTH_TEST);
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f); // black means no outline (mask = 0)
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	// dynamically cast the selected asset to a Model object
+	auto model = dynamic_cast<Model*>(selected.get());
+	if (!model) return; // if the selected asset is not a model, return
 
 	// compute view and projection matrices from the camera
 	glm::mat4 projection = glm::perspective(
@@ -382,6 +413,38 @@ void SelectionManager::ensureOutlinePass()
 	m_outlinePass.Create(spec);
 
 	std::cout << "[INFO::SELECTIONMANAGER::ensureOutlinePass] Outline pass created (" << m_width << "x" << m_height << ")" << std::endl;
+}
+
+void SelectionManager::clearOutlineMask()
+{
+	// if the outline FBO does not exist yet there is nothing to clear, return
+	if (m_outlinePass.GetFboId() == 0) return;
+
+	// preserve depth test enable state to avoid introducing rendering artifacts downstream
+	GLboolean depthWasEnabled = glIsEnabled(GL_DEPTH_TEST);
+
+	m_outlinePass.Bind();
+	glDisable(GL_DEPTH_TEST); // not needed for a full clear
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f); // fully transparent/black mask (no outline)
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	m_outlinePass.Unbind();
+
+	// restore prior depth state
+	if (depthWasEnabled) glEnable(GL_DEPTH_TEST); else glDisable(GL_DEPTH_TEST);
+}
+
+bool SelectionManager::isOutlineEligible(const std::shared_ptr<Asset>& asset) const
+{
+	// if no valid asset or not a model, return false
+	if (!asset) return false;
+	if (asset->GetType() != AssetType::MODEL) return false;
+
+	// dynamically cast the asset to a Model object
+	auto model = dynamic_cast<Model*>(asset.get());
+	if (!model) return false; // if cast fails, return false
+
+	// exclude gizmos (light representations) to keep outline only for actual scene geometry
+	return model->GetGizmoType() == GizmoType::NONE;
 }
 
 std::uint32_t SelectionManager::readPixelId(GLint x, GLint y) const
