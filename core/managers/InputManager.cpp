@@ -39,7 +39,7 @@ void InputManager::CursorPosCallback(GLdouble xpos, GLdouble ypos, std::string i
 
 	if (m_cameraControlEnabled) // only process mouse input if camera control is enabled
 	{
-		if (input == "LMB_HOLD") // left mouse button hold for translation
+		if (input == "MIDDLE_HOLD") // middle mouse button hold for translation
 			Core::GetInstance()->GetSceneManager()->GetCamera()->ProcessMouseTranslation(xoffset, yoffset);
 		else if (input == "RMB_HOLD") // right mouse button hold for rotation
 			Core::GetInstance()->GetSceneManager()->GetCamera()->ProcessMouseRotation(xoffset, yoffset);

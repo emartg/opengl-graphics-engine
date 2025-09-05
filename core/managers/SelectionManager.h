@@ -82,6 +82,9 @@ public:
 	// Sets the outline parameters
 	void SetOutlineParams(const OutlineParams& params) { m_outlineParams = params; }
 
+	// Gets the depth texture id of the outline pass (for sampling in the main scene), 0 if unavailable
+	GLuint GetOutlineDepthTextureId() const { return m_outlinePass.GetDepthTextureId(); }
+
 private:
 	// Private Attributes
 	// ------------------

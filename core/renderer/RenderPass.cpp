@@ -8,7 +8,7 @@
 
 // Constructor
 // -----------
-RenderPass::RenderPass() : m_fboId{ 0 }, m_rboId{ 0 } {}
+RenderPass::RenderPass() : m_fboId{ 0 }, m_rboId{ 0 }, m_depthTextureId{ 0 } {}
 
 // Destructor
 // ----------
@@ -59,35 +59,62 @@ void RenderPass::Create(const RenderPassSpecification& spec)
 		}
 	}
 
-	// create a renderbuffer object (RBO) for depth and stencil attachment if specified
+	// create depth and/or stencil attachment if specified
 	if (m_specification.HasDepthAttachment || m_specification.HasStencilAttachment)
 	{
-		// generate a renderbuffer object and bind it
-		glGenRenderbuffers(1, &m_rboId);
-		glBindRenderbuffer(GL_RENDERBUFFER, m_rboId);
+		if (m_specification.DepthAsTexture && m_specification.HasDepthAttachment)
+		{
+			// if depth is needed as a texture (for sampling in shaders later) and depth attachment is requested
+			// allocate a depth (no stencil) or depth-stencil texture to sample from later
 
-		// set the renderbuffer storage format based on the specification
-		GLenum format = GL_DEPTH24_STENCIL8; // default format for depth and stencil attachment	
-		if (!m_specification.HasStencilAttachment)
-			format = GL_DEPTH_COMPONENT24; // use only depth attachment
-		else if (!m_specification.HasDepthAttachment)
-			format = GL_STENCIL_INDEX8; // use only stencil attachment
+			// create the depth (or depth-stencil) texture and bind it
+			glGenTextures(1, &m_depthTextureId);
+			glBindTexture(GL_TEXTURE_2D, m_depthTextureId);
 
-		// allocate storage for the renderbuffer and attach it to the framebuffer
-		glRenderbufferStorage(GL_RENDERBUFFER, format, m_specification.Width, m_specification.Height);
-		// attach the renderbuffer to the framebuffer as depth and/or stencil attachment 
-		// depending on the specification
-		if (m_specification.HasDepthAttachment && m_specification.HasStencilAttachment)
-		{ // if both depth and stencil attachments are specified 
-			glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, m_rboId);
+			// if stencil is also requested while needing depth as texture (rare here),
+			// GL_DEPTH24_STENCIL8 could be used and GL_DEPTH_STENCIL_ATTACHMENT attached.
+			// For now the approach is to keep it simple and ignore stencil when DepthAsTexture = true.
+			GLenum internalFmt = GL_DEPTH_COMPONENT24; // prefer sized internal format for depth texture
+			glTexImage2D(GL_TEXTURE_2D, 0, internalFmt,
+						 m_specification.Width, m_specification.Height, 0,
+						 GL_DEPTH_COMPONENT, GL_UNSIGNED_INT, nullptr);
+
+			// set texture parameters for filtering and wrapping
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+			// attach the depth texture to the framebuffer
+			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, m_depthTextureId, 0);
 		}
-		else if (m_specification.HasDepthAttachment)
-		{ // if only depth attachment is specified 
-			glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, m_rboId);
-		}
-		else if (m_specification.HasStencilAttachment)
-		{ // if only stencil attachment is specified 
-			glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, m_rboId);
+		else
+		{
+			// otherwise, allocate a renderbuffer object (RBO) for depth and/or stencil attachment 
+			// (legacy, cannot be sampled)
+
+			// create the renderbuffer object and bind it
+			glGenRenderbuffers(1, &m_rboId);
+			glBindRenderbuffer(GL_RENDERBUFFER, m_rboId);
+
+			// determine the appropriate format based on requested attachments
+			GLenum format = GL_DEPTH24_STENCIL8;
+			if (!m_specification.HasStencilAttachment)
+				format = GL_DEPTH_COMPONENT24;
+			else if (!m_specification.HasDepthAttachment)
+				format = GL_STENCIL_INDEX8;
+
+			// allocate storage for the renderbuffer
+			glRenderbufferStorage(GL_RENDERBUFFER, format,
+								  m_specification.Width, m_specification.Height);
+
+			// attach the appropiate renderbuffer to the framebuffer based on requested attachments
+			if (m_specification.HasDepthAttachment && m_specification.HasStencilAttachment)
+				glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, m_rboId);
+			else if (m_specification.HasDepthAttachment)
+				glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, m_rboId);
+			else if (m_specification.HasStencilAttachment)
+				glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, m_rboId);
 		}
 	}
 
@@ -164,7 +191,7 @@ void RenderPass::DeallocateResources()
 	// ensure the framebuffer is unbound before deleting it
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-	// delete the framebuffer, color attachments, and renderbuffer if they exist
+	// delete the framebuffer, color attachments, renderbuffer, and depth texture if they exist
 	glDeleteFramebuffers(1, &m_fboId);
 	if (!m_colorAttachmentIds.empty())
 	{
@@ -173,10 +200,13 @@ void RenderPass::DeallocateResources()
 	}
 	if (m_rboId)
 		glDeleteRenderbuffers(1, &m_rboId);
+	if (m_depthTextureId)
+		glDeleteTextures(1, &m_depthTextureId);
 
 	// reset the identifiers to zero after deallocation
 	m_fboId = 0;
 	m_rboId = 0;
+	m_depthTextureId = 0;
 }
 
 std::string RenderPass::GetSpecificationStr() const
@@ -186,7 +216,8 @@ std::string RenderPass::GetSpecificationStr() const
 		"\tHeight: " + std::to_string(m_specification.Height) + "\n" +
 		"\tColor Attachment Count: " + std::to_string(m_specification.ColorAttachmentCount) + "\n" +
 		"\tHas Depth Attachment: " + (m_specification.HasDepthAttachment ? "Yes" : "No") + "\n" +
-		"\tHas Stencil Attachment: " + (m_specification.HasStencilAttachment ? "Yes" : "No")
+		"\tHas Stencil Attachment: " + (m_specification.HasStencilAttachment ? "Yes" : "No") +
+		"\tDepth As Texture: " + (m_specification.DepthAsTexture ? "Yes" : "No")
 		+ "\n}";
 }
 

@@ -137,10 +137,10 @@ void GLFWRenderer::framebufferSizeCallback(GLFWwindow* window, int width, int he
 void GLFWRenderer::cursorPosCallback(GLFWwindow* window, double xpos, double ypos)
 {
 	std::string button;
-	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS)
+	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_MIDDLE) == GLFW_PRESS)
+		button = "MIDDLE_HOLD"; // middle mouse button hold for translation
+	else if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS)
 		button = "RMB_HOLD"; // right mouse button hold for rotation
-	else if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
-		button = "LMB_HOLD"; // left mouse button hold for translation
 	else
 		button = ""; // no button pressed
 

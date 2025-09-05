@@ -280,6 +280,9 @@ void SelectionManager::Resize(GLuint width, GLuint height)
 		spec.ColorAttachmentCount = 1;		// single channel for id encoding
 		spec.HasDepthAttachment = true;		// need depth for correct occlusion
 		spec.HasStencilAttachment = false;	// not needed for picking pass
+		// enable depth texture as it is needed later for depth-aware outline composite
+		// (to sample the selected object's depth in the main scene)
+		spec.DepthAsTexture = true;
 
 		m_pickingPass.Create(spec);			// create or recreate the picking pass
 
@@ -295,6 +298,9 @@ void SelectionManager::Resize(GLuint width, GLuint height)
 		spec.ColorAttachmentCount = 1;		// single channel for mask
 		spec.HasDepthAttachment = true;		// need depth for correct occlusion
 		spec.HasStencilAttachment = false;	// not needed for outline pass
+		// enable depth texture as it is needed later for depth-aware outline composite
+		// (to sample the selected object's depth in the main scene)
+		spec.DepthAsTexture = true;
 
 		m_outlinePass.Create(spec);			// create or recreate the outline pass
 
@@ -390,11 +396,14 @@ void SelectionManager::ensurePickingPass()
 	spec.ColorAttachmentCount = 1;
 	spec.HasDepthAttachment = true;
 	spec.HasStencilAttachment = false; // not needed for picking pass
+	// enable depth texture as it is needed later for depth-aware outline composite
+	// (to sample the selected object's depth in the main scene)
+	spec.DepthAsTexture = true;
 
 	m_pickingPass.Create(spec);
 
-	std::cout << "[INFO::SELECTIONMANAGER::ensurePickingPass] Picking pass created with dimensions "
-		<< m_width << "x" << m_height << std::endl;
+	std::cout << "[INFO::SELECTIONMANAGER::ensurePickingPass] Picking pass created with dimensions ("
+		<< m_width << "x" << m_height << ")" << std::endl;
 }
 
 void SelectionManager::ensureOutlinePass()
@@ -409,10 +418,14 @@ void SelectionManager::ensureOutlinePass()
 	spec.ColorAttachmentCount = 1;
 	spec.HasDepthAttachment = true;
 	spec.HasStencilAttachment = false;
+	// enable depth texture as it is needed later for depth-aware outline composite
+	// (to sample the selected object's depth in the main scene)
+	spec.DepthAsTexture = true;
 
 	m_outlinePass.Create(spec);
 
-	std::cout << "[INFO::SELECTIONMANAGER::ensureOutlinePass] Outline pass created (" << m_width << "x" << m_height << ")" << std::endl;
+	std::cout << "[INFO::SELECTIONMANAGER::ensureOutlinePass] Outline pass created with dimensions ("
+		<< m_width << "x" << m_height << ")" << std::endl;
 }
 
 void SelectionManager::clearOutlineMask()

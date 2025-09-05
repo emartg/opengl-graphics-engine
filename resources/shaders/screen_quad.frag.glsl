@@ -23,10 +23,18 @@ uniform sampler2D screenTexture; // regular scene texture or picking visualizati
 // outline mask texture (alpha channel = 1.0 inside object silhouette, 0.0 outside)
 uniform sampler2D outlineMaskTexture;
 
-// outline parameters (used if the screen texture has an outline mask)
+// outline uniforms (used if the screen texture has an outline mask)
 uniform int hasOutline;			// whether the screen texture has an outline (1 if outline mask is present)
 uniform vec3 outlineColor;		// color to use for the outline if present
 uniform int outlineThickness;	// thickness of the outline in pixels (radius)
+
+// depth-aware outline uniforms
+uniform int hasDepthTextures;			// 1 if depth textures are bound (scene and selected object depth textures),
+										// 0 otherwise (no depth-aware outline)
+uniform sampler2D sceneDepthTexture;	// full screen depth texture of the scene
+uniform sampler2D outlineDepthTexture;	// depth texture of the selected object, i.e. where the outline mask > 0
+uniform float outlineDepthBias;			// depth bias to apply when comparing depths for depth-aware outline,
+										// avoiding z-fighting artifacts
 
 // screen debug mode parameters to control the rendering mode
 uniform ScreenDebugParams screenDebugParams;
@@ -128,9 +136,42 @@ void main()
 		}
 	}
 
-	// output the outline color if an edge pixel was found, otherwise output the base color
+	// output the depth-aware outline color if an edge pixel was found, otherwise output the base color
 	if (edge)
-		FragColor = vec4(outlineColor, 1.0);
+	{ // depth-aware: only draw outline if selected surface is in front of current pixel's scene depth
+		if (hasDepthTextures == 1)
+		{ // if depth textures are available, perform depth-aware outline rendering
+			// sample the scene depth at the current pixel
+			float sceneDepth = texture(sceneDepthTexture, TexCoords).r;
+			// find representative depth of selected object near the edge,
+			// sampling again in a small neighborhood around the pixel 
+			// and picking the minimum (closest) depth, where the outline mask > 0
+			float selectedDepth = 1.0; // initialize to far plane depth (1.0 in [0,1] depth range)
+			// search in a smaller radius to avoid bleeding of the outline depth
+			for (int dy = -radius; dy <= radius; ++dy)
+			{ // loop over y offsets
+				for (int dx = -radius; dx <= radius; ++dx)
+				{ // loop over x offsets
+					vec2 offset = vec2(float(dx), float(dy)) * texel; // offset in UV coordinates
+					// sample the outline mask at the offset pos to check if inside the object silhouette
+					float outlineMask = sampleMask(TexCoords + offset);
+					if (outlineMask > 0.0)
+					{ // if inside the object silhouette, sample the selected object depth texture
+						float depth = texture(outlineDepthTexture, TexCoords + offset).r;
+						selectedDepth = min(selectedDepth, depth); // keep the minimum (closest) depth
+					}
+				}
+			}
+			// draw outline only if selected surface is in front (smaller depth value) by a small bias
+			// to avoid z-fighting artifacts, otherwise draw the base color
+			if (selectedDepth + outlineDepthBias < sceneDepth)
+				FragColor = vec4(outlineColor, 1.0);
+			else
+				FragColor = baseColor;
+		}
+		else // fallback if depth textures are unavailable
+			FragColor = vec4(outlineColor, 1.0);
+	}
 	else
 		FragColor = baseColor;
 }

@@ -542,6 +542,10 @@ void Renderer::EnsureOffscreenRenderPass()
 		spec.ColorAttachmentCount = 1;
 		spec.HasDepthAttachment = true;
 		spec.HasStencilAttachment = true;
+		// enable depth texture as it is needed later for depth-aware outline composite
+		// (to sample the selected object's depth in the main scene)
+		spec.DepthAsTexture = true;
+
 		// create the main render pass with the new specification and dimensions
 		m_mainRenderPass->Create(spec);
 		m_offscreenWidth = width;
@@ -692,6 +696,30 @@ void Renderer::CompositeToScreen()
 	m_screenShader->SetInt("hasOutline", hasOutline);
 	m_screenShader->SetVec3("outlineColor", outlineColor);
 	m_screenShader->SetInt("outlineThickness", outlineThickness);
+
+	// bind depth textures if available for depth-aware outline rendering and set related uniforms
+	GLuint sceneDepthTex = m_mainRenderPass->GetDepthTextureId(); // retrieve the scene depth texture
+	// for the outline depth texture, reuse selection manager's outline pass depth (valid if mask rendered)
+	GLuint outlineDepthTex = 0;
+	if (hasOutline)
+	{ // if there is an outline to render, get the outline depth texture
+		outlineDepthTex = selectionManager->GetOutlineDepthTextureId();
+	}
+
+	// inform the shader if depth textures are available and set a small bias to avoid z-fighting
+	// (need at least the scene depth texture for depth-aware outline rendering, 
+	// outline depth is tested within the shader if available)
+	const bool depth = sceneDepthTex != 0;
+	m_screenShader->SetInt("hasDepthTextures", depth ? 1 : 0);
+	m_screenShader->SetFloat("outlineDepthBias", 0.0005f);
+
+	// bind depth textures to texture units 2 and 3 (only if available)
+	glActiveTexture(GL_TEXTURE2);
+	m_screenShader->SetInt("sceneDepthTexture", 2);
+	glBindTexture(GL_TEXTURE_2D, sceneDepthTex);
+	glActiveTexture(GL_TEXTURE3);
+	m_screenShader->SetInt("outlineDepthTexture", 3);
+	glBindTexture(GL_TEXTURE_2D, outlineDepthTex);
 
 	// bind the outline mask texture to texture unit 1 and set it as the active texture
 	glActiveTexture(GL_TEXTURE1);

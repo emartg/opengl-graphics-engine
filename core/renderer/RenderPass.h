@@ -13,7 +13,6 @@
 #include <glad/glad.h> // holds all OpenGL type declarations
 
 // this struct defines the specifications for the render pass
-// such as width, height, number of color attachments, and depth/stencil attachments.
 struct RenderPassSpecification
 {
 	GLuint Width{ 0 };
@@ -21,6 +20,8 @@ struct RenderPassSpecification
 	GLuint ColorAttachmentCount{ 1 };
 	GLboolean HasDepthAttachment{ true };
 	GLboolean HasStencilAttachment{ true };
+	// if true and HasDepthAttachment is true, allocate a depth (or depth-stencil) texture instead of an RBO
+	GLboolean DepthAsTexture{ false };
 };
 
 class RenderPass
@@ -58,6 +59,8 @@ public:
 	GLuint GetRboId() const { return m_rboId; }
 	// Get the texture ID for the specified color attachment index
 	GLuint GetTextureId(GLuint index = 0) const;
+	// Get the texture ID of the depth attachment if it was allocated as a texture (0 if not)
+	GLuint GetDepthTextureId() const { return m_depthTextureId; }
 
 private:
 	// Private Attributes
@@ -66,6 +69,7 @@ private:
 
 	GLuint m_fboId; // framebuffer object identificator
 	GLuint m_rboId; // renderbuffer object identificator for depth and stencil attachment
+	GLuint m_depthTextureId; // depth (or depth-stencil) attachment texture id if DepthAsTexture is true
 
 	std::vector<GLuint> m_colorAttachmentIds; // texture identificators for color attachments
 
