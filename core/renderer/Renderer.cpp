@@ -606,17 +606,16 @@ void Renderer::CompositeToScreen()
 
 	// depending on the debug mode and whether there is a selection,
 	// render the outline mask or the picking visualization
-	if (m_screenDebugParams.debugMode <= 1 && selectionManager)
+	if (m_screenDebugParams.debugMode <= 1 && selectionManager->GetSelectedAssetId() != 0)
 	{
-		// if debug mode is either Normal mode (1) or Inverted Colors mode (3)
-		// and there is a selection, render the outline mask
+		// if debug mode is either Normal mode (1) or Inverted Colors mode (3), and there is a selection,
+		// render the outline mask
 		auto camera = core->GetSceneManager()->GetCamera();
 		selectionManager->RenderOutlineMask(camera.get(), core->GetAssetManager().get());
 	}
-	else if (m_screenDebugParams.debugMode == 4 && selectionManager)
+	else if (m_screenDebugParams.debugMode == 2)
 	{
-		// if debug mode is the Picking Colors mode (4) and there is a selection, 
-		// render picking visualization
+		// if debug mode is the Picking Colors mode (2), render picking visualization
 		auto camera = core->GetSceneManager()->GetCamera();
 		selectionManager->RenderPickingVisualization(camera.get(), core->GetAssetManager().get());
 	}
@@ -656,13 +655,16 @@ void Renderer::CompositeToScreen()
 	// bind the offscreen render pass texture to texture unit 0 and set it as the active texture
 	glActiveTexture(GL_TEXTURE0);
 
-	// if debug mode is Picking Colors mode (4), depending on whether the picking texture is available,
+	// if debug mode is Picking Colors mode (2), depending on whether the picking texture is available,
 	// bind the picking texture or the main color texture; otherwise, bind the main color texture
-	if (m_screenDebugParams.debugMode == 4)
+	if (m_screenDebugParams.debugMode == 2)
 	{
 		if (selectionManager->GetPickingTextureId() != 0)
-		{ // if the picking texture is available, bind it
+		{ // if the picking texture is available, bind it and set nearest filtering
 			glBindTexture(GL_TEXTURE_2D, selectionManager->GetPickingTextureId());
+			// use nearest filtering to avoid interpolating encoded IDs
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		}
 		else
 		{ // if the picking texture is not available, print a warning and bind the main color texture instead

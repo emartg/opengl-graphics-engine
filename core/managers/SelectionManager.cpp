@@ -67,9 +67,13 @@ void SelectionManager::ProcessPendingPick(const Camera* camera, AssetManager* as
 	// check if previous selection was outline-eligible, i.e. a real model (not a gizmo)
 	bool previousOutlineEligible = isOutlineEligible(previousAsset);
 
-	// bind picking FBO, enable depth testing for correct occlusion, and clear buffers
-	m_pickingPass.Bind();
+	m_pickingPass.Bind(); // bind picking FBO
+	// ensure sRGB transform does not corrupt ID encoding (if enabled elsewhere)
+	GLboolean sRGBWasEnabled = glIsEnabled(GL_FRAMEBUFFER_SRGB);
+	if (sRGBWasEnabled) glDisable(GL_FRAMEBUFFER_SRGB);
+	// enable depth testing for correct occlusion during picking
 	glEnable(GL_DEPTH_TEST);
+	// clear color and depth buffers
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f); // black id (0) means no selection
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -108,9 +112,9 @@ void SelectionManager::ProcessPendingPick(const Camera* camera, AssetManager* as
 	GLint py = (*m_pendingPick).y;
 	std::uint32_t pickedId = readPixelId(px, py);
 
-	// unbind FBO and clear pending pick
-	m_pickingPass.Unbind();
-	m_pendingPick.reset();
+	m_pickingPass.Unbind(); // unbind FBO after rendering
+	if (sRGBWasEnabled) glEnable(GL_FRAMEBUFFER_SRGB); // restore sRGB state if needed
+	m_pendingPick.reset(); // clear pending pick
 
 	// a picked id of 0 means no selection, 
 	// i.e. the user clicked on empty space or there was no previous selection
@@ -175,10 +179,14 @@ void SelectionManager::RenderPickingVisualization(const Camera* camera, AssetMan
 	if (m_pickingPass.GetFboId() == 0) // ensure FBO exists
 		ensurePickingPass();
 
-	// bind picking FBO, enable depth testing for correct occlusion, and clear buffers
-	m_pickingPass.Bind();
+	m_pickingPass.Bind(); // bind picking FBO
+	// disable sRGB transform to avoid corrupting ID encoding (if enabled elsewhere)
+	GLboolean sRGBWasEnabled = glIsEnabled(GL_FRAMEBUFFER_SRGB);
+	if (sRGBWasEnabled) glDisable(GL_FRAMEBUFFER_SRGB);
+	// enable depth testing for correct occlusion during picking
 	glEnable(GL_DEPTH_TEST);
-	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	// clear color and depth buffers
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f); // black id (0) means no selection
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	// compute view and projection matrices from the camera
@@ -209,6 +217,7 @@ void SelectionManager::RenderPickingVisualization(const Camera* camera, AssetMan
 	}
 
 	m_pickingPass.Unbind(); // unbind FBO after rendering
+	if (sRGBWasEnabled) glEnable(GL_FRAMEBUFFER_SRGB); // restore sRGB state if needed
 }
 
 std::shared_ptr<Asset> SelectionManager::GetSelectedAsset(AssetManager* assetManager) const
@@ -220,11 +229,8 @@ std::shared_ptr<Asset> SelectionManager::GetSelectedAsset(AssetManager* assetMan
 
 void SelectionManager::ClearSelection()
 {
-	if (m_selectedAssetId != 0)
-	{ // if there was a selection, clear it and print info
-		m_selectedAssetId = 0;
-		std::cout << "[INFO::SELECTIONMANAGER::ClearSelection] Cleared selection" << std::endl;
-	}
+	// if there was a selection, clear it
+	if (m_selectedAssetId != 0) m_selectedAssetId = 0;
 	clearOutlineMask(); // explicit mask clear to prevent stale outline persistence
 }
 
