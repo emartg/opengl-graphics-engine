@@ -6,6 +6,8 @@
 * and allow the user to interact with it, e.g. change certain parameters or create new objects.
 */
 
+#include <limits> // for std::numeric_limits<float>::max()
+
 #include "Gui.h"
 #include "ImGuiFileDialog.h"
 #include "../CUBE.h"
@@ -357,6 +359,62 @@ void GUI::drawDebugWindow()
 		int debugModeIndex = static_cast<int>(params.debugMode); // current debug mode index
 		bool paramsChanged{ false }; // dirty flag to check if any of the params were changed
 
+		// local helper to draw the outline color palette (used for outline-capable modes: 0 and 1)
+		auto drawOutlineColorPalette = []()
+		{
+			ImGui::Text("\tConfiguration");
+			// access SelectionManager outline params
+			auto& selectionManager = Core::GetInstance()->GetSelectionManager();
+			auto outlineParams = selectionManager->GetOutlineParams(); // copy current outline params
+
+			// palette of vibrant outline colors (first item is the default color)
+			static const std::vector<std::pair<const char*, glm::vec3>> outlineColorPalette = {
+			{ "Cyan",     glm::vec3{ 0.00f, 0.95f, 1.00f } },
+			{ "Lime",     glm::vec3{ 0.30f, 1.00f, 0.30f } },
+			{ "Magenta",  glm::vec3{ 1.00f, 0.20f, 0.90f } },
+			{ "Yellow",   glm::vec3{ 1.00f, 0.95f, 0.20f } },
+			{ "Orange",   glm::vec3{ 1.00f, 0.60f, 0.20f } },
+			{ "Red",      glm::vec3{ 1.00f, 0.20f, 0.20f } },
+			{ "Blue",     glm::vec3{ 0.20f, 0.50f, 1.00f } },
+			{ "Purple",   glm::vec3{ 0.75f, 0.40f, 1.00f } },
+			{ "White",    glm::vec3{ 1.00f, 1.00f, 1.00f } }
+			};
+
+			// find nearest palette entry to current color (keeps UI in sync if color changed elsewhere)
+			auto currentOutlineColor = outlineParams.color;
+			int currentIdx{}; // index of the currently selected color in the palette
+			float best = std::numeric_limits<float>::max();
+			for (int i{}; i < static_cast<int>(outlineColorPalette.size()); ++i)
+			{
+				glm::vec3 d = currentOutlineColor - outlineColorPalette[i].second;
+				float dist2 = glm::dot(d, d);
+				if (dist2 < best) { best = dist2; currentIdx = i; }
+			}
+
+			ImGui::Text("\t\t"); // add some vertical spacing for better visual separation
+			ImGui::SameLine();
+			ImGui::Text("Outline Color");
+			ImGui::SameLine(); // keep the combo box on the same line as the label
+			ImGui::SetNextItemWidth(120.0f); // set a fixed width for the combo box
+			if (ImGui::BeginCombo("##OutlineColorComboBox", outlineColorPalette[currentIdx].first,
+								  ImGuiComboFlags_HeightSmall))
+			{ // if the combo box is opened, iterate through all colors in the palette and display them
+				for (int n{}; n < static_cast<int>(outlineColorPalette.size()); ++n)
+				{
+					bool isSelected = (currentIdx == n); // check if the current color is selected
+					if (ImGui::Selectable(outlineColorPalette[n].first, isSelected))
+					{ // if a color is selected, update the outline params in the SelectionManager
+						OutlineParams updated = outlineParams;
+						updated.color = outlineColorPalette[n].second;
+						selectionManager->SetOutlineParams(updated);
+					}
+					// set the selected color as the default focus, i.e. highlight it
+					if (isSelected) ImGui::SetItemDefaultFocus();
+				}
+				ImGui::EndCombo(); // end the combo box
+			}
+		};
+
 		// rendering settings section title
 		ImGui::PushFont(m_boldFont);
 		ImGui::Text("RENDERING INFORMATION");
@@ -396,6 +454,8 @@ void GUI::drawDebugWindow()
 				break;
 		}
 
+		ImGui::Text("\n"); // add some vertical spacing for better visual separation
+
 		// rendering settings section title
 		ImGui::PushFont(m_boldFont);
 		ImGui::Text("RENDERING SETTINGS");
@@ -428,9 +488,15 @@ void GUI::drawDebugWindow()
 		switch (debugModeIndex)
 		{
 			case 0: // Normal mode
-				break; // no additional controls needed
+			{ // draw the outline color palette in a combo box to allow for outline color selection
+				drawOutlineColorPalette();
+			}
+			break;
 			case 1: // Inverted Colors mode
-				break; // no additional controls needed
+			{ // draw the outline color palette in a combo box to allow for outline color selection
+				drawOutlineColorPalette();
+			}
+			break;
 			case 2: // Picking Colors mode (raw picking buffer visualization)
 				break; // no additional controls needed
 			case 3: // Solid Color mode
@@ -438,12 +504,12 @@ void GUI::drawDebugWindow()
 				ImGui::Text("\tConfiguration");
 				ImGui::Text("\t\t"); // add some vertical spacing for better visual separation
 				ImGui::SameLine();
-				// disable the alpha channel and the inputs (only show an RGB color picker)
-				if (ImGui::ColorEdit3("Solid Color", (float*)&params.solidColor,
-									  ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoAlpha))
-				{
+				ImGui::Text("Solid Color");
+				ImGui::SameLine(); // keep the color picker on the same line as the label
+				// use the custom drawColorControl helper to draw the color picker
+				if (drawColorControl("##SolidColor", params.solidColor,
+									 false, ImGui::GetContentRegionAvail().x))
 					paramsChanged = true; // mark the params as changed
-				}
 			}
 			break;
 			case 4: // Grid Overlay mode
@@ -451,8 +517,10 @@ void GUI::drawDebugWindow()
 				ImGui::Text("\tConfiguration");
 				ImGui::Text("\t\t"); // add some vertical spacing for better visual separation
 				ImGui::SameLine();
+				ImGui::Text("Grid Line Count      ");
+				ImGui::SameLine(); // keep the input field on the same line as the label
 				ImGui::SetNextItemWidth(100.0f); // set a fixed width for the input field
-				if (ImGui::InputInt("Grid Line Count", (int*)&params.gridLineCount,
+				if (ImGui::InputInt("##GridLineCount", (int*)&params.gridLineCount,
 									1, 10)) // set step values for the input field (normal and fast)
 				{ // if the input field is changed, update the number of grid lines
 					// clamp the value to a reasonable range [2, 1000]
@@ -467,8 +535,10 @@ void GUI::drawDebugWindow()
 				}
 				ImGui::Text("\t\t"); // add some vertical spacing for better visual separation
 				ImGui::SameLine();
+				ImGui::Text("Grid Line Thickness  ");
+				ImGui::SameLine(); // keep the input field on the same line as the label
 				ImGui::SetNextItemWidth(100.0f); // set a fixed width for the input field
-				if (ImGui::InputFloat("Grid Line Thickness", &params.gridLineThickness,
+				if (ImGui::InputFloat("##GridLineThickness", &params.gridLineThickness,
 									  0.05f, 0.5f, // set step values for the input field (normal and fast)
 									  "%.2f"))
 				{ // if the input field is changed, update the grid line thickness
@@ -479,14 +549,18 @@ void GUI::drawDebugWindow()
 
 				ImGui::Text("\t\t"); // add some vertical spacing for better visual separation
 				ImGui::SameLine();
+				ImGui::Text("Grid Background Color");
+				ImGui::SameLine(); // keep the color picker on the same line as the label
 				// for the background color and the line color,
 				// disable the alpha channel and the inputs (only show an RGB color picker)
-				if (ImGui::ColorEdit3("Grid Background Color", (float*)&params.gridBgColor,
+				if (ImGui::ColorEdit3("##GridBackgroundColor", (float*)&params.gridBgColor,
 									  ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoAlpha))
 					paramsChanged = true; // mark the params as changed
 				ImGui::Text("\t\t"); // add some vertical spacing for better visual separation
 				ImGui::SameLine();
-				if (ImGui::ColorEdit3("Grid Line Color", (float*)&params.gridLineColor,
+				ImGui::Text("Grid Line Color      ");
+				ImGui::SameLine(); // keep the color picker on the same line as the label
+				if (ImGui::ColorEdit3("##GridLineColor", (float*)&params.gridLineColor,
 									  ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoAlpha))
 					paramsChanged = true; // mark the params as changed
 			}
@@ -1501,7 +1575,7 @@ void GUI::drawImportModelPopup()
 
 
 bool GUI::drawColorControl(const std::string& label, glm::vec3& color,
-						   float colorControlWidth)
+						   bool showLabel, float colorControlWidth)
 {
 	bool value_changed{ false }; // flag to indicate if the color has changed
 
@@ -1510,7 +1584,8 @@ bool GUI::drawColorControl(const std::string& label, glm::vec3& color,
 
 	ImGui::PushID(label.c_str()); // create a unique ID for the label to avoid conflicts with other controls
 
-	ImGui::Text("%s", label.c_str()); // display the label for the control
+	if (showLabel) // if indicated, display the label for the control
+		ImGui::Text("%s", label.c_str());
 
 	ImGui::SetNextItemWidth(colorControlWidth); // set the width of the color picker's input fields
 	if (ImGui::ColorEdit3("##color", (float*)&color))
