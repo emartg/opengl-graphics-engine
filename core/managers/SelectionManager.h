@@ -40,7 +40,7 @@ public:
 
 	// Public Methods
 	// --------------
-	// Queues a pick request at the given window coordinates (origin top-left from GLFW)
+	// Queues a pick request at the given window coordinates (origin top-left from the windowing API)
 	void QueuePick(GLdouble mouseX, GLdouble mouseY, GLsizei windowWidth, GLsizei windowHeight);
 
 	// Called from the renderer at frame start to perform the queued pick (if any)

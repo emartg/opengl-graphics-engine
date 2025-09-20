@@ -178,11 +178,15 @@ void GLFWRenderer::mouseButtonCallback(GLFWwindow* window, int button, int actio
 		double xpos, ypos;
 		glfwGetCursorPos(window, &xpos, &ypos);
 
+		// use the actual default framebuffer size for correct Y-inversion and HiDPI support
+		// - Y-flip: OpenGL's origin is at the bottom-left corner, while windowing systems have it at the top-left
+		// - HiDPI: the window size in screen coordinates may differ from the framebuffer size in pixels 
+		//   on high-DPI displays
+		int fbWidth, fbHeight;
+		glfwGetFramebufferSize(window, &fbWidth, &fbHeight);
+
 		// queue a pick request in the SelectionManager
 		auto core = Core::GetInstance();
-		core->GetSelectionManager()->QueuePick(
-			xpos, ypos,
-			core->GetScreenWidth(), core->GetScreenHeight()
-		);
+		core->GetSelectionManager()->QueuePick(xpos, ypos, fbWidth, fbHeight);
 	}
 }

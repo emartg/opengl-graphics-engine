@@ -136,7 +136,7 @@ protected:
 	void EnsureOffscreenRenderPass();
 	// Initializes the screen quad if it has not been initialized yet
 	void InitScreenQuad();
-	// Configures OpenGL state for rendering to the screen
+	// Composites the offscreen render pass texture to the screen
 	void CompositeToScreen();
 
 };

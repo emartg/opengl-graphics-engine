@@ -250,7 +250,13 @@ void Core::LoadTextures(const std::vector<std::string>& textureNames,
 
 void Core::FramebufferSizeCallback(GLint width, GLint height)
 {
-	glViewport(0, 0, width, height);
-	if (m_selectionManager) // keep picking FBO in sync with window size
-		m_selectionManager->Resize(width, height);
+	// keep Core's notion of the default framebuffer size in sync with the actual window size
+	m_screenWidth = static_cast<GLuint>(std::max(0, width));
+	m_screenHeight = static_cast<GLuint>(std::max(0, height));
+
+	// update the default framebuffer viewport
+	if (m_renderer) m_renderer->SetViewport(m_screenWidth, m_screenHeight);
+
+	// keep picking/outline FBOs in sync with the default framebuffer size (the actual window size)s
+	if (m_selectionManager) m_selectionManager->Resize(width, height);
 }

@@ -33,7 +33,7 @@ SelectionManager::~SelectionManager()
 void SelectionManager::QueuePick(GLdouble mouseX, GLdouble mouseY,
 								 GLsizei windowWidth, GLsizei windowHeight)
 {
-	// convert from GLFW top-left to OpenGL bottom-left coordinates
+	// convert from windowing API's top-left to OpenGL bottom-left coordinates
 	GLint oglY = static_cast<GLint>(windowHeight - 1 - mouseY);
 	// store pending pick (i.e., do not process immediately, wait for frame start)
 	m_pendingPick = glm::ivec2(static_cast<GLint>(mouseX), oglY);
@@ -292,6 +292,15 @@ void SelectionManager::Resize(GLuint width, GLuint height)
 
 		m_pickingPass.Create(spec);			// create or recreate the picking pass
 
+		// prevent inaccurate id sampling when reading back by using GL_NEAREST filtering
+		if (GLuint texId = m_pickingPass.GetTextureId(0); texId != 0)
+		{
+			glBindTexture(GL_TEXTURE_2D, m_pickingPass.GetTextureId(0));
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+			glBindTexture(GL_TEXTURE_2D, 0);
+		}
+
 		std::cout << "[INFO::SELECTIONMANAGER::Resize] Picking pass resized to "
 			<< m_width << "x" << m_height << std::endl;
 	}
@@ -309,6 +318,15 @@ void SelectionManager::Resize(GLuint width, GLuint height)
 		spec.DepthAsTexture = true;
 
 		m_outlinePass.Create(spec);			// create or recreate the outline pass
+
+		// prevent edge shifts and bleeding by using GL_NEAREST filtering
+		if (GLuint texId = m_outlinePass.GetTextureId(0); texId != 0)
+		{
+			glBindTexture(GL_TEXTURE_2D, m_outlinePass.GetTextureId(0));
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+			glBindTexture(GL_TEXTURE_2D, 0);
+		}
 
 		std::cout << "[INFO::SELECTIONMANAGER::Resize] Outline pass resized to "
 			<< m_width << "x" << m_height << std::endl;
@@ -353,6 +371,13 @@ void SelectionManager::RenderOutlineMask(const Camera* camera, AssetManager* ass
 		return;
 	}
 
+	// before binding, preserve sRGB state and store previous clear color and viewport
+	// to avoid introducing rendering artifacts downstream
+	GLboolean sRGBWasEnabled = glIsEnabled(GL_FRAMEBUFFER_SRGB);
+	if (sRGBWasEnabled) glDisable(GL_FRAMEBUFFER_SRGB);
+	GLfloat prevClearColor[4]; glGetFloatv(GL_COLOR_CLEAR_VALUE, prevClearColor);
+	GLint prevViewport[4]; glGetIntegerv(GL_VIEWPORT, prevViewport);
+
 	// bind outline FBO, enable depth testing for correct occlusion, and clear buffers
 	m_outlinePass.Bind();
 	glEnable(GL_DEPTH_TEST);
@@ -380,6 +405,11 @@ void SelectionManager::RenderOutlineMask(const Camera* camera, AssetManager* ass
 	model->Draw(*m_pickingShader);
 
 	m_outlinePass.Unbind(); // unbind FBO after rendering
+
+	// after unbinding, restore prior GL state, i.e. sRGB, clear color, and viewport
+	if (sRGBWasEnabled) glEnable(GL_FRAMEBUFFER_SRGB);
+	glClearColor(prevClearColor[0], prevClearColor[1], prevClearColor[2], prevClearColor[3]);
+	glViewport(prevViewport[0], prevViewport[1], prevViewport[2], prevViewport[3]);
 }
 
 GLuint SelectionManager::GetOutlineMaskTextureId() const
@@ -406,7 +436,16 @@ void SelectionManager::ensurePickingPass()
 	// (to sample the selected object's depth in the main scene)
 	spec.DepthAsTexture = true;
 
-	m_pickingPass.Create(spec);
+	m_pickingPass.Create(spec); // create or recreate the picking pass
+
+	// prevent inaccurate id sampling when reading back by using GL_NEAREST filtering
+	if (GLuint texId = m_pickingPass.GetTextureId(0); texId != 0)
+	{
+		glBindTexture(GL_TEXTURE_2D, texId);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glBindTexture(GL_TEXTURE_2D, 0);
+	}
 
 	std::cout << "[INFO::SELECTIONMANAGER::ensurePickingPass] Picking pass created with dimensions ("
 		<< m_width << "x" << m_height << ")" << std::endl;
@@ -428,7 +467,16 @@ void SelectionManager::ensureOutlinePass()
 	// (to sample the selected object's depth in the main scene)
 	spec.DepthAsTexture = true;
 
-	m_outlinePass.Create(spec);
+	m_outlinePass.Create(spec); // create or recreate the outline pass
+
+	// prevent edge shifts and bleeding by using GL_NEAREST filtering
+	if (GLuint texId = m_outlinePass.GetTextureId(0); texId != 0)
+	{
+		glBindTexture(GL_TEXTURE_2D, texId);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glBindTexture(GL_TEXTURE_2D, 0);
+	}
 
 	std::cout << "[INFO::SELECTIONMANAGER::ensureOutlinePass] Outline pass created with dimensions ("
 		<< m_width << "x" << m_height << ")" << std::endl;
@@ -442,6 +490,14 @@ void SelectionManager::clearOutlineMask()
 	// preserve depth test enable state to avoid introducing rendering artifacts downstream
 	GLboolean depthWasEnabled = glIsEnabled(GL_DEPTH_TEST);
 
+	// before binding, preserve sRGB state and store previous clear color and viewport
+	// to avoid introducing rendering artifacts downstream
+	GLboolean sRGBWasEnabled = glIsEnabled(GL_FRAMEBUFFER_SRGB);
+	if (sRGBWasEnabled) glDisable(GL_FRAMEBUFFER_SRGB);
+	GLfloat prevClearColor[4]; glGetFloatv(GL_COLOR_CLEAR_VALUE, prevClearColor);
+	GLint prevViewport[4]; glGetIntegerv(GL_VIEWPORT, prevViewport);
+
+	// bind outline FBO, disable depth testing for full clear, and clear color and depth buffers
 	m_outlinePass.Bind();
 	glDisable(GL_DEPTH_TEST); // not needed for a full clear
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f); // fully transparent/black mask (no outline)
@@ -450,6 +506,11 @@ void SelectionManager::clearOutlineMask()
 
 	// restore prior depth state
 	if (depthWasEnabled) glEnable(GL_DEPTH_TEST); else glDisable(GL_DEPTH_TEST);
+
+	// after unbinding, restore prior GL state, i.e. sRGB, clear color, and viewport
+	if (sRGBWasEnabled) glEnable(GL_FRAMEBUFFER_SRGB);
+	glClearColor(prevClearColor[0], prevClearColor[1], prevClearColor[2], prevClearColor[3]);
+	glViewport(prevViewport[0], prevViewport[1], prevViewport[2], prevViewport[3]);
 }
 
 bool SelectionManager::isOutlineEligible(const std::shared_ptr<Asset>& asset) const

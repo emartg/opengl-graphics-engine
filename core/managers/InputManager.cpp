@@ -82,7 +82,7 @@ void InputManager::KeyCallback(std::string input)
 	{ // if the 'Delete' key is pressed, delete the currently selected asset (if any)
 		auto selectionMgr = core->GetSelectionManager();
 		selectionMgr->DeleteSelected(core->GetAssetManager().get());
-		std::cout << "[INFO::INPUTMANAGER::KeyCallback] Delete pressed, attempting to delete selection" << std::endl;
+		std::cout << "[INFO::INPUTMANAGER::KeyCallback] Delete pressed, attempting to delete selection..." << std::endl;
 	}
 	else
 	{ // if the input is not recognized, print an error message

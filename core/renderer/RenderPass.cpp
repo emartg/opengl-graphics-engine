@@ -64,8 +64,8 @@ void RenderPass::Create(const RenderPassSpecification& spec)
 	{
 		if (m_specification.DepthAsTexture && m_specification.HasDepthAttachment)
 		{
-			// if depth is needed as a texture (for sampling in shaders later) and depth attachment is requested
-			// allocate a depth (no stencil) or depth-stencil texture to sample from later
+			// if depth is needed as a texture (for sampling in shaders later) and depth attachment 
+			// is requested, allocate a depth (no stencil) or depth-stencil texture to sample from later
 
 			// create the depth (or depth-stencil) texture and bind it
 			glGenTextures(1, &m_depthTextureId);
@@ -110,11 +110,14 @@ void RenderPass::Create(const RenderPassSpecification& spec)
 
 			// attach the appropiate renderbuffer to the framebuffer based on requested attachments
 			if (m_specification.HasDepthAttachment && m_specification.HasStencilAttachment)
-				glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, m_rboId);
+				glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT,
+										  GL_RENDERBUFFER, m_rboId);
 			else if (m_specification.HasDepthAttachment)
-				glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, m_rboId);
+				glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
+										  GL_RENDERBUFFER, m_rboId);
 			else if (m_specification.HasStencilAttachment)
-				glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, m_rboId);
+				glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT,
+										  GL_RENDERBUFFER, m_rboId);
 		}
 	}
 
