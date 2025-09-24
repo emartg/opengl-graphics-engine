@@ -37,7 +37,7 @@ void SetupInitialScene(Core* engine);
 
 int main(int argc, char** argv)
 {
-	std::cout << "[main] Starting the application..." << std::endl;
+	std::cout << "[INFO::main] Starting the application..." << std::endl;
 
 	Core* engine = Core::GetInstance(); // retrieve the singleton instance of the Core class
 
@@ -47,16 +47,16 @@ int main(int argc, char** argv)
 
 	if (engine->Init()) // initialize the engine (OpenGL, window, GUI, etc.)
 	{ // if the initialization is successful, print a success message
-		std::cout << "[main] Core initialized successfully" << std::endl;
+		std::cout << "[SUCCESS::main] Core initialized successfully" << std::endl;
 	}
 	else
 	{
 		// if the initialization fails, print an error messages and shut down the engine, 
 		// then prompt the user to exit
-		std::cerr << "[main] Failed to initialize OpenGL" << std::endl;
+		std::cerr << "[ERROR::main] Failed to initialize OpenGL" << std::endl;
 		engine->Shutdown();
 		// wait until the user presses a key before exiting
-		std::cout << "[main] Enter any key and press Enter to exit" << std::endl;
+		std::cout << "[INFO::main] Enter any key and press Enter to exit" << std::endl;
 		std::cin.get();
 		return -1; // exit the program with an error code
 	}
@@ -68,14 +68,14 @@ int main(int argc, char** argv)
 	// create, compile, and link the shader programs, and add them to the engine's asset manager
 	if (engine->CompileShaders(shaderNames, vertexShaderPaths, fragmentShaderPaths))
 	{ // if the shaders are compiled successfully, print a success message
-		std::cout << "[main] Shaders compiled successfully" << std::endl;
+		std::cout << "[SUCCESS::main] Shaders compiled successfully" << std::endl;
 	}
 	else
 	{ // if the shader compilation fails, print an error message and shut down the engine
-		std::cerr << "[main] Failed to compile shaders" << std::endl;
+		std::cerr << "[ERROR::main] Failed to compile shaders" << std::endl;
 		engine->Shutdown();
 		// wait until the user presses a key before exiting
-		std::cout << "[main] Enter any key and press Enter to exit" << std::endl;
+		std::cout << "[INFO::main] Enter any key and press Enter to exit" << std::endl;
 		std::cin.get();
 		return -1; // exit the program with an error code
 	}
@@ -86,7 +86,7 @@ int main(int argc, char** argv)
 
 	engine->Shutdown(); // clean up resources in the correct order and shut down the engine
 
-	std::cout << "[main] Application finished successfully" << std::endl;
+	std::cout << "[SUCCESS::main] Application finished successfully" << std::endl;
 
 	return 0;
 }
@@ -206,7 +206,7 @@ void SetupInitialScene(Core* engine)
 	}
 	else // if the file does not exist, print an error message
 	{
-		std::cerr << "[main::SetupInitialScene] Model file not found: " << filepath << std::endl;
+		std::cerr << "[ERROR::main::SetupInitialScene] Model file not found: " << filepath << std::endl;
 	}
 
 	// load a skybox from 6 individual face file paths and set it in the scene manager
@@ -223,11 +223,11 @@ void SetupInitialScene(Core* engine)
 	}
 	else // if the directory does not exist, print an error message
 	{
-		std::cerr << "[main::SetupInitialScene] Skybox directory not found: " << skyboxDir
+		std::cerr << "[ERROR::main::SetupInitialScene] Skybox directory not found: " << skyboxDir
 			<< std::endl;
 	}
 
 	// print a success message indicating the initial scene setup is complete
-	std::cout << "[main::SetupInitialScene] Initial scene setup completed successfully"
+	std::cout << "[SUCCESS::main::SetupInitialScene] Initial scene setup completed successfully"
 		<< std::endl;
 }

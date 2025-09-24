@@ -50,7 +50,8 @@ public:
 	// Loads a cubemap texture from 6 individual texture faces
 	GLuint LoadCubemapFromFiles(const std::vector<std::string>& faces);
 
-	// Bind the texture to the specified unit (GL_TEXTURE0 + unit)
+	// Activates the corresponding texture unit and binds the texture to it
+	// (handles both 2D textures and cubemaps)
 	void Bind(GLuint unit) const;
 
 private:

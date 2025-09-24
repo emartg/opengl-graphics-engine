@@ -156,6 +156,8 @@ GLuint Texture::LoadCubemapFromFiles(const std::vector<std::string>& faces)
 
 void Texture::Bind(GLuint unit) const
 {
-	glActiveTexture(GL_TEXTURE0 + unit);
-	glBindTexture(GL_TEXTURE_2D, textureId);
+	glActiveTexture(GL_TEXTURE0 + unit); // activate the specified texture unit
+	// determine the target based on texture type (2D or cubemap)
+	const GLenum target = (textureType == TextureType::CUBEMAP) ? GL_TEXTURE_CUBE_MAP : GL_TEXTURE_2D;
+	glBindTexture(target, textureId); // bind the texture to the specified unit
 }

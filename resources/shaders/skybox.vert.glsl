@@ -10,5 +10,7 @@ void main()
 {
 	TexCoords = aPos;
 
-	gl_Position = projection * view * vec4(aPos, 1.0);
+	// push depth to far plane so that the cube is rendered behind all other geometry
+	vec4 pos = projection * view * vec4(aPos, 1.0);
+	gl_Position = pos.xyww; // set w component to the z component
 }
