@@ -381,80 +381,6 @@ void Renderer::RenderScene()
 	m_assimpModelShader->SetInt("nPointLights", pointLightIdx);
 	m_assimpModelShader->SetInt("nSpotlights", spotlightIdx);
 
-	// create and render the skybox if a skybox texture is set
-	auto& skyboxTexture = sceneManager->GetSkybox();
-	if (skyboxTexture)
-	{
-		// ensure the skybox texture is a cubemap
-		if (skyboxTexture->GetTextureType() != TextureType::CUBEMAP)
-		{ // if not, print an error message and return
-			std::cerr << "[ERROR::RENDERER::RenderScene] Skybox texture is not a cubemap" << std::endl;
-			return;
-		}
-
-		if (!m_skyboxVAO)
-		{ // if the skybox VAO has not been created yet, create it alongside the VBO and EBO
-			// create skybox VAO, VBO, and EBO
-			glGenVertexArrays(1, &m_skyboxVAO);
-			glGenBuffers(1, &m_skyboxVBO);
-			glGenBuffers(1, &m_skyboxEBO);
-
-			// bind and set skybox VAO, VBO, and EBO
-			glBindVertexArray(m_skyboxVAO);
-			glBindBuffer(GL_ARRAY_BUFFER, m_skyboxVBO);
-			glBufferData(GL_ARRAY_BUFFER, skyboxPositionsVec.size() * sizeof(GLfloat),
-						 skyboxPositionsVec.data(), GL_STATIC_DRAW);
-			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_skyboxEBO);
-			glBufferData(GL_ELEMENT_ARRAY_BUFFER, skyboxIndicesVec.size() * sizeof(GLuint),
-						 skyboxIndicesVec.data(), GL_STATIC_DRAW);
-
-			// set the vertex attribute pointers
-			glEnableVertexAttribArray(0);
-			glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
-
-			std::cout << "[SUCCESS::RENDERER::RenderScene] Skybox VBO, EBO, "
-				"and VAO created successfully" << std::endl;
-
-			glBindVertexArray(0); // unbind the VAO after setting it up
-
-			std::cout << "[SUCCESS::RENDERER::RenderScene] Skybox VAO configured successfully" << std::endl;
-		}
-
-		// disable depth writing for the skybox to prevent it from overwriting
-		// the depth values of the scene's objects (skybox is rendered at the farthest depth),
-		// and set the depth function to GL_LEQUAL to ensure the skybox is rendered
-		// correctly when depth values are equal (skybox depth is 1.0) - avoids z-fighting
-		glDepthMask(GL_FALSE); glDepthFunc(GL_LEQUAL);
-
-		// set view and projection matrices for the skybox shader
-		m_skyboxShader->Use();
-		// for the skybox, remove the translation from the view matrix, since the skybox 
-		// should always be centered and appear infinitely far away, 
-		// so we cast the mat4 to a mat3 and back to a mat4 to remove the translation component. 
-		// This way, the skybox will not move when the camera moves
-		// and will only rotate based on the camera's orientation
-		glm::mat4 viewNoTranslation = glm::mat4(glm::mat3(view)); // remove translation with a mat3 cast
-		m_skyboxShader->SetMat4("view", viewNoTranslation);
-		m_skyboxShader->SetMat4("projection", projection);
-		// explicitly set the skybox texture unit to 0 to prevent reliance on defaults or previous bindings
-		m_skyboxShader->SetInt("skybox", 0);
-
-		// bind the VAO for the skybox and bind the cubemap texture, then render the skybox
-		glBindVertexArray(m_skyboxVAO);
-		glActiveTexture(GL_TEXTURE0); // ensure the correct texture unit is active before binding (0)
-		glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxTexture->GetTextureId());
-		glDrawElements(GL_TRIANGLES, nSkyboxIndices, GL_UNSIGNED_INT, 0);
-
-		// reset depth function and re-enable depth writing after rendering the skybox
-		glDepthFunc(GL_LESS); glDepthMask(GL_TRUE);
-
-		glBindVertexArray(0); // unbind the VAO after rendering
-	}
-	else
-	{
-		std::cerr << "[WARNING::RENDERER::RenderScene] No skybox texture set in the scene" << std::endl;
-	}
-
 	// iterate over the vector of models and render them
 	auto& models = assetManager->GetAssets(AssetType::MODEL);
 	std::for_each(models.begin(), models.end(),
@@ -583,6 +509,36 @@ void Renderer::RenderScene()
 			line->Draw();
 		}
 	});
+
+	// set the polygon mode back to fill for the skybox rendering
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+	// create and render the skybox last if a skybox texture is set
+	// (rendering it last leverages the early depth test optimization,
+	// since the skybox is rendered at the farthest depth, so it will
+	// fail the depth test for all other scene objects, avoiding unnecessary fragment shader invocations)
+	auto& skyboxTexture = sceneManager->GetSkybox();
+	if (skyboxTexture)
+	{ // if a skybox texture is set, proceed to render the skybox
+		// ensure the skybox texture is a cubemap
+		if (skyboxTexture->GetTextureType() != TextureType::CUBEMAP)
+		{ // if not, print an error message and return
+			std::cerr << "[ERROR::RENDERER::RenderScene] Skybox texture is not a cubemap" << std::endl;
+			return;
+		}
+
+		if (!m_skyboxVAO)
+		{ // if the skybox VAO has not been created yet, create it alongside the VBO and EBO
+			InitSkyboxCube();
+		}
+
+		// render the skybox cube given the cubemap texture and the current view and projection matrices
+		RenderSkyboxCube(skyboxTexture, view, projection);
+	}
+	else
+	{ // if no skybox texture is set, print a warning message
+		std::cerr << "[WARNING::RENDERER::RenderScene] No skybox texture set in the scene" << std::endl;
+	}
 
 	// after the scene is rendered offscreen, composite to the default framebuffer
 	CompositeToScreen();
@@ -813,4 +769,65 @@ void Renderer::CompositeToScreen()
 	glBindTexture(GL_TEXTURE_2D, 0);
 
 	glEnable(GL_DEPTH_TEST); // re-enable the depth test for subsequent rendering
+}
+
+void Renderer::InitSkyboxCube()
+{
+	// create skybox VAO, VBO, and EBO
+	glGenVertexArrays(1, &m_skyboxVAO);
+	glGenBuffers(1, &m_skyboxVBO);
+	glGenBuffers(1, &m_skyboxEBO);
+
+	// bind and set skybox VAO, VBO, and EBO
+	glBindVertexArray(m_skyboxVAO);
+	glBindBuffer(GL_ARRAY_BUFFER, m_skyboxVBO);
+	glBufferData(GL_ARRAY_BUFFER, skyboxPositionsVec.size() * sizeof(GLfloat),
+				 skyboxPositionsVec.data(), GL_STATIC_DRAW);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_skyboxEBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, skyboxIndicesVec.size() * sizeof(GLuint),
+				 skyboxIndicesVec.data(), GL_STATIC_DRAW);
+
+	// set the vertex attribute pointers
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
+
+	std::cout << "[SUCCESS::RENDERER::RenderScene] Skybox VBO, EBO, "
+		"and VAO created successfully" << std::endl;
+
+	glBindVertexArray(0); // unbind the VAO after setting it up
+
+	std::cout << "[SUCCESS::RENDERER::RenderScene] Skybox VAO configured successfully" << std::endl;
+}
+
+void Renderer::RenderSkyboxCube(std::shared_ptr<Texture> skyboxTexture, glm::mat4& view, glm::mat4& projection)
+{
+	// disable depth writing for the skybox to prevent it from overwriting
+	// the depth values of the scene's objects (skybox is rendered at the farthest depth),
+	// and set the depth function to GL_LEQUAL to ensure the skybox is rendered
+	// correctly when depth values are equal (skybox depth is 1.0) - avoids z-fighting
+	glDepthMask(GL_FALSE); glDepthFunc(GL_LEQUAL);
+
+	// set view and projection matrices for the skybox shader
+	m_skyboxShader->Use();
+	// for the skybox, remove the translation from the view matrix, since the skybox 
+	// should always be centered and appear infinitely far away, 
+	// so we cast the mat4 to a mat3 and back to a mat4 to remove the translation component. 
+	// This way, the skybox will not move when the camera moves
+	// and will only rotate based on the camera's orientation
+	glm::mat4 viewNoTranslation = glm::mat4(glm::mat3(view)); // remove translation with a mat3 cast
+	m_skyboxShader->SetMat4("view", viewNoTranslation);
+	m_skyboxShader->SetMat4("projection", projection);
+	// explicitly set the skybox texture unit to 0 to prevent reliance on defaults or previous bindings
+	m_skyboxShader->SetInt("skybox", 0);
+
+	// bind the VAO for the skybox and bind the cubemap texture, then render the skybox
+	glBindVertexArray(m_skyboxVAO);
+	glActiveTexture(GL_TEXTURE0); // ensure the correct texture unit is active before binding (0)
+	glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxTexture->GetTextureId());
+	glDrawElements(GL_TRIANGLES, nSkyboxIndices, GL_UNSIGNED_INT, 0);
+
+	// reset depth function and re-enable depth writing after rendering the skybox
+	glDepthFunc(GL_LESS); glDepthMask(GL_TRUE);
+
+	glBindVertexArray(0); // unbind the VAO after rendering
 }

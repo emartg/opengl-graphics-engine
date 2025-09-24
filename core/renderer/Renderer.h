@@ -143,4 +143,9 @@ protected:
 	// Composites the offscreen render pass texture to the screen
 	void CompositeToScreen();
 
+	// Creates and configures the skybox cube buffers if not already done
+	void InitSkyboxCube();
+	// Renders the skybox cube with the given texture, view, and projection matrices
+	void RenderSkyboxCube(std::shared_ptr<Texture> skyboxTexture, glm::mat4& view, glm::mat4& projection);
+
 };
