@@ -11,6 +11,7 @@
 
 #include "AssetManager.h"
 #include "../camera/Camera.h"
+#include "../texture/Texture.h"
 
 class SceneManager
 {
@@ -27,10 +28,16 @@ public:
 	// --------------
 	// Getters
 	const std::shared_ptr<Camera>& GetCamera() const { return m_camera; }
+	const std::shared_ptr<Texture>& GetSkybox() const { return m_skybox; }
 	// Setters
 	void SetCamera(std::shared_ptr<Camera> camera) { m_camera = std::move(camera); }
+	void SetSkybox(std::shared_ptr<Texture> skybox) { m_skybox = std::move(skybox); }
+
+	// Load skybox from 6 individual face file paths
+	GLboolean LoadSkybox(const std::vector<std::string>& faces);
 
 private:
 	std::shared_ptr<Camera> m_camera;
+	std::shared_ptr<Texture> m_skybox;
 
 };

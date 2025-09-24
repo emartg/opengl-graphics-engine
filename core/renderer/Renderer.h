@@ -95,7 +95,7 @@ public:
 	virtual void SetScreenDebugParams(const ScreenDebugParams& params) { m_screenDebugParams = params; }
 
 	// Assigns the shader program with the specified name to the appropriate member variable
-	// for further use in the renderer
+	// for further use in the renderer.
 	// Returns true if the shader was set successfully, false if the name is unknown or the shader is null
 	virtual bool SetShaderByName(const std::string& name, const std::shared_ptr<Shader>& shader);
 
@@ -122,6 +122,7 @@ protected:
 	std::shared_ptr<Shader> m_singleAlbedoShader;
 	std::shared_ptr<Shader> m_screenShader;
 	std::shared_ptr<Shader> m_pickingShader;
+	std::shared_ptr<Shader> m_skyboxShader;
 
 	// buffers for the screen quad (for rendering the offscreen texture to the screen)
 	GLuint m_screenQuadVAO{}, m_screenQuadVBO{}, m_screenQuadEBO{};
@@ -129,6 +130,9 @@ protected:
 
 	// screen debug parameters for testing screen-to-texture rendering
 	ScreenDebugParams m_screenDebugParams;
+
+	// buffers for the skybox cube
+	GLuint m_skyboxVAO{}, m_skyboxVBO{}, m_skyboxEBO{};
 
 	// Protected Methods
 	// -----------------

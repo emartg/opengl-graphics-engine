@@ -133,7 +133,7 @@ void SelectionManager::ProcessPendingPick(const Camera* camera, AssetManager* as
 	auto pickedAsset = findAssetById(assetManager, pickedId);
 	if (!pickedAsset)
 	{ // if no asset with that id exists, print a warning and clear selection (also clears outline mask)
-		std::cout << "[WARNING::SELECTIONMANAGER::ProcessPendingPick] No asset with id "
+		std::cout << "[WARNING::SELECTIONMANAGER::ProcessPendingPick] No asset with textureId "
 			<< pickedId << std::endl;
 		ClearSelection(); // ensures stale outline mask cannot persist
 		return;

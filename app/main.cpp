@@ -3,7 +3,7 @@
 * This file is is an entry point to the App module. It serves as a simple test of the Core engine.
 * It follows these steps:
 * - It initializes the Core engine, which sets up OpenGL, window, and GUI.
-* - It compiles shaders and sets up the initial scene with a camera, lights, and a model.
+* - It compiles shaders and sets up the initial scene with a camera, lights, a model, and a skybox.
 * - It runs the main loop of the engine, which renders the scene and handles events.
 * - It cleans up resources in the correct order and shuts down the engine.
 * Other important notes:
@@ -32,7 +32,7 @@ std::tuple<
 	std::vector<std::string>,
 	std::vector<std::string>,
 	std::vector<std::string>> DefineShadersInfo();
-// Sets up the initial scene with a camera, lights, and a model
+// Sets up the initial scene with a camera, lights, a model, and a skybox
 void SetupInitialScene(Core* engine);
 
 int main(int argc, char** argv)
@@ -101,14 +101,19 @@ std::tuple<std::vector<std::string>,
 		"Assimp Model Shader",
 		"Single Albedo Shader",
 		"Screen Shader",
-		"Picking Shader"
+		"Picking Shader",
+		"Skybox Shader"
 	};
+
+	std::string shadersDir = "resources/shaders/";
+
 	std::vector<std::string> vertexShaderPaths = {
-		"resources/shaders/untextured_matt_shape.vert.glsl",
-		"resources/shaders/assimp_model.vert.glsl",
-		"resources/shaders/single_albedo.vert.glsl",
-		"resources/shaders/screen_quad.vert.glsl",
-		"resources/shaders/picking.vert.glsl"
+		shadersDir + "untextured_matt_shape.vert.glsl",
+		shadersDir + "assimp_model.vert.glsl",
+		shadersDir + "single_albedo.vert.glsl",
+		shadersDir + "screen_quad.vert.glsl",
+		shadersDir + "picking.vert.glsl",
+		shadersDir + "skybox.vert.glsl"
 	};
 	std::vector<std::string> geometryShaderPaths = {
 		"", // no custom geometry shader for the untextured matt shape shader
@@ -118,11 +123,12 @@ std::tuple<std::vector<std::string>,
 		""  // no custom geometry shader for the picking shader
 	};
 	std::vector<std::string> fragmentShaderPaths = {
-		"resources/shaders/untextured_matt_shape.frag.glsl",
-		"resources/shaders/assimp_model.frag.glsl",
-		"resources/shaders/single_albedo.frag.glsl",
-		"resources/shaders/screen_quad.frag.glsl",
-		"resources/shaders/picking.frag.glsl"
+		shadersDir + "untextured_matt_shape.frag.glsl",
+		shadersDir + "assimp_model.frag.glsl",
+		shadersDir + "single_albedo.frag.glsl",
+		shadersDir + "screen_quad.frag.glsl",
+		shadersDir + "picking.frag.glsl",
+		shadersDir + "skybox.frag.glsl"
 	};
 	return { shaderNames, vertexShaderPaths, geometryShaderPaths, fragmentShaderPaths };
 }
@@ -199,5 +205,29 @@ void SetupInitialScene(Core* engine)
 		assetManager->AddAsset(std::move(trafficConeModel));
 	}
 	else // if the file does not exist, print an error message
-		std::cerr << "[main::SetupInitialScene] File not found: " << filepath << std::endl;
+	{
+		std::cerr << "[main::SetupInitialScene] Model file not found: " << filepath << std::endl;
+	}
+
+	// load a skybox from 6 individual face file paths and set it in the scene manager
+	std::string skyboxDir = "resources/textures/skybox/"; // directory containing the skybox face images
+	std::vector<std::string> skyboxSortedFacePaths = {
+		"right.jpg", "left.jpg", "top.jpg", "bottom.jpg", "front.jpg", "back.jpg"
+	};
+	// create the full paths for each face of the skybox
+	for (auto& facePath : skyboxSortedFacePaths) facePath = skyboxDir + facePath;
+	// check if the directory exists before setting the skybox
+	if (std::filesystem::exists(skyboxDir))
+	{ // if it exists, load the skybox using the scene manager
+		sceneManager->LoadSkybox(skyboxSortedFacePaths);
+	}
+	else // if the directory does not exist, print an error message
+	{
+		std::cerr << "[main::SetupInitialScene] Skybox directory not found: " << skyboxDir
+			<< std::endl;
+	}
+
+	// print a success message indicating the initial scene setup is complete
+	std::cout << "[main::SetupInitialScene] Initial scene setup completed successfully"
+		<< std::endl;
 }

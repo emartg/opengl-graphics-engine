@@ -15,6 +15,7 @@
 #include "Renderer.h"
 
 #include "../Core.h"
+#include "SKYBOX.h" // skybox vertex data
 #include "SCREEN_QUAD.h" // screen-quad vertex data
 
 // Constructor
@@ -39,6 +40,11 @@ Renderer::~Renderer()
 	if (m_screenQuadEBO) glDeleteBuffers(1, &m_screenQuadEBO);
 	if (m_screenQuadVBO) glDeleteBuffers(1, &m_screenQuadVBO);
 	if (m_screenQuadVAO) glDeleteVertexArrays(1, &m_screenQuadVAO);
+
+	// delete skybox GL objects if created
+	if (m_skyboxEBO) glDeleteBuffers(1, &m_skyboxEBO);
+	if (m_skyboxVBO) glDeleteBuffers(1, &m_skyboxVBO);
+	if (m_skyboxVAO) glDeleteVertexArrays(1, &m_skyboxVAO);
 
 	std::cout << "[RENDERER::~Renderer] Renderer destructor called" << std::endl;
 }
@@ -119,25 +125,17 @@ bool Renderer::SetShaderByName(const std::string& name, const std::shared_ptr<Sh
 	// check if the shader name matches any of the known shaders, and if so,
 	// assign the shader to the corresponding member variable
 	if (strcmp(name.c_str(), "Untextured Matt Shape Shader") == 0)
-	{
 		m_untexturedMattShapeShader = shader;
-	}
 	else if (strcmp(name.c_str(), "Assimp Model Shader") == 0)
-	{
 		m_assimpModelShader = shader;
-	}
 	else if (strcmp(name.c_str(), "Single Albedo Shader") == 0)
-	{
 		m_singleAlbedoShader = shader;
-	}
 	else if (strcmp(name.c_str(), "Screen Shader") == 0)
-	{
 		m_screenShader = shader;
-	}
 	else if (strcmp(name.c_str(), "Picking Shader") == 0)
-	{
 		m_pickingShader = shader;
-	}
+	else if (strcmp(name.c_str(), "Skybox Shader") == 0)
+		m_skyboxShader = shader;
 	else
 	{ // if the shader name is unknown, print an error message and return false
 		std::cerr << "[ERROR::RENDERER::SetShader] Unknown shader name: " << name << std::endl;
@@ -188,7 +186,8 @@ void Renderer::RenderScene()
 	auto& camera = sceneManager->GetCamera();
 
 	// ensure camera and shaders are valid before proceeding
-	if (!camera || !m_untexturedMattShapeShader || !m_assimpModelShader || !m_singleAlbedoShader)
+	if (!camera || !m_untexturedMattShapeShader || !m_assimpModelShader || !m_singleAlbedoShader
+		|| !m_screenShader || !m_pickingShader || !m_skyboxShader)
 	{ // if any of them are null, print an error message and return
 		std::cerr << "[ERROR::RENDERER::RenderScene] Camera or shaders aren't set up correctly" << std::endl;
 		return;
@@ -381,6 +380,79 @@ void Renderer::RenderScene()
 	m_assimpModelShader->SetInt("nDirectionalLights", directionalLightIdx);
 	m_assimpModelShader->SetInt("nPointLights", pointLightIdx);
 	m_assimpModelShader->SetInt("nSpotlights", spotlightIdx);
+
+	// create and render the skybox if a skybox texture is set
+	auto& skyboxTexture = sceneManager->GetSkybox();
+	if (skyboxTexture)
+	{
+		// ensure the skybox texture is a cubemap
+		if (skyboxTexture->GetTextureType() != TextureType::CUBEMAP)
+		{ // if not, print an error message and return
+			std::cerr << "[ERROR::RENDERER::RenderScene] Skybox texture is not a cubemap" << std::endl;
+			return;
+		}
+
+		if (!m_skyboxVAO)
+		{ // if the skybox VAO has not been created yet, create it alongside the VBO and EBO
+			// create skybox VAO, VBO, and EBO
+			glGenVertexArrays(1, &m_skyboxVAO);
+			glGenBuffers(1, &m_skyboxVBO);
+			glGenBuffers(1, &m_skyboxEBO);
+
+			// bind and set skybox VAO, VBO, and EBO
+			glBindVertexArray(m_skyboxVAO);
+			glBindBuffer(GL_ARRAY_BUFFER, m_skyboxVBO);
+			glBufferData(GL_ARRAY_BUFFER, skyboxPositionsVec.size() * sizeof(GLfloat),
+						 skyboxPositionsVec.data(), GL_STATIC_DRAW);
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_skyboxEBO);
+			glBufferData(GL_ELEMENT_ARRAY_BUFFER, skyboxIndicesVec.size() * sizeof(GLuint),
+						 skyboxIndicesVec.data(), GL_STATIC_DRAW);
+
+			// set the vertex attribute pointers
+			glEnableVertexAttribArray(0);
+			glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
+
+			std::cout << "[SUCCESS::RENDERER::RenderScene] Skybox VBO, EBO, "
+				"and VAO created successfully" << std::endl;
+
+			glBindVertexArray(0); // unbind the VAO after setting it up
+
+			std::cout << "[SUCCESS::RENDERER::RenderScene] Skybox VAO configured successfully" << std::endl;
+		}
+
+		// disable depth writing for the skybox to prevent it from overwriting
+		// the depth values of the scene's objects (skybox is rendered at the farthest depth),
+		// and set the depth function to GL_LEQUAL to ensure the skybox is rendered
+		// correctly when depth values are equal (skybox depth is 1.0) - avoids z-fighting
+		glDepthMask(GL_FALSE);
+		glDepthFunc(GL_LEQUAL);
+
+		// set view and projection matrices for the skybox shader
+		m_skyboxShader->Use();
+		// for the skybox, remove the translation from the view matrix, since the skybox 
+		// should always be centered and appear infinitely far away, 
+		// so we cast the mat4 to a mat3 and back to a mat4 to remove the translation component. 
+		// This way, the skybox will not move when the camera moves
+		// and will only rotate based on the camera's orientation
+		glm::mat4 viewNoTranslation = glm::mat4(glm::mat3(view)); // remove translation with a mat3 cast
+		m_skyboxShader->SetMat4("view", viewNoTranslation);
+		m_skyboxShader->SetMat4("projection", projection);
+
+		// bind the VAO for the skybox and bind the cubemap texture, then render the skybox
+		glBindVertexArray(m_skyboxVAO);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxTexture->GetTextureId());
+		glDrawElements(GL_TRIANGLES, nSkyboxIndices, GL_UNSIGNED_INT, 0);
+
+		// reset depth function and re-enable depth writing after rendering the skybox
+		glDepthFunc(GL_LESS);
+		glDepthMask(GL_TRUE);
+
+		glBindVertexArray(0); // unbind the VAO after rendering
+	}
+	else
+	{
+		std::cerr << "[WARNING::RENDERER::RenderScene] No skybox texture set in the scene" << std::endl;
+	}
 
 	// iterate over the vector of models and render them
 	auto& models = assetManager->GetAssets(AssetType::MODEL);
