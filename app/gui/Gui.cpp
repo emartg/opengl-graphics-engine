@@ -735,8 +735,24 @@ void GUI::drawCreationWindow()
 		}
 		drawImportModelPopup(); // draw the popup for importing a new model
 
-		// create a dummy button to fill the remaining space in the window and test the layout
-		ImGui::Button(" ", ImVec2(ImGui::GetContentRegionAvail().x, 0.0f)); // create a dummy button with no action
+		// button to import a new skybox from 6 image files
+		if (ImGui::Button("Import Skybox", ImVec2(ImGui::GetContentRegionAvail().x, 0.0f)))
+		{ // if the button is clicked
+			// file dialog configuration
+			IGFD::FileDialogConfig fileDialogConfig;
+			fileDialogConfig.path = "./resources/textures/skyboxes"; // initial directory to open the file dialog
+			fileDialogConfig.countSelectionMax = 6; // allow up to 6 files to be selected
+			fileDialogConfig.flags = ImGuiFileDialogFlags_Modal; // no special flags for the file dialog
+
+			// open a file dialog to select skybox image files
+			ImGuiFileDialog::Instance()->OpenDialog(
+				"ChooseSkyboxDlgKey", // unique key for the file dialog
+				"Choose Skybox Image Files", // title of the file dialog
+				".jpg, .png, .hdr", // supported file extensions
+				fileDialogConfig // file dialog configuration
+			);
+		}
+		drawImportSkyboxPopup(); // draw the popup for importing a new skybox textures
 
 		ImGui::End(); // end the Create Objects window
 
@@ -1548,7 +1564,7 @@ void GUI::drawImportModelPopup()
 	if (ImGuiFileDialog::Instance()->Display("ChooseFileDlgKey"))
 	{ // if the file dialog is displayed
 		if (ImGuiFileDialog::Instance()->IsOk())
-		{ // if the user clicked the OK button (i.e. selected a file)
+		{ // if the user clicked the OK button (or double-clicked a file, i.e. selected a file)
 			// get the selected file path and name
 			std::string filePathName = ImGuiFileDialog::Instance()->GetFilePathName();
 			std::string fileName = ImGuiFileDialog::Instance()->GetCurrentFileName();
@@ -1570,6 +1586,261 @@ void GUI::drawImportModelPopup()
 		}
 
 		ImGuiFileDialog::Instance()->Close(); // close the file dialog
+	}
+}
+
+void GUI::drawImportSkyboxPopup()
+{
+	// get the scene manager from the Core instance
+	auto& sceneManager = Core::GetInstance()->GetSceneManager();
+
+	ImGuiIO& io = ImGui::GetIO(); // get ImGui IO object for display size
+
+	// static state for validation error (persist across frames)
+	static bool showCountError{ false };		// true if number of selected images is != 6
+	static bool showMappingError{ false };		// true if the selected images do not form a valid cubemap
+	static std::string mappingErrorMessage{};	// error message for invalid cubemap mapping
+
+	// set the size and position of the next window to display the file dialog adequately,
+	// centered on the display and with a predefined size
+	ImGui::SetNextWindowSize(ImVec2(FILE_DIALOG_POPUP_WIDTH, FILE_DIALOG_POPUP_HEIGHT),
+							 ImGuiCond_Appearing);
+	ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x * 0.5f - FILE_DIALOG_POPUP_WIDTH * 0.5f,
+								   io.DisplaySize.y * 0.5f - FILE_DIALOG_POPUP_HEIGHT * 0.5f),
+							ImGuiCond_Appearing);
+
+	// check if the file dialog is displayed and if the user selected a file
+	if (ImGuiFileDialog::Instance()->Display("ChooseSkyboxDlgKey"))
+	{ // if the file dialog is displayed
+		if (ImGuiFileDialog::Instance()->IsOk())
+		{ // if the user clicked the OK button (or double-clicked a file, i.e. selected a file)
+			const auto& selection = ImGuiFileDialog::Instance()->GetSelection(); // get the selected file(s)
+
+			// the supported skybox import options are:
+			// (A) single .hdr equirectangular environment map
+			// (B) six images forming a cubemap (right, left, top, bottom, front, back)
+			if (selection.size() == 1)
+			{ // if the user selected a single file (assumed to be an HDR equirectangular map)
+				const std::string& singleFileName = selection.begin()->first; // get the filename
+				std::string singlePath = selection.begin()->second; // get the file path
+				std::replace(singlePath.begin(), singlePath.end(), '\\', '/'); // normalize slashes
+
+				// lowercase filename to check extension
+				std::string lowerName = singleFileName;
+				std::transform(lowerName.begin(), lowerName.end(), lowerName.begin(),
+							   [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+				bool isHDR = lowerName.size() >= 4 && lowerName.rfind(".hdr") == lowerName.size() - 4;
+
+				if (!isHDR)
+				{ // if the selected file is not an .hdr file, the single-file selection is invalid
+					// reset any previous error state
+					showCountError = true;
+					showMappingError = false;
+					mappingErrorMessage.clear(); // clear previous mapping error message
+
+					// close the dialog before showing error popup (there can only be one modal at a time)
+					ImGuiFileDialog::Instance()->Close();
+					ImGui::OpenPopup("Skybox Import Error");
+
+					std::cerr << "[ERROR::GUI::drawImportSkyboxPopup] Single file selected but not .hdr - "
+						"the selected file was: " << singleFileName << std::endl;
+				}
+				else
+				{ // if the selected file is a valid .hdr file, create the skybox texture from it
+					auto skyboxTexture
+						= std::make_shared<Texture>("Skybox HDR Equirectangular", singlePath, true);
+					sceneManager->SetSkybox(std::move(skyboxTexture));
+
+					std::cout << "[SUCCESS::GUI::drawImportSkyboxPopup] Successfully imported HDR skybox"
+						<< std::endl;
+
+					// reset any previous error state
+					showCountError = false;
+					showMappingError = false;
+					mappingErrorMessage.clear(); // clear previous mapping error message
+
+					ImGuiFileDialog::Instance()->Close(); // close the file dialog
+				}
+			}
+			else if (selection.size() == 6)
+			{ // if the user selected six files (assumed to form a cubemap), attempt to infer face ordering
+				// create a vector to hold the paths of the selected images
+				std::vector<std::string> paths;
+				paths.reserve(selection.size());
+
+				// extract the file paths from the selection map
+				std::for_each(selection.begin(), selection.end(),
+							  [&](const auto& pair)
+				{ // for each selected file, extract the path and add it to the paths vector
+					std::string path = pair.second; // get the file path
+					// normalize slashes to forward slashes for cross-platform texture loading
+					std::replace(path.begin(), path.end(), '\\', '/');
+					paths.push_back(path); // add the path to the vector
+				});
+
+				// the expected name tokens (case-insensitive) for each cubemap face are:
+				// right, left, top, bottom, front, back; or short forms posx, negx, posy, negy, posz, negz;
+				// (up and down are also accepted for top and bottom respectively)
+				enum FaceIndex
+				{
+					RIGHT_FACE = 0, LEFT_FACE, TOP_FACE, BOTTOM_FACE, FRONT_FACE, BACK_FACE, FACE_COUNT
+				};
+				std::array<std::string, FACE_COUNT> orderedPaths{}; // to hold the ordered face paths
+				std::array<bool, FACE_COUNT> pathAssigned{}; // to track which faces have been assigned paths
+
+				// lambda to convert a string to lowercase
+				auto toLower = [](std::string s)
+				{
+					std::transform(s.begin(), s.end(), s.begin(),
+								   [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+					return s;
+				};
+
+				// lambda to assign a path to a face if not already assigned
+				auto assignFace = [&](FaceIndex faceIdx, const std::string& path)
+				{
+					// assign the path to the correct face if not already assigned and mark as assigned
+					if (!pathAssigned[faceIdx])
+					{
+						orderedPaths[faceIdx] = path;
+						pathAssigned[faceIdx] = true;
+						return true; // face successfully assigned, return true
+					}
+					return false; // face already assigned, return false
+				};
+
+				bool localMappingError{ false }; // local flag to track mapping errors
+
+				// iterate over the selected file paths to infer face ordering
+				std::for_each(paths.begin(), paths.end(),
+							  [&](const std::string& fullPath)
+				{
+					// extract the filename from the full path
+					std::string fileName = fullPath.substr(fullPath.find_last_of("/\\") + 1);
+					// convert filename to lowercase for case-insensitive comparison
+					fileName = toLower(fileName);
+
+					// try to match the filename to a cubemap face
+					// (uses |= to allow multiple tokens to map to the same face, e.g. top and up)
+					bool matched{ false };
+					if (fileName.find("right") != std::string::npos
+						|| fileName.find("posx") != std::string::npos
+						|| fileName.find("px") != std::string::npos)
+						matched |= assignFace(RIGHT_FACE, fullPath);
+					else if (fileName.find("left") != std::string::npos
+							 || fileName.find("negx") != std::string::npos
+							 || fileName.find("nx") != std::string::npos)
+						matched |= assignFace(LEFT_FACE, fullPath);
+					else if (fileName.find("top") != std::string::npos
+							 || fileName.find("posy") != std::string::npos
+							 || fileName.find("py") != std::string::npos
+							 || fileName.find("up") != std::string::npos)
+						matched |= assignFace(TOP_FACE, fullPath);
+					else if (fileName.find("bottom") != std::string::npos
+							 || fileName.find("negy") != std::string::npos
+							 || fileName.find("ny") != std::string::npos
+							 || fileName.find("down") != std::string::npos)
+						matched |= assignFace(BOTTOM_FACE, fullPath);
+					else if (fileName.find("front") != std::string::npos
+							 || fileName.find("posz") != std::string::npos
+							 || fileName.find("pz") != std::string::npos)
+						matched |= assignFace(FRONT_FACE, fullPath);
+					else if (fileName.find("back") != std::string::npos
+							 || fileName.find("negz") != std::string::npos
+							 || fileName.find("nz") != std::string::npos)
+						matched |= assignFace(BACK_FACE, fullPath);
+
+					// if no match was found for this filename, or if the matched face was already assigned,
+					// mark a local mapping error
+					if (!matched) localMappingError = true;
+				});
+
+				// validate that all faces have been assigned a path (successful mapping)
+				if (!std::all_of(pathAssigned.begin(), pathAssigned.end(),
+								 [](bool assigned) { return assigned; }))
+					localMappingError = true; // if any face is unassigned, mark a local mapping error
+
+				// if the mapping failed, set the appropriate error state and
+				// close the dialog before showing the error popup (there can only be one modal at a time)
+				if (localMappingError)
+				{
+					// set the error state accordingly
+					showMappingError = true;
+					showCountError = false; // reset count error flag
+					mappingErrorMessage =
+						"Could not infer cubemap face ordering from file names."
+						"Filenames must contain one of:\n"
+						"right left top bottom front back\n"
+						"or, alternatively: posx negx posy negy posz negz\n"
+						"or short forms: px nx py ny pz nz\n"
+						"or, for top and bottom: up down\n"
+						"Choose the files again with correct naming if possible.";
+
+					ImGuiFileDialog::Instance()->Close(); // close the file dialog first
+					ImGui::OpenPopup("Skybox Import Error"); // open error popup after closing dialog
+				}
+				else
+				{ // if the mapping succeeded, create the skybox texture from the ordered face paths
+					// convert the ordered paths array to a vector
+					std::vector<std::string> facePaths(orderedPaths.begin(), orderedPaths.end());
+
+					// create and set the skybox texture
+					auto skyboxTexture = std::make_shared<Texture>("Skybox Cubemap", facePaths);
+					sceneManager->SetSkybox(std::move(skyboxTexture));
+
+					std::cout << "[SUCCESS::GUI::drawImportSkyboxPopup] "
+						"Successfully imported skybox cubemap" << std::endl;
+
+					// reset any stale error flags and messages for safety
+					showCountError = false;
+					showMappingError = false;
+					mappingErrorMessage.clear();
+
+					ImGuiFileDialog::Instance()->Close(); // close the file dialog after successful import
+				}
+			}
+			else
+			{ // if the user selected a number of files other than 1 or 6, it's an invalid selection
+				// reset any previous error state
+				showCountError = true;
+				showMappingError = false;
+				mappingErrorMessage.clear(); // clear previous mapping error message
+
+				// close the dialog before showing error popup (there can only be one modal at a time)
+				ImGuiFileDialog::Instance()->Close();
+				ImGui::OpenPopup("Skybox Import Error");
+
+				std::cerr << "[ERROR::GUI::drawImportSkyboxPopup] Invalid number of files selected ("
+					<< selection.size() << "). Must select either 1 (.hdr) or 6 (cubemap)." << std::endl;
+			}
+		}
+		else
+		{ // if the user clicked the Cancel button, close the dialog only if there are no pending error flags
+			if (!showCountError && !showMappingError)
+				ImGuiFileDialog::Instance()->Close(); // close the file dialog
+			// in the case of an active error modal/flag, the file dialog must have been closed already
+		}
+	}
+
+	// error popup (modal)
+	if (ImGui::BeginPopupModal("Skybox Import Error", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+	{ // if the error popup is open
+		// display the appropriate error message, either count error or mapping error
+		if (showCountError)
+			ImGui::Text("Select either a single .hdr file or six images forming a cubemap.");
+		else if (showMappingError)
+			ImGui::TextWrapped("%s", mappingErrorMessage.c_str());
+
+		// display an OK button to close the error popup
+		if (ImGui::Button("OK", ImVec2(ITEM_WIDTH, 0.0f)))
+		{ // if the OK button is clicked, clear error state and close the popup
+			showCountError = false;
+			showMappingError = false;
+			mappingErrorMessage.clear();	// clear the error message
+			ImGui::CloseCurrentPopup();		// close the error popup
+		}
+
+		ImGui::EndPopup(); // end the error popup
 	}
 }
 

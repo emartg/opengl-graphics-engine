@@ -123,6 +123,7 @@ protected:
 	std::shared_ptr<Shader> m_screenShader;
 	std::shared_ptr<Shader> m_pickingShader;
 	std::shared_ptr<Shader> m_skyboxShader;
+	std::shared_ptr<Shader> m_equirectangularToCubemapShader;
 
 	// buffers for the screen quad (for rendering the offscreen texture to the screen)
 	GLuint m_screenQuadVAO{}, m_screenQuadVBO{}, m_screenQuadEBO{};
@@ -133,6 +134,11 @@ protected:
 
 	// buffers for the skybox cube
 	GLuint m_skyboxVAO{}, m_skyboxVBO{}, m_skyboxEBO{};
+
+	// buffers and flags for the HDR to cubemap conversion
+	GLuint m_hdrToCubemapFBO{}, m_hdrToCubemapRBO{};
+	bool m_hdrToCubemapConverted{ false };
+	GLuint m_hdrSourceTexId{ 0 }; // to track if the HDR source texture has changed
 
 	// Protected Methods
 	// -----------------
@@ -146,6 +152,10 @@ protected:
 	// Creates and configures the skybox cube buffers if not already done
 	void InitSkyboxCube();
 	// Renders the skybox cube with the given texture, view, and projection matrices
-	void RenderSkyboxCube(std::shared_ptr<Texture> skyboxTexture, glm::mat4& view, glm::mat4& projection);
+	void RenderSkyboxCube(std::shared_ptr<Texture> skyboxTexture,
+						  glm::mat4& view, glm::mat4& projection);
+
+	// Converts an equirectangular HDR texture to a cubemap texture if needed
+	void ConvertHDRToCubemapIfNeeded();
 
 };

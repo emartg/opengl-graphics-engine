@@ -166,6 +166,8 @@ private:
 	void drawCreateCubeShapePopup();
 	// Draws a pop-up modal window to import a model from a file
 	void drawImportModelPopup();
+	// Draws a pop-up modal window to import a skybox from a folder (6 textures)
+	void drawImportSkyboxPopup();
 
 	// Creates a color picker with sliders for RGB components
 	// and returns true if the color was changed

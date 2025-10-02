@@ -14,7 +14,7 @@
 
 #include "../Asset.h"
 
-enum class TextureType { UNDEFINED = 0, DIFFUSE, SPECULAR, CUBEMAP };
+enum class TextureType { UNDEFINED = 0, DIFFUSE, SPECULAR, CUBEMAP, HDR_EQUIRECTANGULAR };
 
 class Texture : public Asset
 {
@@ -23,6 +23,15 @@ public:
 	// ------------
 	// Constructor for a 2D texture from a file path (supports different TextureTypes)
 	Texture(const std::string& name, const std::string& path, const TextureType type);
+
+	// Internal constructor from an existing GL texture id (used after HDR to cubemap conversion)
+	Texture(const std::string& name, GLuint existingId, TextureType type);
+
+	// Contructor for a cubemap texture from a single equirectangular HDR environment map,
+	// that will later be converted to a cubemap (uses the internal constructor with existingId).
+	// asHDR should be true to indicate the file is an HDR image, otherwise 
+	// the file will be loaded as a standard 2D texture
+	Texture(const std::string& name, const std::string& hdrPath, const bool asHDR);
 
 	// Constructor for a cubemap texture from 6 individual 2D face file paths
 	Texture(const std::string& name, const std::vector<std::string>& faces);
@@ -47,6 +56,9 @@ public:
 	// Loads a texture from a file and returns the texture ID
 	GLuint LoadTextureFromFile(const GLchar* path);
 
+	// Loads an HDR texture from a file and returns the texture ID
+	GLuint LoadHDRTextureFromFile(const GLchar* path);
+
 	// Loads a cubemap texture from 6 individual texture faces
 	GLuint LoadCubemapFromFiles(const std::vector<std::string>& faces);
 
@@ -61,5 +73,9 @@ private:
 	TextureType textureType;
 	std::string path; // path of the texture to compare with other textures
 	std::vector<std::string> cubemapFacePaths; // paths of the 6 faces if this is a cubemap
+
+	// Friend Classes
+	// --------------
+	friend class Renderer; // allow Renderer to access private members for HDR to cubemap conversion
 
 };

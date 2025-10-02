@@ -18,6 +18,22 @@ Texture::Texture(const std::string& name, const std::string& path, const Texture
 	textureId{ LoadTextureFromFile(path.c_str()) }, path{ path }, textureType{ type }
 {}
 
+Texture::Texture(const std::string& name, GLuint existingId, TextureType type)
+	: Asset(name, AssetType::TEXTURE),
+	textureId{ existingId }, textureType{ type }
+{}
+
+Texture::Texture(const std::string& name, const std::string& hdrPath, const bool asHDR)
+	: Asset(name, AssetType::TEXTURE),
+	textureId{ asHDR ? LoadHDRTextureFromFile(hdrPath.c_str()) : LoadTextureFromFile(hdrPath.c_str()) },
+	path{ hdrPath }, textureType{ asHDR ? TextureType::HDR_EQUIRECTANGULAR : TextureType::UNDEFINED }
+{
+	if (asHDR && textureId == 0)
+	{ // if the HDR texture failed to load, print an error
+		std::cerr << "[ERROR::TEXTURE::Texture] Failed to load HDR texture from: " << hdrPath << std::endl;
+	}
+}
+
 Texture::Texture(const std::string& name, const std::vector<std::string>& faces)
 	: Asset(name, AssetType::TEXTURE),
 	textureId{ LoadCubemapFromFiles(faces) }, textureType{ TextureType::CUBEMAP }
@@ -29,7 +45,7 @@ Texture::Texture(const std::string& name, const std::vector<std::string>& faces)
 	else
 	{ // if not, print an error and set the cubemap texture ID to 0
 		std::cerr << "[ERROR::TEXTURE::Texture] Cubemap texture requires 6 face paths, "
-			<< "but " << faces.size() << " were provided." << std::endl;
+			<< "but " << faces.size() << " were provided" << std::endl;
 		textureId = 0; // ensure texture ID is 0 if cubemap loading failed
 	}
 }
@@ -50,6 +66,9 @@ GLuint Texture::LoadTextureFromFile(const GLchar* path)
 	// generate and bind the texture
 	GLuint textureID;
 	glGenTextures(1, &textureID);
+
+	// ensure vertical flip is disabled for regular 2D textures (global stb state)
+	stbi_set_flip_vertically_on_load(false);
 
 	// load the image data using stb_image
 	int width, height, nComponents;
@@ -75,8 +94,7 @@ GLuint Texture::LoadTextureFromFile(const GLchar* path)
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-		std::cout << "[SUCCESS::TEXTURE::LoadTextureFromFile] Texture loaded successfully from:\n\t"
-			<< path << std::endl;
+		std::cout << "[INFO::TEXTURE::LoadTextureFromFile] Texture loaded from:\n\t" << path << std::endl;
 		stbi_image_free(data); // free image memory after uploading
 	}
 	else
@@ -90,13 +108,76 @@ GLuint Texture::LoadTextureFromFile(const GLchar* path)
 	return textureID;
 }
 
+GLuint Texture::LoadHDRTextureFromFile(const GLchar* path)
+{
+	// ensure the path is valid
+	if (path == nullptr)
+	{ // if not, print an error and return 0
+		std::cerr << "[ERROR::TEXTURE::LoadHDRTextureFromFile] Provided path is null" << std::endl;
+		return 0;
+	}
+
+	std::string filepath = std::string(path); // convert to std::string for easier handling
+
+	// generate and bind the texture
+	GLuint textureId;
+	glGenTextures(1, &textureId);
+
+	// flip only for this HDR load (flip state must not leak to subsequent standard/cubemap textures)
+	stbi_set_flip_vertically_on_load(true);
+
+	// load the HDR image data using stb_image
+	int width, height, nComponents;
+	float* data = stbi_loadf(filepath.c_str(), &width, &height, &nComponents, 0);
+	if (data)
+	{ // if the image loaded successfully, determine the format and upload it to OpenGL
+		GLenum format;
+		if (nComponents == 1)
+			format = GL_RED;
+		else if (nComponents == 3)
+			format = GL_RGB;
+		else if (nComponents == 4)
+			format = GL_RGBA;
+
+		// bind the texture and upload the image data
+		glBindTexture(GL_TEXTURE_2D, textureId);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, width, height, 0, format, GL_FLOAT, data);
+		glGenerateMipmap(GL_TEXTURE_2D); // generate mipmaps for the texture
+
+		// set the texture wrapping/filtering options (on the currently bound texture object)
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); // clamp to edge for HDR
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+		std::cout << "[INFO::TEXTURE::LoadHDRTextureFromFile] HDR texture loaded from:\n\t"
+			<< path << std::endl;
+		stbi_image_free(data); // free image memory after uploading
+
+		// restore default (no flip) so regular textures and cubemap faces are not inverted
+		stbi_set_flip_vertically_on_load(false);
+	}
+	else
+	{ // if the image failed to load, print an error, free memory, and set textureID to 0
+		std::cerr << "[ERROR::TEXTURE::LoadHDRTextureFromFile] Failed to load HDR texture from:\n\t"
+			<< path << "\n\tFailure reason: " << stbi_failure_reason() << std::endl;
+		stbi_image_free(data); // free image memory
+		textureId = 0;
+
+		// restore default (no flip) so regular textures and cubemap faces are not inverted
+		stbi_set_flip_vertically_on_load(false);
+	}
+
+	return textureId;
+}
+
 GLuint Texture::LoadCubemapFromFiles(const std::vector<std::string>& faces)
 {
 	// ensure exactly 6 faces are provided
 	if (faces.size() != 6)
 	{ // if not, print an error and return 0
 		std::cerr << "[ERROR::TEXTURE::LoadCubemapFromFiles] Cubemap texture requires 6 face paths, "
-			<< "but " << faces.size() << " were provided." << std::endl;
+			<< "but " << faces.size() << " were provided" << std::endl;
 		return 0;
 	}
 
@@ -104,6 +185,9 @@ GLuint Texture::LoadCubemapFromFiles(const std::vector<std::string>& faces)
 	GLuint textureID;
 	glGenTextures(1, &textureID);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
+
+	// ensure vertical flip is disabled for cubemaps (global stb state)
+	stbi_set_flip_vertically_on_load(false);
 
 	// load each face of the cubemap using stb_image
 	int width, height, nComponents;
@@ -126,8 +210,8 @@ GLuint Texture::LoadCubemapFromFiles(const std::vector<std::string>& faces)
 			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, format,
 						 width, height, 0, format, GL_UNSIGNED_BYTE, data);
 
-			std::cout << "[SUCCESS::TEXTURE::LoadCubemapFromFiles] Loaded cubemap face " << i
-				<< " successfully from:\n\t" << faces[i] << std::endl;
+			std::cout << "[INFO::TEXTURE::LoadCubemapFromFiles] Loaded cubemap face " << i
+				<< " from:\n\t" << faces[i] << std::endl;
 			stbi_image_free(data); // free image memory after uploading
 		}
 		else
@@ -150,7 +234,7 @@ GLuint Texture::LoadCubemapFromFiles(const std::vector<std::string>& faces)
 
 	// print success message and return the cubemap texture ID
 	std::cout << "[SUCCESS::TEXTURE::LoadCubemapFromFiles] Cubemap texture loaded successfully "
-		"from provided faces." << std::endl;
+		"from provided faces" << std::endl;
 	return textureID;
 }
 

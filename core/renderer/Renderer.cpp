@@ -1,4 +1,4 @@
-/*
+﻿/*
 * Renderer.cpp
 * Implements the Renderer interface, which is responsible for:
 * - Initializing OpenGL
@@ -136,6 +136,8 @@ bool Renderer::SetShaderByName(const std::string& name, const std::shared_ptr<Sh
 		m_pickingShader = shader;
 	else if (strcmp(name.c_str(), "Skybox Shader") == 0)
 		m_skyboxShader = shader;
+	else if (strcmp(name.c_str(), "Equirectangular to Cubemap Shader") == 0)
+		m_equirectangularToCubemapShader = shader;
 	else
 	{ // if the shader name is unknown, print an error message and return false
 		std::cerr << "[ERROR::RENDERER::SetShader] Unknown shader name: " << name << std::endl;
@@ -187,7 +189,7 @@ void Renderer::RenderScene()
 
 	// ensure camera and shaders are valid before proceeding
 	if (!camera || !m_untexturedMattShapeShader || !m_assimpModelShader || !m_singleAlbedoShader
-		|| !m_screenShader || !m_pickingShader || !m_skyboxShader)
+		|| !m_screenShader || !m_pickingShader || !m_skyboxShader || !m_equirectangularToCubemapShader)
 	{ // if any of them are null, print an error message and return
 		std::cerr << "[ERROR::RENDERER::RenderScene] Camera or shaders aren't set up correctly" << std::endl;
 		return;
@@ -520,24 +522,25 @@ void Renderer::RenderScene()
 	auto& skyboxTexture = sceneManager->GetSkybox();
 	if (skyboxTexture)
 	{ // if a skybox texture is set, proceed to render the skybox
-		// ensure the skybox texture is a cubemap
-		if (skyboxTexture->GetTextureType() != TextureType::CUBEMAP)
-		{ // if not, print an error message and return
-			std::cerr << "[ERROR::RENDERER::RenderScene] Skybox texture is not a cubemap" << std::endl;
-			return;
-		}
+		// perform (or retry) HDR to cubemap conversion if needed
+		ConvertHDRToCubemapIfNeeded();
 
-		if (!m_skyboxVAO)
-		{ // if the skybox VAO has not been created yet, create it alongside the VBO and EBO
-			InitSkyboxCube();
-		}
+		skyboxTexture = sceneManager->GetSkybox(); // refresh pointer (conversion replaces the texture)
 
-		// render the skybox cube given the cubemap texture and the current view and projection matrices
-		RenderSkyboxCube(skyboxTexture, view, projection);
-	}
-	else
-	{ // if no skybox texture is set, print a warning message
-		std::cerr << "[WARNING::RENDERER::RenderScene] No skybox texture set in the scene" << std::endl;
+		// render the skybox only if the texture is a cubemap now
+		if (skyboxTexture && skyboxTexture->GetTextureType() == TextureType::CUBEMAP)
+		{ // if the skybox texture is now a cubemap, render the skybox
+			if (!m_skyboxVAO) InitSkyboxCube(); // initialize the skybox cube if not done yet
+			RenderSkyboxCube(skyboxTexture, view, projection);
+		}
+		else if (skyboxTexture && skyboxTexture->GetTextureType() == TextureType::HDR_EQUIRECTANGULAR)
+		{ // if the skybox is still HDR, print a warning message but continue rendering
+			// only warn occasionally (avoid spamming every frame)
+			static uint32_t warnCounter = 0;
+			if ((warnCounter++ % 240) == 0)
+				std::cerr << "[WARNING::RENDERER::RenderScene] "
+				"Skybox still HDR(conversion pending)" << std::endl;
+		}
 	}
 
 	// after the scene is rendered offscreen, composite to the default framebuffer
@@ -799,7 +802,8 @@ void Renderer::InitSkyboxCube()
 	std::cout << "[SUCCESS::RENDERER::RenderScene] Skybox VAO configured successfully" << std::endl;
 }
 
-void Renderer::RenderSkyboxCube(std::shared_ptr<Texture> skyboxTexture, glm::mat4& view, glm::mat4& projection)
+void Renderer::RenderSkyboxCube(std::shared_ptr<Texture> skyboxTexture,
+								glm::mat4& view, glm::mat4& projection)
 {
 	// disable depth writing for the skybox to prevent it from overwriting
 	// the depth values of the scene's objects (skybox is rendered at the farthest depth),
@@ -830,4 +834,128 @@ void Renderer::RenderSkyboxCube(std::shared_ptr<Texture> skyboxTexture, glm::mat
 	glDepthFunc(GL_LESS); glDepthMask(GL_TRUE);
 
 	glBindVertexArray(0); // unbind the VAO after rendering
+}
+
+void Renderer::ConvertHDRToCubemapIfNeeded()
+{
+	// get the core instance, the scene manager, and the current skybox and check if it exists
+	auto core = Core::GetInstance();
+	auto& sceneManager = core->GetSceneManager();
+	auto& skybox = sceneManager->GetSkybox();
+	if (!skybox) return; // if no skybox is set, return
+
+	// in case the skybox is not HDR, there is nothing to convert, so return
+	if (skybox->GetTextureType() != TextureType::HDR_EQUIRECTANGULAR) return;
+
+	if (m_hdrSourceTexId != skybox->GetTextureId())
+	{ // if the HDR source texture has changed, reset the converted flag
+		m_hdrSourceTexId = skybox->GetTextureId();
+		m_hdrToCubemapConverted = false;
+	}
+	// only convert if not converted yet, otherwise return
+	if (m_hdrToCubemapConverted) return;
+
+	if (!m_equirectangularToCubemapShader)
+	{ // if the equirectangular to cubemap shader is not set, print an error message and return
+		std::cerr << "[ERROR::RENDERER::ConvertHDRToCubemapIfNeeded] "
+			"Equirectangular to Cubemap Shader not set" << std::endl;
+		return;
+	}
+
+	// create HDR to cubemap FBO and RBO if not created yet
+	// (they are capture FBO and RBOs because they are used to capture the six faces of the cubemap)
+	if (!m_hdrToCubemapFBO)
+	{ // if the capture FBO and RBO are not created yet, create them
+		glGenFramebuffers(1, &m_hdrToCubemapFBO);
+		glGenRenderbuffers(1, &m_hdrToCubemapRBO);
+	}
+
+	// save currently bound FBO (main offscreen pass) so it can be restored later
+	GLint prevFBO{};
+	glGetIntegerv(GL_FRAMEBUFFER_BINDING, &prevFBO); // get currently bound FBO
+
+	// bind capture FBO and (re)configure depth RBO for 512x512 captures
+	glBindFramebuffer(GL_FRAMEBUFFER, m_hdrToCubemapFBO);
+	glBindRenderbuffer(GL_RENDERBUFFER, m_hdrToCubemapRBO);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, 512, 512);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, m_hdrToCubemapRBO);
+
+	// validate capture FBO completeness
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+	{ // if the capture FBO is not complete, print an error message, restore previous FBO, and return
+		std::cerr << "[ERROR::RENDERER::ConvertHDRToCubemapIfNeeded] Capture FBO incomplete" << std::endl;
+		glBindFramebuffer(GL_FRAMEBUFFER, prevFBO);
+		return;
+	}
+
+	// create empty cubemap texture to render to and attach to FBO (RGB16F for HDR)
+	GLuint envCubemap;
+	glGenTextures(1, &envCubemap);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, envCubemap);
+	for (unsigned int i = 0; i < 6; ++i) // allocate space for the 6 faces of the cubemap
+		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB16F, 512, 512, 0,
+					 GL_RGB, GL_FLOAT, nullptr);
+	// set the texture parameters for the cubemap
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	// view/projection for capturing
+	glm::mat4 captureProj = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
+	glm::mat4 captureViews[] =
+	{ // 6 view matrices for the 6 faces of the cubemap (right, left, top, bottom, front, back)
+		glm::lookAt(glm::vec3(0.0f), glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f)),
+		glm::lookAt(glm::vec3(0.0f), glm::vec3(-1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f)),
+		glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)),
+		glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f)),
+		glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, -1.0f, 0.0f)),
+		glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, -1.0f, 0.0f))
+	};
+
+	if (!m_skyboxVAO) InitSkyboxCube(); // initialize the skybox cube if not done yet
+
+	// activate the equirectangular to cubemap shader and set uniforms for conversion
+	m_equirectangularToCubemapShader->Use();
+	m_equirectangularToCubemapShader->SetInt("equirectMap", 0);
+	m_equirectangularToCubemapShader->SetMat4("projection", captureProj);
+
+	// bind the HDR equirectangular map to texture unit 0 for the shader to sample from
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, skybox->GetTextureId());
+
+	// save current viewport so it can be restored later
+	GLint prevViewport[4];
+	glGetIntegerv(GL_VIEWPORT, prevViewport);
+	glViewport(0, 0, 512, 512); // set viewport to the capture dimensions
+
+	for (unsigned int i = 0; i < 6; ++i)
+	{ // for each of the 6 faces of the cubemap, render the scene using the capture view
+		m_equirectangularToCubemapShader->SetMat4("view", captureViews[i]);
+		// attach the face of the cubemap texture to the correponding FBO color attachment
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+							   GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, envCubemap, 0);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // clear the necessary buffers
+		glBindVertexArray(m_skyboxVAO); // bind the skybox VAO
+		glDrawElements(GL_TRIANGLES, nSkyboxIndices, GL_UNSIGNED_INT, 0); // render the skybox cube
+	}
+	// restore previous FBO
+	glBindFramebuffer(GL_FRAMEBUFFER, prevFBO);
+	// restore original viewport
+	glViewport(prevViewport[0], prevViewport[1], prevViewport[2], prevViewport[3]);
+
+	// replace skybox with new cubemap texture
+	GLuint oldHDR = skybox->GetTextureId(); // store old HDR texture id for deletion after replacement
+	sceneManager->SetSkybox(std::make_shared<Texture>("Skybox Cubemap From HDR",
+													  envCubemap, TextureType::CUBEMAP));
+	// delete old HDR texture as it is no longer needed
+	glDeleteTextures(1, &oldHDR);
+	m_hdrToCubemapConverted = true; // mark as converted to avoid redundant conversions
+
+	std::cout << "[SUCCESS::RENDERER::ConvertHDRToCubemapIfNeeded] Converted HDR (src texId = "
+		<< m_hdrSourceTexId << ") to cubemap (texId = " << envCubemap << ")" << std::endl;
+
+	// reset source id so a new HDR selection triggers fresh conversion logic properly
+	m_hdrSourceTexId = envCubemap; // the active skybox is now the cubemap
 }

@@ -102,7 +102,8 @@ std::tuple<std::vector<std::string>,
 		"Single Albedo Shader",
 		"Screen Shader",
 		"Picking Shader",
-		"Skybox Shader"
+		"Skybox Shader",
+		"Equirectangular to Cubemap Shader"
 	};
 
 	std::string shadersDir = "resources/shaders/";
@@ -113,7 +114,8 @@ std::tuple<std::vector<std::string>,
 		shadersDir + "single_albedo.vert.glsl",
 		shadersDir + "screen_quad.vert.glsl",
 		shadersDir + "picking.vert.glsl",
-		shadersDir + "skybox.vert.glsl"
+		shadersDir + "skybox.vert.glsl",
+		shadersDir + "equirectangular_to_cubemap.vert.glsl"
 	};
 	std::vector<std::string> geometryShaderPaths = {
 		"", // no custom geometry shader for the untextured matt shape shader
@@ -128,7 +130,8 @@ std::tuple<std::vector<std::string>,
 		shadersDir + "single_albedo.frag.glsl",
 		shadersDir + "screen_quad.frag.glsl",
 		shadersDir + "picking.frag.glsl",
-		shadersDir + "skybox.frag.glsl"
+		shadersDir + "skybox.frag.glsl",
+		shadersDir + "equirectangular_to_cubemap.frag.glsl"
 	};
 	return { shaderNames, vertexShaderPaths, geometryShaderPaths, fragmentShaderPaths };
 }
@@ -209,8 +212,8 @@ void SetupInitialScene(Core* engine)
 		std::cerr << "[ERROR::main::SetupInitialScene] Model file not found: " << filepath << std::endl;
 	}
 
-	// load a skybox from 6 individual face file paths and set it in the scene manager
-	std::string skyboxDir = "resources/textures/skybox/"; // directory containing the skybox face images
+	// load a default skybox from 6 individual face file paths and set it in the scene manager
+	std::string skyboxDir = "resources/textures/skyboxes/faces/lake/"; // default skybox faces directory
 	std::vector<std::string> skyboxSortedFacePaths = {
 		"right.jpg", "left.jpg", "top.jpg", "bottom.jpg", "front.jpg", "back.jpg"
 	};
