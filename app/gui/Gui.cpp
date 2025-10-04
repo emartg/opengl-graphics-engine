@@ -1774,7 +1774,7 @@ void GUI::drawImportSkyboxPopup()
 						"or, alternatively: posx negx posy negy posz negz\n"
 						"or short forms: px nx py ny pz nz\n"
 						"or, for top and bottom: up down\n"
-						"Choose the files again with correct naming if possible.";
+						"Choose the files again with correct naming if possible";
 
 					ImGuiFileDialog::Instance()->Close(); // close the file dialog first
 					ImGui::OpenPopup("Skybox Import Error"); // open error popup after closing dialog
@@ -1827,7 +1827,7 @@ void GUI::drawImportSkyboxPopup()
 	{ // if the error popup is open
 		// display the appropriate error message, either count error or mapping error
 		if (showCountError)
-			ImGui::Text("Select either a single .hdr file or six images forming a cubemap.");
+			ImGui::Text("Select either a single .hdr file or six images forming a cubemap");
 		else if (showMappingError)
 			ImGui::TextWrapped("%s", mappingErrorMessage.c_str());
 

@@ -71,6 +71,9 @@ void Renderer::ConfigOpenGL() const
 	glEnable(GL_STENCIL_TEST);
 	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 	glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+
+	// texture configuration:
+	glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS); // enable seamless cubemap sampling
 }
 
 void Renderer::ClearBuffers(BufferType bufferType) const
@@ -794,12 +797,7 @@ void Renderer::InitSkyboxCube()
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
 
-	std::cout << "[SUCCESS::RENDERER::RenderScene] Skybox VBO, EBO, "
-		"and VAO created successfully" << std::endl;
-
 	glBindVertexArray(0); // unbind the VAO after setting it up
-
-	std::cout << "[SUCCESS::RENDERER::RenderScene] Skybox VAO configured successfully" << std::endl;
 }
 
 void Renderer::RenderSkyboxCube(std::shared_ptr<Texture> skyboxTexture,
@@ -874,11 +872,17 @@ void Renderer::ConvertHDRToCubemapIfNeeded()
 	GLint prevFBO{};
 	glGetIntegerv(GL_FRAMEBUFFER_BINDING, &prevFBO); // get currently bound FBO
 
-	// bind capture FBO and (re)configure depth RBO for 512x512 captures
+	// set the capture resolution to 4096x4096 (sufficient for good quality skyboxes)
+	const GLuint captureSize{ 4096 };
+
+	// bind capture FBO and (re)configure depth RBO for the capture dimensions
 	glBindFramebuffer(GL_FRAMEBUFFER, m_hdrToCubemapFBO);
 	glBindRenderbuffer(GL_RENDERBUFFER, m_hdrToCubemapRBO);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, 512, 512);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, captureSize, captureSize);
 	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, m_hdrToCubemapRBO);
+
+	// explicitely select color attachment 0 for rendering (avoids issues on some drivers and platforms)
+	glDrawBuffer(GL_COLOR_ATTACHMENT0);
 
 	// validate capture FBO completeness
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
@@ -893,16 +897,19 @@ void Renderer::ConvertHDRToCubemapIfNeeded()
 	glGenTextures(1, &envCubemap);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, envCubemap);
 	for (unsigned int i = 0; i < 6; ++i) // allocate space for the 6 faces of the cubemap
-		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB16F, 512, 512, 0,
+		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB16F, captureSize, captureSize, 0,
 					 GL_RGB, GL_FLOAT, nullptr);
-	// set the texture parameters for the cubemap
+	// set the cubemap texture parameters
+	// set wrapping to clamp to edge to prevent seams
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	// set filtering to linear and enable mipmaps for the cubemap
+	// (i.e., use trilinear filtering when sampling the cubemap with mipmaps)
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-	// view/projection for capturing
+	// view/projection matrices for capturing data onto the 6 cubemap face directions
 	glm::mat4 captureProj = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
 	glm::mat4 captureViews[] =
 	{ // 6 view matrices for the 6 faces of the cubemap (right, left, top, bottom, front, back)
@@ -928,8 +935,9 @@ void Renderer::ConvertHDRToCubemapIfNeeded()
 	// save current viewport so it can be restored later
 	GLint prevViewport[4];
 	glGetIntegerv(GL_VIEWPORT, prevViewport);
-	glViewport(0, 0, 512, 512); // set viewport to the capture dimensions
+	glViewport(0, 0, captureSize, captureSize); // set viewport to the capture dimensions
 
+	// render to each face of the cubemap by attaching it to the FBO and rendering the scene
 	for (unsigned int i = 0; i < 6; ++i)
 	{ // for each of the 6 faces of the cubemap, render the scene using the capture view
 		m_equirectangularToCubemapShader->SetMat4("view", captureViews[i]);
@@ -940,6 +948,11 @@ void Renderer::ConvertHDRToCubemapIfNeeded()
 		glBindVertexArray(m_skyboxVAO); // bind the skybox VAO
 		glDrawElements(GL_TRIANGLES, nSkyboxIndices, GL_UNSIGNED_INT, 0); // render the skybox cube
 	}
+
+	// generate mipmaps for the cubemap texture to enable trilinear filtering
+	glBindTexture(GL_TEXTURE_CUBE_MAP, envCubemap);
+	glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
+
 	// restore previous FBO
 	glBindFramebuffer(GL_FRAMEBUFFER, prevFBO);
 	// restore original viewport
