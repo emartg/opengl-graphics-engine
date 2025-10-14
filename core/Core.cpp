@@ -257,6 +257,6 @@ void Core::FramebufferSizeCallback(GLint width, GLint height)
 	// update the default framebuffer viewport
 	if (m_renderer) m_renderer->SetViewport(m_screenWidth, m_screenHeight);
 
-	// keep picking/outline FBOs in sync with the default framebuffer size (the actual window size)s
+	// keep picking/outline FBOs in sync with the default framebuffer size (the actual window size)
 	if (m_selectionManager) m_selectionManager->Resize(width, height);
 }

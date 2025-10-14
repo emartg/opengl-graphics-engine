@@ -36,6 +36,12 @@ public:
 	// Load skybox from 6 individual face file paths
 	GLboolean LoadSkybox(const std::vector<std::string>& faces);
 
+	// Resets the camera to its default values
+	void ResetCamera();
+
+	// Clears the skybox, i.e., removes the current skybox texture
+	void ClearSkybox();
+
 private:
 	std::shared_ptr<Camera> m_camera;
 	std::shared_ptr<Texture> m_skybox;

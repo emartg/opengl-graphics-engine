@@ -83,7 +83,7 @@ public:
 	void ProcessMouseScroll(GLfloat yoffset, GLfloat sensitivity = 1.0f);
 
 	// Resets the camera to its default values
-	void ResetCamera();
+	void Reset();
 
 	// Public Static Methods
 	// ---------------------
@@ -121,7 +121,7 @@ private:
 	// Private Static Attributes
 	// -------------------------
 	// default values for the camera attributes
-	static constexpr glm::vec3 POSITION = glm::vec3{ 20.0f, 12.0f, 20.0f };
+	static constexpr glm::vec3 POSITION = glm::vec3{ 30.0f, 18.0f, 30.0f };
 	static constexpr glm::vec3 FRONT = glm::vec3{ 0.0f, 0.0f, -1.0f };
 	static constexpr glm::vec3 UP = glm::vec3{ 0.0f, 1.0f, 0.0f };
 	static constexpr GLfloat YAW = -135.0f;
@@ -132,7 +132,7 @@ private:
 
 	// Private Methods
 	// ---------------
-	// Calculates the front vector from the Camera's (updated) Euler Angles
-	void updateCameraVectors();
+	// Recalculates the front, right and up vectors from the camera's (updated) Euler Angles
+	void recalculateVectors();
 
 };

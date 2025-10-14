@@ -27,7 +27,7 @@ Camera::Camera(const std::string& name,
 	initialPitch = pitch;
 
 	// update the camera vectors based on the initial values
-	updateCameraVectors();
+	recalculateVectors();
 
 	nCameras++; // increment the number of cameras
 }
@@ -90,7 +90,7 @@ void Camera::ProcessMouseRotation(GLfloat xoffset, GLfloat yoffset,
 		pitch = std::clamp(pitch, -89.0f, 89.0f);
 
 	// update front, right and up Vectors using the updated Euler Angles
-	updateCameraVectors();
+	recalculateVectors();
 }
 
 void Camera::ProcessMouseScroll(GLfloat yoffset, GLfloat sensitivity)
@@ -102,7 +102,7 @@ void Camera::ProcessMouseScroll(GLfloat yoffset, GLfloat sensitivity)
 	zoom = std::clamp(zoom, 1.0f, 90.0f); // restrict zoom to a sensible range
 }
 
-void Camera::ResetCamera()
+void Camera::Reset()
 {
 	position = initialPosition;
 	front = FRONT;
@@ -112,12 +112,12 @@ void Camera::ResetCamera()
 	movementSpeed = SPEED;
 	mouseSensitivity = SENSITIVITY;
 	zoom = ZOOM;
-	updateCameraVectors();
+	recalculateVectors();
 }
 
 // Private Methods
 // ---------------
-void Camera::updateCameraVectors()
+void Camera::recalculateVectors()
 {
 	// calculate the new front vector
 	glm::vec3 front;

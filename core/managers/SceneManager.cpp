@@ -31,3 +31,30 @@ GLboolean SceneManager::LoadSkybox(const std::vector<std::string>& faces)
 	std::cout << "[SUCCESS::SCENEMANAGER::LoadSkybox] Skybox loaded successfully." << std::endl;
 	return GL_TRUE;
 }
+
+void SceneManager::ResetCamera()
+{
+	if (m_camera)
+	{ // if a camera is set, reset it to its default values
+		m_camera->Reset();
+		std::cout << "[INFO::SCENEMANAGER::ResetCamera] Camera reset to default values" << std::endl;
+	}
+	else
+	{ // if no camera is set, print an info message
+		std::cout << "[INFO::SCENEMANAGER::ResetCamera] No camera to reset" << std::endl;
+	}
+}
+
+void SceneManager::ClearSkybox()
+{
+	if (m_skybox)
+	{ // if a skybox is set, deallocate its resources and reset the pointer
+		m_skybox->DeallocateResources();
+		m_skybox = nullptr;
+		std::cout << "[INFO::SCENEMANAGER::ClearSkybox] Skybox cleared" << std::endl;
+	}
+	else
+	{ // if no skybox is set, print an info message
+		std::cout << "[INFO::SCENEMANAGER::ClearSkybox] No skybox to clear" << std::endl;
+	}
+}

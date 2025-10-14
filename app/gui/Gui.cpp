@@ -415,6 +415,26 @@ void GUI::drawDebugWindow()
 			}
 		};
 
+		// scene settings section title
+		ImGui::PushFont(m_boldFont);
+		ImGui::Text("SCENE SETTINGS");
+		ImGui::PopFont();
+
+		auto& sceneManager = Core::GetInstance()->GetSceneManager();
+		// button to reset the camera position and orientation
+		if (ImGui::Button("Reset Camera", ImVec2{ BUTTON_WIDTH * 2, BUTTON_HEIGHT }))
+		{ // if the button is pressed, set the camera to its default position and orientation
+			sceneManager->ResetCamera();
+		}
+		ImGui::SameLine(); // keep the buttons on the same line
+		// button to clear the skybox
+		if (ImGui::Button("Clear Skybox", ImVec2{ BUTTON_WIDTH * 2, BUTTON_HEIGHT }))
+		{ // if the button is pressed, clear the skybox, i.e. remove the current skybox texture
+			sceneManager->ClearSkybox();
+		}
+
+		ImGui::Text("\n"); // add some vertical spacing for better visual separation
+
 		// rendering settings section title
 		ImGui::PushFont(m_boldFont);
 		ImGui::Text("RENDERING INFORMATION");

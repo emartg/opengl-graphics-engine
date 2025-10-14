@@ -159,10 +159,14 @@ void GLFWRenderer::keyCallback(GLFWwindow* window, int key, int scancode, int ac
 	// delegate the key callback to the InputManager
 	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
 		Core::GetInstance()->GetInputManager()->KeyCallback("ESC_PRESSED");
-	else if (key == GLFW_KEY_R && action == GLFW_PRESS)
-		Core::GetInstance()->GetInputManager()->KeyCallback("R_PRESSED");
 	else if (key == GLFW_KEY_DELETE && action == GLFW_PRESS)
 		Core::GetInstance()->GetInputManager()->KeyCallback("DEL_PRESSED");
+	else if (action == GLFW_PRESS)
+	{
+		// convert the key code to a string representation
+		std::string keyStr(1, static_cast<char>(key));
+		Core::GetInstance()->GetInputManager()->KeyCallback(keyStr + "_PRESSED");
+	}
 }
 
 void GLFWRenderer::mouseButtonCallback(GLFWwindow* window, int button, int action, int mods)

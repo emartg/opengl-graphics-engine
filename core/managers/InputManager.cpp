@@ -73,11 +73,6 @@ void InputManager::KeyCallback(std::string input)
 		const_cast<Renderer*>(renderer)->SetWindowShouldClose();
 		std::cout << "[INFO::INPUTMANAGER::KeyCallback] Escape key pressed, closing window..." << std::endl;
 	}
-	else if (input == "R_PRESSED")
-	{ // if the 'R' key is pressed, reset the camera to its default values
-		core->GetSceneManager()->GetCamera()->ResetCamera();
-		std::cout << "[INFO::INPUTMANAGER::KeyCallback] Camera reset to default values" << std::endl;
-	}
 	else if (input == "DEL_PRESSED")
 	{ // if the 'Delete' key is pressed, delete the currently selected asset (if any)
 		auto selectionMgr = core->GetSelectionManager();
