@@ -428,3 +428,10 @@ CMakeUserPresets.json
 
 # Information about the structure of the Project
 *tree*
+
+
+## Files and directories to keep
+
+# Keep 3D model OBJ assets in the repository
+!resources/models/obj/
+!resources/models/obj/**

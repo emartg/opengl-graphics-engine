@@ -33,10 +33,13 @@ void AssimpModel::loadAssimpModel(std::string const& path)
 	Assimp::Importer importer;
 
 	// read file via Assimp (the second argument of ReadFile is a combination of post-processing options)
-	const aiScene* scene = importer.ReadFile(path,
-											 aiProcess_Triangulate |
-											 aiProcess_FlipUVs |
-											 aiProcess_GenNormals);
+	const aiScene* scene =
+		importer.ReadFile(path,
+						  aiProcess_Triangulate |
+						  aiProcess_FlipUVs |
+						  aiProcess_GenNormals |
+						  aiProcess_PreTransformVertices // bake node transformations into vertices
+		);
 
 	// check for errors in the importing process
 	if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
@@ -46,8 +49,30 @@ void AssimpModel::loadAssimpModel(std::string const& path)
 			<< "\n\tImporter error: " << importer.GetErrorString() << std::endl;
 		return;
 	}
-	// store the directory of the model file
-	directory = path.substr(0, path.find_last_of('/')) + '/';
+
+	// store the directory of the model file, handling both '/' and '\'
+	// as separators for cross-platform compatibility
+	size_t slashFwd = path.find_last_of('/');
+	size_t slashBwd = path.find_last_of('\\');
+	size_t lastSlash = std::string::npos;
+
+	if (slashFwd != std::string::npos && slashBwd != std::string::npos)
+		lastSlash = std::max(slashFwd, slashBwd);
+	else
+		lastSlash = (slashFwd != std::string::npos) ? slashFwd : slashBwd;
+
+	if (lastSlash != std::string::npos)
+	{ // if a slash was found, set the directory accordingly
+		// preserve the same separator as in the original path string
+		char separator = path[lastSlash]; // either '/' or '\'
+		directory = path.substr(0, lastSlash + 1); // include the slash
+	}
+	else
+	{
+		// if no slash was found, clear the directory 
+		// so that textures are loaded from the current working directory
+		directory.clear();
+	}
 
 	// process the root node (recursively process all of its children)
 	processNode(scene->mRootNode, scene);
@@ -119,20 +144,36 @@ Mesh AssimpModel::processMesh(aiMesh* mesh, const aiScene* scene)
 			indices.push_back(face.mIndices[j]);
 	}
 
-	// process material
-	if (mesh->mMaterialIndex >= 0) // does the mesh contain material data?
+	// process material (load all supported types of texture maps)
+	if (mesh->mMaterialIndex >= 0)
 	{
+		// retrieve the material of the mesh
 		aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
-		// load diffuse maps and add them to the textures vector
-		std::vector<Texture> diffuseMaps = loadMaterialTextures(
-			material, aiTextureType_DIFFUSE, TextureType::DIFFUSE
-		);
-		textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end());
-		// load specular maps and add them to the textures vector
-		std::vector<Texture> specularMaps = loadMaterialTextures(
-			material, aiTextureType_SPECULAR, TextureType::SPECULAR
-		);
-		textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
+
+		// lambda function to load and append textures of a specific type
+		auto append = [&](aiTextureType aiType, TextureType textureType)
+		{
+			std::vector<Texture> maps = loadMaterialTextures(material, aiType, textureType);
+			textures.insert(textures.end(), maps.begin(), maps.end());
+		};
+
+		// load different types of textures and append them to the textures vector
+		// (these are the most common types, more can be added if needed)
+		append(aiTextureType_DIFFUSE, TextureType::DIFFUSE);
+		append(aiTextureType_SPECULAR, TextureType::SPECULAR);
+		append(aiTextureType_NORMALS, TextureType::NORMAL);
+		append(aiTextureType_HEIGHT, TextureType::HEIGHT);
+		append(aiTextureType_AMBIENT, TextureType::AMBIENT);
+		append(aiTextureType_EMISSIVE, TextureType::EMISSIVE);
+		append(aiTextureType_LIGHTMAP, TextureType::LIGHTMAP);
+		append(aiTextureType_DIFFUSE_ROUGHNESS, TextureType::ROUGHNESS);
+		append(aiTextureType_METALNESS, TextureType::METALNESS);
+		append(aiTextureType_DISPLACEMENT, TextureType::DISPLACEMENT);
+		append(aiTextureType_OPACITY, TextureType::OPACITY);
+		append(aiTextureType_REFLECTION, TextureType::REFLECTION);
+		append(aiTextureType_BASE_COLOR, TextureType::DIFFUSE);
+		// unknown texture type (fallback)
+		append(aiTextureType_UNKNOWN, TextureType::UNDEFINED);
 	}
 
 	// return a mesh object created from the extracted mesh data
@@ -152,6 +193,18 @@ std::vector<Texture> AssimpModel::loadMaterialTextures(aiMaterial* mat,
 	{
 		aiString str;
 		mat->GetTexture(type, i, &str);
+
+		// check for embedded textures (those starting with '*'), which are not yet supported,
+		// hence why they are not loaded and a warning is issued
+		const char* pathCStr = str.C_Str();
+		if (pathCStr && pathCStr[0] == '*')
+		{
+			// embedded texture, warn and skip loading
+			std::cerr << "[WARNING::ASSIMPMODEL::loadMaterialTextures] "
+				"Embedded textures not supported, skipping texture:\n"
+				<< pathCStr << " of type " << Texture::TextureTypeToString(textureType) << std::endl;
+			continue;
+		}
 
 		std::string texturePath = directory + str.C_Str(); // construct the full path to the texture file
 

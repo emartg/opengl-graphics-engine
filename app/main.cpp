@@ -195,18 +195,18 @@ void SetupInitialScene(Core* engine)
 	assetManager->AddAsset(std::move(spotlightGizmo));
 
 	// load a model from an specific filepath and add it to the asset manager
-	std::string filepath = "resources/models/traffic_cone/gltf/traffic_cone.gltf";
+	std::string filepath = "resources/models/gltf/teapot/teapot.gltf";
 	if (std::filesystem::exists(filepath))
 	{ // check if the file exists before loading it
 		std::string filename = std::filesystem::path(filepath).filename().string();
-		auto trafficConeModel = std::make_shared<AssimpModel>(
+		auto model = std::make_shared<AssimpModel>(
 			filename + " (Model " + std::to_string(assetManager->GetNModels()) + ")", filepath,
 			glm::vec3{ 0.8f }, // diffuse color (override required although it is the default)
 			glm::vec3{ 0.0f }, // position (override required although it is the default)
 			glm::vec3{ 0.0f, 45.0f, 0.0f }, // rotation in Euler angles (overridden)
-			glm::vec3{ 0.15f } // scale (overridden)
+			glm::vec3{ 0.25f } // scale (overridden)
 		);
-		assetManager->AddAsset(std::move(trafficConeModel));
+		assetManager->AddAsset(std::move(model));
 	}
 	else // if the file does not exist, print an error message
 	{

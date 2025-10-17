@@ -48,9 +48,12 @@ struct Spotlight
 // struct to hold material properties
 struct Material
 {
-	sampler2D albedoMap;    // texture sampler for the albedo map (i.e. the diffuse Map)
-    sampler2D metallicMap;  // texture sampler for the metallic map (i.e. the specular Map)
+	sampler2D albedoMap;    // texture sampler for the albedo map (i.e. the diffuse map)
+    sampler2D metallicMap;  // texture sampler for the metallic map (i.e. the specular map)
 	float shininess;
+
+    int hasAlbedoMap; 	    // flag indicating whether an albedo map is used (0 or 1)
+    int hasMetallicMap;     // flag indicating whether a metallic map is used (0 or 1)
 };
 
 // fragment position, normal and texture coordinates in view space passed from the vertex shader
@@ -76,6 +79,20 @@ uniform Spotlight spotlights[MAX_N_SPOTLIGHTS];
 
 // material properties struct
 uniform Material material;
+
+// Helper functions to fetch with fallback if no texture is used
+vec3 getAlbedoComponent()
+{
+    vec3 sampledColor = texture(material.albedoMap, TexCoords).rgb;
+    // fallback to white so lighting remains visible if no albedo map is used
+    return mix(vec3(1.0), sampledColor, float(material.hasAlbedoMap));
+}
+vec3 getMetallicComponent()
+{
+    vec3 sampledColor = texture(material.metallicMap, TexCoords).rgb;
+    // fallback to white so specular highlights remain visible if no metallic map is used
+    return mix(vec3(1.0), sampledColor, float(material.hasMetallicMap));
+}
 
 // Calculates the color of a single directional light given the light properties (including the direction),
 // the normal, and the view direction (all in view space)
@@ -134,10 +151,14 @@ vec3 computeDirectionalLightColor(DirectionalLight light, vec3 directionalLightD
     vec3 reflectDir = reflect(-lightDir, normal);
     float spec      = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
     
+    // get albedo and metallic components with fallback
+    vec3 albedoComponent   = getAlbedoComponent();
+    vec3 metallicComponent = getMetallicComponent();
+
     // combine results
-    vec3 ambient    = light.ambient * texture(material.albedoMap, TexCoords).rgb;
-    vec3 diffuse    = light.diffuse * diff * texture(material.albedoMap, TexCoords).rgb;
-    vec3 specular   = light.specular * spec * texture(material.metallicMap, TexCoords).rgb;
+    vec3 ambient    = light.ambient * albedoComponent;
+    vec3 diffuse    = light.diffuse * diff * albedoComponent;
+    vec3 specular   = light.specular * spec * metallicComponent;
     return (ambient + diffuse + specular);
 }
 
@@ -156,11 +177,15 @@ vec3 computePointLightColor(PointLight light, vec3 pointLightPos,
     // attenuation
     float distance      = length(pointLightPos - fragPos);
     float attenuation   = 1.0 / (light.constant + light.linear * distance + light.quadratic * (distance * distance));
+    
+    // get albedo and metallic components with fallback
+    vec3 albedoComponent   = getAlbedoComponent();
+    vec3 metallicComponent = getMetallicComponent();
 
     // combine results
-    vec3 ambient    = light.ambient * texture(material.albedoMap, TexCoords).rgb;
-    vec3 diffuse    = light.diffuse * diff * texture(material.albedoMap, TexCoords).rgb;
-    vec3 specular   = light.specular * spec * texture(material.metallicMap, TexCoords).rgb;
+    vec3 ambient    = light.ambient * albedoComponent;
+    vec3 diffuse    = light.diffuse * diff * albedoComponent;
+    vec3 specular   = light.specular * spec * metallicComponent;
     ambient         *= attenuation;
     diffuse         *= attenuation;
     specular        *= attenuation;
@@ -188,10 +213,14 @@ vec3 computeSpotlightColor(Spotlight light, vec3 spotlightPos, vec3 spotlightDir
     float epsilon   = light.innerCutOff - light.outerCutOff;
     float intensity = clamp((theta - light.outerCutOff) / epsilon, 0.0, 1.0);
 
+    // get albedo and metallic components with fallback
+    vec3 albedoComponent   = getAlbedoComponent();
+    vec3 metallicComponent = getMetallicComponent();
+
     // combine results
-    vec3 ambient    = light.ambient * texture(material.albedoMap, TexCoords).rgb;
-    vec3 diffuse    = light.diffuse * diff * texture(material.albedoMap, TexCoords).rgb;
-    vec3 specular   = light.specular * spec * texture(material.metallicMap, TexCoords).rgb;
+    vec3 ambient    = light.ambient * albedoComponent;
+    vec3 diffuse    = light.diffuse * diff * albedoComponent;
+    vec3 specular   = light.specular * spec * metallicComponent;
     ambient         *= attenuation * intensity;
     diffuse         *= attenuation * intensity;
     specular        *= attenuation * intensity;

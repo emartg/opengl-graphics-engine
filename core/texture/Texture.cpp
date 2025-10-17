@@ -245,3 +245,44 @@ void Texture::Bind(GLuint unit) const
 	const GLenum target = (textureType == TextureType::CUBEMAP) ? GL_TEXTURE_CUBE_MAP : GL_TEXTURE_2D;
 	glBindTexture(target, textureId); // bind the texture to the specified unit
 }
+
+// Static Public Methods
+// ---------------------
+std::string Texture::TextureTypeToString(const TextureType type)
+{
+	switch (type)
+	{
+		case TextureType::DIFFUSE:
+			return "DIFFUSE";
+		case TextureType::SPECULAR:
+			return "SPECULAR";
+		case TextureType::NORMAL:
+			return "NORMAL";
+		case TextureType::HEIGHT:
+			return "HEIGHT";
+		case TextureType::AO:
+			return "AO";
+		case TextureType::EMISSIVE:
+			return "EMISSIVE";
+		case TextureType::ROUGHNESS:
+			return "ROUGHNESS";
+		case TextureType::METALNESS:
+			return "METALNESS";
+		case TextureType::AMBIENT:
+			return "AMBIENT";
+		case TextureType::OPACITY:
+			return "OPACITY";
+		case TextureType::DISPLACEMENT:
+			return "DISPLACEMENT";
+		case TextureType::LIGHTMAP:
+			return "LIGHTMAP";
+		case TextureType::REFLECTION:
+			return "REFLECTION";
+		case TextureType::CUBEMAP:
+			return "CUBEMAP";
+		case TextureType::HDR_EQUIRECTANGULAR:
+			return "HDR_EQUIRECTANGULAR";
+		default:
+			return "UNDEFINED";
+	}
+}

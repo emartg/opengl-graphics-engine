@@ -14,7 +14,25 @@
 
 #include "../Asset.h"
 
-enum class TextureType { UNDEFINED = 0, DIFFUSE, SPECULAR, CUBEMAP, HDR_EQUIRECTANGULAR };
+enum class TextureType
+{
+	UNDEFINED = 0,
+	DIFFUSE,
+	SPECULAR,
+	NORMAL,
+	HEIGHT,
+	AO,
+	EMISSIVE,
+	ROUGHNESS,
+	METALNESS,
+	AMBIENT,
+	OPACITY,
+	DISPLACEMENT,
+	LIGHTMAP,
+	REFLECTION,
+	CUBEMAP,
+	HDR_EQUIRECTANGULAR
+};
 
 class Texture : public Asset
 {
@@ -65,6 +83,11 @@ public:
 	// Activates the corresponding texture unit and binds the texture to it
 	// (handles both 2D textures and cubemaps)
 	void Bind(GLuint unit) const;
+
+	// Static Public Methods
+	// ---------------------
+	// Texture type to string conversion
+	static std::string TextureTypeToString(const TextureType type);
 
 private:
 	// Private Attributes

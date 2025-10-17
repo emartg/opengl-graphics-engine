@@ -130,7 +130,13 @@ bool Renderer::SetShaderByName(const std::string& name, const std::shared_ptr<Sh
 	if (strcmp(name.c_str(), "Untextured Matt Shape Shader") == 0)
 		m_untexturedMattShapeShader = shader;
 	else if (strcmp(name.c_str(), "Assimp Model Shader") == 0)
+	{
 		m_assimpModelShader = shader;
+
+		m_assimpModelShader->Use();
+		m_assimpModelShader->SetInt("material.albedoMap", 0);		// set albedo map to texture unit 0
+		m_assimpModelShader->SetInt("material.metallicMap", 1);		// set metallic map to texture unit 1
+	}
 	else if (strcmp(name.c_str(), "Single Albedo Shader") == 0)
 		m_singleAlbedoShader = shader;
 	else if (strcmp(name.c_str(), "Screen Shader") == 0)
@@ -222,7 +228,7 @@ void Renderer::RenderScene()
 	m_untexturedMattShapeShader->SetFloat("material.shininess", 32.0f); // shininess factor for the material
 
 	m_assimpModelShader->Use();
-	m_assimpModelShader->SetFloat("material.shininess", 32.0f); // shininess factor for the material
+	m_assimpModelShader->SetFloat("material.shininess", 32.0f); // set shininess factor for the material
 
 	// set light uniforms
 	auto& lights = assetManager->GetAssets(AssetType::LIGHT);
