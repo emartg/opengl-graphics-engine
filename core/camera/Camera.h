@@ -121,7 +121,7 @@ private:
 	// Private Static Attributes
 	// -------------------------
 	// default values for the camera attributes
-	static constexpr glm::vec3 POSITION = glm::vec3{ 30.0f, 18.0f, 30.0f };
+	static constexpr glm::vec3 POSITION = glm::vec3{ 12.0f, 10.0f, 12.0f };
 	static constexpr glm::vec3 FRONT = glm::vec3{ 0.0f, 0.0f, -1.0f };
 	static constexpr glm::vec3 UP = glm::vec3{ 0.0f, 1.0f, 0.0f };
 	static constexpr GLfloat YAW = -135.0f;
