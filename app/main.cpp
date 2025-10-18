@@ -104,7 +104,8 @@ std::tuple<std::vector<std::string>,
 		"Picking Shader",
 		"Skybox Shader",
 		"Equirectangular to Cubemap Shader",
-		"Reflective Shader"
+		"Reflective Shader",
+		"Refractive Shader"
 	};
 
 	std::string shadersDir = "resources/shaders/";
@@ -117,7 +118,8 @@ std::tuple<std::vector<std::string>,
 		shadersDir + "picking.vert.glsl",
 		shadersDir + "skybox.vert.glsl",
 		shadersDir + "equirectangular_to_cubemap.vert.glsl",
-		shadersDir + "reflective.vert.glsl"
+		shadersDir + "reflective.vert.glsl",
+		shadersDir + "refractive.vert.glsl"
 	};
 	std::vector<std::string> geometryShaderPaths = {
 		"", // no custom geometry shader for the untextured matt shape shader
@@ -127,7 +129,8 @@ std::tuple<std::vector<std::string>,
 		"", // no custom geometry shader for the picking shader
 		"", // no custom geometry shader for the skybox shader
 		"", // no custom geometry shader for the equirectangular to cubemap shader
-		""  // no custom geometry shader for the reflective shader
+		"", // no custom geometry shader for the reflective shader
+		""  // no custom geometry shader for the refractive shader
 	};
 	std::vector<std::string> fragmentShaderPaths = {
 		shadersDir + "untextured_matt_shape.frag.glsl",
@@ -137,7 +140,8 @@ std::tuple<std::vector<std::string>,
 		shadersDir + "picking.frag.glsl",
 		shadersDir + "skybox.frag.glsl",
 		shadersDir + "equirectangular_to_cubemap.frag.glsl",
-		shadersDir + "reflective.frag.glsl"
+		shadersDir + "reflective.frag.glsl",
+		shadersDir + "refractive.frag.glsl"
 	};
 	return { shaderNames, vertexShaderPaths, geometryShaderPaths, fragmentShaderPaths };
 }

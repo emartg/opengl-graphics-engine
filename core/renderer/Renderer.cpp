@@ -143,6 +143,8 @@ bool Renderer::SetShaderByName(const std::string& name, const std::shared_ptr<Sh
 		m_equirectangularToCubemapShader = shader;
 	else if (strcmp(name.c_str(), "Reflective Shader") == 0)
 		m_reflectiveShader = shader;
+	else if (strcmp(name.c_str(), "Refractive Shader") == 0)
+		m_refractiveShader = shader;
 	else
 	{ // if the shader name is unknown, print an error message and return false
 		std::cerr << "[ERROR::RENDERER::SetShader] Unknown shader name: " << name << std::endl;
@@ -195,7 +197,7 @@ void Renderer::RenderScene()
 	// ensure camera and shaders are valid before proceeding
 	if (!camera || !m_untexturedMattShapeShader || !m_assimpModelShader || !m_singleAlbedoShader
 		|| !m_screenShader || !m_pickingShader || !m_skyboxShader || !m_equirectangularToCubemapShader
-		|| !m_reflectiveShader)
+		|| !m_reflectiveShader || !m_refractiveShader)
 	{ // if any of them are null, print an error message and return
 		std::cerr << "[ERROR::RENDERER::RenderScene] Camera or shaders aren't set up correctly" << std::endl;
 		return;
@@ -413,16 +415,16 @@ void Renderer::RenderScene()
 				{
 					case ModelType::ASSIMP_MODEL: // if the model is an Assimp model
 					{
-						// use the reflective shader for testing purposes
-						renderShader = m_reflectiveShader;
+						// use the refractive shader for testing purposes
+						renderShader = m_refractiveShader;
 						// activate the current shader program
 						renderShader->Use();
 					}
 					break;
 					case ModelType::SHAPE: // if the model is an untextured matt shape 
 					{
-						// use the reflective shader for testing purposes
-						renderShader = m_reflectiveShader;
+						// use the refractive shader for testing purposes
+						renderShader = m_refractiveShader;
 
 						// activate the current shader program
 						renderShader->Use();

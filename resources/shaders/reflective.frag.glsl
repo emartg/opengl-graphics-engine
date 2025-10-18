@@ -2,7 +2,7 @@
 out vec4 FragColor;
 
 in vec3 Normal;
-in vec3 FragPos;
+in vec3 Position;
 
 uniform samplerCube skybox; // environment map (skybox cubemap texture)
 
@@ -10,8 +10,9 @@ void main()
 {
 	// calculate the incident vector from the fragment position to the camera 
 	// (which is at the origin in view space)
-	vec3 incident = normalize(FragPos);
-	// normalize input normal vector and calculate the view direction
+	vec3 incident = normalize(Position);
+
+	// calculate the reflection direction using the normal vector
 	vec3 reflection = normalize(reflect(incident, normalize(Normal)));
 
 	// sample the environment map in the reflected direction
