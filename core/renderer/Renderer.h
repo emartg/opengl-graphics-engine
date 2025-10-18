@@ -124,6 +124,7 @@ protected:
 	std::shared_ptr<Shader> m_pickingShader;
 	std::shared_ptr<Shader> m_skyboxShader;
 	std::shared_ptr<Shader> m_equirectangularToCubemapShader;
+	std::shared_ptr<Shader> m_reflectiveShader;
 
 	// buffers for the screen quad (for rendering the offscreen texture to the screen)
 	GLuint m_screenQuadVAO{}, m_screenQuadVBO{}, m_screenQuadEBO{};

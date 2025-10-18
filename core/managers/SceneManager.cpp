@@ -14,7 +14,7 @@ GLboolean SceneManager::LoadSkybox(const std::vector<std::string>& faces)
 	if (faces.size() != 6)
 	{ // if not, print an error and return false
 		std::cerr << "[ERROR::SCENEMANAGER::LoadSkybox] Skybox requires 6 face paths, "
-			<< "but " << faces.size() << " were provided." << std::endl;
+			<< "but " << faces.size() << " were provided" << std::endl;
 		return GL_FALSE;
 	}
 
@@ -22,13 +22,30 @@ GLboolean SceneManager::LoadSkybox(const std::vector<std::string>& faces)
 	m_skybox = std::make_shared<Texture>("skybox", faces);
 	if (m_skybox->GetTextureId() == 0)
 	{ // if the texture ID is 0, loading failed - print an error, reset the skybox pointer, and return false
-		std::cerr << "[ERROR::SCENEMANAGER::LoadSkybox] Failed to load skybox texture." << std::endl;
+		std::cerr << "[ERROR::SCENEMANAGER::LoadSkybox] Failed to load skybox texture" << std::endl;
 		m_skybox = nullptr; // reset the skybox pointer
 		return GL_FALSE;
 	}
 
 	// if the skybox is loaded successfully, print a success message and return true
-	std::cout << "[SUCCESS::SCENEMANAGER::LoadSkybox] Skybox loaded successfully." << std::endl;
+	std::cout << "[SUCCESS::SCENEMANAGER::LoadSkybox] Skybox loaded successfully" << std::endl;
+	return GL_TRUE;
+}
+
+GLboolean SceneManager::LoadSkybox(const std::string& hdrPath)
+{
+	// create a new Texture object for the skybox from the HDR equirectangular image
+	m_skybox = std::make_shared<Texture>("skybox", hdrPath, true);
+	if (m_skybox->GetTextureId() == 0)
+	{ // if the texture ID is 0, loading failed - print an error, reset the skybox pointer, and return falseX
+		std::cerr << "[ERROR::SCENEMANAGER::LoadSkybox] Failed to load HDR skybox texture from: "
+			<< hdrPath << std::endl;
+		m_skybox = nullptr; // reset the skybox pointer
+		return GL_FALSE;
+	}
+
+	// if the skybox is loaded successfully, print a success message and return true
+	std::cout << "[SUCCESS::SCENEMANAGER::LoadSkybox] HDR skybox loaded successfully" << std::endl;
 	return GL_TRUE;
 }
 

@@ -3,7 +3,7 @@
 * This file is is an entry point to the App module. It serves as a simple test of the Core engine.
 * It follows these steps:
 * - It initializes the Core engine, which sets up OpenGL, window, and GUI.
-* - It compiles shaders and sets up the initial scene with a camera, lights and a model
+* - It compiles shaders and sets up the initial scene with a camera, lights, a model and a skybox.
 * - It runs the main loop of the engine, which renders the scene and handles events.
 * - It cleans up resources in the correct order and shuts down the engine.
 * Other important notes:
@@ -32,7 +32,7 @@ std::tuple<
 	std::vector<std::string>,
 	std::vector<std::string>,
 	std::vector<std::string>> DefineShadersInfo();
-// Sets up the initial scene with a camera, lights, and a model
+// Sets up the initial scene with a camera, lights, a model and a skybox
 void SetupInitialScene(Core* engine);
 
 int main(int argc, char** argv)
@@ -103,7 +103,8 @@ std::tuple<std::vector<std::string>,
 		"Screen Shader",
 		"Picking Shader",
 		"Skybox Shader",
-		"Equirectangular to Cubemap Shader"
+		"Equirectangular to Cubemap Shader",
+		"Reflective Shader"
 	};
 
 	std::string shadersDir = "resources/shaders/";
@@ -115,15 +116,18 @@ std::tuple<std::vector<std::string>,
 		shadersDir + "screen_quad.vert.glsl",
 		shadersDir + "picking.vert.glsl",
 		shadersDir + "skybox.vert.glsl",
-		shadersDir + "equirectangular_to_cubemap.vert.glsl"
+		shadersDir + "equirectangular_to_cubemap.vert.glsl",
+		shadersDir + "reflective.vert.glsl"
 	};
 	std::vector<std::string> geometryShaderPaths = {
 		"", // no custom geometry shader for the untextured matt shape shader
 		"", // no custom geometry shader for the assimp model shader
 		""  // no custom geometry shader for the single albedo shader
 		"", // no custom geometry shader for the screen shader
-		""  // no custom geometry shader for the picking shader
+		"", // no custom geometry shader for the picking shader
+		"", // no custom geometry shader for the skybox shader
 		"", // no custom geometry shader for the equirectangular to cubemap shader
+		""  // no custom geometry shader for the reflective shader
 	};
 	std::vector<std::string> fragmentShaderPaths = {
 		shadersDir + "untextured_matt_shape.frag.glsl",
@@ -132,7 +136,8 @@ std::tuple<std::vector<std::string>,
 		shadersDir + "screen_quad.frag.glsl",
 		shadersDir + "picking.frag.glsl",
 		shadersDir + "skybox.frag.glsl",
-		shadersDir + "equirectangular_to_cubemap.frag.glsl"
+		shadersDir + "equirectangular_to_cubemap.frag.glsl",
+		shadersDir + "reflective.frag.glsl"
 	};
 	return { shaderNames, vertexShaderPaths, geometryShaderPaths, fragmentShaderPaths };
 }
@@ -195,12 +200,12 @@ void SetupInitialScene(Core* engine)
 	assetManager->AddAsset(std::move(spotlightGizmo));
 
 	// load a model from an specific filepath and add it to the asset manager
-	std::string filepath = "resources/models/gltf/teapot/teapot.gltf";
-	if (std::filesystem::exists(filepath))
+	std::string modelFilepath = "resources/models/gltf/teapot/teapot.gltf";
+	if (std::filesystem::exists(modelFilepath))
 	{ // check if the file exists before loading it
-		std::string filename = std::filesystem::path(filepath).filename().string();
+		std::string filename = std::filesystem::path(modelFilepath).filename().string();
 		auto model = std::make_shared<AssimpModel>(
-			filename + " (Model " + std::to_string(assetManager->GetNModels()) + ")", filepath,
+			filename + " (Model " + std::to_string(assetManager->GetNModels()) + ")", modelFilepath,
 			glm::vec3{ 0.8f }, // diffuse color (override required although it is the default)
 			glm::vec3{ 0.0f }, // position (override required although it is the default)
 			glm::vec3{ 0.0f, 45.0f, 0.0f }, // rotation in Euler angles (overridden)
@@ -210,7 +215,20 @@ void SetupInitialScene(Core* engine)
 	}
 	else // if the file does not exist, print an error message
 	{
-		std::cerr << "[ERROR::main::SetupInitialScene] Model file not found: " << filepath << std::endl;
+		std::cerr << "[ERROR::main::SetupInitialScene] Model file not found: " << modelFilepath
+			<< std::endl;
+	}
+
+	// load an HDR skybox texture and set it as the skybox in the scene manager
+	std::string skyboxFilepath = "resources/textures/skyboxes/hdr/pure_sky.hdr";
+	if (std::filesystem::exists(skyboxFilepath))
+	{ // check if the file exists before loading it
+		sceneManager->LoadSkybox(skyboxFilepath);
+	}
+	else // if the file does not exist, print an error message
+	{
+		std::cerr << "[ERROR::main::SetupInitialScene] Skybox file not found: " << skyboxFilepath
+			<< std::endl;
 	}
 
 	// print a success message indicating the initial scene setup is complete

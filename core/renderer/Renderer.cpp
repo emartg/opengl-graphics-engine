@@ -141,6 +141,8 @@ bool Renderer::SetShaderByName(const std::string& name, const std::shared_ptr<Sh
 		m_skyboxShader = shader;
 	else if (strcmp(name.c_str(), "Equirectangular to Cubemap Shader") == 0)
 		m_equirectangularToCubemapShader = shader;
+	else if (strcmp(name.c_str(), "Reflective Shader") == 0)
+		m_reflectiveShader = shader;
 	else
 	{ // if the shader name is unknown, print an error message and return false
 		std::cerr << "[ERROR::RENDERER::SetShader] Unknown shader name: " << name << std::endl;
@@ -192,7 +194,8 @@ void Renderer::RenderScene()
 
 	// ensure camera and shaders are valid before proceeding
 	if (!camera || !m_untexturedMattShapeShader || !m_assimpModelShader || !m_singleAlbedoShader
-		|| !m_screenShader || !m_pickingShader || !m_skyboxShader || !m_equirectangularToCubemapShader)
+		|| !m_screenShader || !m_pickingShader || !m_skyboxShader || !m_equirectangularToCubemapShader
+		|| !m_reflectiveShader)
 	{ // if any of them are null, print an error message and return
 		std::cerr << "[ERROR::RENDERER::RenderScene] Camera or shaders aren't set up correctly" << std::endl;
 		return;
@@ -410,22 +413,19 @@ void Renderer::RenderScene()
 				{
 					case ModelType::ASSIMP_MODEL: // if the model is an Assimp model
 					{
-						// use the assimp model shader
-						renderShader = m_assimpModelShader;
+						// use the reflective shader for testing purposes
+						renderShader = m_reflectiveShader;
 						// activate the current shader program
 						renderShader->Use();
 					}
 					break;
 					case ModelType::SHAPE: // if the model is an untextured matt shape 
 					{
-						// use the untextured matt shape shader
-						renderShader = m_untexturedMattShapeShader;
+						// use the reflective shader for testing purposes
+						renderShader = m_reflectiveShader;
 
 						// activate the current shader program
 						renderShader->Use();
-
-						// set the color of the shape based on the model's albedo
-						renderShader->SetVec3("material.albedo", model->GetAlbedo());
 					}
 					break;
 					default:
