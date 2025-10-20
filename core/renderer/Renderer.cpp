@@ -46,6 +46,15 @@ Renderer::~Renderer()
 	if (m_skyboxVBO) glDeleteBuffers(1, &m_skyboxVBO);
 	if (m_skyboxVAO) glDeleteVertexArrays(1, &m_skyboxVAO);
 
+	// clean up dynamic environment map FBOs, RBOs, and cubemap textures
+	for (auto [id, entry] : m_dynamicEnvMaps)
+	{
+		if (entry.fbo) glDeleteFramebuffers(1, &entry.fbo);
+		if (entry.rbo) glDeleteRenderbuffers(1, &entry.rbo);
+		if (entry.cubemapTexId) glDeleteTextures(1, &entry.cubemapTexId);
+	}
+	m_dynamicEnvMaps.clear();
+
 	std::cout << "[RENDERER::~Renderer] Renderer destructor called" << std::endl;
 }
 
@@ -203,6 +212,11 @@ void Renderer::RenderScene()
 		return;
 	}
 
+	// ensure the skybox is a valid cubemap texture early (needed for environment mapping)
+	// and uptdate per-object dynamic environment maps (if any)
+	if (sceneManager->GetSkybox()) ConvertHDRToCubemapIfNeeded();
+	UpdateDynamicEnvMaps();
+
 	// compute view and projection transformations
 	glm::mat4 projection = glm::perspective(
 		glm::radians(camera->GetZoom()),
@@ -222,7 +236,7 @@ void Renderer::RenderScene()
 		shader->SetMat4("projection", projection);
 	}
 
-	// set material uniforms
+	// set constant material uniforms
 	m_untexturedMattShapeShader->Use();
 	m_untexturedMattShapeShader->SetFloat("material.shininess", 32.0f); // shininess factor for the material
 	m_assimpModelShader->Use();
@@ -415,19 +429,40 @@ void Renderer::RenderScene()
 				{
 					case ModelType::ASSIMP_MODEL: // if the model is an Assimp model
 					{
-						// use the refractive shader for testing purposes
-						renderShader = m_refractiveShader;
+						// use the reflective shader for testing purposes
+						renderShader = m_reflectiveShader;
 						// activate the current shader program
 						renderShader->Use();
+
+						// bind the environment map (fallback to skybox if no dynamic env map)
+						renderShader->SetInt("skybox", 0); // set the env map sampler to texture unit 0
+						// determine the environment map to use (either dynamic env map or skybox)
+						GLuint envMapTexId = 0;
+						if (auto it{ m_dynamicEnvMaps.find(model->GetId()) }; it != m_dynamicEnvMaps.end())
+						{ // if a dynamic environment map exists for this model, use it
+							envMapTexId = it->second.cubemapTexId;
+						}
+						if (envMapTexId == 0)
+						{ // if no dynamic env map, use the skybox cubemap texture
+							auto& skyboxTexture = sceneManager->GetSkybox();
+							if (skyboxTexture && skyboxTexture->GetTextureType() == TextureType::CUBEMAP)
+								envMapTexId = skyboxTexture->GetTextureId();
+						}
+						// activate texture unit 0 and bind the env map texture or 0 if none found
+						glActiveTexture(GL_TEXTURE0);
+						glBindTexture(GL_TEXTURE_CUBE_MAP, envMapTexId);
 					}
 					break;
 					case ModelType::SHAPE: // if the model is an untextured matt shape 
 					{
-						// use the refractive shader for testing purposes
-						renderShader = m_refractiveShader;
+						// use the untextured matt shape shader
+						renderShader = m_untexturedMattShapeShader;
 
 						// activate the current shader program
 						renderShader->Use();
+
+						// set the albedo color for the shape model
+						renderShader->SetVec3("material.albedo", model->GetAlbedo());
 					}
 					break;
 					default:
@@ -556,6 +591,32 @@ void Renderer::RenderScene()
 void Renderer::FrameEndConfig() const
 {
 	SwapBuffers();
+}
+
+void Renderer::RegisterModelForDynamicEnvMapCapture(std::uint32_t modelId, GLuint resolution)
+{
+	auto& entry = m_dynamicEnvMaps[modelId]; // get or create the dynamic env map entry
+	entry.resolution = resolution; // set the resolution for the dynamic env map
+
+	std::cout << "[INFO::RENDERER::RegisterModelForDynamicEnvMapCapture] "
+		"Registered dynamic environment map for model id " << modelId
+		<< " with resolution " << resolution << std::endl;
+}
+
+void Renderer::UnregisterModelForDynamicEnvMapCapture(std::uint32_t modelId)
+{
+	auto it = m_dynamicEnvMaps.find(modelId); // find the dynamic env map entry by model id
+	if (it == m_dynamicEnvMaps.end()) return; // if not found, return
+
+	auto& entry = it->second; // get the dynamic env map entry
+	// delete the FBO, RBO, and cubemap texture associated with the dynamic env map entry if they exist
+	if (entry.fbo) glDeleteFramebuffers(1, &entry.fbo);
+	if (entry.rbo) glDeleteRenderbuffers(1, &entry.rbo);
+	if (entry.cubemapTexId) glDeleteTextures(1, &entry.cubemapTexId);
+	m_dynamicEnvMaps.erase(it); // remove the entry from the map
+
+	std::cout << "[INFO::RENDERER::UnregisterModelForDynamicEnvMapCapture] "
+		"Unregistered dynamic environment map for model id " << modelId << std::endl;
 }
 
 // Protected Methods
@@ -974,4 +1035,159 @@ void Renderer::ConvertHDRToCubemapIfNeeded()
 
 	// reset source id so a new HDR selection triggers fresh conversion logic properly
 	m_hdrSourceTexId = envCubemap; // the active skybox is now the cubemap
+}
+
+void Renderer::UpdateDynamicEnvMaps()
+{
+	// if already capturing or no dynamic env maps, return
+	if (m_isCapturingDynamicEnvMap || m_dynamicEnvMaps.empty()) return;
+
+	auto core = Core::GetInstance(); // get the core instance
+	auto& AssetManager = core->GetAssetManager(); // get the asset manager
+	auto& models = AssetManager->GetAssets(AssetType::MODEL); // get the models from the asset manager
+	if (models.empty()) return; // if no models, return
+
+	// ensure a skybox cubemap exists for the dynamic env map captures
+	auto& skyboxTexture = core->GetSceneManager()->GetSkybox();
+	if (skyboxTexture) ConvertHDRToCubemapIfNeeded();
+
+	// set capturing flag to prevent re-entrance
+	m_isCapturingDynamicEnvMap = true;
+
+	// iterate over the models and capture dynamic env maps for those registered
+	for (const auto& asset : models)
+	{
+		// dynamically cast the asset to a Model object
+		auto model = dynamic_cast<Model*>(asset.get());
+		if (!model || model->GetGizmoType() != GizmoType::NONE) continue; // skip if not a regular model
+
+		// check if the model has a registered dynamic env map
+		auto it = m_dynamicEnvMaps.find(model->GetId());
+		if (it == m_dynamicEnvMaps.end()) continue; // if not found, skip to next model
+
+		auto& entry = it->second; // get the dynamic env map entry
+		// dynamically cast the model to a shared pointer for passing to the capture function
+		auto modelPtr = std::dynamic_pointer_cast<Model>(asset);
+		CaptureDynamicEnvMapForModel(modelPtr, entry); // capture the dynamic env map for the model
+	}
+
+	m_isCapturingDynamicEnvMap = false; // reset capturing flag after processing all models
+}
+
+void Renderer::CaptureDynamicEnvMapForModel(const std::shared_ptr<Model>& model, DynamicEnvMapEntry& entry)
+{
+	// lazy initialization of cubemap texture, FBO, and RBO for the dynamic env map entry
+	if (!entry.initialized)
+	{
+		glGenTextures(1, &entry.cubemapTexId);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, entry.cubemapTexId);
+		for (unsigned int i = 0; i < 6; ++i)
+			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB16F,
+						 entry.resolution, entry.resolution, 0, GL_RGB, GL_FLOAT, nullptr);
+		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glGenFramebuffers(1, &entry.fbo);
+		glGenRenderbuffers(1, &entry.rbo);
+		entry.initialized = true; // mark as initialized
+	}
+
+	GLint prevFBO{}, prevViewport[4];
+	glGetIntegerv(GL_FRAMEBUFFER_BINDING, &prevFBO); // save currently bound FBO
+	glGetIntegerv(GL_VIEWPORT, prevViewport); // save current viewport
+
+	glBindFramebuffer(GL_FRAMEBUFFER, entry.fbo); // bind the dynamic env map FBO
+	glBindRenderbuffer(GL_RENDERBUFFER, entry.rbo); // bind the RBO
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24,
+						  entry.resolution, entry.resolution); // configure RBO storage
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
+							  GL_RENDERBUFFER, entry.rbo); // attach RBO to FBO depth attachment
+	glDrawBuffer(GL_COLOR_ATTACHMENT0); // select color attachment 0 for rendering
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+	{ // validate FBO completeness, if incomplete, print error, restore FBO, and return
+		std::cerr << "[ERROR::RENDERER::CaptureDynamicEnvMapForModel] "
+			"Dynamic Env Map FBO incomplete for model id " << model->GetId() << std::endl;
+		glBindFramebuffer(GL_FRAMEBUFFER, prevFBO); // restore previous FBO
+		return;
+	}
+
+	// set up capture projection and views for the 6 cubemap faces
+	glm::mat4 captureProj = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
+	const glm::vec3 pos = model->GetPosition(); // get the model's position for the capture
+	glm::mat4 captureViews[] =
+	{
+		glm::lookAt(pos, pos + glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f)),
+		glm::lookAt(pos, pos + glm::vec3(-1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f)),
+		glm::lookAt(pos, pos + glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)),
+		glm::lookAt(pos, pos + glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f)),
+		glm::lookAt(pos, pos + glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, -1.0f, 0.0f)),
+		glm::lookAt(pos, pos + glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, -1.0f, 0.0f))
+	};
+
+	glViewport(0, 0, entry.resolution, entry.resolution); // set viewport to capture resolution
+
+	// render the scene from the model's position to each face of the cubemap
+	for (GLuint i{}; i < 6; ++i)
+	{
+		// attach the face of the cubemap texture to the FBO color attachment
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+							   GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, entry.cubemapTexId, 0);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // clear necessary buffers
+
+		// render the scene for the current capture view, excluding the model itself
+		RenderSceneForEnvMapCapture(captureViews[i], captureProj, model);
+	}
+
+	// generate mipmaps for the cubemap texture to enable trilinear filtering
+	glBindTexture(GL_TEXTURE_CUBE_MAP, entry.cubemapTexId);
+	glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
+
+	// restore previous FBO and viewport
+	glBindFramebuffer(GL_FRAMEBUFFER, prevFBO);
+	glViewport(prevViewport[0], prevViewport[1], prevViewport[2], prevViewport[3]);
+}
+
+void Renderer::RenderSceneForEnvMapCapture(const glm::mat4& captureView, const glm::mat4& captureProj,
+										   const std::shared_ptr<Model>& excludeModel)
+{
+	auto core = Core::GetInstance(); // get the core instance
+	auto& assetManager = core->GetAssetManager(); // get the asset manager
+	auto& sceneManager = core->GetSceneManager(); // get the scene manager
+
+
+	// use solid color for other objects to avoid interference with the env map capture
+	// (avoid recursion/self-reflection issues)
+	m_singleAlbedoShader->Use();
+	m_singleAlbedoShader->SetMat4("view", captureView);
+	m_singleAlbedoShader->SetMat4("projection", captureProj);
+
+	auto& models = assetManager->GetAssets(AssetType::MODEL); // get the models from the asset manager
+	// render each model except the excluded one
+	for (const auto& asset : models)
+	{
+		// dynamically cast the asset to a Model object
+		auto model = dynamic_cast<Model*>(asset.get());
+		if (!model || model == excludeModel.get() ||
+			model->GetGizmoType() != GizmoType::NONE) continue; // skip excluded and non-regular models
+		// set model matrix and albedo color for the single albedo shader
+		m_singleAlbedoShader->SetMat4("model", model->GetModelMatrix());
+		m_singleAlbedoShader->SetVec3("albedo", model->GetAlbedo());
+		// ensure the polygon mode is fill for proper rendering
+		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+		// render the model using the single albedo shader
+		model->Draw(*m_singleAlbedoShader);
+	}
+
+	// render the skybox as background if available
+	auto& skyboxTexture = sceneManager->GetSkybox();
+	if (skyboxTexture && skyboxTexture->GetTextureType() == TextureType::CUBEMAP)
+	{ // only render if skybox is a cubemap
+		if (!m_skyboxVAO) InitSkyboxCube(); // initialize skybox cube if not done yet
+		// render the skybox cube using the skybox shader and the provided view and projection matrices
+		// (const_cast is used here to match the function signature)
+		RenderSkyboxCube(skyboxTexture, const_cast<glm::mat4&>(captureView),
+						 const_cast<glm::mat4&>(captureProj));
+	}
 }

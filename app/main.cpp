@@ -3,7 +3,8 @@
 * This file is is an entry point to the App module. It serves as a simple test of the Core engine.
 * It follows these steps:
 * - It initializes the Core engine, which sets up OpenGL, window, and GUI.
-* - It compiles shaders and sets up the initial scene with a camera, lights, a model and a skybox.
+* - It compiles shaders and sets up the initial scene with a camera, lights, a shape,
+*	an Assimp model, and a skybox.
 * - It runs the main loop of the engine, which renders the scene and handles events.
 * - It cleans up resources in the correct order and shuts down the engine.
 * Other important notes:
@@ -14,6 +15,7 @@
 #include <memory> // for smart pointers
 #include <filesystem>
 
+#include "CUBE.h"
 #include "renderer/GLFWRenderer.h"
 
 #include "../core/Core.h"
@@ -32,7 +34,7 @@ std::tuple<
 	std::vector<std::string>,
 	std::vector<std::string>,
 	std::vector<std::string>> DefineShadersInfo();
-// Sets up the initial scene with a camera, lights, a model and a skybox
+// Sets up the initial scene with a camera, lights, a shape, an Assimp model, and a skybox
 void SetupInitialScene(Core* engine);
 
 int main(int argc, char** argv)
@@ -203,23 +205,36 @@ void SetupInitialScene(Core* engine)
 							+ " (Model " + std::to_string(assetManager->GetNModels()) + ")");
 	assetManager->AddAsset(std::move(spotlightGizmo));
 
-	// load a model from an specific filepath and add it to the asset manager
-	std::string modelFilepath = "resources/models/gltf/teapot/teapot.gltf";
-	if (std::filesystem::exists(modelFilepath))
+	// create a simple shape (a cube) and add it to the asset manager
+	auto shape = std::make_shared<Shape>(
+		"Cube (Model " + std::to_string(assetManager->GetNModels()) + ")",
+		cubeVerticesVec, cubeIndicesVec,
+		glm::vec3{ 0.8f, 0.2f, 0.2f }, // diffuse color (overridden)
+		glm::vec3{ -0.25f, 4.0f, -3.0f } // position (overridden)
+	);
+	// add the shape to the asset manager
+	assetManager->AddAsset(std::move(shape));
+
+	// load a Assimp model from an specific filepath and add it to the asset manager
+	std::string assimpModelFilepath = "resources/models/gltf/teapot/teapot.gltf";
+	if (std::filesystem::exists(assimpModelFilepath))
 	{ // check if the file exists before loading it
-		std::string filename = std::filesystem::path(modelFilepath).filename().string();
-		auto model = std::make_shared<AssimpModel>(
-			filename + " (Model " + std::to_string(assetManager->GetNModels()) + ")", modelFilepath,
+		std::string filename = std::filesystem::path(assimpModelFilepath).filename().string();
+		auto assimpModel = std::make_shared<AssimpModel>(
+			filename + " (Model " + std::to_string(assetManager->GetNModels()) + ")", assimpModelFilepath,
 			glm::vec3{ 0.8f }, // diffuse color (override required although it is the default)
 			glm::vec3{ 0.0f }, // position (override required although it is the default)
 			glm::vec3{ 0.0f, 45.0f, 0.0f }, // rotation in Euler angles (overridden)
 			glm::vec3{ 0.25f } // scale (overridden)
 		);
-		assetManager->AddAsset(std::move(model));
+		// register the Assimp model for dynamic environment map capture
+		engine->GetRenderer()->RegisterModelForDynamicEnvMapCapture(assimpModel->GetId(), 512);
+		// add the Assimp model to the asset manager
+		assetManager->AddAsset(std::move(assimpModel));
 	}
 	else // if the file does not exist, print an error message
 	{
-		std::cerr << "[ERROR::main::SetupInitialScene] Model file not found: " << modelFilepath
+		std::cerr << "[ERROR::main::SetupInitialScene] Model file not found: " << assimpModelFilepath
 			<< std::endl;
 	}
 

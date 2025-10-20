@@ -110,6 +110,10 @@ public:
 	virtual void RenderScene();
 	virtual void FrameEndConfig() const;
 
+	// Registration/Unregistration for dynamic environment map capture for models by their unique ids
+	virtual void RegisterModelForDynamicEnvMapCapture(std::uint32_t modelId, GLuint resolution = 512);
+	virtual void UnregisterModelForDynamicEnvMapCapture(std::uint32_t modelId);
+
 protected:
 	// Protected Attributes
 	// --------------------
@@ -142,6 +146,16 @@ protected:
 	bool m_hdrToCubemapConverted{ false };
 	GLuint m_hdrSourceTexId{ 0 }; // to track if the HDR source texture has changed
 
+	// attributes for dynamic environment maps
+	struct DynamicEnvMapEntry
+	{
+		GLuint fbo{ 0 }, rbo{ 0 }, cubemapTexId{ 0 };
+		GLuint resolution{ 512 }; // default resolution
+		bool initialized{ false };
+	};
+	std::unordered_map<std::uint32_t, DynamicEnvMapEntry> m_dynamicEnvMaps; // map of dynamic env maps by entity id
+	bool m_isCapturingDynamicEnvMap{ false }; // flag to prevent recursion during dynamic env map capture
+
 	// Protected Methods
 	// -----------------
 	// Ensures the offscreen render pass is created with the current window size
@@ -159,5 +173,11 @@ protected:
 
 	// Converts an equirectangular HDR texture to a cubemap texture if needed
 	void ConvertHDRToCubemapIfNeeded();
+
+	// Dynamic environment map helpers
+	void UpdateDynamicEnvMaps();
+	void CaptureDynamicEnvMapForModel(const std::shared_ptr<Model>& model, DynamicEnvMapEntry& entry);
+	void RenderSceneForEnvMapCapture(const glm::mat4& captureView, const glm::mat4& captureProjection,
+									 const std::shared_ptr<Model>& excludeModel);
 
 };
