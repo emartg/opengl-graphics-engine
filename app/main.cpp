@@ -212,6 +212,8 @@ void SetupInitialScene(Core* engine)
 		glm::vec3{ 0.8f, 0.2f, 0.2f }, // diffuse color (overridden)
 		glm::vec3{ -0.25f, 4.0f, -3.0f } // position (overridden)
 	);
+	// register the shape for dynamic environment map capture
+	engine->GetRenderer()->RegisterModelForDynamicEnvMapCapture(shape->GetId(), 512);
 	// add the shape to the asset manager
 	assetManager->AddAsset(std::move(shape));
 

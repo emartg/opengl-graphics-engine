@@ -149,11 +149,15 @@ protected:
 	// attributes for dynamic environment maps
 	struct DynamicEnvMapEntry
 	{
-		GLuint fbo{ 0 }, rbo{ 0 }, cubemapTexId{ 0 };
+		GLuint fbo{ 0 }, rbo{ 0 };
+		GLuint cubemapTexId{ 0 }; // write target for this frame
+		GLuint prevCubemapTexId{ 0 }; // stable sampling source for this frame
 		GLuint resolution{ 512 }; // default resolution
 		bool initialized{ false };
+		bool hasPrevCubemap{ false }; // indicates if prevCubemapTexId is valid (rendered at least once)
 	};
-	std::unordered_map<std::uint32_t, DynamicEnvMapEntry> m_dynamicEnvMaps; // map of dynamic env maps by entity id
+	// map of dynamic env maps by entity id
+	std::unordered_map<std::uint32_t, DynamicEnvMapEntry> m_dynamicEnvMaps;
 	bool m_isCapturingDynamicEnvMap{ false }; // flag to prevent recursion during dynamic env map capture
 
 	// Protected Methods
