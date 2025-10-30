@@ -16,6 +16,7 @@
 #include <filesystem>
 
 #include "CUBE.h"
+#include "PLANE.h"
 #include "renderer/GLFWRenderer.h"
 
 #include "../core/Core.h"
@@ -205,17 +206,17 @@ void SetupInitialScene(Core* engine)
 							+ " (Model " + std::to_string(assetManager->GetNModels()) + ")");
 	assetManager->AddAsset(std::move(spotlightGizmo));
 
-	// create a simple shape (a cube) and add it to the asset manager
-	auto shape = std::make_shared<Shape>(
-		"Cube (Model " + std::to_string(assetManager->GetNModels()) + ")",
-		cubeVerticesVec, cubeIndicesVec,
-		glm::vec3{ 0.8f, 0.2f, 0.2f }, // diffuse color (overridden)
-		glm::vec3{ -0.25f, 4.0f, -3.0f } // position (overridden)
+	// create a simple shape (a plane) and add it to the asset manager
+	auto plane = std::make_shared<Shape>(
+		"Plane " + std::to_string(assetManager->GetNShapes()),
+		planeVerticesVec, planeIndicesVec,
+		glm::vec3{ 0.8f, 0.8f, 0.8f }, // diffuse color (override required although it is the default)
+		glm::vec3{ 0.0f, -0.5f, 0.0f }, // position (overridden)
+		glm::quat(glm::radians(glm::vec3{ 0.0f, 45.0f, 0.0f })), // rotation (overridden)
+		glm::vec3{ 7.5f, 1.0f, 5.0f } // scale (overridden)
 	);
-	// register the shape for dynamic environment map capture
-	engine->GetRenderer()->RegisterModelForDynamicEnvMapCapture(shape->GetId(), 512);
-	// add the shape to the asset manager
-	assetManager->AddAsset(std::move(shape));
+	engine->GetRenderer()->RegisterModelForDynamicEnvMapCapture(plane->GetId(), 512);
+	assetManager->AddAsset(std::move(plane));
 
 	// load a Assimp model from an specific filepath and add it to the asset manager
 	std::string assimpModelFilepath = "resources/models/gltf/teapot/teapot.gltf";
@@ -226,7 +227,7 @@ void SetupInitialScene(Core* engine)
 			filename + " (Model " + std::to_string(assetManager->GetNModels()) + ")", assimpModelFilepath,
 			glm::vec3{ 0.8f }, // diffuse color (override required although it is the default)
 			glm::vec3{ 0.0f }, // position (override required although it is the default)
-			glm::vec3{ 0.0f, 45.0f, 0.0f }, // rotation in Euler angles (overridden)
+			glm::quat(glm::radians(glm::vec3{ 0.0f, 45.0f, 0.0f })), // rotation (overridden)
 			glm::vec3{ 0.25f } // scale (overridden)
 		);
 		// register the Assimp model for dynamic environment map capture
@@ -241,7 +242,7 @@ void SetupInitialScene(Core* engine)
 	}
 
 	// load an HDR skybox texture and set it as the skybox in the scene manager
-	std::string skyboxFilepath = "resources/textures/skyboxes/hdr/pure_sky.hdr";
+	std::string skyboxFilepath = "resources/textures/skyboxes/hdr/canary_wharf_4k.hdr";
 	if (std::filesystem::exists(skyboxFilepath))
 	{ // check if the file exists before loading it
 		sceneManager->LoadSkybox(skyboxFilepath);

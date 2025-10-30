@@ -10,5 +10,5 @@ uniform mat4 projection;
 // no lighting, just pass through
 void main()
 {
-    gl_Position = projection * view * model * vec4(aPos, 1.0);
+	gl_Position = projection * view * model * vec4(aPos, 1.0);
 }

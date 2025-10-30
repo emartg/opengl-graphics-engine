@@ -97,7 +97,7 @@ private:
 	static constexpr float MIN_POSITION_VALUE{ -15.0f }, MAX_POSITION_VALUE{ 15.0f };
 	static constexpr float MIN_ROTATION_VALUE{ -360.0f }, MAX_ROTATION_VALUE{ 360.0f };
 	static constexpr float MIN_DIRECTION_VALUE{ -1.0f }, MAX_DIRECTION_VALUE{ 1.0f };
-	static constexpr float MIN_SCALE_VALUE{ 0.001f }, MAX_SCALE_VALUE{ 10.0f };
+	static constexpr float MIN_SCALE_VALUE{ 0.001f }, MAX_SCALE_VALUE{ 100.0f };
 	static constexpr float MIN_CUTOFF_VALUE{ 0.0f }, MAX_CUTOFF_VALUE{ 45.0f };
 	static constexpr float POSITION_SPEED{ 0.15f }, ROTATION_SPEED{ 1.0f },
 		DIRECTION_SPEED{ 0.01f }, SCALE_SPEED{ 0.002f }, CUTOFF_ANGLES_SPEED{ 0.25f };

@@ -179,9 +179,19 @@ void Renderer::FrameStartConfig()
 
 	EnsureOffscreenRenderPass(); // ensure offscreen target matches current window size
 
-	// process pending picking request before main scene rendering
 	auto core = Core::GetInstance();
-	auto& camera = core->GetSceneManager()->GetCamera();
+	auto& sceneManager = core->GetSceneManager();
+	auto& camera = sceneManager->GetCamera();
+
+	// perform all pre-render passes (cubemap generation, dynamic reflections, etc.)
+	// before binding the main render pass and setting up the main camera
+
+	// ensure the skybox is a valid cubemap texture early (needed for environment mapping)
+	// and update per-object dynamic environment maps (if any)
+	if (sceneManager->GetSkybox()) ConvertHDRToCubemapIfNeeded();
+	UpdateDynamicEnvMaps();
+
+	// process pending picking request before main scene rendering
 	core->GetSelectionManager()->ProcessPendingPick(camera.get(), core->GetAssetManager().get());
 
 	// bind offscreen FBO and clear it
@@ -212,11 +222,6 @@ void Renderer::RenderScene()
 		std::cerr << "[ERROR::RENDERER::RenderScene] Camera or shaders aren't set up correctly" << std::endl;
 		return;
 	}
-
-	// ensure the skybox is a valid cubemap texture early (needed for environment mapping)
-	// and uptdate per-object dynamic environment maps (if any)
-	if (sceneManager->GetSkybox()) ConvertHDRToCubemapIfNeeded();
-	UpdateDynamicEnvMaps();
 
 	// compute view and projection transformations
 	glm::mat4 projection = glm::perspective(
@@ -432,6 +437,7 @@ void Renderer::RenderScene()
 					{
 						// use the reflective shader for testing purposes
 						renderShader = m_reflectiveShader;
+
 						// activate the current shader program
 						renderShader->Use();
 
@@ -441,7 +447,8 @@ void Renderer::RenderScene()
 						GLuint envMapTexId = 0;
 						if (auto it{ m_dynamicEnvMaps.find(model->GetId()) }; it != m_dynamicEnvMaps.end())
 						{ // if a dynamic environment map exists for this model, use it
-							envMapTexId = it->second.cubemapTexId;
+							// read from the stable "previous" buffer to avoid feedback artifacts
+							if (it->second.hasPrevCubemap) envMapTexId = it->second.prevCubemapTexId;
 						}
 						if (envMapTexId == 0)
 						{ // if no dynamic env map, use the skybox cubemap texture
@@ -454,7 +461,7 @@ void Renderer::RenderScene()
 						glBindTexture(GL_TEXTURE_CUBE_MAP, envMapTexId);
 					}
 					break;
-					case ModelType::SHAPE: // if the model is an untextured matt shape 
+					case ModelType::SHAPE: // if the model is a shape
 					{
 						// use the reflective shader for testing purposes
 						renderShader = m_reflectiveShader;
@@ -468,7 +475,8 @@ void Renderer::RenderScene()
 						GLuint envMapTexId = 0;
 						if (auto it{ m_dynamicEnvMaps.find(model->GetId()) }; it != m_dynamicEnvMaps.end())
 						{ // if a dynamic environment map exists for this model, use it
-							envMapTexId = it->second.cubemapTexId;
+							// read from the stable "previous" buffer to avoid feedback artifacts
+							if (it->second.hasPrevCubemap) envMapTexId = it->second.prevCubemapTexId;
 						}
 						if (envMapTexId == 0)
 						{ // if no dynamic env map, use the skybox cubemap texture
@@ -596,7 +604,7 @@ void Renderer::RenderScene()
 			static uint32_t warnCounter = 0;
 			if ((warnCounter++ % 240) == 0)
 				std::cerr << "[WARNING::RENDERER::RenderScene] "
-				"Skybox still HDR(conversion pending)" << std::endl;
+				"Skybox still HDR (conversion pending)" << std::endl;
 		}
 	}
 
@@ -978,7 +986,7 @@ void Renderer::ConvertHDRToCubemapIfNeeded()
 	GLuint envCubemap;
 	glGenTextures(1, &envCubemap);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, envCubemap);
-	for (unsigned int i = 0; i < 6; ++i) // allocate space for the 6 faces of the cubemap
+	for (unsigned int i{}; i < 6; ++i) // allocate space for the 6 faces of the cubemap
 		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB16F, captureSize, captureSize, 0,
 					 GL_RGB, GL_FLOAT, nullptr);
 	// set the cubemap texture parameters
@@ -995,12 +1003,12 @@ void Renderer::ConvertHDRToCubemapIfNeeded()
 	glm::mat4 captureProj = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
 	glm::mat4 captureViews[] =
 	{ // 6 view matrices for the 6 faces of the cubemap (right, left, top, bottom, front, back)
-		glm::lookAt(glm::vec3(0.0f), glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f)),
-		glm::lookAt(glm::vec3(0.0f), glm::vec3(-1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f)),
-		glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)),
-		glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f)),
-		glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, -1.0f, 0.0f)),
-		glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, -1.0f, 0.0f))
+		glm::lookAt(glm::vec3(0.0f), glm::vec3(1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),		// +X
+		glm::lookAt(glm::vec3(0.0f), glm::vec3(-1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),	// -X
+		glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f,  1.0f,  0.0f), glm::vec3(0.0f,  0.0f,  1.0f)),		// +Y
+		glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f, -1.0f,  0.0f), glm::vec3(0.0f,  0.0f, -1.0f)),		// -Y
+		glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f,  0.0f,  1.0f), glm::vec3(0.0f, -1.0f,  0.0f)),		// +Z
+		glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f,  0.0f, -1.0f), glm::vec3(0.0f, -1.0f,  0.0f))		// -Z
 	};
 
 	if (!m_skyboxVAO) InitSkyboxCube(); // initialize the skybox cube if not done yet
@@ -1069,12 +1077,16 @@ void Renderer::UpdateDynamicEnvMaps()
 	auto& skyboxTexture = core->GetSceneManager()->GetSkybox();
 	if (skyboxTexture) ConvertHDRToCubemapIfNeeded();
 
+	// flip buffers at the start of the update
+	// (this makes last frame's "write" buffer -cubemapTexId- this frame's "read" buffer -prevCubemapTexId-)
+	for (auto& [id, entry] : m_dynamicEnvMaps)
+	{
+		std::swap(entry.cubemapTexId, entry.prevCubemapTexId);
+		entry.hasPrevCubemap = true; // mark that a valid "previous" cubemap now exists for reading
+	}
+
 	// set capturing flag to prevent re-entrance
 	m_isCapturingDynamicEnvMap = true;
-
-	// vector to record which dynamic env map entries were updated
-	std::vector<std::uint32_t> updatedEntries;
-	updatedEntries.reserve(m_dynamicEnvMaps.size());
 
 	// iterate over the models and capture dynamic env maps for those registered
 	for (const auto& asset : models)
@@ -1091,18 +1103,8 @@ void Renderer::UpdateDynamicEnvMaps()
 		auto& entry = it->second; // get the dynamic env map entry
 		// dynamically cast the model to a shared pointer for passing to the capture function
 		auto modelPtr = std::dynamic_pointer_cast<Model>(asset);
-		CaptureDynamicEnvMapForModel(modelPtr, entry); // capture the dynamic env map for the model
-		// record the updated entry
-		updatedEntries.push_back(model->GetId());
-	}
-
-	// flip the current and previous cubemap textures for the updated entries for the next frame
-	// (so that the previous frame's env map is available for temporal effects)
-	for (auto modelId : updatedEntries)
-	{
-		auto& entry = m_dynamicEnvMaps[modelId]; // get the dynamic env map entry
-		std::swap(entry.cubemapTexId, entry.prevCubemapTexId); // swap current/previous cubemap texture ids
-		entry.hasPrevCubemap = true; // mark that there is now a valid previous cubemap
+		// capture the dynamic environment map for the model into the "write" buffer (cubemapTexId)
+		CaptureDynamicEnvMapForModel(modelPtr, entry);
 	}
 
 	m_isCapturingDynamicEnvMap = false; // reset capturing flag after processing all models
@@ -1168,13 +1170,13 @@ void Renderer::CaptureDynamicEnvMapForModel(const std::shared_ptr<Model>& model,
 	glm::mat4 captureProj = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
 	const glm::vec3 pos = model->GetPosition(); // get the model's position for the capture
 	glm::mat4 captureViews[] =
-	{
-		glm::lookAt(pos, pos + glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f)),
-		glm::lookAt(pos, pos + glm::vec3(-1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f)),
-		glm::lookAt(pos, pos + glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)),
-		glm::lookAt(pos, pos + glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f)),
-		glm::lookAt(pos, pos + glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, -1.0f, 0.0f)),
-		glm::lookAt(pos, pos + glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, -1.0f, 0.0f))
+	{ // 6 view matrices for the 6 faces of the cubemap (right, left, top, bottom, front, back)
+		glm::lookAt(pos, pos + glm::vec3(1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),	// +X
+		glm::lookAt(pos, pos + glm::vec3(-1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),	// -X
+		glm::lookAt(pos, pos + glm::vec3(0.0f,  1.0f,  0.0f), glm::vec3(0.0f,  0.0f,  1.0f)),	// +Y
+		glm::lookAt(pos, pos + glm::vec3(0.0f, -1.0f,  0.0f), glm::vec3(0.0f,  0.0f, -1.0f)),	// -Y
+		glm::lookAt(pos, pos + glm::vec3(0.0f,  0.0f,  1.0f), glm::vec3(0.0f, -1.0f,  0.0f)),	// +Z
+		glm::lookAt(pos, pos + glm::vec3(0.0f,  0.0f, -1.0f), glm::vec3(0.0f, -1.0f,  0.0f))	// -Z
 	};
 
 	glViewport(0, 0, entry.resolution, entry.resolution); // set viewport to capture resolution

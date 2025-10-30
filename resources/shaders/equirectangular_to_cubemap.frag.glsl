@@ -11,16 +11,17 @@ vec2 SampleSphericalMap(vec3 v);
 
 void main()
 {
-    vec3 n = normalize(LocalPos);
-    vec2 uv = SampleSphericalMap(n);
-    vec3 hdrColor = texture(equirectMap, uv).rgb;
-    FragColor = vec4(hdrColor, 1.0);
+	vec3 n = normalize(LocalPos);
+	vec2 uv = SampleSphericalMap(n);
+	vec3 hdrColor = texture(equirectMap, uv).rgb;
+	FragColor = vec4(hdrColor, 1.0);
 }
 
 vec2 SampleSphericalMap(vec3 v)
 {
-    vec2 uv = vec2(atan(v.z, v.x), asin(v.y));
-    uv *= invAtan;
-    uv += 0.5;
-    return uv;
+	// flip the horizontal sampling to match the expected orientation
+	vec2 uv = vec2(atan(v.z, -v.x), asin(v.y));
+	uv *= invAtan;
+	uv += 0.5;
+	return uv;
 }

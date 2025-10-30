@@ -10,7 +10,7 @@ uniform samplerCube skybox; // environment map (skybox cubemap texture)
 void main()
 {
 	// calculate the view-space incident and reflection vectors
-	vec3 incidentView	 = normalize(Position); // from fragment to camera (at origin in view space)
+	vec3 incidentView	 = normalize(Position); // from camera (at origin in view space) to fragment
 	vec3 reflectionView  = reflect(incidentView, normalize(Normal));
 
 	// transform the view-space reflection vector to world space for cubemap sampling

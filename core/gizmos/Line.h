@@ -9,14 +9,14 @@
 #include <glad/glad.h>
 #include <glm/glm.hpp>
 
-#include "RECTANGULAR_PLANE.h"
+#include "TRIANGLE_FAN_PLANE.h"
 
 class Line
 {
 public:
 	// Contructors
 	// -----------
-	Line(const std::vector<GLfloat>& vertices = { rectangularPlaneDirectionLineVec });
+	Line(const std::vector<GLfloat>& vertices = { triangleFanPlaneDirectionLineVec });
 
 	// Public Methods
 	// --------------

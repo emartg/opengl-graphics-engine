@@ -7,7 +7,7 @@
 #include "DirectionalLight.h"
 
 #include "../model/Shape.h" // to create the gizmo for the DirectionalLight
-#include "../gizmos/RECTANGULAR_PLANE.h"
+#include "../gizmos/TRIANGLE_FAN_PLANE.h"
 
 // Static Protected Attributes
 // ---------------------------
@@ -59,17 +59,17 @@ void DirectionalLight::CreateGizmo()
 {
 	// compute the initial rotation of the gizmo based on the light's direction
 	glm::vec3 forward = glm::normalize(direction);
-	constexpr glm::vec3 meshForward = RECTANGULAR_PLANE_FORWARD;
+	constexpr glm::vec3 meshForward = TF_PLANE_FORWARD;
 	glm::quat meshToZ = glm::angleAxis(
 		glm::half_pi<float>() * -1.0f, glm::vec3(1.0f, 0.0f, 0.0f)); // -90° around X
 	glm::quat lookAt = glm::quatLookAt(
 		forward, glm::vec3(0.0f, 1.0f, 0.0f)); // look at the forward direction, with Y up
 	glm::quat rotation = lookAt * meshToZ;
 
-	// create a rectangular plane gizmo for the directional light gizmo
+	// create a triangle fan plane gizmo for the directional light gizmo
 	gizmo = std::make_shared<Shape>(
 		name + " Gizmo",
-		rectangularPlaneVerticesVec, rectangularPlaneIndicesVec,
+		triangleFanPlaneVerticesVec, triangleFanPlaneIndicesVec,
 		diffuse, // set the color of the gizmo to the light's diffuse color
 		position, // set the position of the gizmo to the light's position
 		rotation, // set the rotation of the gizmo based on the light's direction

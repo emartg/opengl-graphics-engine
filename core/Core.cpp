@@ -13,7 +13,7 @@
 #include "Core.h"
 
 #include "gizmos/Line.h" // for directional light gizmo rendering
-#include "gizmos/RECTANGULAR_PLANE.h" // for directional light gizmo rendering
+#include "gizmos/TRIANGLE_FAN_PLANE.h" // for directional light gizmo rendering
 
 // Static Instance initialization
 // ------------------------------
