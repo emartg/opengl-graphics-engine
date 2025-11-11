@@ -434,33 +434,6 @@ void Renderer::RenderScene()
 				switch (model->GetModelType()) // switch based on the type of the model
 				{
 					case ModelType::ASSIMP_MODEL: // if the model is an Assimp model
-					{
-						// use the reflective shader for testing purposes
-						renderShader = m_reflectiveShader;
-
-						// activate the current shader program
-						renderShader->Use();
-
-						// bind the environment map (fallback to skybox if no dynamic env map)
-						renderShader->SetInt("skybox", 0); // set the env map sampler to texture unit 0
-						// determine the environment map to use (either dynamic env map or skybox)
-						GLuint envMapTexId = 0;
-						if (auto it{ m_dynamicEnvMaps.find(model->GetId()) }; it != m_dynamicEnvMaps.end())
-						{ // if a dynamic environment map exists for this model, use it
-							// read from the stable "previous" buffer to avoid feedback artifacts
-							if (it->second.hasPrevCubemap) envMapTexId = it->second.prevCubemapTexId;
-						}
-						if (envMapTexId == 0)
-						{ // if no dynamic env map, use the skybox cubemap texture
-							auto& skyboxTexture = sceneManager->GetSkybox();
-							if (skyboxTexture && skyboxTexture->GetTextureType() == TextureType::CUBEMAP)
-								envMapTexId = skyboxTexture->GetTextureId();
-						}
-						// activate texture unit 0 and bind the env map texture or 0 if none found
-						glActiveTexture(GL_TEXTURE0);
-						glBindTexture(GL_TEXTURE_CUBE_MAP, envMapTexId);
-					}
-					break;
 					case ModelType::SHAPE: // if the model is a shape
 					{
 						// use the reflective shader for testing purposes
@@ -1222,7 +1195,7 @@ void Renderer::RenderSceneForEnvMapCapture(const glm::mat4& captureView, const g
 	m_reflectiveShader->SetMat4("projection", captureProj);
 	m_reflectiveShader->SetInt("skybox", 0);
 
-	// set light uniforms for the untextured matte shape shader
+	// set light uniforms
 	auto& lights = assetManager->GetAssets(AssetType::LIGHT); // get lights from the asset manager
 	GLint pointLightIdx{}, spotlightIdx{}, directionalLightIdx{}; // light type indices
 	for (const auto& asset : lights)
@@ -1244,6 +1217,14 @@ void Renderer::RenderSceneForEnvMapCapture(const glm::mat4& captureView, const g
 				m_untexturedMattShapeShader->SetVec3(prefix + "ambient", dl->GetAmbient());
 				m_untexturedMattShapeShader->SetVec3(prefix + "diffuse", dl->GetDiffuse());
 				m_untexturedMattShapeShader->SetVec3(prefix + "specular", dl->GetSpecular());
+				m_assimpModelShader->Use();
+				m_assimpModelShader->SetVec3(
+					"directionalLightDir[" + std::to_string(directionalLightIdx) + "]",
+					dl->GetDirection()
+				);
+				m_assimpModelShader->SetVec3(prefix + "ambient", dl->GetAmbient());
+				m_assimpModelShader->SetVec3(prefix + "diffuse", dl->GetDiffuse());
+				m_assimpModelShader->SetVec3(prefix + "specular", dl->GetSpecular());
 				directionalLightIdx++;
 			}
 			break;
@@ -1262,6 +1243,17 @@ void Renderer::RenderSceneForEnvMapCapture(const glm::mat4& captureView, const g
 				m_untexturedMattShapeShader->SetFloat(prefix + "constant", pl->GetConstant());
 				m_untexturedMattShapeShader->SetFloat(prefix + "linear", pl->GetLinear());
 				m_untexturedMattShapeShader->SetFloat(prefix + "quadratic", pl->GetQuadratic());
+				m_assimpModelShader->Use();
+				m_assimpModelShader->SetVec3(
+					"pointLightPos[" + std::to_string(pointLightIdx) + "]",
+					pl->GetPosition()
+				);
+				m_assimpModelShader->SetVec3(prefix + "ambient", pl->GetAmbient());
+				m_assimpModelShader->SetVec3(prefix + "diffuse", pl->GetDiffuse());
+				m_assimpModelShader->SetVec3(prefix + "specular", pl->GetSpecular());
+				m_assimpModelShader->SetFloat(prefix + "constant", pl->GetConstant());
+				m_assimpModelShader->SetFloat(prefix + "linear", pl->GetLinear());
+				m_assimpModelShader->SetFloat(prefix + "quadratic", pl->GetQuadratic());
 				pointLightIdx++;
 			}
 			break;
@@ -1285,6 +1277,22 @@ void Renderer::RenderSceneForEnvMapCapture(const glm::mat4& captureView, const g
 				m_untexturedMattShapeShader->SetFloat(prefix + "quadratic", sl->GetQuadratic());
 				m_untexturedMattShapeShader->SetFloat(prefix + "innerCutOff", sl->GetInnerCutOff());
 				m_untexturedMattShapeShader->SetFloat(prefix + "outerCutOff", sl->GetOuterCutOff());
+				m_assimpModelShader->Use();
+				m_assimpModelShader->SetVec3(
+					"spotlightPos[" + std::to_string(spotlightIdx) + "]",
+					sl->GetPosition()
+				);
+				m_assimpModelShader->SetVec3(
+					"spotlightDir[" + std::to_string(spotlightIdx) + "]", sl->GetDirection()
+				);
+				m_assimpModelShader->SetVec3(prefix + "ambient", sl->GetAmbient());
+				m_assimpModelShader->SetVec3(prefix + "diffuse", sl->GetDiffuse());
+				m_assimpModelShader->SetVec3(prefix + "specular", sl->GetSpecular());
+				m_assimpModelShader->SetFloat(prefix + "constant", sl->GetConstant());
+				m_assimpModelShader->SetFloat(prefix + "linear", sl->GetLinear());
+				m_assimpModelShader->SetFloat(prefix + "quadratic", sl->GetQuadratic());
+				m_assimpModelShader->SetFloat(prefix + "innerCutOff", sl->GetInnerCutOff());
+				m_assimpModelShader->SetFloat(prefix + "outerCutOff", sl->GetOuterCutOff());
 				spotlightIdx++;
 			}
 			break;
@@ -1297,6 +1305,10 @@ void Renderer::RenderSceneForEnvMapCapture(const glm::mat4& captureView, const g
 	m_untexturedMattShapeShader->SetInt("nDirectionalLights", directionalLightIdx);
 	m_untexturedMattShapeShader->SetInt("nPointLights", pointLightIdx);
 	m_untexturedMattShapeShader->SetInt("nSpotlights", spotlightIdx);
+	m_assimpModelShader->Use();
+	m_assimpModelShader->SetInt("nDirectionalLights", directionalLightIdx);
+	m_assimpModelShader->SetInt("nPointLights", pointLightIdx);
+	m_assimpModelShader->SetInt("nSpotlights", spotlightIdx);
 
 	// render all models in the scene except the excluded model
 	auto& models = assetManager->GetAssets(AssetType::MODEL); // get models from the asset manager
@@ -1309,6 +1321,7 @@ void Renderer::RenderSceneForEnvMapCapture(const glm::mat4& captureView, const g
 
 		switch (model->GetModelType()) // render based on model type
 		{
+			case ModelType::ASSIMP_MODEL:
 			case ModelType::SHAPE:
 			{
 				// set uniforms for reflective shader
@@ -1322,36 +1335,6 @@ void Renderer::RenderSceneForEnvMapCapture(const glm::mat4& captureView, const g
 				{ // if the model has a dynamic env map, use its previous cubemap texture
 					auto& entry = it->second;
 					// use previous cubemap is valid before using it
-					if (entry.hasPrevCubemap && entry.prevCubemapTexId) env = entry.prevCubemapTexId;
-				}
-				if (env == 0)
-				{ // otherwise, fall back to the scene's skybox cubemap if available
-					auto& skyboxTexture = sceneManager->GetSkybox();
-					// use skybox cubemap if it exists and is a cubemap
-					if (skyboxTexture && skyboxTexture->GetTextureType() == TextureType::CUBEMAP)
-						env = skyboxTexture->GetTextureId();
-				}
-				// activate texture unit 0 and bind the env map texture or 0 if none found
-				glActiveTexture(GL_TEXTURE0);
-				glBindTexture(GL_TEXTURE_CUBE_MAP, env);
-
-				glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); // ensure fill mode for reflective models
-				model->Draw(*m_reflectiveShader);
-			}
-			break;
-			case ModelType::ASSIMP_MODEL:
-			{
-				// set uniforms for reflective shader
-				m_reflectiveShader->Use();
-				m_reflectiveShader->SetMat4("model", model->GetModelMatrix());
-
-				// bind previous env map for reflective objects to avoid recursion,
-				// fall back to skybox if no previous env map exists
-				GLuint env = 0;
-				if (auto it = m_dynamicEnvMaps.find(model->GetId()); it != m_dynamicEnvMaps.end())
-				{ // if the model has a dynamic env map, use its previous cubemap texture
-					auto& entry = it->second;
-					// ensure previous cubemap is valid before using
 					if (entry.hasPrevCubemap && entry.prevCubemapTexId) env = entry.prevCubemapTexId;
 				}
 				if (env == 0)
