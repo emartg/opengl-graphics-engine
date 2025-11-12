@@ -977,7 +977,7 @@ void Renderer::ConvertHDRToCubemapIfNeeded()
 	glm::mat4 captureViews[] =
 	{ // 6 view matrices for the 6 faces of the cubemap (right, left, top, bottom, front, back)
 		glm::lookAt(glm::vec3(0.0f), glm::vec3(1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),		// +X
-		glm::lookAt(glm::vec3(0.0f), glm::vec3(-1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),	// -X
+		glm::lookAt(glm::vec3(0.0f), glm::vec3(-1.0f, 0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),		// -X
 		glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f,  1.0f,  0.0f), glm::vec3(0.0f,  0.0f,  1.0f)),		// +Y
 		glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f, -1.0f,  0.0f), glm::vec3(0.0f,  0.0f, -1.0f)),		// -Y
 		glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f,  0.0f,  1.0f), glm::vec3(0.0f, -1.0f,  0.0f)),		// +Z
@@ -1145,7 +1145,7 @@ void Renderer::CaptureDynamicEnvMapForModel(const std::shared_ptr<Model>& model,
 	glm::mat4 captureViews[] =
 	{ // 6 view matrices for the 6 faces of the cubemap (right, left, top, bottom, front, back)
 		glm::lookAt(pos, pos + glm::vec3(1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),	// +X
-		glm::lookAt(pos, pos + glm::vec3(-1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),	// -X
+		glm::lookAt(pos, pos + glm::vec3(-1.0f, 0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),	// -X
 		glm::lookAt(pos, pos + glm::vec3(0.0f,  1.0f,  0.0f), glm::vec3(0.0f,  0.0f,  1.0f)),	// +Y
 		glm::lookAt(pos, pos + glm::vec3(0.0f, -1.0f,  0.0f), glm::vec3(0.0f,  0.0f, -1.0f)),	// -Y
 		glm::lookAt(pos, pos + glm::vec3(0.0f,  0.0f,  1.0f), glm::vec3(0.0f, -1.0f,  0.0f)),	// +Z
@@ -1182,18 +1182,33 @@ void Renderer::RenderSceneForEnvMapCapture(const glm::mat4& captureView, const g
 	auto& assetManager = core->GetAssetManager(); // get the asset manager
 	auto& sceneManager = core->GetSceneManager(); // get the scene manager
 
-	// set view/projection on shaders that are used for the env map capture
-	// set parameters for untextured matte shape shader
+	// pre-compute uniforms common to all shaders used for env map capture
+	GLfloat refractionIndexRatio = 1.00f / 1.52f; // air to glass refraction index ratio
+	glm::mat3 invViewRot = glm::transpose(glm::mat3(captureView)); // inverse of rotation part of view matrix
+
+	// set parameters on shaders that are used for the env map capture
 	m_untexturedMattShapeShader->Use();
 	m_untexturedMattShapeShader->SetMat4("view", captureView);
 	m_untexturedMattShapeShader->SetMat4("projection", captureProj);
 	m_untexturedMattShapeShader->SetFloat("material.shininess", 32.0f);
 
-	// set parameters for reflective shader
+	m_assimpModelShader->Use();
+	m_assimpModelShader->SetMat4("view", captureView);
+	m_assimpModelShader->SetMat4("projection", captureProj);
+	m_assimpModelShader->SetFloat("material.shininess", 32.0f);
+
 	m_reflectiveShader->Use();
 	m_reflectiveShader->SetMat4("view", captureView);
 	m_reflectiveShader->SetMat4("projection", captureProj);
+	m_reflectiveShader->SetMat3("invViewRot", invViewRot);
 	m_reflectiveShader->SetInt("skybox", 0);
+
+	m_refractiveShader->Use();
+	m_refractiveShader->SetMat4("view", captureView);
+	m_refractiveShader->SetMat4("projection", captureProj);
+	m_refractiveShader->SetFloat("ratio", refractionIndexRatio);
+	m_refractiveShader->SetMat3("invViewRot", invViewRot);
+	m_refractiveShader->SetInt("skybox", 0);
 
 	// set light uniforms
 	auto& lights = assetManager->GetAssets(AssetType::LIGHT); // get lights from the asset manager

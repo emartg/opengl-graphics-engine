@@ -71,6 +71,7 @@ public:
 	void SetFloat(const std::string& name, GLfloat value) const;
 	void SetVec2(const std::string& name, const glm::vec2& vec) const;
 	void SetVec3(const std::string& name, const glm::vec3& vec) const;
+	void SetMat3(const std::string& name, const glm::mat3& mat) const;
 	void SetMat4(const std::string& name, const glm::mat4& mat) const;
 
 	// Public Static Methods
