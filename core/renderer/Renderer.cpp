@@ -230,6 +230,10 @@ void Renderer::RenderScene()
 		0.1f, 100.0f);
 	glm::mat4 view = camera->GetViewMatrix();
 
+	// transpose of the upper-left 3x3 submatrix of the view matrix, used for environment mapping
+	// (i.e., the inverse matrix of the rotation part of the view matrix)
+	glm::mat3 invViewRot = glm::transpose(glm::mat3(view));
+
 	// set the view and projection matrices for each shader program
 	auto& shaders = assetManager->GetAssets(AssetType::SHADER);
 	for (const auto& asset : shaders)
@@ -249,6 +253,15 @@ void Renderer::RenderScene()
 	m_assimpModelShader->SetInt("material.albedoMap", 0);		// set albedo map to texture unit 0
 	m_assimpModelShader->SetInt("material.metallicMap", 1);		// set metallic map to texture unit 1
 	m_assimpModelShader->SetFloat("material.shininess", 32.0f); // set shininess factor for the material
+
+	// set constant uniforms for the reflective and refractive shaders
+	m_reflectiveShader->Use();
+	m_reflectiveShader->SetMat3("invViewRot", invViewRot); // set inverse view rotation matrix
+	m_reflectiveShader->SetInt("skybox", 0); // set skybox texture unit to 0
+	m_refractiveShader->Use();
+	m_refractiveShader->SetMat3("invViewRot", invViewRot); // set inverse view rotation matrix
+	m_refractiveShader->SetFloat("ratio", 1.00f / 1.52f); // air to glass refraction index ratio
+	m_refractiveShader->SetInt("skybox", 0); // set skybox texture unit to 0
 
 	// set light uniforms
 	auto& lights = assetManager->GetAssets(AssetType::LIGHT);
