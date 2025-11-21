@@ -21,7 +21,8 @@
 #include "../light/PointLight.h"
 #include "../light/Spotlight.h"
 #include "../light/DirectionalLight.h"
-#include "../model/Model.h"
+#include "../model/ModelComponent.h"
+#include "../model/ModelComposite.h"
 #include "../model/AssimpModel.h"
 #include "../model/Shape.h"
 
@@ -57,7 +58,7 @@ public:
 	const GLuint GetNPointLights() const { return PointLight::GetNPointLights(); }
 	const GLuint GetNSpotlights() const { return Spotlight::GetNSpotlights(); }
 	const GLuint GetNDirectionalLights() const { return DirectionalLight::GetNDirectionalLights(); }
-	const GLuint GetNModels() const { return Model::GetNModels(); }
+	const GLuint GetNModels() const { return ModelComponent::GetNModels(); }
 	const GLuint GetNAssimpModels() const { return AssimpModel::GetNAssimpModels(); }
 	const GLuint GetNShapes() const { return Shape::GetNShapes(); }
 

@@ -647,7 +647,7 @@ void GUI::drawPropertiesWindow()
 			}
 			else if (selected->GetType() == AssetType::MODEL)
 			{ // if the selected asset is a model, draw the model controls
-				auto model = dynamic_cast<Model*>(selected.get()); // dynamic cast to Model object
+				auto model = dynamic_cast<ModelComponent*>(selected.get()); // dynamic cast to Model object
 				// only draw the model controls if the model is not a gizmo, since that is handled
 				// with its corresponding light controls above
 				if (model->GetGizmoType() == GizmoType::NONE)
@@ -1002,7 +1002,7 @@ void GUI::drawModelsInformation() const
 				  [&](const std::shared_ptr<Asset>& asset)
 	{ // iterate over all models in the asset manager and display their attributes
 		// dynamically cast the asset to a Model object
-		auto model = dynamic_cast<Model*>(asset.get());
+		auto model = dynamic_cast<ModelComponent*>(asset.get());
 
 		ImGui::PushID(model->GetName().c_str()); // use PushID to create a unique ID for each model
 
@@ -1011,7 +1011,7 @@ void GUI::drawModelsInformation() const
 		ImGui::TextWrapped("\t%s", model->GetName().c_str());
 		ImGui::PopFont();
 
-		if (model->GetModelType() == ModelType::SHAPE)
+		if (model->GetModelType() == ModelType::SHAPE_MODEL)
 		{ // only display the albedo color for shapes
 			ImGui::Text("\t\tColor: (%.3f, %.3f, %.3f)",
 						model->GetAlbedo().x,
@@ -1216,13 +1216,13 @@ void GUI::drawSpotlightControls(Spotlight* spotlight)
 	ImGui::PopID(); // use PopID to end the unique ID scope
 }
 
-void GUI::drawModelControls(Model* model)
+void GUI::drawModelControls(ModelComponent* model)
 {
 	// use PushID to create a unique ID for each model
 	ImGui::PushID(model->GetName().c_str());
 
 	// only if the model is a shape, display the color picker
-	if (model->GetModelType() == ModelType::SHAPE)
+	if (model->GetModelType() == ModelType::SHAPE_MODEL)
 	{
 		// get the color of the model
 		glm::vec3 color = model->GetAlbedo();
@@ -1256,7 +1256,7 @@ void GUI::drawModelControls(Model* model)
 	// get the scale of the model
 	glm::vec3 scale = model->GetScale();
 	// if the model is a shape, use a faster speed for scaling, otherwise use the default speed
-	float speed = model->GetModelType() == ModelType::SHAPE ? SCALE_SPEED * 5.0f : SCALE_SPEED;
+	float speed = model->GetModelType() == ModelType::SHAPE_MODEL ? SCALE_SPEED * 5.0f : SCALE_SPEED;
 	// create a control for the x, y, and z components of the model's scale
 	if (drawVec3Control("Scale", scale, true, // is the scale control
 						MIN_SCALE_VALUE, MAX_SCALE_VALUE,

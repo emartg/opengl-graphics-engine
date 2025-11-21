@@ -1,7 +1,7 @@
 /*
 * AssimpModel.h
-* This file defines the AssimpModel class (a derived class of Model),
-* which is used to load an Assimp model from a file and draw it.
+* This file defines the AssimpModel class (a derived class of ModelComponent),
+* which is used to load and draw 3D models from files using the Assimp library.
 */
 
 #pragma once
@@ -14,18 +14,18 @@
 
 #include "../texture/Texture.h"
 #include "../shader/Shader.h"
-#include "Model.h"
 
-class AssimpModel : public Model
+#include "ModelLeaf.h"
+
+class AssimpModel : public ModelLeaf
 {
 public:
 	// Constructors
 	// ------------
 	// Constructor that loads a model from a file
 	AssimpModel(const std::string& name, std::string const& path,
-				const glm::vec3 albedo = ALBEDO,
-				const glm::vec3 position = POSITION, const glm::quat rotation = ROTATION,
-				const glm::vec3 scale = SCALE,
+				const glm::vec3 albedo = ALBEDO, const glm::vec3 position = POSITION,
+				const glm::quat rotation = ROTATION, const glm::vec3 scale = SCALE,
 				const glm::vec3 forward = FORWARD, const glm::vec3 meshForward = FORWARD);
 
 	// Destructor
@@ -55,8 +55,7 @@ private:
 	Mesh processMesh(aiMesh* mesh, const aiScene* scene);
 
 	// Loads the material textures of a mesh
-	std::vector<Texture> loadMaterialTextures(aiMaterial* mat,
-											  aiTextureType type,
+	std::vector<Texture> loadMaterialTextures(aiMaterial* mat, aiTextureType type,
 											  TextureType textureType);
 
 	// Calculates the bounding box of the model based on the vertices of the meshes

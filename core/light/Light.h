@@ -15,7 +15,7 @@
 #include <glm/glm.hpp>
 
 #include "../Asset.h"
-#include "../model/Model.h" // to allow the light to have a gizmo model
+#include "../model/ModelComponent.h" // to allow the light to have a gizmo model
 
 // enumeration for the different types of lights
 enum class LightType { UNDEFINED = 0, DIRECTIONAL_LIGHT, POINT_LIGHT, SPOTLIGHT };
@@ -27,7 +27,8 @@ public:
 	// ------------
 	Light(const std::string& name,
 		  const glm::vec3 ambient, const glm::vec3 diffuse, const glm::vec3 specular,
-		  const std::shared_ptr<Model> gizmo = nullptr, const LightType type = LightType::UNDEFINED);
+		  const std::shared_ptr<ModelComponent> gizmo = nullptr,
+		  const LightType type = LightType::UNDEFINED);
 
 	// Virtual destructor
 	// ------------------
@@ -46,14 +47,14 @@ public:
 	glm::vec3 GetDiffuse() const { return diffuse; }
 	glm::vec3 GetSpecular() const { return specular; }
 	LightType GetLightType() const { return lightType; }
-	std::shared_ptr<Model>& GetGizmo() { return gizmo; }
+	std::shared_ptr<ModelComponent>& GetGizmo() { return gizmo; }
 
 	// Setters
 	void SetAmbient(glm::vec3 ambient) { this->ambient = ambient; }
 	void SetDiffuse(glm::vec3 diffuse) { this->diffuse = diffuse; }
 	void SetSpecular(glm::vec3 specular) { this->specular = specular; }
 	void SetLightType(LightType type) { this->lightType = type; }
-	void SetGizmo(std::shared_ptr<Model> gizmo) { this->gizmo = gizmo; }
+	void SetGizmo(std::shared_ptr<ModelComponent> gizmo) { this->gizmo = gizmo; }
 
 	// Create the gizmo for the light
 	virtual void CreateGizmo() = 0;
@@ -75,7 +76,7 @@ protected:
 	glm::vec3 diffuse;
 	glm::vec3 specular;
 
-	std::shared_ptr<Model> gizmo; // the model used to represent the light in the scene
+	std::shared_ptr<ModelComponent> gizmo; // the model used to represent the light in the scene
 
 	LightType lightType; // type of the light (e.g., DIRECTIONAL_LIGHT, POINT_LIGHT, SPOTLIGHT)
 

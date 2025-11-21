@@ -25,7 +25,8 @@
 #include "../core/light/PointLight.h"
 #include "../core/light/Spotlight.h"
 #include "../core/managers/AssetManager.h"
-#include "../core/model/Model.h"
+#include "../core/model/ModelComponent.h"
+#include "../core/model/ModelComposite.h"
 #include "../core/model/Shape.h"
 #include "../core/model/AssimpModel.h"
 
@@ -206,43 +207,41 @@ void SetupInitialScene(Core* engine)
 							+ " (Model " + std::to_string(assetManager->GetNModels()) + ")");
 	assetManager->AddAsset(std::move(spotlightGizmo));
 
-	// create a simple shape (a plane) and add it to the asset manager
-	auto plane = std::make_shared<Shape>(
-		"Plane " + std::to_string(assetManager->GetNShapes()),
-		planeVerticesVec, planeIndicesVec,
-		glm::vec3{ 0.8f, 0.8f, 0.8f }, // diffuse color (override required although it is the default)
-		glm::vec3{ 0.0f, -0.5f, 0.0f }, // position (overridden)
-		glm::quat(glm::radians(glm::vec3{ 0.0f, 45.0f, 0.0f })), // rotation (overridden)
-		glm::vec3{ 7.5f, 1.0f, 5.0f } // scale (overridden)
+	// create a composite model to hold multiple shapes
+	auto compositeModel = std::make_shared<ModelComposite>(
+		"Composite Model",
+		glm::vec3{ 1.0f, 1.0f, 1.0f }, // diffuse color (default)
+		glm::vec3{ 0.0f, 0.0f, 0.0f } // position (default)
 	);
-	engine->GetRenderer()->RegisterModelForDynamicEnvMapCapture(plane->GetId(), 512);
-	assetManager->AddAsset(std::move(plane));
 
-	// load a Assimp model from an specific filepath and add it to the asset manager
-	std::string assimpModelFilepath = "resources/models/gltf/teapot/teapot.gltf";
-	if (std::filesystem::exists(assimpModelFilepath))
-	{ // check if the file exists before loading it
-		std::string filename = std::filesystem::path(assimpModelFilepath).filename().string();
-		auto assimpModel = std::make_shared<AssimpModel>(
-			filename + " (Model " + std::to_string(assetManager->GetNModels()) + ")", assimpModelFilepath,
-			glm::vec3{ 0.8f }, // diffuse color (override required although it is the default)
-			glm::vec3{ 0.0f }, // position (override required although it is the default)
-			glm::quat(glm::radians(glm::vec3{ 0.0f, 45.0f, 0.0f })), // rotation (overridden)
-			glm::vec3{ 0.25f } // scale (overridden)
-		);
-		// register the Assimp model for dynamic environment map capture
-		engine->GetRenderer()->RegisterModelForDynamicEnvMapCapture(assimpModel->GetId(), 512);
-		// add the Assimp model to the asset manager
-		assetManager->AddAsset(std::move(assimpModel));
-	}
-	else // if the file does not exist, print an error message
-	{
-		std::cerr << "[ERROR::main::SetupInitialScene] Model file not found: " << assimpModelFilepath
-			<< std::endl;
-	}
+	// create two cube shapes with different transformations
+	auto cube1 = std::make_shared<Shape>(
+		"Cube (Shape " + std::to_string(assetManager->GetNShapes()) + ")",
+		cubeVerticesVec, cubeIndicesVec,
+		glm::vec3{ 0.8f, 0.1f, 0.1f }, // diffuse color (overridden)
+		glm::vec3{ -1.5f, 0.0f, -1.5f }, // position (overridden)
+		glm::quat(glm::vec3{ 0.0f, glm::radians(30.0f), 0.0f }), // rotation (overridden)
+		glm::vec3{ 0.5f } // scale (overridden)
+	);
+
+	auto cube2 = std::make_shared<Shape>(
+		"Cube (Shape " + std::to_string(assetManager->GetNShapes()) + ")",
+		cubeVerticesVec, cubeIndicesVec,
+		glm::vec3{ 0.1f, 0.1f, 0.8f }, // diffuse color (overridden)
+		glm::vec3{ 1.5f, 0.0f, 1.5f }, // position (overridden)
+		glm::quat(glm::vec3{ 0.0f, glm::radians(-45.0f), 0.0f }), // rotation (overridden)
+		glm::vec3{ 0.75f } // scale (overridden)
+	);
+
+	// add the cubes as children of the composite model
+	compositeModel->AddChild(cube1);
+	compositeModel->AddChild(cube2);
+
+	// add the composite model to the asset manager
+	assetManager->AddAsset(std::move(compositeModel));
 
 	// load an HDR skybox texture and set it as the skybox in the scene manager
-	std::string skyboxFilepath = "resources/textures/skyboxes/hdr/canary_wharf_4k.hdr";
+	std::string skyboxFilepath = "resources/textures/skyboxes/hdr/tiergarten_4k.hdr";
 	if (std::filesystem::exists(skyboxFilepath))
 	{ // check if the file exists before loading it
 		sceneManager->LoadSkybox(skyboxFilepath);

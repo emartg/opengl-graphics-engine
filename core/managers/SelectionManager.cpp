@@ -7,7 +7,7 @@
 
 #include "AssetManager.h"
 #include "../Core.h"
-#include "../model/Model.h"
+#include "../model/ModelComponent.h"
 #include "../shader/Shader.h"
 #include "../camera/Camera.h"
 #include "../light/Light.h"
@@ -95,14 +95,17 @@ void SelectionManager::ProcessPendingPick(const Camera* camera, AssetManager* as
 	for (const auto& asset : assetModels)
 	{ // iterate through all models in the scene
 		// dynamically cast the asset to a Model object
-		auto model = dynamic_cast<Model*>(asset.get());
+		auto model = dynamic_cast<ModelComponent*>(asset.get());
 		if (!model) continue; // skip if not a model
+
+		// skip non-root to avoid duplicate drawing of hierarchies (components handle their children)
+		if (model->GetParent()) continue;
 
 		// encode model's unique id as a color for picking
 		std::uint32_t id = model->GetId();
 
 		// set model matrix and encoded id uniform, then draw the model
-		m_pickingShader->SetMat4("model", model->GetModelMatrix());
+		m_pickingShader->SetMat4("model", model->GetWorldModelMatrix());
 		m_pickingShader->SetInt("encodedId", static_cast<GLint>(id));
 		model->Draw(*m_pickingShader);
 	}
@@ -207,11 +210,14 @@ void SelectionManager::RenderPickingVisualization(const Camera* camera, AssetMan
 	for (const auto& asset : assetModels)
 	{ // iterate through all models in the scene
 		// dynamically cast the asset to a Model object
-		auto model = dynamic_cast<Model*>(asset.get());
+		auto model = dynamic_cast<ModelComponent*>(asset.get());
 		if (!model) continue; // skip if not a model
 
+		// skip non-root to avoid duplicate drawing of hierarchies (components handle their children)
+		if (model->GetParent()) continue;
+
 		// set model matrix and encoded id uniform, then draw the model
-		m_pickingShader->SetMat4("model", model->GetModelMatrix());
+		m_pickingShader->SetMat4("model", model->GetWorldModelMatrix());
 		m_pickingShader->SetInt("encodedId", static_cast<GLint>(model->GetId()));
 		model->Draw(*m_pickingShader);
 	}
@@ -385,7 +391,7 @@ void SelectionManager::RenderOutlineMask(const Camera* camera, AssetManager* ass
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	// dynamically cast the selected asset to a Model object
-	auto model = dynamic_cast<Model*>(selected.get());
+	auto model = dynamic_cast<ModelComponent*>(selected.get());
 	if (!model) return; // if the selected asset is not a model, return
 
 	// compute view and projection matrices from the camera
@@ -399,7 +405,7 @@ void SelectionManager::RenderOutlineMask(const Camera* camera, AssetManager* ass
 	m_pickingShader->Use();
 	m_pickingShader->SetMat4("view", view);
 	m_pickingShader->SetMat4("projection", projection);
-	m_pickingShader->SetMat4("model", model->GetModelMatrix());
+	m_pickingShader->SetMat4("model", model->GetWorldModelMatrix());
 	m_pickingShader->SetInt("encodedId", 1); // constant mask value
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); // ensure solid fill for outline mask
 	model->Draw(*m_pickingShader);
@@ -520,7 +526,7 @@ bool SelectionManager::isOutlineEligible(const std::shared_ptr<Asset>& asset) co
 	if (asset->GetType() != AssetType::MODEL) return false;
 
 	// dynamically cast the asset to a Model object
-	auto model = dynamic_cast<Model*>(asset.get());
+	auto model = dynamic_cast<ModelComponent*>(asset.get());
 	if (!model) return false; // if cast fails, return false
 
 	// exclude gizmos (light representations) to keep outline only for actual scene geometry

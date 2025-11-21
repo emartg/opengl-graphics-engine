@@ -150,7 +150,7 @@ private:
 	// Draws controls for a spotlight
 	void drawSpotlightControls(Spotlight* spotlight);
 	// Draws controls for a model
-	void drawModelControls(Model* model);
+	void drawModelControls(ModelComponent* model);
 
 	// Draws a remove button for an asset and adds its Id to the vector of assets marked for removal
 	void drawRemoveAssetButton(Asset* asset, std::vector<std::uint32_t>& assetsToRemoveIds,

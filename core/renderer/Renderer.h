@@ -22,7 +22,7 @@
 
 #include "RenderPass.h"
 
-#include "../model/Model.h"
+#include "../model/ModelComponent.h"
 #include "../light/Light.h"
 #include "../light/DirectionalLight.h"
 #include "../light/PointLight.h"
@@ -162,6 +162,9 @@ protected:
 
 	// Protected Methods
 	// -----------------
+	// Renders model components (leaf or composite - composite models will render their children recursively)
+	void RenderModel(const std::shared_ptr<ModelComponent>& model);
+
 	// Ensures the offscreen render pass is created with the current window size
 	void EnsureOffscreenRenderPass();
 	// Initializes the screen quad if it has not been initialized yet
@@ -180,8 +183,9 @@ protected:
 
 	// Dynamic environment map helpers
 	void UpdateDynamicEnvMaps();
-	void CaptureDynamicEnvMapForModel(const std::shared_ptr<Model>& model, DynamicEnvMapEntry& entry);
+	void CaptureDynamicEnvMapForModel(const std::shared_ptr<ModelComponent>& model,
+									  DynamicEnvMapEntry& entry);
 	void RenderSceneForEnvMapCapture(const glm::mat4& captureView, const glm::mat4& captureProjection,
-									 const std::shared_ptr<Model>& excludeModel);
+									 const std::shared_ptr<ModelComponent>& excludeModel);
 
 };

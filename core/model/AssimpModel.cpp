@@ -1,7 +1,7 @@
 /*
 * AssimpModel.cpp
-* This file implements the AssimpModel class (a derived class of Model),
-* which is used to load an Assimp model from a file and draw it.
+* This file implements the AssimpModel class (a derived class of ModelComponent),
+* which is used to load and draw 3D models from files using the Assimp library.
 */
 
 #include "AssimpModel.h"
@@ -13,14 +13,12 @@ GLuint AssimpModel::nAssimpModels{}; // initialize the number of Assimp models i
 // Constructors
 // ------------
 // Constructor that loads a model from a file
-AssimpModel::AssimpModel(const std::string& name,
-						 const std::string& path,
-						 const glm::vec3 albedo,
-						 const glm::vec3 position, const glm::quat rotation,
-						 const glm::vec3 scale,
+AssimpModel::AssimpModel(const std::string& name, const std::string& path,
+						 const glm::vec3 albedo, const glm::vec3 position,
+						 const glm::quat rotation, const glm::vec3 scale,
 						 const glm::vec3 forward, const glm::vec3 meshForward)
-	: Model(name, albedo, position, rotation, scale, forward, meshForward,
-			ModelType::ASSIMP_MODEL) // set the model type to ASSIMP_MODEL
+	: ModelLeaf(name, albedo, position, rotation, scale, forward, meshForward,
+				ModelType::ASSIMP_MODEL) // set the model type to ASSIMP_MODEL
 {
 	loadAssimpModel(path); // load the model from the specified path
 	nAssimpModels++;
@@ -180,8 +178,7 @@ Mesh AssimpModel::processMesh(aiMesh* mesh, const aiScene* scene)
 	return Mesh(vertices, indices, textures);
 }
 
-std::vector<Texture> AssimpModel::loadMaterialTextures(aiMaterial* mat,
-													   aiTextureType type,
+std::vector<Texture> AssimpModel::loadMaterialTextures(aiMaterial* mat, aiTextureType type,
 													   TextureType textureType)
 {
 	// a vector to store already loaded textures to avoid loading the same texture multiple times

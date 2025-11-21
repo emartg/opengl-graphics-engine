@@ -1,20 +1,15 @@
 /*
 * Shape.h
-* This file defines the Shape class (a derived class of Model),
-* which is used to create and draw a simple geomatric shape
-* from vertex, normal, texture coordinate, index and texture data (if added).
+* This file defines the Shape class (a derived class of ModelComponent),
+* which is used to create and draw geometric shapes from vertex, normal, texture coordinate, index
+* and texture data (if added).
 */
 
 #pragma once
 
-#include <vector>
+#include "ModelLeaf.h"
 
-#include <glad/glad.h> // holds all OpenGL type declarations
-#include <glm/glm.hpp>
-
-#include "Model.h"
-
-class Shape : public Model
+class Shape : public ModelLeaf
 {
 public:
 	// Constructors

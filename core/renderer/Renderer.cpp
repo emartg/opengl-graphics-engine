@@ -427,97 +427,16 @@ void Renderer::RenderScene()
 
 	// iterate over the vector of models and render them
 	auto& models = assetManager->GetAssets(AssetType::MODEL);
-	std::for_each(models.begin(), models.end(),
-				  [&](const std::shared_ptr<Asset>& asset)
+	for (const auto& asset : models)
 	{
-		// smart pointer to the shader program to use for rendering
-		std::shared_ptr<Shader> renderShader;
+		// dynamically cast the asset to a ModelComponent object
+		auto model = std::dynamic_pointer_cast<ModelComponent>(asset);
+		if (!model) continue; // if the cast fails, skip to the next asset
 
-		// dynamically cast the asset to a Model object
-		auto model = dynamic_cast<Model*>(asset.get());
+		if (model->GetParent()) continue; // skip child models (they are rendered by their parent composite)
 
-		// switch based on the gizmo type to:
-		// - set the current shader program accordingly for rendering
-		// - set the appropiate properties for the model for rendering
-		// - set the polygon mode (fill or line) for rendering
-		switch (model->GetGizmoType())
-		{
-			case GizmoType::NONE: // if the model is not a gizmo
-			{
-				switch (model->GetModelType()) // switch based on the type of the model
-				{
-					case ModelType::ASSIMP_MODEL: // if the model is an Assimp model
-					case ModelType::SHAPE: // if the model is a shape
-					{
-						// use the reflective shader for testing purposes
-						renderShader = m_reflectiveShader;
-
-						// activate the current shader program
-						renderShader->Use();
-
-						// bind the environment map (fallback to skybox if no dynamic env map)
-						renderShader->SetInt("skybox", 0); // set the env map sampler to texture unit 0
-						// determine the environment map to use (either dynamic env map or skybox)
-						GLuint envMapTexId = 0;
-						if (auto it{ m_dynamicEnvMaps.find(model->GetId()) }; it != m_dynamicEnvMaps.end())
-						{ // if a dynamic environment map exists for this model, use it
-							// read from the stable "previous" buffer to avoid feedback artifacts
-							if (it->second.hasPrevCubemap) envMapTexId = it->second.prevCubemapTexId;
-						}
-						if (envMapTexId == 0)
-						{ // if no dynamic env map, use the skybox cubemap texture
-							auto& skyboxTexture = sceneManager->GetSkybox();
-							if (skyboxTexture && skyboxTexture->GetTextureType() == TextureType::CUBEMAP)
-								envMapTexId = skyboxTexture->GetTextureId();
-						}
-						// activate texture unit 0 and bind the env map texture or 0 if none found
-						glActiveTexture(GL_TEXTURE0);
-						glBindTexture(GL_TEXTURE_CUBE_MAP, envMapTexId);
-					}
-					break;
-					default:
-						// if the model type is unknown, print an error message and return
-						std::cerr << "[ERROR::RENDERER::RenderScene] Unknown model type for model: "
-							<< model->GetName() << std::endl;
-						return;
-				}
-
-				// set the model matrix for the model
-				renderShader->SetMat4("model", model->GetModelMatrix());
-
-				// set the polygon mode to fill for regular models
-				glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-			}
-			break;
-			case GizmoType::DIRECTIONAL_LIGHT: // if the model is a directional light gizmo
-			case GizmoType::POINT_LIGHT: // if the model is a point light gizmo
-			case GizmoType::SPOTLIGHT: // if the model is a spotlight gizmo
-			{
-				// use the single albedo shader
-				renderShader = m_singleAlbedoShader;
-
-				// activate the current shader program
-				renderShader->Use();
-
-				// set the model matrix for the gizmo model
-				renderShader->SetMat4("model", model->GetModelMatrix());
-
-				// set the color of the gizmo shape based on the model's albedo
-				renderShader->SetVec3("albedo", model->GetAlbedo());
-
-				// set the polygon mode to line for light gizmos
-				glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-			}
-			break;
-			default: // if the gizmo type is unknown, print an error message and return
-				std::cerr << "[ERROR::RENDERER::RenderScene] Unknown gizmo type for model: "
-					<< model->GetName() << std::endl;
-				return;
-		}
-
-		// draw the model using the current shader program
-		model->Draw(*renderShader);
-	});
+		RenderModel(model); // render the model (composite or leaf)
+	}
 
 	// set the polygon mode to line for the directional light gizmo lines
 	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -633,6 +552,98 @@ void Renderer::UnregisterModelForDynamicEnvMapCapture(std::uint32_t modelId)
 
 // Protected Methods
 // -----------------
+void Renderer::RenderModel(const std::shared_ptr<ModelComponent>& model)
+{
+	if (!model)
+	{ // if the model is null, print an error message and return
+		std::cerr << "[ERROR::RENDERER::RenderModel] ModelComponent is null" << std::endl;
+		return;
+	}
+
+	if (model->IsComposite())
+	{ // if the model is a composite model, render each sub-model recursively
+		for (const auto& child : model->GetChildren()) RenderModel(child);
+	}
+	else
+	{ // leaf model rendering based on the model type (non-composite models)
+		// render leaf model
+		std::shared_ptr<Shader> renderShader;
+
+		// switch based on the gizmo type to:
+		// - set the current shader program accordingly for rendering
+		// - set the appropiate properties for the model for rendering
+		// - set the polygon mode (fill or line) for rendering
+		switch (model->GetGizmoType())
+		{
+			case GizmoType::NONE: // if the model is not a gizmo
+			{
+				switch (model->GetModelType()) // use the appropriate shader based on the model type
+				{
+					case ModelType::ASSIMP_MODEL:
+					{
+						// use the Assimp model shader
+						renderShader = m_assimpModelShader;
+
+						// activate the current shader program
+						renderShader->Use();
+					}
+					break;
+					case ModelType::SHAPE_MODEL:
+					{
+						// use the untextured matt shape shader
+						renderShader = m_untexturedMattShapeShader;
+
+						// activate the current shader program
+						renderShader->Use();
+
+						// set the color of the shape based on the model's albedo
+						renderShader->SetVec3("material.albedo", model->GetAlbedo());
+					}
+					break;
+					default:
+						// if the model type is unknown, print an error message and return
+						std::cerr << "[ERROR::RENDERER::RenderModel] Unknown model type for "
+							<< model->GetName() << std::endl;
+						return;
+				}
+
+				// set the polygon mode to fill for regular models
+				glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+				break;
+			case GizmoType::DIRECTIONAL_LIGHT: // if the model is a directional light gizmo
+			case GizmoType::POINT_LIGHT: // if the model is a point light gizmo
+			case GizmoType::SPOTLIGHT: // if the model is a spotlight gizmo
+			{
+				// use the single albedo shader
+				renderShader = m_singleAlbedoShader;
+
+				// activate the current shader program
+				renderShader->Use();
+
+				// set the color of the gizmo shape based on the model's albedo
+				renderShader->SetVec3("albedo", model->GetAlbedo());
+
+				// set the polygon mode to line for light gizmos
+				glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+			}
+			break;
+			default: // if the gizmo type is unknown, print an error message and return
+				std::cerr << "[ERROR::RENDERER::RenderScene] Unknown gizmo type for model: "
+					<< model->GetName() << std::endl;
+				return;
+			}
+		}
+
+		// set the model matrix for the model
+		renderShader->SetMat4("model", model->GetWorldModelMatrix());
+
+		// draw the model using the current shader program
+		model->Draw(*renderShader);
+	}
+}
+
+
 void Renderer::EnsureOffscreenRenderPass()
 {
 	// get the core instance and screen dimensions
@@ -1078,7 +1089,7 @@ void Renderer::UpdateDynamicEnvMaps()
 	for (const auto& asset : models)
 	{
 		// dynamically cast the asset to a Model object
-		auto model = dynamic_cast<Model*>(asset.get());
+		auto model = dynamic_cast<ModelComponent*>(asset.get());
 		// if the cast fails or the model has a gizmo, skip to next model
 		if (!model || model->GetGizmoType() != GizmoType::NONE) continue;
 
@@ -1088,7 +1099,7 @@ void Renderer::UpdateDynamicEnvMaps()
 
 		auto& entry = it->second; // get the dynamic env map entry
 		// dynamically cast the model to a shared pointer for passing to the capture function
-		auto modelPtr = std::dynamic_pointer_cast<Model>(asset);
+		auto modelPtr = std::dynamic_pointer_cast<ModelComponent>(asset);
 		// capture the dynamic environment map for the model into the "write" buffer (cubemapTexId)
 		CaptureDynamicEnvMapForModel(modelPtr, entry);
 	}
@@ -1096,7 +1107,8 @@ void Renderer::UpdateDynamicEnvMaps()
 	m_isCapturingDynamicEnvMap = false; // reset capturing flag after processing all models
 }
 
-void Renderer::CaptureDynamicEnvMapForModel(const std::shared_ptr<Model>& model, DynamicEnvMapEntry& entry)
+void Renderer::CaptureDynamicEnvMapForModel(const std::shared_ptr<ModelComponent>& model,
+											DynamicEnvMapEntry& entry)
 {
 	// lazy initialization of cubemap texture, FBO, and RBO for the dynamic env map entry
 	if (!entry.initialized)
@@ -1189,7 +1201,7 @@ void Renderer::CaptureDynamicEnvMapForModel(const std::shared_ptr<Model>& model,
 }
 
 void Renderer::RenderSceneForEnvMapCapture(const glm::mat4& captureView, const glm::mat4& captureProj,
-										   const std::shared_ptr<Model>& excludeModel)
+										   const std::shared_ptr<ModelComponent>& excludeModel)
 {
 	auto core = Core::GetInstance(); // get the core instance
 	auto& assetManager = core->GetAssetManager(); // get the asset manager
@@ -1342,45 +1354,133 @@ void Renderer::RenderSceneForEnvMapCapture(const glm::mat4& captureView, const g
 	auto& models = assetManager->GetAssets(AssetType::MODEL); // get models from the asset manager
 	for (const auto& asset : models)
 	{ // iterate over the models and render them
-		// dynamically cast the asset to a Model object
-		auto model = dynamic_cast<Model*>(asset.get());
-		// skip if the model is null, is the excluded model, or is a gizmo
-		if (!model || model == excludeModel.get() || model->GetGizmoType() != GizmoType::NONE) continue;
+		// dynamically cast the asset to a Model Component object
+		auto model = dynamic_cast<ModelComponent*>(asset.get());
 
-		switch (model->GetModelType()) // render based on model type
-		{
-			case ModelType::ASSIMP_MODEL:
-			case ModelType::SHAPE:
-			{
-				// set uniforms for reflective shader
-				m_reflectiveShader->Use();
-				m_reflectiveShader->SetMat4("model", model->GetModelMatrix());
+		// skip excluded model (the one for which we are capturing the env map) and gizmos early
+		if (excludeModel && model == excludeModel.get()) continue;
+		if (model->GetGizmoType() != GizmoType::NONE) continue;
 
-				// bind previous env map for reflective objects to avoid recursion,
-				// fall back to skybox if no previous env map exists
-				GLuint env = 0;
-				if (auto it = m_dynamicEnvMaps.find(model->GetId()); it != m_dynamicEnvMaps.end())
-				{ // if the model has a dynamic env map, use its previous cubemap texture
-					auto& entry = it->second;
-					// use previous cubemap is valid before using it
-					if (entry.hasPrevCubemap && entry.prevCubemapTexId) env = entry.prevCubemapTexId;
+		// render the model for enviroment map capture, using recursive rendering for composite models
+		if (model->IsComposite())
+		{ // if the model is composite, render all its child models recursively in a depth-first traversal
+			std::vector<std::shared_ptr<ModelComponent>> stack{ model->GetChildren() };
+			while (!stack.empty())
+			{ // process models in the stack until empty
+				auto& currentModel = stack.back(); // get the model at the top of the stack
+				stack.pop_back(); // remove the model from the stack
+
+				// if the current model is null, excluded, or a gizmo, skip it
+				if (!currentModel) continue;
+				if (excludeModel && currentModel == excludeModel) continue;
+				if (currentModel->GetGizmoType() != GizmoType::NONE) continue;
+
+				if (currentModel->IsComposite())
+				{ // if the current model is composite, add its children to the stack for further processing
+					auto children = currentModel->GetChildren();
+					stack.insert(stack.end(), children.begin(), children.end());
 				}
-				if (env == 0)
-				{ // otherwise, fall back to the scene's skybox cubemap if available
-					auto& skyboxTexture = sceneManager->GetSkybox();
-					// use skybox cubemap if it exists and is a cubemap
-					if (skyboxTexture && skyboxTexture->GetTextureType() == TextureType::CUBEMAP)
-						env = skyboxTexture->GetTextureId();
-				}
-				// activate texture unit 0 and bind the env map texture or 0 if none found
-				glActiveTexture(GL_TEXTURE0);
-				glBindTexture(GL_TEXTURE_CUBE_MAP, env);
 
-				glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); // ensure fill mode for reflective models
-				model->Draw(*m_reflectiveShader);
+				// leaf model rendering based on the model type (child models)
+				std::shared_ptr<Shader> renderShader;
+
+				switch (currentModel->GetModelType())// use the appropriate shader based on the model type
+				{
+					case ModelType::SHAPE_MODEL:
+					{
+						// use the reflective shader
+						renderShader = m_reflectiveShader;
+
+						// activate the current shader program
+						renderShader->Use();
+
+						// bind the environment map (fallback to skybox if no dynamic env map)
+						renderShader->SetInt("skybox", 0); // set the env map sampler to texture unit 0
+						// determine the environment map to use (either dynamic env map or skybox)
+						GLuint envMapTexId = 0;
+						if (auto it{ m_dynamicEnvMaps.find(model->GetId()) }; it != m_dynamicEnvMaps.end())
+						{ // if a dynamic environment map exists for this model, use it
+							// read from the stable "previous" buffer to avoid feedback artifacts
+							if (it->second.hasPrevCubemap) envMapTexId = it->second.prevCubemapTexId;
+						}
+						if (envMapTexId == 0)
+						{ // if no dynamic env map, use the skybox cubemap texture
+							auto& skyboxTexture = sceneManager->GetSkybox();
+							if (skyboxTexture && skyboxTexture->GetTextureType() == TextureType::CUBEMAP)
+								envMapTexId = skyboxTexture->GetTextureId();
+						}
+						// activate texture unit 0 and bind the env map texture or 0 if none found
+						glActiveTexture(GL_TEXTURE0);
+						glBindTexture(GL_TEXTURE_CUBE_MAP, envMapTexId);
+					}
+					break;
+					case ModelType::ASSIMP_MODEL:
+					{
+						// use the Assimp model shader
+						renderShader = m_assimpModelShader;
+
+						// activate the current shader program
+						renderShader->Use();
+					}
+					break;
+					default:
+						// if the model type is unknown, print an error message and return
+						std::cerr << "[ERROR::RENDERER::RenderSceneForEnvMapCapture] "
+							"Unknown model type for " << model->GetName() << std::endl;
+						return;
+
+						// set the polygon mode to fill for regular models
+						glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+				}
+
+				// set model matrix uniform
+				renderShader->SetMat4("model", currentModel->GetWorldModelMatrix());
+
+				// render the current leaf model
+				currentModel->Draw(*renderShader);
 			}
-			break;
-			default: break;
+		}
+		else
+		{ // leaf model rendering based on the model type (non-composite models)
+			std::shared_ptr<Shader> renderShader;
+			switch (model->GetModelType())// use the appropriate shader based on the model type
+			{
+				case ModelType::ASSIMP_MODEL:
+				{
+					// use the Assimp model shader
+					renderShader = m_assimpModelShader;
+
+					// activate the current shader program
+					renderShader->Use();
+				}
+				break;
+				case ModelType::SHAPE_MODEL:
+				{
+					// use the untextured matt shape shader
+					renderShader = m_untexturedMattShapeShader;
+
+					// activate the current shader program
+					renderShader->Use();
+
+					// set the material albedo based on the model's material properties
+					renderShader->SetVec3("material.albedo", model->GetAlbedo());
+				}
+				break;
+				default:
+					// if the model type is unknown, print an error message and return
+					std::cerr << "[ERROR::RENDERER::RenderSceneForEnvMapCapture] "
+						"Unknown model type for " << model->GetName() << std::endl;
+					return;
+			}
+
+			// set the polygon mode to fill for regular models
+			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+			// set the model matrix for the model
+			renderShader->SetMat4("model", model->GetWorldModelMatrix());
+
+			// render the current model
+			model->Draw(*renderShader);
 		}
 	}
 
