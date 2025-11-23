@@ -1,11 +1,11 @@
 /*
 * ModelComponent.cpp
-* This file defines the ComponentModel class,
-* which represents the interface for any model component in the scene graph, both leaf and composite.
-* It is the abstract base class for ModelLeaf and ModelComposite, and it is derived from the Asset class:
-* - Declares common attributes and methods for all model components.
-* - Allows treating individual models and groups of models uniformly.
+* This file implements the ModelComponent class (a derived class of Asset),
+* which represents is the abstract base class for any every scene graph node (mesh-bearing or composite).
+* It integrates child management directly to allow any model to become composite.
 */
+
+#include <algorithm>
 
 #include "ModelComponent.h"
 
@@ -22,19 +22,11 @@ ModelComponent::ModelComponent(const std::string& name,
 							   const ModelType modelType, const GizmoType gizmoType)
 	: Asset(name, AssetType::MODEL),
 	albedo{ albedo }, position{ position }, rotation{ rotation }, scale{ scale },
-	forward{ forward }, meshForward{ meshForward }, modelType{ modelType }, gizmoType{ gizmoType }
+	forward{ forward }, meshForward{ meshForward }, modelType{ modelType }, gizmoType{ gizmoType },
+	children{ *(new std::vector<std::shared_ptr<ModelComponent>>()) } // initialize children vector
 {
 	nModels++;
 }
-
-ModelComponent::ModelComponent(const std::string& name,
-							   const glm::vec3 albedo, const glm::vec3 position,
-							   const glm::vec3 rotationInEulerAnglesDegrees, const glm::vec3 scale,
-							   const glm::vec3 forward, const glm::vec3 meshForward,
-							   const ModelType modelType, const GizmoType gizmoType)
-	: ModelComponent(name, albedo, position, glm::quat(glm::radians(rotationInEulerAnglesDegrees)), scale,
-					 forward, meshForward, modelType, gizmoType)
-{}
 
 // Public Methods
 // --------------
@@ -110,4 +102,36 @@ glm::mat4 ModelComponent::GetScaleMatrix() const
 	glm::mat4 scaleMatrix = glm::mat4{ 1.0f };
 	scaleMatrix = glm::scale(scaleMatrix, scale);
 	return scaleMatrix;
+}
+
+void ModelComponent::AddChild(const std::shared_ptr<ModelComponent>& child)
+{
+	if (!child) return; // check for null pointer
+	// avoid re-parenting to self
+	if (child.get() == this) return;
+	// avoid adding duplicate children
+	if (std::find(children.begin(), children.end(), child) != children.end()) return;
+
+	children.push_back(child); // add the child to the children vector
+	// use shared_from_this to get a shared_ptr to 'this' object
+	child->SetParent(shared_from_this()); // set this model component as the parent of the child
+}
+void ModelComponent::RemoveChild(const std::shared_ptr<ModelComponent>& child)
+{
+	if (!child) return; // check for null pointer
+
+	// remove the child from the children vector
+	children.erase(std::remove(children.begin(), children.end(), child), children.end());
+	child->SetParent(nullptr); // reset the parent of the child to nullptr
+}
+std::shared_ptr<ModelComponent> ModelComponent::GetRootParent() const
+{
+	// start from this model component, using const_cast to call shared_from_this (which is non-const)
+	auto currentModel = const_cast<ModelComponent*>(this)->shared_from_this();
+
+	// traverse up the parent chain until reaching the top-level ancestor (no parent)
+	while (currentModel && currentModel->GetParent())
+		currentModel = currentModel->GetParent(); // move up to the next parent
+
+	return currentModel; // return the top-level ancestor or this if no parent
 }

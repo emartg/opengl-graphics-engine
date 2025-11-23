@@ -84,30 +84,51 @@ void SelectionManager::ProcessPendingPick(const Camera* camera, AssetManager* as
 		0.1f, 100.0f);
 	glm::mat4 view = camera->GetViewMatrix();
 
-	// render all selectable models (including gizmos - lights themselves are not drawn; their gizmos are)
+	// render hierarchies by unique root ancestor, but still include standalone leaf models (such as gizmos)
 	auto& assetModels = assetManager->GetAssets(AssetType::MODEL);
+
 	m_pickingShader->Use();
 	m_pickingShader->SetMat4("view", view);
 	m_pickingShader->SetMat4("projection", projection);
 
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); // ensure solid fill for picking
 
+	std::unordered_set<std::uint32_t> processedRoots; // track processed root models to avoid duplicates
 	for (const auto& asset : assetModels)
 	{ // iterate through all models in the scene
 		// dynamically cast the asset to a Model object
-		auto model = dynamic_cast<ModelComponent*>(asset.get());
-		if (!model) continue; // skip if not a model
+		auto modelComp = dynamic_cast<ModelComponent*>(asset.get());
+		if (!modelComp) continue; // skip if not a model
 
-		// skip non-root to avoid duplicate drawing of hierarchies (components handle their children)
-		if (model->GetParent()) continue;
+		// find the ancestor root model (or itself if standalone)
+		auto rootModel = modelComp->GetRootParent();
+		if (!rootModel) continue; // skip if no valid root model
 
-		// encode model's unique id as a color for picking
-		std::uint32_t id = model->GetId();
+		// ensure each root model is processed only once
+		if (processedRoots.find(rootModel->GetId()) != processedRoots.end())
+			continue; // already processed this root model
 
-		// set model matrix and encoded id uniform, then draw the model
-		m_pickingShader->SetMat4("model", model->GetWorldModelMatrix());
-		m_pickingShader->SetInt("encodedId", static_cast<GLint>(id));
-		model->Draw(*m_pickingShader);
+		// use a stack for depth-first traversal of the model hierarchy,
+		// starting from the root model, which represents the selectable asset,
+		// and all its children and descendants will be drawn with the same encoded id
+		const GLint encondedRootId = static_cast<GLint>(rootModel->GetId());
+		// mark this root model as processed
+		std::vector<std::shared_ptr<ModelComponent>> stack{ rootModel };
+
+		while (!stack.empty())
+		{ // perform DFS to process all child models in the hierarchy
+			auto& currentModel = stack.back();
+			stack.pop_back();
+			if (!currentModel) continue;
+
+			// set model matrix and encoded id root uniform, then draw the model
+			m_pickingShader->SetMat4("model", currentModel->GetWorldModelMatrix());
+			m_pickingShader->SetInt("encodedId", encondedRootId);
+			currentModel->Draw(*m_pickingShader);
+
+			// push child models onto the stack for processing
+			for (const auto& child : currentModel->GetChildren()) { stack.push_back(child); }
+		}
 	}
 
 	// read the pixel that is currently under the mouse cursor
@@ -146,8 +167,18 @@ void SelectionManager::ProcessPendingPick(const Camera* camera, AssetManager* as
 	if (pickedAsset->GetType() == AssetType::MODEL)
 	{
 		auto resolved = resolveGizmoToLight(assetManager, pickedAsset);
-		if (resolved) // if it is indeed a gizmo, switch selection to the owning light
+		if (resolved)
+		{ // if it is indeed a gizmo, switch selection to the owning light
 			pickedAsset = resolved;
+		}
+		else
+		{ // otherwise, promote any picked model component (child or leaf) to its top-level parent
+			if (auto modelComp = std::dynamic_pointer_cast<ModelComponent>(pickedAsset))
+			{ // if it is a model component, get its root model (as the actual selectable asset)
+				auto rootModel = modelComp->GetRootParent();
+				if (rootModel) pickedAsset = rootModel;
+			}
+		}
 	}
 
 	// check if the newly picked asset is outline-eligible, i.e. a real model (not a gizmo)
@@ -207,19 +238,42 @@ void SelectionManager::RenderPickingVisualization(const Camera* camera, AssetMan
 
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); // ensure solid fill for picking
 
+	std::unordered_set<std::uint32_t> processedRoots; // track processed root models to avoid duplicates
 	for (const auto& asset : assetModels)
 	{ // iterate through all models in the scene
 		// dynamically cast the asset to a Model object
-		auto model = dynamic_cast<ModelComponent*>(asset.get());
-		if (!model) continue; // skip if not a model
+		auto modelComp = dynamic_cast<ModelComponent*>(asset.get());
+		if (!modelComp) continue; // skip if not a model
 
-		// skip non-root to avoid duplicate drawing of hierarchies (components handle their children)
-		if (model->GetParent()) continue;
+		// find the ancestor root model (or itself if standalone)
+		auto rootModel = modelComp->GetRootParent();
+		if (!rootModel) continue; // skip if no valid root model
 
-		// set model matrix and encoded id uniform, then draw the model
-		m_pickingShader->SetMat4("model", model->GetWorldModelMatrix());
-		m_pickingShader->SetInt("encodedId", static_cast<GLint>(model->GetId()));
-		model->Draw(*m_pickingShader);
+		// ensure each root model is processed only once
+		if (processedRoots.find(rootModel->GetId()) != processedRoots.end())
+			continue; // already processed this root model
+
+		// use a stack for depth-first traversal of the model hierarchy,
+		// starting from the root model, which represents the selectable asset,
+		// and all its children and descendants will be drawn with the same encoded id
+		const GLint encondedRootId = static_cast<GLint>(rootModel->GetId());
+		// mark this root model as processed
+		std::vector<std::shared_ptr<ModelComponent>> stack{ rootModel };
+
+		while (!stack.empty())
+		{ // perform DFS to process all child models in the hierarchy
+			auto& currentModel = stack.back();
+			stack.pop_back();
+			if (!currentModel) continue;
+
+			// set model matrix and encoded id root uniform, then draw the model
+			m_pickingShader->SetMat4("model", currentModel->GetWorldModelMatrix());
+			m_pickingShader->SetInt("encodedId", encondedRootId);
+			currentModel->Draw(*m_pickingShader);
+
+			// push child models onto the stack for processing
+			for (const auto& child : currentModel->GetChildren()) { stack.push_back(child); }
+		}
 	}
 
 	m_pickingPass.Unbind(); // unbind FBO after rendering
@@ -394,6 +448,9 @@ void SelectionManager::RenderOutlineMask(const Camera* camera, AssetManager* ass
 	auto model = dynamic_cast<ModelComponent*>(selected.get());
 	if (!model) return; // if the selected asset is not a model, return
 
+	// promote to top-level parent to outline the whole composite
+	model = model->GetRootParent().get();
+
 	// compute view and projection matrices from the camera
 	glm::mat4 projection = glm::perspective(
 		glm::radians(camera->GetZoom()),
@@ -401,14 +458,31 @@ void SelectionManager::RenderOutlineMask(const Camera* camera, AssetManager* ass
 		0.1f, 100.0f);
 	glm::mat4 view = camera->GetViewMatrix();
 
-	// render only the selected model with a constant mask value of 1
+	// render entire hierarchy of the selected root model with a constant mask value of 1
 	m_pickingShader->Use();
 	m_pickingShader->SetMat4("view", view);
 	m_pickingShader->SetMat4("projection", projection);
-	m_pickingShader->SetMat4("model", model->GetWorldModelMatrix());
-	m_pickingShader->SetInt("encodedId", 1); // constant mask value
+
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); // ensure solid fill for outline mask
-	model->Draw(*m_pickingShader);
+
+	// use a stack for depth-first traversal of the model hierarchy,
+	// starting from the root model, to draw all its children and descendants
+	// with the same encoded id of 1 (mask)
+	std::vector<std::shared_ptr<ModelComponent>> stack{ model->GetRootParent() };
+	while (!stack.empty())
+	{
+		auto& current = stack.back();
+		stack.pop_back();
+		if (!current) continue;
+
+		// set model matrix and encoded id uniform, then draw the model
+		m_pickingShader->SetMat4("model", current->GetWorldModelMatrix());
+		m_pickingShader->SetInt("encodedId", 1); // constant mask value of 1 for outline
+		current->Draw(*m_pickingShader);
+
+		// push child models onto the stack for processing
+		for (auto& child : current->GetChildren()) stack.push_back(child);
+	}
 
 	m_outlinePass.Unbind(); // unbind FBO after rendering
 

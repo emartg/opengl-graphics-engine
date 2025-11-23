@@ -15,9 +15,9 @@
 #include "../texture/Texture.h"
 #include "../shader/Shader.h"
 
-#include "ModelLeaf.h"
+#include "ModelComponent.h"
 
-class AssimpModel : public ModelLeaf
+class AssimpModel : public ModelComponent
 {
 public:
 	// Constructors
@@ -31,6 +31,32 @@ public:
 	// Destructor
 	// ----------
 	~AssimpModel() { nAssimpModels--; } // decrements the number of Assimp models
+
+	// Public Methods
+	// --------------
+	// Loads the AssimpModel
+	void Load() override {}
+
+	// Deallocates all the resources of the AssimpModel, that is, all its meshes
+	void DeallocateResources() override { for (Mesh& mesh : meshes) mesh.DeallocateResources(); }
+
+	// Draws only its own meshes
+	void Draw() const override { for (const Mesh& mesh : meshes) mesh.Draw(); }
+	// Draws only its own meshes with the specified shader (binds the textures before drawing)
+	void Draw(const Shader& shader) const override
+	{
+		// need to cast away the constness of the shader to use it
+		auto& nonConstShader = const_cast<Shader&>(shader);
+		nonConstShader.Use(); // activate the shader program
+		// set the appropiate world model matrix uniform per model before drawing
+		nonConstShader.SetMat4("model", GetWorldModelMatrix());
+
+		for (const Mesh& mesh : meshes)
+		{
+			const_cast<Mesh&>(mesh).BindTextures(nonConstShader); // bind the textures
+			mesh.Draw();
+		}
+	}
 
 	// Static Public Methods
 	// ---------------------

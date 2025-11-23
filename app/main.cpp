@@ -163,36 +163,34 @@ void SetupInitialScene(Core* engine)
 
 	// create a directional light and its gizmo, then add them to the asset manager
 	auto directionalLight = std::make_shared<DirectionalLight>(
-		"Directional Light " + std::to_string(assetManager->GetNDirectionalLights()),
+		"Directional Light",
 		glm::vec3{ 0.1f }, // ambient color (default)
 		glm::vec3{ 1.0f, 1.0f, 0.7f }, // diffuse color (overridden)
 		glm::vec3{ 1.0f }, // specular color (override required although it is the default)
 		glm::vec3{ 2.4f, 8.0f, -3.0f }, // position (overridden)
 		glm::vec3{ -0.2f, -0.8, 0.5f } // direction (overridden)
 	);
-	auto directionalLightGizmo = directionalLight->GetGizmo();
+	auto& directionalLightGizmo = directionalLight->GetGizmo();
 	assetManager->AddAsset(std::move(directionalLight));
-	directionalLightGizmo->SetName(directionalLightGizmo->GetName()
-								   + " (Model " + std::to_string(assetManager->GetNModels()) + ")");
+	directionalLightGizmo->SetName(directionalLightGizmo->GetName());
 	assetManager->AddAsset(std::move(directionalLightGizmo));
 
 	// create a point light and its gizmo, then add them to the asset manager
 	auto pointLight = std::make_shared<PointLight>(
-		"Point Light " + std::to_string(assetManager->GetNPointLights()),
+		"Point Light",
 		glm::vec3{ 0.1f }, // ambient color (default)
 		glm::vec3{ 0.3f, 0.9f, 1.0f }, // diffuse color (overridden)
 		glm::vec3{ 1.0f }, // specular color (same as default)
 		glm::vec3{ -0.6f, 3.2f, 3.2f } // position (overridden)
 	);
-	auto pointLightGizmo = pointLight->GetGizmo();
+	auto& pointLightGizmo = pointLight->GetGizmo();
 	assetManager->AddAsset(std::move(pointLight));
-	pointLightGizmo->SetName(pointLightGizmo->GetName()
-							 + " (Model " + std::to_string(assetManager->GetNModels()) + ")");
+	pointLightGizmo->SetName(pointLightGizmo->GetName());
 	assetManager->AddAsset(std::move(pointLightGizmo));
 
 	// create a spotlight and its gizmo, then add them to the asset manager
 	auto spotlight = std::make_shared<Spotlight>(
-		"Spotlight " + std::to_string(assetManager->GetNSpotlights()),
+		"Spotlight",
 		glm::vec3{ 0.1f }, // ambient color (override required although it is the default)
 		glm::vec3{ 1.0f, 0.4f, 0.4f }, // diffuse color (overridden)
 		glm::vec3{ 1.0f }, // specular color (override required although it is the default)
@@ -201,44 +199,90 @@ void SetupInitialScene(Core* engine)
 		glm::cos(glm::radians(15.0f)), // inner cut-off (overridden)
 		glm::cos(glm::radians(32.5f)) // outer cut-off (overridden)
 	);
-	auto spotlightGizmo = spotlight->GetGizmo();
+	auto& spotlightGizmo = spotlight->GetGizmo();
 	assetManager->AddAsset(std::move(spotlight));
-	spotlightGizmo->SetName(spotlightGizmo->GetName()
-							+ " (Model " + std::to_string(assetManager->GetNModels()) + ")");
+	spotlightGizmo->SetName(spotlightGizmo->GetName());
 	assetManager->AddAsset(std::move(spotlightGizmo));
 
-	// create a composite model to hold multiple shapes
-	auto compositeModel = std::make_shared<ModelComposite>(
-		"Composite Model",
-		glm::vec3{ 1.0f, 1.0f, 1.0f }, // diffuse color (default)
-		glm::vec3{ 0.0f, 0.0f, 0.0f } // position (default)
+	// create a composite model hierarchy mixing shapes and an Assimp model
+	auto rootGroup = std::make_shared<ModelComposite>("Root Group");
+
+	// create a shapes group to hold multiple shapes as children of the root group
+	auto shapesGroup = std::make_shared<ModelComposite>(
+		"Shapes Group",
+		glm::vec3{ 1.0f }, // albedo (overriden)
+		glm::vec3{ 0.0f, 0.0f, -2.5f } // position (overriden - offset from root)
 	);
 
-	// create two cube shapes with different transformations
-	auto cube1 = std::make_shared<Shape>(
-		"Cube (Shape " + std::to_string(assetManager->GetNShapes()) + ")",
+	// create two shapes with different colors and transformations as children of the shapes group
+	auto redShape = std::make_shared<Shape>(
+		"Red Shape",
 		cubeVerticesVec, cubeIndicesVec,
-		glm::vec3{ 0.8f, 0.1f, 0.1f }, // diffuse color (overridden)
-		glm::vec3{ -1.5f, 0.0f, -1.5f }, // position (overridden)
-		glm::quat(glm::vec3{ 0.0f, glm::radians(30.0f), 0.0f }), // rotation (overridden)
-		glm::vec3{ 0.5f } // scale (overridden)
+		glm::vec3{ 0.9f, 0.2f, 0.2f }, // albedo (overridden)
+		glm::vec3{ -1.0f, 0.0f, 0.0f }, // position (overridden - local offset from parent)
+		glm::quat(glm::vec3{ 0.0f, glm::radians(15.0f), 0.0f }), // rotation (overridden)
+		glm::vec3{ 0.8f } // scale (overridden)
 	);
-
-	auto cube2 = std::make_shared<Shape>(
-		"Cube (Shape " + std::to_string(assetManager->GetNShapes()) + ")",
+	auto blueShape = std::make_shared<Shape>(
+		"Blue Shape",
 		cubeVerticesVec, cubeIndicesVec,
-		glm::vec3{ 0.1f, 0.1f, 0.8f }, // diffuse color (overridden)
-		glm::vec3{ 1.5f, 0.0f, 1.5f }, // position (overridden)
-		glm::quat(glm::vec3{ 0.0f, glm::radians(-45.0f), 0.0f }), // rotation (overridden)
-		glm::vec3{ 0.75f } // scale (overridden)
+		glm::vec3{ 0.2f, 0.2f, 0.9f }, // albedo (overridden)
+		glm::vec3{ 1.0f, 0.0f, 0.0f }, // position (overridden - local offset from parent)
+		glm::quat(glm::vec3{ 0.0f, glm::radians(-25.0f), 0.0f }), // rotation (overridden)
+		glm::vec3{ 0.6f } // scale (overridden)
 	);
 
-	// add the cubes as children of the composite model
-	compositeModel->AddChild(cube1);
-	compositeModel->AddChild(cube2);
+	// attach shapes under the shapes group
+	shapesGroup->AddChild(redShape);
+	shapesGroup->AddChild(blueShape);
 
-	// add the composite model to the asset manager
-	assetManager->AddAsset(std::move(compositeModel));
+	// create an Assimp model and add it as a child of the root group
+	std::string assimpPath = "resources/models/gltf/teapot/teapot.gltf";
+	if (std::filesystem::exists(assimpPath))
+	{ // check if the file exists before loading it
+		auto assimpModel = std::make_shared<AssimpModel>(
+			"Teapot Model", assimpPath,
+			glm::vec3{ 1.0f }, // albedo (overriden - unused if model has textures)
+			glm::vec3{ 0.0f, 0.0f, 3.0f }, // position (overriden - offset from root)
+			glm::quat(glm::vec3{ 0.0f }), // rotation (default)
+			glm::vec3{ 0.25f } // scale (overriden)
+		);
+
+		// create a marker shape to indicate the origin of the Assimp model of which it is a child
+		// (demonstrates mixed hierarchy)
+		auto markerShape = std::make_shared<Shape>(
+			"Teapot Origin Marker",
+			cubeVerticesVec, cubeIndicesVec,
+			assimpModel->GetAlbedo(), // albedo (overriden - same as parent)
+			glm::vec3{ 0.5f, 0.0f, 0.5f }, // position (overridden - local offset from parent)
+			glm::quat(glm::vec3{ 0.0f }), // rotation (default)
+			glm::vec3{ 0.1f } // scale (overridden)
+		);
+
+		// attach marker shape under Assimp model
+		assimpModel->AddChild(markerShape);
+
+		// attach Assimp model under the root group
+		rootGroup->AddChild(assimpModel);
+
+		// register child assets for selection/picking (renderer skips them via parent check)
+		assetManager->AddAsset(assimpModel);
+		assetManager->AddAsset(markerShape);
+	}
+	else
+	{ // if the file does not exist, print an error message
+		std::cerr << "[WARNING::main::SetupInitialScene] Assimp model not found: " << assimpPath
+			<< std::endl;
+	}
+
+	// attach the shapes group under the root group
+	rootGroup->AddChild(shapesGroup);
+
+	// register all nodes (including children) so they exist as assets
+	assetManager->AddAsset(rootGroup);
+	assetManager->AddAsset(shapesGroup);
+	assetManager->AddAsset(redShape);
+	assetManager->AddAsset(blueShape);
 
 	// load an HDR skybox texture and set it as the skybox in the scene manager
 	std::string skyboxFilepath = "resources/textures/skyboxes/hdr/tiergarten_4k.hdr";
@@ -246,8 +290,8 @@ void SetupInitialScene(Core* engine)
 	{ // check if the file exists before loading it
 		sceneManager->LoadSkybox(skyboxFilepath);
 	}
-	else // if the file does not exist, print an error message
-	{
+	else
+	{ // if the file does not exist, print an error message
 		std::cerr << "[ERROR::main::SetupInitialScene] Skybox file not found: " << skyboxFilepath
 			<< std::endl;
 	}

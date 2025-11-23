@@ -435,7 +435,7 @@ void Renderer::RenderScene()
 
 		if (model->GetParent()) continue; // skip child models (they are rendered by their parent composite)
 
-		RenderModel(model); // render the model (composite or leaf)
+		RenderModel(model); // render the model component
 	}
 
 	// set the polygon mode to line for the directional light gizmo lines
@@ -517,10 +517,7 @@ void Renderer::RenderScene()
 	CompositeToScreen();
 }
 
-void Renderer::FrameEndConfig() const
-{
-	SwapBuffers();
-}
+void Renderer::FrameEndConfig() const { SwapBuffers(); }
 
 void Renderer::RegisterModelForDynamicEnvMapCapture(std::uint32_t modelId, GLuint resolution)
 {
@@ -560,86 +557,84 @@ void Renderer::RenderModel(const std::shared_ptr<ModelComponent>& model)
 		return;
 	}
 
-	if (model->IsComposite())
-	{ // if the model is a composite model, render each sub-model recursively
-		for (const auto& child : model->GetChildren()) RenderModel(child);
-	}
-	else
-	{ // leaf model rendering based on the model type (non-composite models)
-		// render leaf model
-		std::shared_ptr<Shader> renderShader;
+	// auxiliary shared pointer to the shader program used for rendering the model and its children (if any)
+	std::shared_ptr<Shader> renderShader;
 
-		// switch based on the gizmo type to:
-		// - set the current shader program accordingly for rendering
-		// - set the appropiate properties for the model for rendering
-		// - set the polygon mode (fill or line) for rendering
-		switch (model->GetGizmoType())
+	// switch based on the gizmo type to:
+	// - set the current shader program accordingly for rendering
+	// - set the appropiate properties for the model for rendering
+	// - set the polygon mode (fill or line) for rendering
+	switch (model->GetGizmoType())
+	{
+		case GizmoType::NONE: // if the model is not a gizmo
 		{
-			case GizmoType::NONE: // if the model is not a gizmo
+			switch (model->GetModelType()) // use the appropriate shader based on the model type
 			{
-				switch (model->GetModelType()) // use the appropriate shader based on the model type
+				case ModelType::COMPOSITE_MODEL: // basic composite models do not have their own meshes
 				{
-					case ModelType::ASSIMP_MODEL:
-					{
-						// use the Assimp model shader
-						renderShader = m_assimpModelShader;
+					// assign a default shader for composite models without meshes
+					renderShader = m_singleAlbedoShader;
+					renderShader->Use(); // activate the current shader program
 
-						// activate the current shader program
-						renderShader->Use();
-					}
-					break;
-					case ModelType::SHAPE_MODEL:
-					{
-						// use the untextured matt shape shader
-						renderShader = m_untexturedMattShapeShader;
-
-						// activate the current shader program
-						renderShader->Use();
-
-						// set the color of the shape based on the model's albedo
-						renderShader->SetVec3("material.albedo", model->GetAlbedo());
-					}
-					break;
-					default:
-						// if the model type is unknown, print an error message and return
-						std::cerr << "[ERROR::RENDERER::RenderModel] Unknown model type for "
-							<< model->GetName() << std::endl;
-						return;
+					// set a default albedo color (e.g., gray) for composite models without meshes
+					renderShader->SetVec3("albedo", glm::vec3(0.25f, 0.25f, 0.25f));
 				}
-
-				// set the polygon mode to fill for regular models
-				glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-
 				break;
-			case GizmoType::DIRECTIONAL_LIGHT: // if the model is a directional light gizmo
-			case GizmoType::POINT_LIGHT: // if the model is a point light gizmo
-			case GizmoType::SPOTLIGHT: // if the model is a spotlight gizmo
-			{
-				// use the single albedo shader
-				renderShader = m_singleAlbedoShader;
-
-				// activate the current shader program
-				renderShader->Use();
-
-				// set the color of the gizmo shape based on the model's albedo
-				renderShader->SetVec3("albedo", model->GetAlbedo());
-
-				// set the polygon mode to line for light gizmos
-				glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+				case ModelType::COMPOSITE_ASSIMP_MODEL: // composite Assimp models have their own meshes
+				case ModelType::ASSIMP_MODEL:
+				{
+					renderShader = m_assimpModelShader; // use the Assimp model shader
+					renderShader->Use(); // activate the current shader program
+				}
+				break;
+				case ModelType::COMPOSITE_SHAPE_MODEL: // composite shape models have their own meshes
+				case ModelType::SHAPE_MODEL:
+				{
+					renderShader = m_untexturedMattShapeShader; // use the untextured matt shape shader
+					renderShader->Use(); // activate the current shader program
+					// set the color of the shape based on the model's albedo
+					renderShader->SetVec3("material.albedo", model->GetAlbedo());
+				}
+				break;
+				default:
+					// if the model type is unknown, print an error message and return
+					std::cerr << "[ERROR::RENDERER::RenderModel] Unknown model type for " << model->GetName()
+						<< std::endl;
+					return;
 			}
+
+			// set the polygon mode to fill for regular models
+			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
 			break;
-			default: // if the gizmo type is unknown, print an error message and return
-				std::cerr << "[ERROR::RENDERER::RenderScene] Unknown gizmo type for model: "
-					<< model->GetName() << std::endl;
-				return;
-			}
+		case GizmoType::DIRECTIONAL_LIGHT: // if the model is a directional light gizmo
+		case GizmoType::POINT_LIGHT: // if the model is a point light gizmo
+		case GizmoType::SPOTLIGHT: // if the model is a spotlight gizmo
+		{
+			renderShader = m_singleAlbedoShader; // use the single albedo shader
+			renderShader->Use(); // activate the current shader program
+			// set the color of the gizmo shape based on the model's albedo
+			renderShader->SetVec3("albedo", model->GetAlbedo());
+
+			// set the polygon mode to line for light gizmos
+			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 		}
+		break;
+		default: // if the gizmo type is unknown, print an error message and return
+			std::cerr << "[ERROR::RENDERER::RenderModel] Unknown gizmo type for model: " << model->GetName()
+				<< std::endl;
+			return;
+		}
+	}
 
-		// set the model matrix for the model
+	if (renderShader)
+	{ // if a valid shader program is set, proceed to render the model and its children (if any)
+		// set the model matrix for the current model (hierarchical world transformation)
 		renderShader->SetMat4("model", model->GetWorldModelMatrix());
-
-		// draw the model using the current shader program
+		// draw the model using its Draw method, passing the current shader program
 		model->Draw(*renderShader);
+		// recursively render each child model
+		for (const auto& childModel : model->GetChildren()) RenderModel(childModel);
 	}
 }
 
@@ -1362,7 +1357,7 @@ void Renderer::RenderSceneForEnvMapCapture(const glm::mat4& captureView, const g
 		if (model->GetGizmoType() != GizmoType::NONE) continue;
 
 		// render the model for enviroment map capture, using recursive rendering for composite models
-		if (model->IsComposite())
+		if (model->HasChildren())
 		{ // if the model is composite, render all its child models recursively in a depth-first traversal
 			std::vector<std::shared_ptr<ModelComponent>> stack{ model->GetChildren() };
 			while (!stack.empty())
@@ -1375,7 +1370,7 @@ void Renderer::RenderSceneForEnvMapCapture(const glm::mat4& captureView, const g
 				if (excludeModel && currentModel == excludeModel) continue;
 				if (currentModel->GetGizmoType() != GizmoType::NONE) continue;
 
-				if (currentModel->IsComposite())
+				if (currentModel->HasChildren())
 				{ // if the current model is composite, add its children to the stack for further processing
 					auto children = currentModel->GetChildren();
 					stack.insert(stack.end(), children.begin(), children.end());
@@ -1386,58 +1381,50 @@ void Renderer::RenderSceneForEnvMapCapture(const glm::mat4& captureView, const g
 
 				switch (currentModel->GetModelType())// use the appropriate shader based on the model type
 				{
-					case ModelType::SHAPE_MODEL:
+					case ModelType::COMPOSITE_MODEL: // basic composite models do not have their own meshes
 					{
-						// use the reflective shader
-						renderShader = m_reflectiveShader;
+						// assign a default shader for composite models without meshes
+						renderShader = m_singleAlbedoShader;
+						renderShader->Use(); // activate the current shader program
 
-						// activate the current shader program
-						renderShader->Use();
-
-						// bind the environment map (fallback to skybox if no dynamic env map)
-						renderShader->SetInt("skybox", 0); // set the env map sampler to texture unit 0
-						// determine the environment map to use (either dynamic env map or skybox)
-						GLuint envMapTexId = 0;
-						if (auto it{ m_dynamicEnvMaps.find(model->GetId()) }; it != m_dynamicEnvMaps.end())
-						{ // if a dynamic environment map exists for this model, use it
-							// read from the stable "previous" buffer to avoid feedback artifacts
-							if (it->second.hasPrevCubemap) envMapTexId = it->second.prevCubemapTexId;
-						}
-						if (envMapTexId == 0)
-						{ // if no dynamic env map, use the skybox cubemap texture
-							auto& skyboxTexture = sceneManager->GetSkybox();
-							if (skyboxTexture && skyboxTexture->GetTextureType() == TextureType::CUBEMAP)
-								envMapTexId = skyboxTexture->GetTextureId();
-						}
-						// activate texture unit 0 and bind the env map texture or 0 if none found
-						glActiveTexture(GL_TEXTURE0);
-						glBindTexture(GL_TEXTURE_CUBE_MAP, envMapTexId);
+						// set a default albedo color (e.g., gray) for composite models without meshes
+						renderShader->SetVec3("albedo", glm::vec3(0.25f, 0.25f, 0.25f));
 					}
 					break;
+					case ModelType::COMPOSITE_ASSIMP_MODEL: // composite Assimp models have their own meshes
 					case ModelType::ASSIMP_MODEL:
 					{
-						// use the Assimp model shader
-						renderShader = m_assimpModelShader;
-
-						// activate the current shader program
-						renderShader->Use();
+						renderShader = m_assimpModelShader; // use the Assimp model shader
+						renderShader->Use(); // activate the current shader program
+					}
+					break;
+					case ModelType::COMPOSITE_SHAPE_MODEL: // composite shape models have their own meshes
+					case ModelType::SHAPE_MODEL:
+					{
+						renderShader = m_untexturedMattShapeShader; // use the untextured matt shape shader
+						renderShader->Use(); // activate the current shader program
+						// set the color of the shape based on the model's albedo
+						renderShader->SetVec3("material.albedo", currentModel->GetAlbedo());
 					}
 					break;
 					default:
 						// if the model type is unknown, print an error message and return
 						std::cerr << "[ERROR::RENDERER::RenderSceneForEnvMapCapture] "
-							"Unknown model type for " << model->GetName() << std::endl;
+							"Unknown model type for " << currentModel->GetName() << std::endl;
 						return;
 
 						// set the polygon mode to fill for regular models
 						glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 				}
 
-				// set model matrix uniform
-				renderShader->SetMat4("model", currentModel->GetWorldModelMatrix());
-
-				// render the current leaf model
-				currentModel->Draw(*renderShader);
+				if (renderShader)
+				{ // if a valid shader is set, proceed with rendering
+					// set the model matrix uniform (hierarchical world transformation)
+					renderShader->SetMat4("model", currentModel->GetWorldModelMatrix());
+					// render the current model component
+					currentModel->Draw(*renderShader);
+					// children rendering is handled via the stack, so no recursive call here
+				}
 			}
 		}
 		else
@@ -1445,24 +1432,29 @@ void Renderer::RenderSceneForEnvMapCapture(const glm::mat4& captureView, const g
 			std::shared_ptr<Shader> renderShader;
 			switch (model->GetModelType())// use the appropriate shader based on the model type
 			{
-				case ModelType::ASSIMP_MODEL:
+				case ModelType::COMPOSITE_MODEL: // basic composite models do not have their own meshes
 				{
-					// use the Assimp model shader
-					renderShader = m_assimpModelShader;
+					// assign a default shader for composite models without meshes
+					renderShader = m_singleAlbedoShader;
+					renderShader->Use(); // activate the current shader program
 
-					// activate the current shader program
-					renderShader->Use();
+					// set a default albedo color (e.g., gray) for composite models without meshes
+					renderShader->SetVec3("albedo", glm::vec3(0.25f, 0.25f, 0.25f));
 				}
 				break;
+				case ModelType::COMPOSITE_ASSIMP_MODEL: // composite Assimp models have their own meshes
+				case ModelType::ASSIMP_MODEL:
+				{
+					renderShader = m_assimpModelShader; // use the Assimp model shader
+					renderShader->Use(); // activate the current shader program
+				}
+				break;
+				case ModelType::COMPOSITE_SHAPE_MODEL: // composite shape models have their own meshes
 				case ModelType::SHAPE_MODEL:
 				{
-					// use the untextured matt shape shader
-					renderShader = m_untexturedMattShapeShader;
-
-					// activate the current shader program
-					renderShader->Use();
-
-					// set the material albedo based on the model's material properties
+					renderShader = m_untexturedMattShapeShader; // use the untextured matt shape shader
+					renderShader->Use(); // activate the current shader program
+					// set the color of the shape based on the model's albedo
 					renderShader->SetVec3("material.albedo", model->GetAlbedo());
 				}
 				break;
@@ -1476,9 +1468,8 @@ void Renderer::RenderSceneForEnvMapCapture(const glm::mat4& captureView, const g
 			// set the polygon mode to fill for regular models
 			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-			// set the model matrix for the model
+			// set the model matrix for the model (hierarchical world transformation)
 			renderShader->SetMat4("model", model->GetWorldModelMatrix());
-
 			// render the current model
 			model->Draw(*renderShader);
 		}

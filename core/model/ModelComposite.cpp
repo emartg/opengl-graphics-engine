@@ -6,64 +6,36 @@
 
 #include "ModelComposite.h"
 
-// Constructors
-// ------------
-ModelComposite::ModelComposite(const std::string& name,
-							   const glm::vec3 albedo, const glm::vec3 position,
-							   const glm::quat rotation, const glm::vec3 scale,
-							   const glm::vec3 forward, const glm::vec3 meshForward,
-							   const ModelType modelType, const GizmoType gizmoType)
-	: ModelComponent(name, albedo, position, rotation, scale, forward, meshForward,
-					 modelType, gizmoType)
-{}
-
-ModelComposite::ModelComposite(const std::string& name,
-							   const glm::vec3 albedo, const glm::vec3 position,
-							   const glm::vec3 rotationInEulerAnglesDegrees, const glm::vec3 scale,
-							   const glm::vec3 forward, const glm::vec3 meshForward,
-							   const ModelType modelType, const GizmoType gizmoType)
-	: ModelComponent(name, albedo, position, rotationInEulerAnglesDegrees, scale,
-					 forward, meshForward, modelType, gizmoType)
-{}
-
 // Public Methods
 // --------------
-void ModelComposite::Load()
+void ModelComposite::Draw() const { for (const Mesh& mesh : meshes) mesh.Draw(); }
+void ModelComposite::Draw(const Shader& shader) const
 {
-	// load all children recursively
-	for (const auto& child : children) child->Load();
-}
-
-void ModelComposite::DeallocateResources()
-{
-	// deallocate resources of all children recursively
-	for (const auto& child : children) child->DeallocateResources();
+	// need to cast away the constness of the shader to use it
+	auto& nonConstShader = const_cast<Shader&>(shader);
+	nonConstShader.Use(); // activate the shader program
+	// set the appropiate world model matrix uniform per model before drawing
+	nonConstShader.SetMat4("model", GetWorldModelMatrix());
+	for (const Mesh& mesh : meshes)
+	{
+		const_cast<Mesh&>(mesh).BindTextures(nonConstShader); // bind the textures
+		mesh.Draw();
+	}
 }
 
 void ModelComposite::AddChild(const std::shared_ptr<ModelComponent>& child)
 {
-	// add the child to the children vector
-	children.push_back(child);
-	// set this composite as the parent of the child
-	child->SetParent(shared_from_this()); // use shared_from_this to get a shared_ptr to 'this' object
+	if (!child || child.get() == this) return; // prevent adding null or self as child
+	// avoid adding duplicate children
+	if (std::find(children.begin(), children.end(), child) != children.end()) return;
+	children.push_back(child); // add the child to the children vector
+	// shared_from_this() comes from ModelComponent (enable_shared_from_this<ModelComponent>)
+	child->SetParent(std::static_pointer_cast<ModelComponent>(shared_from_this())); // set this as parent
 }
-
 void ModelComposite::RemoveChild(const std::shared_ptr<ModelComponent>& child)
 {
+	if (!child) return; // prevent removing null child
 	// remove the child from the children vector
 	children.erase(std::remove(children.begin(), children.end(), child), children.end());
-	// reset the parent of the child
-	child->SetParent(nullptr);
-}
-
-void ModelComposite::Draw() const
-{
-	// draw all children recursively
-	for (const auto& child : children) child->Draw();
-}
-
-void ModelComposite::Draw(const Shader& shader) const
-{
-	// draw all children recursively with the specified shader
-	for (const auto& child : children) child->Draw(shader);
+	child->SetParent(nullptr); // reset the parent of the child to nullptr
 }

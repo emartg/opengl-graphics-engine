@@ -17,8 +17,8 @@ AssimpModel::AssimpModel(const std::string& name, const std::string& path,
 						 const glm::vec3 albedo, const glm::vec3 position,
 						 const glm::quat rotation, const glm::vec3 scale,
 						 const glm::vec3 forward, const glm::vec3 meshForward)
-	: ModelLeaf(name, albedo, position, rotation, scale, forward, meshForward,
-				ModelType::ASSIMP_MODEL) // set the model type to ASSIMP_MODEL
+	: ModelComponent(name, albedo, position, rotation, scale, forward, meshForward,
+					 ModelType::ASSIMP_MODEL) // set the model type to ASSIMP_MODEL
 {
 	loadAssimpModel(path); // load the model from the specified path
 	nAssimpModels++;

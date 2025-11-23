@@ -7,9 +7,9 @@
 
 #pragma once
 
-#include "ModelLeaf.h"
+#include "ModelComponent.h"
 
-class Shape : public ModelLeaf
+class Shape : public ModelComponent
 {
 public:
 	// Constructors
@@ -64,6 +64,30 @@ public:
 
 	// Public Methods
 	// --------------
+	// Loads the Shape
+	void Load() override {}
+
+	// Deallocates all the resources of the Shape, that is, all its meshes
+	void DeallocateResources() override { for (Mesh& mesh : meshes) mesh.DeallocateResources(); }
+
+	// Draws only its own meshes
+	void Draw() const override { for (const Mesh& mesh : meshes) mesh.Draw(); }
+	// Draws only its own meshes with the specified shader (binds the textures before drawing)
+	void Draw(const Shader& shader) const override
+	{
+		// need to cast away the constness of the shader to use it
+		auto& nonConstShader = const_cast<Shader&>(shader);
+		nonConstShader.Use(); // activate the shader program
+		// set the appropiate world model matrix uniform per model before drawing
+		nonConstShader.SetMat4("model", GetWorldModelMatrix());
+
+		for (const Mesh& mesh : meshes)
+		{
+			const_cast<Mesh&>(mesh).BindTextures(nonConstShader); // bind the textures
+			mesh.Draw();
+		}
+	}
+
 	// Adds texture data to the shape
 	void AddTextureData(const Texture* textures, const GLuint nTextures);
 	void AddTextureData(const std::vector<Texture> textures);

@@ -1,7 +1,7 @@
 /*
 * ModelLeaf.h
 * This file defines the ModelLeaf class (a derived class of ModelComponent),
-* which represents a leaf model in the scene graph. It cannot bear children.
+* which represents an intentionally non-composite model node in the scene graph (semantic leaf).
 */
 
 #pragma once
@@ -44,7 +44,7 @@ public:
 
 	// Virtual destructor 
 	// ------------------
-	virtual ~ModelLeaf() {}
+	virtual ~ModelLeaf() { DeallocateResources(); }
 
 	// Public Functions
 	// ----------------
@@ -54,21 +54,17 @@ public:
 	// Deallocates all the resources of the model leaf, that is, all its meshes
 	void DeallocateResources() override { for (Mesh& mesh : meshes) mesh.DeallocateResources(); }
 
-	// Draws the model leaf, that is, all its meshes
-	void Draw() const override { for (const Mesh& mesh : meshes) mesh.Draw(); }
-	// Draws the model leaf, that is, all its meshes, with the specified shader 
-	// (binds the textures before drawing)
-	void Draw(const Shader& shader) const override
-	{
-		auto& nonConstShader = const_cast<Shader&>(shader);
-		nonConstShader.Use(); // activate the shader program
-		// set the appropiate world model matrix uniform per leaf model before drawing
-		nonConstShader.SetMat4("model", GetWorldModelMatrix());
+	// Draws only its own meshes as it is a leaf (no children, enforced by not using AddChild())
+	void Draw() const override;
+	// Draws only its own meshes as it is a leaf (no children, enforced by not using AddChild()),
+	// with the specified shader (binds the textures before drawing)
+	void Draw(const Shader& shader) const override;
 
-		for (const Mesh& mesh : meshes)
-		{
-			const_cast<Mesh&>(mesh).BindTextures(nonConstShader); // bind the textures
-			mesh.Draw();
-		}
-	}
+	// Child management functions to enforce leaf semantics
+	void AddChild(const std::shared_ptr<ModelComponent>& child) override {}
+	void RemoveChild(const std::shared_ptr<ModelComponent>& child) override {}
+	// Returns an empty vector as this model is a leaf and thus cannot have children
+	std::vector<std::shared_ptr<ModelComponent>> GetChildren() const override { return {}; }
+	// Returns false indicating that this model is a leaf and thus cannot have children
+	bool HasChildren() const override { return false; }
 };
