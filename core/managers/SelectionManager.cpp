@@ -84,7 +84,7 @@ void SelectionManager::ProcessPendingPick(const Camera* camera, AssetManager* as
 		0.1f, 100.0f);
 	glm::mat4 view = camera->GetViewMatrix();
 
-	// render hierarchies by unique root ancestor, but still include standalone leaf models (such as gizmos)
+	// render every model once; encode each node's own id (no root promotion)
 	auto& assetModels = assetManager->GetAssets(AssetType::MODEL);
 
 	m_pickingShader->Use();
@@ -93,41 +93,31 @@ void SelectionManager::ProcessPendingPick(const Camera* camera, AssetManager* as
 
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); // ensure solid fill for picking
 
-	std::unordered_set<std::uint32_t> processedRoots; // track processed root models to avoid duplicates
+	std::unordered_set<std::uint32_t> visited; // track processed root models to avoid duplicates
 	for (const auto& asset : assetModels)
 	{ // iterate through all models in the scene
 		// dynamically cast the asset to a Model object
-		auto modelComp = dynamic_cast<ModelComponent*>(asset.get());
-		if (!modelComp) continue; // skip if not a model
+		auto node = std::dynamic_pointer_cast<ModelComponent>(asset);
+		if (!node) continue; // skip if not a model
+		if (visited.count(node->GetId())) continue; // skip if already visited
 
-		// find the ancestor root model (or itself if standalone)
-		auto rootModel = modelComp->GetRootParent();
-		if (!rootModel) continue; // skip if no valid root model
-
-		// ensure each root model is processed only once
-		if (processedRoots.find(rootModel->GetId()) != processedRoots.end())
-			continue; // already processed this root model
-
-		// use a stack for depth-first traversal of the model hierarchy,
-		// starting from the root model, which represents the selectable asset,
-		// and all its children and descendants will be drawn with the same encoded id
-		const GLint encondedRootId = static_cast<GLint>(rootModel->GetId());
-		// mark this root model as processed
-		std::vector<std::shared_ptr<ModelComponent>> stack{ rootModel };
-
+		// draw this node and all its descendants with their own ids
+		std::vector<std::shared_ptr<ModelComponent>> stack{ node };
 		while (!stack.empty())
 		{ // perform DFS to process all child models in the hierarchy
-			auto& currentModel = stack.back();
+			auto& current = stack.back();
 			stack.pop_back();
-			if (!currentModel) continue;
+			if (!current) continue; // skip null nodes
 
-			// set model matrix and encoded id root uniform, then draw the model
-			m_pickingShader->SetMat4("model", currentModel->GetWorldModelMatrix());
-			m_pickingShader->SetInt("encodedId", encondedRootId);
-			currentModel->Draw(*m_pickingShader);
+			visited.insert(current->GetId()); // mark this node as visited
+
+			// set model matrix and encoded id uniform, then draw the model
+			m_pickingShader->SetMat4("model", current->GetWorldModelMatrix());
+			m_pickingShader->SetInt("encodedId", static_cast<GLint>(current->GetId()));
+			current->Draw(*m_pickingShader);
 
 			// push child models onto the stack for processing
-			for (const auto& child : currentModel->GetChildren()) { stack.push_back(child); }
+			for (const auto& child : current->GetChildren()) stack.push_back(child);
 		}
 	}
 
@@ -139,6 +129,9 @@ void SelectionManager::ProcessPendingPick(const Camera* camera, AssetManager* as
 	m_pickingPass.Unbind(); // unbind FBO after rendering
 	if (sRGBWasEnabled) glEnable(GL_FRAMEBUFFER_SRGB); // restore sRGB state if needed
 	m_pendingPick.reset(); // clear pending pick
+
+	// get current time for cycle-up logic
+	double currentTime = static_cast<double>(Core::GetInstance()->GetRenderer()->GetTime());
 
 	// a picked id of 0 means no selection, 
 	// i.e. the user clicked on empty space or there was no previous selection
@@ -163,22 +156,44 @@ void SelectionManager::ProcessPendingPick(const Camera* camera, AssetManager* as
 		return;
 	}
 
-	// if a gizmo model was picked, resolve it to its owning light
-	if (pickedAsset->GetType() == AssetType::MODEL)
+	// if a gizmo model was picked, resolve it to its owning light and bypass cycle-up
+	if (pickedAsset->GetType() == AssetType::MODEL &&
+		std::dynamic_pointer_cast<ModelComponent>(pickedAsset)->GetGizmoType() != GizmoType::NONE)
 	{
-		auto resolved = resolveGizmoToLight(assetManager, pickedAsset);
-		if (resolved)
-		{ // if it is indeed a gizmo, switch selection to the owning light
-			pickedAsset = resolved;
-		}
-		else
-		{ // otherwise, promote any picked model component (child or leaf) to its top-level parent
-			if (auto modelComp = std::dynamic_pointer_cast<ModelComponent>(pickedAsset))
-			{ // if it is a model component, get its root model (as the actual selectable asset)
-				auto rootModel = modelComp->GetRootParent();
-				if (rootModel) pickedAsset = rootModel;
+		if (auto resolved = resolveGizmoToLight(assetManager, pickedAsset))
+			pickedAsset = resolved; // switch to the owning light asset
+		// reset cycle state when a gizmo is selected
+		m_lastPickedId = 0;
+		m_lastPickTime = 0.0;
+	}
+	// cycle-up selection for models (non-gizmos)
+	else if (pickedAsset->GetType() == AssetType::MODEL)
+	{ // if the picked asset is a model, check for cycle-up conditions
+		auto modelComp = std::dynamic_pointer_cast<ModelComponent>(pickedAsset);
+		bool sameAsLast = (m_lastPickedId == modelComp->GetId());
+		bool withinThreshold = (currentTime - m_lastPickTime) <= CYCLE_TIME_THRESHOLD;
+
+		if (sameAsLast && withinThreshold)
+		{ // if picking the same model within the threshold, climb to parent if any
+			if (auto parent = modelComp->GetParent())
+			{ // if there is a parent, switch selection to it
+				pickedAsset = parent;
+				// update cycle state to the new parent to allow further climbing
+				m_lastPickedId = parent->GetId();
+				m_lastPickTime = currentTime;
 			}
 		}
+		else
+		{ // if picking a different model or outside the threshold, reset cycle state to the current node
+			m_lastPickedId = modelComp->GetId();
+			m_lastPickTime = currentTime;
+		}
+	}
+	else
+	{
+		// reset cycle state if not a model
+		m_lastPickedId = 0;
+		m_lastPickTime = 0.0;
 	}
 
 	// check if the newly picked asset is outline-eligible, i.e. a real model (not a gizmo)
@@ -189,7 +204,7 @@ void SelectionManager::ProcessPendingPick(const Camera* camera, AssetManager* as
 	{ // if the selection changed, update the selected asset id, clear outline if needed, and log the change
 		m_selectedAssetId = pickedAsset->GetId();
 
-		// if we are transitioning FROM outline-eligible TO non-eligible, clear stale outline mask
+		// clear outline mask when switching from an outline-eligible asset to a non-eligible one
 		if (previousOutlineEligible && !newOutlineEligible)
 			clearOutlineMask();
 
@@ -238,41 +253,30 @@ void SelectionManager::RenderPickingVisualization(const Camera* camera, AssetMan
 
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); // ensure solid fill for picking
 
-	std::unordered_set<std::uint32_t> processedRoots; // track processed root models to avoid duplicates
+	std::unordered_set<std::uint32_t> visited; // track processed models to avoid duplicates
 	for (const auto& asset : assetModels)
 	{ // iterate through all models in the scene
-		// dynamically cast the asset to a Model object
-		auto modelComp = dynamic_cast<ModelComponent*>(asset.get());
-		if (!modelComp) continue; // skip if not a model
+		auto node = std::dynamic_pointer_cast<ModelComponent>(asset);
+		if (!node) continue; // skip if not a model
+		if (visited.count(node->GetId())) continue; // skip if already visited
 
-		// find the ancestor root model (or itself if standalone)
-		auto rootModel = modelComp->GetRootParent();
-		if (!rootModel) continue; // skip if no valid root model
-
-		// ensure each root model is processed only once
-		if (processedRoots.find(rootModel->GetId()) != processedRoots.end())
-			continue; // already processed this root model
-
-		// use a stack for depth-first traversal of the model hierarchy,
-		// starting from the root model, which represents the selectable asset,
-		// and all its children and descendants will be drawn with the same encoded id
-		const GLint encondedRootId = static_cast<GLint>(rootModel->GetId());
-		// mark this root model as processed
-		std::vector<std::shared_ptr<ModelComponent>> stack{ rootModel };
-
+		// DFS to draw this node and all its descendants with their own ids
+		std::vector<std::shared_ptr<ModelComponent>> stack{ node };
 		while (!stack.empty())
 		{ // perform DFS to process all child models in the hierarchy
-			auto& currentModel = stack.back();
+			auto& current = stack.back();
 			stack.pop_back();
-			if (!currentModel) continue;
+			if (!current) continue; // skip null nodes
 
-			// set model matrix and encoded id root uniform, then draw the model
-			m_pickingShader->SetMat4("model", currentModel->GetWorldModelMatrix());
-			m_pickingShader->SetInt("encodedId", encondedRootId);
-			currentModel->Draw(*m_pickingShader);
+			visited.insert(current->GetId()); // mark this node as visited
+
+			// set model matrix and encoded id uniform, then draw the model
+			m_pickingShader->SetMat4("model", current->GetWorldModelMatrix());
+			m_pickingShader->SetInt("encodedId", static_cast<GLint>(current->GetId()));
+			current->Draw(*m_pickingShader);
 
 			// push child models onto the stack for processing
-			for (const auto& child : currentModel->GetChildren()) { stack.push_back(child); }
+			for (const auto& child : current->GetChildren()) stack.push_back(child);
 		}
 	}
 
@@ -444,12 +448,20 @@ void SelectionManager::RenderOutlineMask(const Camera* camera, AssetManager* ass
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f); // black means no outline (mask = 0)
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	// dynamically cast the selected asset to a Model object
-	auto model = dynamic_cast<ModelComponent*>(selected.get());
-	if (!model) return; // if the selected asset is not a model, return
+	// determine geometry to render for outline mask (light -> gizmo model, model -> itself)
+	std::shared_ptr<ModelComponent> model;
+	if (selected->GetType() == AssetType::LIGHT)
+	{ // if the selected asset is a light, get its gizmo model
+		// dynamically cast the asset to a Light object
+		auto light = static_cast<Light*>(selected.get());
+		model = light->GetGizmo(); // may be null if no gizmo exists
+	}
+	else if (selected->GetType() == AssetType::MODEL)
+	{ // if the selected asset is a model, use it directly
+		model = std::dynamic_pointer_cast<ModelComponent>(selected);
+	}
 
-	// promote to top-level parent to outline the whole composite
-	model = model->GetRootParent().get();
+	if (!model) { clearOutlineMask(); return; } // no model to outline, clear mask and return
 
 	// compute view and projection matrices from the camera
 	glm::mat4 projection = glm::perspective(
@@ -465,15 +477,14 @@ void SelectionManager::RenderOutlineMask(const Camera* camera, AssetManager* ass
 
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); // ensure solid fill for outline mask
 
-	// use a stack for depth-first traversal of the model hierarchy,
-	// starting from the root model, to draw all its children and descendants
-	// with the same encoded id of 1 (mask)
-	std::vector<std::shared_ptr<ModelComponent>> stack{ model->GetRootParent() };
+	// DFS traversal to render selected model and its children (no climb to root)
+	std::vector<std::shared_ptr<ModelComponent>> stack;
+	stack.push_back(model); // start from the selected model
 	while (!stack.empty())
-	{
+	{ // perform DFS to process all child models in the hierarchy
 		auto& current = stack.back();
 		stack.pop_back();
-		if (!current) continue;
+		if (!current) continue; // skip null nodes
 
 		// set model matrix and encoded id uniform, then draw the model
 		m_pickingShader->SetMat4("model", current->GetWorldModelMatrix());
@@ -595,16 +606,23 @@ void SelectionManager::clearOutlineMask()
 
 bool SelectionManager::isOutlineEligible(const std::shared_ptr<Asset>& asset) const
 {
-	// if no valid asset or not a model, return false
-	if (!asset) return false;
-	if (asset->GetType() != AssetType::MODEL) return false;
+	if (!asset) return false; // null asset is not outline-eligible
 
-	// dynamically cast the asset to a Model object
-	auto model = dynamic_cast<ModelComponent*>(asset.get());
-	if (!model) return false; // if cast fails, return false
+	if (asset->GetType() == AssetType::MODEL)
+	{ // outline any non-gizmo model
+		auto model = dynamic_cast<ModelComponent*>(asset.get());
+		if (!model) return false;
+		// outline any non-gizmo model
+		return model->GetGizmoType() == GizmoType::NONE;
+	}
+	if (asset->GetType() == AssetType::LIGHT)
+	{ // outline lights only via their gizmo if present
+		auto light = static_cast<Light*>(asset.get());
+		// outline via gizmo geometry if present
+		return light && light->GetGizmo() != nullptr;
+	}
 
-	// exclude gizmos (light representations) to keep outline only for actual scene geometry
-	return model->GetGizmoType() == GizmoType::NONE;
+	return false; // other asset types are not outline-eligible
 }
 
 std::uint32_t SelectionManager::readPixelId(GLint x, GLint y) const

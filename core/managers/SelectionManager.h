@@ -92,6 +92,10 @@ private:
 	GLuint m_width, m_height;
 	std::uint32_t m_selectedAssetId;
 
+	// cycle-up selection helpers
+	std::uint32_t m_lastPickedId{ 0 }; // id of last picked asset for cycling
+	double m_lastPickTime{ 0.0 }; // time of last pick
+
 	// picking attributes
 	RenderPass m_pickingPass;
 	std::shared_ptr<Shader> m_pickingShader;
@@ -124,5 +128,9 @@ private:
 	// If the given asset is a gizmo model, resolves it to the owning light asset
 	std::shared_ptr<Asset> resolveGizmoToLight(AssetManager* assetManager,
 											   const std::shared_ptr<Asset>& gizmoModel) const;
+
+	// Private Static Attributes
+	// -------------------------
+	static constexpr double CYCLE_TIME_THRESHOLD = 0.5; // time threshold in seconds for cycle-up selection
 
 };
