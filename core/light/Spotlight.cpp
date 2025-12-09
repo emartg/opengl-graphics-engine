@@ -7,7 +7,7 @@
 #include "Spotlight.h"
 
 #include "../model/Shape.h" // to create the gizmo for the Spotlight
-#include "../gizmos/HEX_PYRAMID.h" // the Spotlight gizmo is a hexagonal pyramid shape
+#include "../gizmos/HEX_PYRAMID.h" // the Spotlight gizmo is a hexagonal pyramid
 
 // Static Private Attributes
 // -------------------------

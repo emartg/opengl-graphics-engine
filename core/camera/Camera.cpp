@@ -1,11 +1,13 @@
 /*
 * Camera.cpp
-* This file implements the Camera class (a derived class of Asset),
+* This file implements the Camera class (a derived class of Node),
 * which is used to process input and calculate the corresponding Euler Angles,
 * vectors, and Matrices for use in OpenGL.
 */
 
 #include "Camera.h"
+
+#include "../texture/Texture.h"
 
 // Private Static Attributes
 // -------------------------
@@ -16,7 +18,7 @@ GLuint Camera::nCameras{}; // initialize the number of cameras in the scene to 0
 Camera::Camera(const std::string& name,
 			   const glm::vec3 position, const glm::vec3 up,
 			   const GLfloat yaw, const GLfloat pitch)
-	: Asset(name, AssetType::CAMERA),
+	: Node(name, NodeType::CAMERA), // set the node type to CAMERA
 	position{ position }, front{ FRONT }, worldUp{ up }, yaw{ yaw }, pitch{ pitch },
 	movementSpeed{ SPEED }, mouseSensitivity{ SENSITIVITY }, zoom{ ZOOM }
 {
@@ -53,16 +55,16 @@ void Camera::ProcessKeyboard(Camera_Movement direction, GLfloat deltaTime)
 	GLfloat velocity = movementSpeed * deltaTime;
 	switch (direction)
 	{
-		case FORWARD:
+		case Camera_Movement::FORWARD:
 			position += front * velocity;
 			break;
-		case BACKWARD:
+		case Camera_Movement::BACKWARD:
 			position -= front * velocity;
 			break;
-		case LEFT:
+		case Camera_Movement::LEFT:
 			position -= right * velocity;
 			break;
-		case RIGHT:
+		case Camera_Movement::RIGHT:
 			position += right * velocity;
 			break;
 	}

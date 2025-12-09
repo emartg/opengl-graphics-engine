@@ -13,20 +13,21 @@
 
 #pragma once
 
+#include <iostream>
 #include <string>
 #include <vector>
-#include <memory> // for smart pointers
 #include <algorithm>
+#include <memory> 
 
 #include <glad/glad.h> // holds all OpenGL type declarations
+#include <glm/glm.hpp>
 
-#include "RenderPass.h"
-
-#include "../model/ModelComponent.h"
-#include "../light/Light.h"
-#include "../light/DirectionalLight.h"
-#include "../light/PointLight.h"
-#include "../light/Spotlight.h"
+// Forward declaration of classes to avoid cyclic includes and allow virtual interfaces and pointers
+class Core;
+class Node;
+class RenderPass;
+class Shader;
+class Texture;
 
 enum class BufferType
 {
@@ -34,15 +35,12 @@ enum class BufferType
 	COLOR_DEPTH, COLOR_STENCIL, DEPTH_STENCIL, ALL
 };
 
-// forward declaration of the Core class to avoid circular dependency
-class Core;
-
 class Renderer
 {
 public:
 	// Public Types
 	// ------------
-	// struct to hold screen debug parameters to test screen-to-texture rendering (with default values)
+	// Struct that holds screen debug parameters to test screen-to-texture rendering (with default values)
 	struct ScreenDebugParams
 	{
 		GLuint debugMode{ 0 }; // 0: regular rendering, 1: solid color, 2: grid overlay, 3: inverted colors
@@ -74,7 +72,7 @@ public:
 	virtual bool ShouldClose() const = 0;
 
 	// Blocks the main thread until an event occurs 
-	// (mouse movement, key press, asset manipulation via GUI, etc.)
+	// (mouse movement, key press, node manipulation via GUI, etc.)
 	// Keeps held widgets responsive thanks to a reasonable throttle refresh rate
 	// when events are being processed
 	virtual void WaitForEvents() const = 0;
@@ -162,8 +160,8 @@ protected:
 
 	// Protected Methods
 	// -----------------
-	// Renders model components (leaf or composite - composite models will render their children recursively)
-	void RenderModel(const std::shared_ptr<ModelComponent>& model);
+	// Renders nodes (leaf or composite - composite models will render their children recursively)
+	void RenderModel(const std::shared_ptr<Node>& model);
 
 	// Ensures the offscreen render pass is created with the current window size
 	void EnsureOffscreenRenderPass();
@@ -183,9 +181,9 @@ protected:
 
 	// Dynamic environment map helpers
 	void UpdateDynamicEnvMaps();
-	void CaptureDynamicEnvMapForModel(const std::shared_ptr<ModelComponent>& model,
+	void CaptureDynamicEnvMapForModel(const std::shared_ptr<Node>& model,
 									  DynamicEnvMapEntry& entry);
 	void RenderSceneForEnvMapCapture(const glm::mat4& captureView, const glm::mat4& captureProjection,
-									 const std::shared_ptr<ModelComponent>& excludeModel);
+									 const std::shared_ptr<Node>& excludeModel);
 
 };

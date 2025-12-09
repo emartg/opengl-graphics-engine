@@ -6,14 +6,17 @@
 
 #pragma once
 
-#include <glad/glad.h> // holds all OpenGL type declarations
+#include <iostream>
 
+#include "Light.h"
+
+#include <glad/glad.h> // holds all OpenGL type declarations
 #include <glm/glm.hpp>
 #include <glm/gtc/constants.hpp> // for glm::pi
 #include <glm/gtc/quaternion.hpp>
 
-#include "Light.h"
-#include "../gizmos/Line.h"
+// Forward declaration of classes to avoid cyclic includes and allow virtual interfaces and pointers
+class Line;
 
 class DirectionalLight : public Light
 {

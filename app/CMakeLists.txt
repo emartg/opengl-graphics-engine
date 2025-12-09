@@ -13,7 +13,7 @@ set(SOURCES_DIR ${CMAKE_SOURCE_DIR}/app)
 file(GLOB_RECURSE SOURCES ${SOURCES_DIR}/*.cpp)
 
 # Collect ImGui backend source files
-set (IMGUI_BACKEND_DIR ${CMAKE_SOURCE_DIR}/external/include/ImGui/backends)
+set(IMGUI_BACKEND_DIR ${CMAKE_SOURCE_DIR}/external/include/ImGui/backends)
 file(GLOB IMGUI_BACKEND_SOURCES ${IMGUI_BACKEND_DIR}/*.cpp)
 
 # Collect ImGui source files
@@ -63,6 +63,6 @@ set(LIBS
 # Link libraries to the App executable
 target_link_libraries(App Core ${LIBS})
 
-# Copy asset files to the runtime directory
-message(STATUS "[APP] Copying asset files to the runtime directory...")
+# Copy node files to the runtime directory
+message(STATUS "[APP] Copying node files to the runtime directory...")
 file(INSTALL ${CMAKE_SOURCE_DIR}/resources/ DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/resources/)

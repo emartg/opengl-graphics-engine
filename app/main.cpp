@@ -3,16 +3,15 @@
 * This file is is an entry point to the App module. It serves as a simple test of the Core engine.
 * It follows these steps:
 * - It initializes the Core engine, which sets up OpenGL, window, and GUI.
-* - It compiles shaders and sets up the initial scene with a camera, lights, a shape,
-*	an Assimp model, and a skybox.
+* - It compiles shaders and sets up the initial scene.
 * - It runs the main loop of the engine, which renders the scene and handles events.
 * - It cleans up resources in the correct order and shuts down the engine.
 * Other important notes:
 * - GLFWRenderer is used as the renderer implementation for the Core engine.
-* - The application uses the Core library to manage assets, input, and scene management.
+* - The application uses the Core library to manage nodes, input, and scene management.
 */
 
-#include <memory> // for smart pointers
+#include <memory>
 #include <filesystem>
 
 #include "CUBE.h"
@@ -20,15 +19,17 @@
 #include "renderer/GLFWRenderer.h"
 
 #include "../core/Core.h"
+#include "../core/Node.h"
 #include "../core/camera/Camera.h"
+#include "../core/light/Light.h"
 #include "../core/light/DirectionalLight.h"
 #include "../core/light/PointLight.h"
 #include "../core/light/Spotlight.h"
-#include "../core/managers/AssetManager.h"
-#include "../core/model/ModelComponent.h"
-#include "../core/model/ModelComposite.h"
+#include "../core/model/Model.h"
 #include "../core/model/Shape.h"
 #include "../core/model/AssimpModel.h"
+#include "../core/managers/SceneManager.h"
+#include "../core/managers/NodeManager.h"
 
 // Defines hardcoded shader names and paths for the initial scene in a tuple
 std::tuple<
@@ -69,7 +70,7 @@ int main(int argc, char** argv)
 	auto [shaderNames, vertexShaderPaths, geometryShaderPaths, fragmentShaderPaths]
 		= DefineShadersInfo();
 
-	// create, compile, and link the shader programs, and add them to the engine's asset manager
+	// create, compile, and link the shader programs, and add them to the engine's node manager
 	if (engine->CompileShaders(shaderNames, vertexShaderPaths, fragmentShaderPaths))
 	{ // if the shaders are compiled successfully, print a success message
 		std::cout << "[SUCCESS::main] Shaders compiled successfully" << std::endl;
@@ -152,16 +153,16 @@ std::tuple<std::vector<std::string>,
 
 void SetupInitialScene(Core* engine)
 {
-	// retrieve the asset manager and scene manager from the engine
-	auto& assetManager = engine->GetAssetManager();
+	// retrieve the node manager and scene manager from the engine
+	auto& nodeManager = engine->GetNodeManager();
 	auto& sceneManager = engine->GetSceneManager();
 
-	// create a camera, set it as the active camera in the scene manager and add it to the asset manager
+	// create a camera, set it as the active camera in the scene manager and add it to the node manager
 	auto camera = std::make_shared<Camera>("Main Camera");
 	sceneManager->SetCamera(camera);
-	assetManager->AddAsset(std::move(camera));
+	nodeManager->AddNode(std::move(camera));
 
-	// create a directional light and its gizmo, then add them to the asset manager
+	// create a directional light and its gizmo, then add them to the node manager
 	auto directionalLight = std::make_shared<DirectionalLight>(
 		"Directional Light",
 		glm::vec3{ 0.1f }, // ambient color (default)
@@ -171,11 +172,11 @@ void SetupInitialScene(Core* engine)
 		glm::vec3{ -0.2f, -0.8, 0.5f } // direction (overridden)
 	);
 	auto& directionalLightGizmo = directionalLight->GetGizmo();
-	assetManager->AddAsset(std::move(directionalLight));
+	nodeManager->AddNode(std::move(directionalLight));
 	directionalLightGizmo->SetName(directionalLightGizmo->GetName());
-	assetManager->AddAsset(std::move(directionalLightGizmo));
+	nodeManager->AddNode(std::move(directionalLightGizmo));
 
-	// create a point light and its gizmo, then add them to the asset manager
+	// create a point light and its gizmo, then add them to the node manager
 	auto pointLight = std::make_shared<PointLight>(
 		"Point Light",
 		glm::vec3{ 0.1f }, // ambient color (default)
@@ -184,11 +185,11 @@ void SetupInitialScene(Core* engine)
 		glm::vec3{ -0.6f, 3.2f, 3.2f } // position (overridden)
 	);
 	auto& pointLightGizmo = pointLight->GetGizmo();
-	assetManager->AddAsset(std::move(pointLight));
+	nodeManager->AddNode(std::move(pointLight));
 	pointLightGizmo->SetName(pointLightGizmo->GetName());
-	assetManager->AddAsset(std::move(pointLightGizmo));
+	nodeManager->AddNode(std::move(pointLightGizmo));
 
-	// create a spotlight and its gizmo, then add them to the asset manager
+	// create a spotlight and its gizmo, then add them to the node manager
 	auto spotlight = std::make_shared<Spotlight>(
 		"Spotlight",
 		glm::vec3{ 0.1f }, // ambient color (override required although it is the default)
@@ -200,16 +201,16 @@ void SetupInitialScene(Core* engine)
 		glm::cos(glm::radians(32.5f)) // outer cut-off (overridden)
 	);
 	auto& spotlightGizmo = spotlight->GetGizmo();
-	assetManager->AddAsset(std::move(spotlight));
+	nodeManager->AddNode(std::move(spotlight));
 	spotlightGizmo->SetName(spotlightGizmo->GetName());
-	assetManager->AddAsset(std::move(spotlightGizmo));
+	nodeManager->AddNode(std::move(spotlightGizmo));
 
 	// create a composite model hierarchy mixing shapes and an Assimp model
-	auto rootGroup = std::make_shared<ModelComposite>("Root Group");
+	auto rootGroup = std::make_shared<Model>("Root Group");
 
 	// create a shapes group to hold multiple shapes as children of the root group
-	auto shapesGroup = std::make_shared<ModelComposite>(
-		"Shapes Group",
+	auto shapesGroup = std::make_shared<Model>(
+		"Shapes Group", NodeType::COMPOSITE_MODEL,
 		glm::vec3{ 1.0f }, // albedo (overriden)
 		glm::vec3{ 0.0f, 0.0f, -2.5f } // position (overriden - offset from root)
 	);
@@ -265,9 +266,9 @@ void SetupInitialScene(Core* engine)
 		// attach Assimp model under the root group
 		rootGroup->AddChild(assimpModel);
 
-		// register child assets for selection/picking (renderer skips them via parent check)
-		assetManager->AddAsset(assimpModel);
-		assetManager->AddAsset(markerShape);
+		// register child nodes for selection/picking (renderer skips them via parent check)
+		nodeManager->AddNode(assimpModel);
+		nodeManager->AddNode(markerShape);
 	}
 	else
 	{ // if the file does not exist, print an error message
@@ -278,11 +279,11 @@ void SetupInitialScene(Core* engine)
 	// attach the shapes group under the root group
 	rootGroup->AddChild(shapesGroup);
 
-	// register all nodes (including children) so they exist as assets
-	assetManager->AddAsset(rootGroup);
-	assetManager->AddAsset(shapesGroup);
-	assetManager->AddAsset(redShape);
-	assetManager->AddAsset(blueShape);
+	// register all nodes (including children) so they exist as nodes
+	nodeManager->AddNode(rootGroup);
+	nodeManager->AddNode(shapesGroup);
+	nodeManager->AddNode(redShape);
+	nodeManager->AddNode(blueShape);
 
 	// load an HDR skybox texture and set it as the skybox in the scene manager
 	std::string skyboxFilepath = "resources/textures/skyboxes/hdr/tiergarten_4k.hdr";

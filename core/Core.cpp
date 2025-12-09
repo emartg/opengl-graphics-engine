@@ -1,19 +1,28 @@
 /*
-* Core.cpp
-* This file implements the Core class, which is is responsible for initializing OpenGL,
+* Core.h
+* This file implments the Core class, which is is responsible for initializing OpenGL,
 * creating a window, and running the main loop.
-* It also manages the camera, the lighting and models that are to be rendered.
+* It also manages the various managers used in the engine and holds the renderer instance,
+* and is thus responsible for coordinating their interactions.
 * It is a Singleton class.
 */
 
-#include <iostream>
-#include <memory> // for smart pointers
-#include <algorithm>
-
 #include "Core.h"
 
+#include <iostream>
+#include <memory> 
+#include <algorithm>
+
+#include "shader/Shader.h"
+#include "texture/Texture.h"
 #include "gizmos/Line.h" // for directional light gizmo rendering
 #include "gizmos/TRIANGLE_FAN_PLANE.h" // for directional light gizmo rendering
+#include "camera/Camera.h"
+#include "managers/NodeManager.h"
+#include "managers/InputManager.h"
+#include "managers/SceneManager.h"
+#include "managers/SelectionManager.h"
+#include "renderer/Renderer.h"
 
 // Static Instance initialization
 // ------------------------------
@@ -23,7 +32,7 @@ Core* Core::m_instance{ nullptr };
 // ------------
 Core::Core()
 	: m_renderer{ nullptr },
-	m_assetManager{ std::make_shared<AssetManager>() },
+	m_nodeManager{ std::make_shared<NodeManager>() },
 	m_inputManager{ std::make_shared<InputManager>() },
 	m_sceneManager{ std::make_shared<SceneManager>() },
 	m_selectionManager{ std::make_shared<SelectionManager>() }
@@ -181,13 +190,13 @@ bool Core::CompileShaders(const std::vector<std::string>& shaderNames,
 				<< shaderNames[i] << std::endl;
 		}
 
-		// add the compiled shader to the asset manager
-		m_assetManager->AddAsset(std::move(shader));
+		// add the compiled shader to the node manager
+		m_nodeManager->AddNode(std::move(shader));
 
 		// if this is the picking shader, set it in the selection manager
 		if (shaderNames[i] == "Picking Shader" && m_selectionManager)
 		{
-			auto added = std::dynamic_pointer_cast<Shader>(m_assetManager->GetAssets(AssetType::SHADER).back());
+			auto added = std::dynamic_pointer_cast<Shader>(m_nodeManager->GetNodes(NodeType::SHADER).back());
 			m_selectionManager->SetPickingShader(added);
 			std::cout << "[INFO::CORE::CompileShaders] Picking Shader assigned to SelectionManager" << std::endl;
 		}
@@ -228,8 +237,8 @@ bool Core::CompileShaders(const std::vector<std::string>& shaderNames,
 				<< shaderNames[i] << std::endl;
 			return false;
 		}
-		// add the compiled shader to the asset manager
-		m_assetManager->AddAsset(std::move(shader));
+		// add the compiled shader to the node manager
+		m_nodeManager->AddNode(std::move(shader));
 	}
 
 	// if all shaders are compiled successfully, print a success message and return true
@@ -244,7 +253,7 @@ void Core::LoadTextures(const std::vector<std::string>& textureNames,
 	for (GLuint i{}; i < textureNames.size(); i++)
 	{
 		auto texture = std::make_shared<Texture>(textureNames[i], texturePaths[i], TextureType::DIFFUSE);
-		m_assetManager->AddAsset(std::move(texture));
+		m_nodeManager->AddNode(std::move(texture));
 	}
 }
 

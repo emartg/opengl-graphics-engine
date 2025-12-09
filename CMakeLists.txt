@@ -20,6 +20,7 @@ endif()
 # Add custom CMake modules path
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/modules)
 
+
 # Set output directory for archives, libraries, and runtime on different platforms
 if(WIN32)
 	set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)

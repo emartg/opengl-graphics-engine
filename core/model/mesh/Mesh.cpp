@@ -5,9 +5,13 @@
 
 #include "Mesh.h"
 
+#include "../../shader/Shader.h"
+#include "../../texture/Texture.h"
+
 // Constructors
 // ------------
-Mesh::Mesh(std::vector<Vertex> vertices, std::vector<GLuint> indices, std::vector<Texture> textures)
+Mesh::Mesh(std::vector<Vertex> vertices, std::vector<GLuint> indices,
+		   std::vector<std::shared_ptr<Texture>> textures)
 	: vertices{ vertices }, indices{ indices }, textures{ textures }
 {
 	setupMesh();
@@ -43,7 +47,7 @@ void Mesh::BindTextures(Shader& shader) const
 	// tag-based selection of known texture types before relying on legacy filename-based hints
 	for (GLuint i{}; i < textures.size(); ++i)
 	{
-		const TextureType type = textures[i].GetTextureType(); // retrieve texture type
+		const TextureType type = textures[i]->GetTextureType(); // retrieve texture type
 		// assign indices based on texture type (if not already assigned)
 		if (albedoIdx < 0 && (type == TextureType::DIFFUSE || type == TextureType::AMBIENT))
 			albedoIdx = static_cast<GLint>(i);
@@ -55,9 +59,9 @@ void Mesh::BindTextures(Shader& shader) const
 	for (GLuint i = 0; i < textures.size() && (albedoIdx < 0 || metallicIdx < 0); ++i)
 	{
 		// skip already assigned textures
-		if (textures[i].GetTextureType() != TextureType::UNDEFINED) continue;
+		if (textures[i]->GetTextureType() != TextureType::UNDEFINED) continue;
 
-		const std::string& n = textures[i].GetName(); // retrieve texture name
+		const std::string n = textures[i]->GetName(); // retrieve texture name
 
 		// infer type from name substrings (if not already assigned)
 		if (albedoIdx < 0 && (n.find("albedo") != std::string::npos ||
@@ -74,9 +78,9 @@ void Mesh::BindTextures(Shader& shader) const
 
 	// bind fixed slots first (if found)
 	if (albedoIdx >= 0) // if an albedo map was found, bind it to the expected unit 
-		textures[albedoIdx].Bind(albedoMapUnit);
+		textures[albedoIdx]->Bind(albedoMapUnit);
 	if (metallicIdx >= 0) // if a metallic map was found, bind it to the expected unit
-		textures[metallicIdx].Bind(metallicMapUnit);
+		textures[metallicIdx]->Bind(metallicMapUnit);
 
 	// bind all remaining textures to subsequent units (always available for future shaders)
 	for (GLuint i = 0; i < textures.size(); ++i)
@@ -84,7 +88,7 @@ void Mesh::BindTextures(Shader& shader) const
 		// if this texture is already bound to a fixed slot, skip it
 		if (static_cast<GLint>(i) == albedoIdx || static_cast<GLint>(i) == metallicIdx) continue;
 		// otherwise, bind the texture to the next available unit
-		textures[i].Bind(nextAvailableUnit++);
+		textures[i]->Bind(nextAvailableUnit++);
 	}
 
 	// communicate presence of known maps to the shader (per-mesh, which is more performant)

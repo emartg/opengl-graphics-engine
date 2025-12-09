@@ -4,10 +4,11 @@
 * - Mouse cursor position and scroll input
 */
 
-
 #pragma once
 
+#include <iostream>
 #include <string>
+
 #include <glad/glad.h> // holds all OpenGL type declarations
 
 class InputManager

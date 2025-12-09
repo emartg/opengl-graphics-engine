@@ -1,25 +1,26 @@
 /*
 * Camera.h
-* This file defines the Camera class (a derived class of Asset),
+* This file defines the Camera class (a derived class of Node),
 * which is used to process input and calculate the corresponding Euler Angles,
 * vectors, and Matrices for use in OpenGL.
 */
 
 #pragma once
 
+#include "../Node.h"
+
+#include <iostream>
 #include <algorithm>
 
 #include <glad/glad.h> // holds all OpenGL type declarations
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-#include "../Asset.h"
-
 // Enumeration that defines several possible options for camera movement. 
 // Used as abstraction to stay away from window-system specific input methods
-enum Camera_Movement { FORWARD, BACKWARD, LEFT, RIGHT };
+enum class Camera_Movement { FORWARD, BACKWARD, LEFT, RIGHT };
 
-class Camera : public Asset
+class Camera : public Node
 {
 public:
 	// Constructors
@@ -45,6 +46,11 @@ public:
 
 	// Deallocates all the resources of the camera
 	void DeallocateResources() override {}
+
+	// Does not draw anything by default, as a camera has no visual representation
+	virtual void Draw() const override {}
+	// Does not draw anything by default, as a camera has no visual representation
+	virtual void Draw(const Shader& shader) const override {}
 
 	// Getters
 	glm::vec3 GetPosition() const { return position; }

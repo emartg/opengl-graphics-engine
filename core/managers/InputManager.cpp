@@ -6,8 +6,11 @@
 
 #include "InputManager.h"
 
+#include "SceneManager.h"
+#include "SelectionManager.h"
 #include "../Core.h"
 #include "../camera/Camera.h"
+#include "../renderer/Renderer.h"
 
 // Constructor
 // -----------
@@ -74,9 +77,9 @@ void InputManager::KeyCallback(std::string input)
 		std::cout << "[INFO::INPUTMANAGER::KeyCallback] Escape key pressed, closing window..." << std::endl;
 	}
 	else if (input == "DEL_PRESSED")
-	{ // if the 'Delete' key is pressed, delete the currently selected asset (if any)
+	{ // if the 'Delete' key is pressed, delete the currently selected node (if any)
 		auto selectionMgr = core->GetSelectionManager();
-		selectionMgr->DeleteSelected(core->GetAssetManager().get());
+		selectionMgr->DeleteSelected(core->GetNodeManager().get());
 		std::cout << "[INFO::INPUTMANAGER::KeyCallback] Delete pressed, attempting to delete selection..." << std::endl;
 	}
 	else

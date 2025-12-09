@@ -12,6 +12,23 @@
 #include "ImGuiFileDialog.h"
 #include "../CUBE.h"
 
+#include "../core/Core.h"
+#include "../core/Node.h"
+#include "../core/camera/Camera.h"
+#include "../core/light/Light.h"
+#include "../core/light/DirectionalLight.h"
+#include "../core/light/PointLight.h"
+#include "../core/light/Spotlight.h"
+#include "../core/model/Model.h"
+#include "../core/model/Shape.h"
+#include "../core/model/AssimpModel.h"
+#include "../core/managers/NodeManager.h"
+#include "../core/managers/SelectionManager.h"
+#include "../core/managers/SceneManager.h"
+#include "../core/managers/InputManager.h"
+#include "../core/renderer/Renderer.h"
+#include "../core/utils/random/Random.h"
+
 // Static Attributes
 // -----------------
 bool GUI::s_proportionalScaling{ true }; // propertional scaling flag is true by default
@@ -304,7 +321,7 @@ void GUI::drawInformationWindow()
 	// set the Information Window to be expanded (i.e. not minimized)
 	ImGui::SetNextWindowCollapsed(false, ImGuiCond_Appearing);
 
-	{ // show a window that displays all information about the assets in the scene
+	{ // show a window that displays all information about the nodes in the scene
 		// begin the Information window
 		ImGui::PushFont(m_boldFont);
 		ImGui::Begin("OBJECT INFORMATION", nullptr,
@@ -608,8 +625,8 @@ void GUI::drawDebugWindow()
 
 void GUI::drawPropertiesWindow()
 {
-	// get the asset manager from the Core instance
-	auto& assetManager = Core::GetInstance()->GetAssetManager();
+	// get the node manager from the Core instance
+	auto& nodeManager = Core::GetInstance()->GetNodeManager();
 	auto& selectionManager = Core::GetInstance()->GetSelectionManager();
 
 	// set initial size and position for the Properties Window
@@ -618,36 +635,36 @@ void GUI::drawPropertiesWindow()
 	// set the Properties Window to be expanded (i.e. not minimized)
 	ImGui::SetNextWindowCollapsed(false, ImGuiCond_Appearing);
 
-	{ // show a window that allows the user to change the properties of the assets in the scene
+	{ // show a window that allows the user to change the properties of the nodes in the scene
 		// begin the Properties window
 		ImGui::PushFont(m_boldFont);
 		ImGui::Begin("PROPERTIES", nullptr,
 					 ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoFocusOnAppearing);
 		ImGui::PopFont();
 
-		auto selected = selectionManager->GetSelectedAsset(assetManager.get());
+		auto selected = selectionManager->GetSelectedNode(nodeManager.get());
 		if (!selected)
-		{ // if no asset is selected, display a message
-			ImGui::Text("No asset selected.\nClick an object to inspect it.");
+		{ // if no node is selected, display a message
+			ImGui::Text("No node selected.\nClick an object to inspect it.");
 		}
 		else
-		{ // if an asset is selected, display its name and ID, and draw its controls
-			// display the name and ID of the selected asset in bold font
+		{ // if an node is selected, display its name and ID, and draw its controls
+			// display the name and ID of the selected node in bold font
 			ImGui::PushFont(m_boldFont);
 			ImGui::TextWrapped("%s\n(ID: %u)", selected->GetName().c_str(), selected->GetId());
 			ImGui::PopFont();
 
 			ImGui::Separator();
 
-			// depending on the type of the selected asset, draw the corresponding controls
-			if (selected->GetType() == AssetType::LIGHT)
-			{ // if the selected asset is a light, draw the light controls
+			// depending on the type of the selected node, draw the corresponding controls
+			if (selected->GetNodeType() == NodeType::LIGHT)
+			{ // if the selected node is a light, draw the light controls
 				auto light = dynamic_cast<Light*>(selected.get()); // dynamic cast to Light object
 				drawLightControls(light); // draw the light controls
 			}
-			else if (selected->GetType() == AssetType::MODEL)
-			{ // if the selected asset is a model, draw the model controls
-				auto model = dynamic_cast<ModelComponent*>(selected.get()); // dynamic cast to Model object
+			else if (selected->GetNodeType() == NodeType::MODEL)
+			{ // if the selected node is a model, draw the model controls
+				auto model = dynamic_cast<Node*>(selected.get()); // dynamic cast to Model object
 				// only draw the model controls if the model is not a gizmo, since that is handled
 				// with its corresponding light controls above
 				if (model->GetGizmoType() == GizmoType::NONE)
@@ -657,8 +674,8 @@ void GUI::drawPropertiesWindow()
 			ImGui::Separator();
 
 			if (ImGui::Button("Delete", ImVec2(ImGui::GetContentRegionAvail().x, 0.0f)))
-			{ // if the Delete button is clicked, delete the selected asset via the selection manager
-				selectionManager->DeleteSelected(assetManager.get());
+			{ // if the Delete button is clicked, delete the selected node via the selection manager
+				selectionManager->DeleteSelected(nodeManager.get());
 			}
 		}
 
@@ -787,8 +804,8 @@ void GUI::drawCreationWindow()
 
 void GUI::drawCamerasInformation() const
 {
-	// get the asset manager and scene manager from the Core instance
-	auto& assetManager = Core::GetInstance()->GetAssetManager();
+	// get the node manager and scene manager from the Core instance
+	auto& nodeManager = Core::GetInstance()->GetNodeManager();
 	auto& sceneManager = Core::GetInstance()->GetSceneManager();
 
 	ImGui::PushFont(m_boldFont);
@@ -796,7 +813,7 @@ void GUI::drawCamerasInformation() const
 	ImGui::PopFont();
 
 	// get the number of cameras in the scene
-	unsigned int nCameras = assetManager->GetNCameras();
+	unsigned int nCameras = nodeManager->GetNCameras();
 	// display the number of cameras in the scene
 	ImGui::PushFont(m_boldFont);
 	ImGui::Text("\nNumber of Cameras in the scene: %d", nCameras);
@@ -804,12 +821,12 @@ void GUI::drawCamerasInformation() const
 
 	// display the attributes of each camera in the scene
 	ImGui::Text("\nCameras in the scene:");
-	std::for_each(assetManager->GetAssets("CAMERA").begin(),
-				  assetManager->GetAssets("CAMERA").end(),
-				  [&](const std::shared_ptr<Asset>& asset)
-	{ // iterate over all cameras in the asset manager and display their attributes
-		// dynamically cast the asset to a Camera object
-		auto camera = dynamic_cast<Camera*>(asset.get());
+	std::for_each(nodeManager->GetNodes("CAMERA").begin(),
+				  nodeManager->GetNodes("CAMERA").end(),
+				  [&](const std::shared_ptr<Node>& node)
+	{ // iterate over all cameras in the node manager and display their attributes
+		// dynamically cast the node to a Camera object
+		auto camera = dynamic_cast<Camera*>(node.get());
 
 		// use PushID to create a unique ID for each camera
 		ImGui::PushID(camera->GetName().c_str());
@@ -850,18 +867,18 @@ void GUI::drawCamerasInformation() const
 
 void GUI::drawLightsInformation() const
 {
-	// get the asset manager from the Core instance
-	auto& assetManager = Core::GetInstance()->GetAssetManager();
+	// get the node manager from the Core instance
+	auto& nodeManager = Core::GetInstance()->GetNodeManager();
 
 	ImGui::PushFont(m_boldFont);
 	ImGui::Text("LIGHTS");
 	ImGui::PopFont();
 
 	// get the number of lights and of each type of light in the scene
-	unsigned int nLights = assetManager->GetNLights();
-	unsigned int nDirectionalLights = assetManager->GetNDirectionalLights();
-	unsigned int nPointLights = assetManager->GetNPointLights();
-	unsigned int nSpotlights = assetManager->GetNSpotlights();
+	unsigned int nLights = nodeManager->GetNLights();
+	unsigned int nDirectionalLights = nodeManager->GetNDirectionalLights();
+	unsigned int nPointLights = nodeManager->GetNPointLights();
+	unsigned int nSpotlights = nodeManager->GetNSpotlights();
 	// display the number of lights and each type of light in the scene
 	ImGui::PushFont(m_boldFont);
 	ImGui::Text("\nNumber of Lights in the scene: %d", nLights);
@@ -872,12 +889,12 @@ void GUI::drawLightsInformation() const
 
 	// display the attributes of each light in the scene
 	ImGui::Text("\nLights in the scene:");
-	std::for_each(assetManager->GetAssets("LIGHT").begin(),
-				  assetManager->GetAssets("LIGHT").end(),
-				  [&](const std::shared_ptr<Asset>& asset)
-	{ // iterate over all lights in the asset manager and display their attributes
-		// dynamically cast the asset to a Light object
-		auto light = dynamic_cast<Light*>(asset.get());
+	std::for_each(nodeManager->GetNodes("LIGHT").begin(),
+				  nodeManager->GetNodes("LIGHT").end(),
+				  [&](const std::shared_ptr<Node>& node)
+	{ // iterate over all lights in the node manager and display their attributes
+		// dynamically cast the node to a Light object
+		auto light = dynamic_cast<Light*>(node.get());
 
 		switch (light->GetLightType()) // switch based on the type of the light
 		{
@@ -911,7 +928,7 @@ void GUI::drawLightsInformation() const
 			break;
 			case LightType::POINT_LIGHT: // if the Light is a PointLight
 			{
-				// dynamically cast the asset to a PointLight object
+				// dynamically cast the node to a PointLight object
 				auto pointLight = dynamic_cast<PointLight*>(light);
 
 				// use PushID to create a unique ID for each light 
@@ -935,7 +952,7 @@ void GUI::drawLightsInformation() const
 			break;
 			case LightType::SPOTLIGHT: // if the Light is a Spotlight
 			{
-				// dynamically cast the asset to a Spotlight object
+				// dynamically cast the node to a Spotlight object
 				auto spotlight = dynamic_cast<Spotlight*>(light);
 
 				// use PushID to create a unique ID for each spotlight 
@@ -977,17 +994,17 @@ void GUI::drawLightsInformation() const
 
 void GUI::drawModelsInformation() const
 {
-	// get the asset manager from the Core instance
-	auto& assetManager = Core::GetInstance()->GetAssetManager();
+	// get the node manager from the Core instance
+	auto& nodeManager = Core::GetInstance()->GetNodeManager();
 
 	ImGui::PushFont(m_boldFont);
 	ImGui::Text("MODELS");
 	ImGui::PopFont();
 
 	// get the number of models and of each type of model in the scene
-	unsigned int nModels = assetManager->GetNModels();
-	unsigned int nAssimpModels = assetManager->GetNAssimpModels();
-	unsigned int nShapes = assetManager->GetNShapes();
+	unsigned int nModels = nodeManager->GetNModels();
+	unsigned int nAssimpModels = nodeManager->GetNAssimpModels();
+	unsigned int nShapes = nodeManager->GetNShapes();
 	// display the number of models and each type of model in the scene
 	ImGui::PushFont(m_boldFont);
 	ImGui::Text("\nNumber of Models in the scene: %d", nModels);
@@ -996,13 +1013,12 @@ void GUI::drawModelsInformation() const
 	ImGui::Text("\tNumber of Shapes in the scene: %d", nShapes);
 
 	// display the attributes of each model in the scene
-	ImGui::Text("\nModels in the scene:");
-	std::for_each(assetManager->GetAssets("MODEL").begin(),
-				  assetManager->GetAssets("MODEL").end(),
-				  [&](const std::shared_ptr<Asset>& asset)
-	{ // iterate over all models in the asset manager and display their attributes
-		// dynamically cast the asset to a Model object
-		auto model = dynamic_cast<ModelComponent*>(asset.get());
+	ImGui::Text("\nNodes in the scene:");
+	std::for_each(nodeManager->GetNodes("MODEL").begin(), nodeManager->GetNodes("MODEL").end(),
+				  [&](const std::shared_ptr<Node>& node)
+	{ // iterate over all models in the node manager and display their attributes
+		// dynamically cast the node to a Model object
+		auto model = dynamic_cast<Node*>(node.get());
 
 		ImGui::PushID(model->GetName().c_str()); // use PushID to create a unique ID for each model
 
@@ -1011,7 +1027,7 @@ void GUI::drawModelsInformation() const
 		ImGui::TextWrapped("\t%s", model->GetName().c_str());
 		ImGui::PopFont();
 
-		if (model->GetModelType() == ModelType::SHAPE_MODEL)
+		if (model->GetNodeType() == NodeType::SHAPE_MODEL)
 		{ // only display the albedo color for shapes
 			ImGui::Text("\t\tColor: (%.3f, %.3f, %.3f)",
 						model->GetAlbedo().x,
@@ -1216,13 +1232,13 @@ void GUI::drawSpotlightControls(Spotlight* spotlight)
 	ImGui::PopID(); // use PopID to end the unique ID scope
 }
 
-void GUI::drawModelControls(ModelComponent* model)
+void GUI::drawModelControls(Node* model)
 {
 	// use PushID to create a unique ID for each model
 	ImGui::PushID(model->GetName().c_str());
 
 	// only if the model is a shape, display the color picker
-	if (model->GetModelType() == ModelType::SHAPE_MODEL)
+	if (model->GetNodeType() == NodeType::SHAPE_MODEL)
 	{
 		// get the color of the model
 		glm::vec3 color = model->GetAlbedo();
@@ -1256,7 +1272,7 @@ void GUI::drawModelControls(ModelComponent* model)
 	// get the scale of the model
 	glm::vec3 scale = model->GetScale();
 	// if the model is a shape, use a faster speed for scaling, otherwise use the default speed
-	float speed = model->GetModelType() == ModelType::SHAPE_MODEL ? SCALE_SPEED * 5.0f : SCALE_SPEED;
+	float speed = model->GetNodeType() == NodeType::SHAPE_MODEL ? SCALE_SPEED * 5.0f : SCALE_SPEED;
 	// create a control for the x, y, and z components of the model's scale
 	if (drawVec3Control("Scale", scale, true, // is the scale control
 						MIN_SCALE_VALUE, MAX_SCALE_VALUE,
@@ -1271,8 +1287,8 @@ void GUI::drawModelControls(ModelComponent* model)
 
 void GUI::drawCreateDirectionalLightPopup()
 {
-	// get the asset manager from the Core instance
-	auto& assetManager = Core::GetInstance()->GetAssetManager();
+	// get the node manager from the Core instance
+	auto& nodeManager = Core::GetInstance()->GetNodeManager();
 
 	if (ImGui::BeginPopupModal("Create Directional Light", NULL, ImGuiWindowFlags_AlwaysAutoResize))
 	{ // if the popup is open
@@ -1309,9 +1325,9 @@ void GUI::drawCreateDirectionalLightPopup()
 		if (ImGui::Button("Create", ImVec2(POPUP_BUTTON_WIDTH, 0.0f)))
 		{ // if the Create button is clicked
 			// get the number of models and directional lights in the scene
-			std::string nModels = std::to_string(assetManager->GetNModels());
+			std::string nModels = std::to_string(nodeManager->GetNModels());
 			std::string nDirectionalLights =
-				std::to_string(assetManager->GetNDirectionalLights());
+				std::to_string(nodeManager->GetNDirectionalLights());
 
 			// create a new directional light with the specified properties
 			auto newDirectionalLight = std::make_shared<DirectionalLight>(
@@ -1322,11 +1338,11 @@ void GUI::drawCreateDirectionalLightPopup()
 			// get the gizmo of the new directional light before creating the light to the engine
 			auto newDirectionalLightGizmo = newDirectionalLight->GetGizmo();
 			// add the new directional light to the engine
-			assetManager->AddAsset(std::move(newDirectionalLight));
+			nodeManager->AddNode(std::move(newDirectionalLight));
 			// set the name of the gizmo to include the model number
 			newDirectionalLightGizmo->SetName(newDirectionalLightGizmo->GetName() + " (Model " + nModels + ")");
 			// create the gizmo of the new directional light to the engine
-			assetManager->AddAsset(std::move(newDirectionalLightGizmo));
+			nodeManager->AddNode(std::move(newDirectionalLightGizmo));
 
 			ImGui::CloseCurrentPopup(); // close the popup
 		}
@@ -1344,8 +1360,8 @@ void GUI::drawCreateDirectionalLightPopup()
 
 void GUI::drawCreatePointLightPopup()
 {
-	// get the asset manager from the Core instance
-	auto& assetManager = Core::GetInstance()->GetAssetManager();
+	// get the node manager from the Core instance
+	auto& nodeManager = Core::GetInstance()->GetNodeManager();
 
 	if (ImGui::BeginPopupModal("Create Point Light", NULL, ImGuiWindowFlags_AlwaysAutoResize))
 	{ // if the popup is open
@@ -1378,8 +1394,8 @@ void GUI::drawCreatePointLightPopup()
 		if (ImGui::Button("Create", ImVec2(POPUP_BUTTON_WIDTH, 0.0f)))
 		{ // if the Create button is clicked
 			// get the number of models and point lights in the scene
-			std::string nModels = std::to_string(assetManager->GetNModels());
-			std::string nPointLights = std::to_string(assetManager->GetNPointLights());
+			std::string nModels = std::to_string(nodeManager->GetNModels());
+			std::string nPointLights = std::to_string(nodeManager->GetNPointLights());
 
 			// create a new point light with the specified properties
 			auto newPointLight = std::make_shared<PointLight>(
@@ -1390,11 +1406,11 @@ void GUI::drawCreatePointLightPopup()
 			// get the gizmo of the new point light before creating the light to the engine
 			auto newPointLightGizmo = newPointLight->GetGizmo();
 			// add the new point light to the engine
-			assetManager->AddAsset(std::move(newPointLight));
+			nodeManager->AddNode(std::move(newPointLight));
 			// set the name of the gizmo to include the model number
 			newPointLightGizmo->SetName(newPointLightGizmo->GetName() + " (Model " + nModels + ")");
 			// create the gizmo of the new point light to the engine
-			assetManager->AddAsset(std::move(newPointLightGizmo));
+			nodeManager->AddNode(std::move(newPointLightGizmo));
 
 			ImGui::CloseCurrentPopup(); // close the popup
 		}
@@ -1411,8 +1427,8 @@ void GUI::drawCreatePointLightPopup()
 
 void GUI::drawCreateSpotlightPopup()
 {
-	// get the asset manager from the Core instance
-	auto& assetManager = Core::GetInstance()->GetAssetManager();
+	// get the node manager from the Core instance
+	auto& nodeManager = Core::GetInstance()->GetNodeManager();
 
 	if (ImGui::BeginPopupModal("Create Spotlight", NULL, ImGuiWindowFlags_AlwaysAutoResize))
 	{ // if the popup is open
@@ -1463,8 +1479,8 @@ void GUI::drawCreateSpotlightPopup()
 		if (ImGui::Button("Create", ImVec2(POPUP_BUTTON_WIDTH, 0.0f)))
 		{ // if the Create button is clicked
 			// get the number of models and spotlights in the scene
-			std::string nModels = std::to_string(assetManager->GetNModels());
-			std::string nSpotlights = std::to_string(assetManager->GetNSpotlights());
+			std::string nModels = std::to_string(nodeManager->GetNModels());
+			std::string nSpotlights = std::to_string(nodeManager->GetNSpotlights());
 
 			// create a new spotlight with the specified properties
 			auto newSpotlight = std::make_shared<Spotlight>(
@@ -1475,11 +1491,11 @@ void GUI::drawCreateSpotlightPopup()
 			// get the gizmo of the new spotlight before creating the light to the engine
 			auto newSpotlightGizmo = newSpotlight->GetGizmo();
 			// add the new spotlight to the engine
-			assetManager->AddAsset(std::move(newSpotlight));
+			nodeManager->AddNode(std::move(newSpotlight));
 			// set the name of the gizmo to include the model number
 			newSpotlightGizmo->SetName(newSpotlightGizmo->GetName() + " (Model " + nModels + ")");
 			// create the gizmo of the new spotlight to the engine
-			assetManager->AddAsset(std::move(newSpotlightGizmo));
+			nodeManager->AddNode(std::move(newSpotlightGizmo));
 
 			ImGui::CloseCurrentPopup(); // close the popup
 		}
@@ -1497,8 +1513,8 @@ void GUI::drawCreateSpotlightPopup()
 
 void GUI::drawCreateCubeShapePopup()
 {
-	// get the asset manager from the Core instance
-	auto& assetManager = Core::GetInstance()->GetAssetManager();
+	// get the node manager from the Core instance
+	auto& nodeManager = Core::GetInstance()->GetNodeManager();
 
 	if (ImGui::BeginPopupModal("Create Cube Shape", NULL, ImGuiWindowFlags_AlwaysAutoResize))
 	{ // if the popup is open
@@ -1537,7 +1553,7 @@ void GUI::drawCreateCubeShapePopup()
 		if (ImGui::Button("Create", ImVec2(POPUP_BUTTON_WIDTH, 0.0f)))
 		{ // if the Create button is clicked
 			// get the number of models in the scene
-			std::string nModels = std::to_string(assetManager->GetNModels());
+			std::string nModels = std::to_string(nodeManager->GetNModels());
 
 			// create a cube shape with the specified properties
 			auto newCubeShape = std::make_shared<Shape>(
@@ -1549,7 +1565,7 @@ void GUI::drawCreateCubeShapePopup()
 			newCubeShape->SetRotationInEulerAngles(m_newRotation);
 
 			// add the new cube shape to the engine
-			assetManager->AddAsset(std::move(newCubeShape));
+			nodeManager->AddNode(std::move(newCubeShape));
 
 			ImGui::CloseCurrentPopup(); // close the popup
 		}
@@ -1567,8 +1583,8 @@ void GUI::drawCreateCubeShapePopup()
 
 void GUI::drawImportModelPopup()
 {
-	// get the asset manager from the Core instance
-	auto& assetManager = Core::GetInstance()->GetAssetManager();
+	// get the node manager from the Core instance
+	auto& nodeManager = Core::GetInstance()->GetNodeManager();
 
 	ImGuiIO& io = ImGui::GetIO(); // get ImGui IO object for display size
 
@@ -1593,7 +1609,7 @@ void GUI::drawImportModelPopup()
 			std::replace(filePathName.begin(), filePathName.end(), '\\', '/');
 
 			// get the current number of models in the scene
-			std::string nModels = std::to_string(assetManager->GetNModels());
+			std::string nModels = std::to_string(nodeManager->GetNModels());
 
 			// create a new model from the selected file
 			auto newAssimpModel = std::make_shared<AssimpModel>(
@@ -1602,7 +1618,7 @@ void GUI::drawImportModelPopup()
 			);
 
 			// add the new model to the engine
-			assetManager->AddAsset(std::move(newAssimpModel));
+			nodeManager->AddNode(std::move(newAssimpModel));
 		}
 
 		ImGuiFileDialog::Instance()->Close(); // close the file dialog
@@ -2106,23 +2122,23 @@ bool GUI::drawFloatControl(const std::string& label, float& value,
 	return value_changed;
 }
 
-void GUI::drawRemoveAssetButton(Asset* asset, std::vector<uint32_t>& assetsToRemoveIds,
-								const std::string& label, float buttonWidth, float buttonHeight)
+void GUI::drawRemoveNodeButton(Node* node, std::vector<uint32_t>& nodesToRemoveIds,
+							   const std::string& label, float buttonWidth, float buttonHeight)
 {
 	std::string buttonLabel = "Remove " + label;
 	if (ImGui::Button(buttonLabel.c_str(), ImVec2(buttonWidth, buttonHeight)))
 	{ // if the button is clicked
-		if (asset->GetType() == AssetType::LIGHT)
-		{ // if the asset is a light, also add its gizmo to the list of assets to remove
-			auto light = static_cast<Light*>(asset); // cast the asset to a Light pointer
+		if (node->GetNodeType() == NodeType::LIGHT)
+		{ // if the node is a light, also add its gizmo to the list of nodes to remove
+			auto light = static_cast<Light*>(node); // cast the node to a Light pointer
 			auto& gizmo = light->GetGizmo(); // get the gizmo from the light
 			uint32_t gizmoId = gizmo->GetId(); // get the id of the gizmo
-			assetsToRemoveIds.push_back(gizmoId); // add the gizmo id to the list of assets to remove
-			std::cout << "[INFO::GUI::drawRemoveAssetButton] "
+			nodesToRemoveIds.push_back(gizmoId); // add the gizmo id to the list of nodes to remove
+			std::cout << "[INFO::GUI::drawRemoveNodeButton] "
 				<< gizmo->GetName() << " with ID " << gizmoId << " marked for removal" << std::endl;
 		}
-		assetsToRemoveIds.push_back(asset->GetId()); // add the asset id to the list of assets to remove
-		std::cout << "[INFO::GUI::drawRemoveAssetButton] "
-			<< asset->GetName() << " with ID " << asset->GetId() << " marked for removal" << std::endl;
+		nodesToRemoveIds.push_back(node->GetId()); // add the node id to the list of nodes to remove
+		std::cout << "[INFO::GUI::drawRemoveNodeButton] "
+			<< node->GetName() << " with ID " << node->GetId() << " marked for removal" << std::endl;
 	}
 }

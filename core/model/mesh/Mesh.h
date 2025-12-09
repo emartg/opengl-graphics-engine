@@ -5,16 +5,20 @@
 
 #pragma once
 
+#include <iostream>
 #include <string>
 #include <vector>
+#include <memory>
 
 #include <glad/glad.h> // holds all OpenGL type declarations
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-#include "../../shader/Shader.h"
-#include "../../texture/Texture.h"
+// Forward declaration of classes to avoid cyclic includes and allow virtual interfaces and pointers
+class Shader;
+class Texture;
 
+// Struct that defines a single vertex of the mesh
 struct Vertex
 {
 	glm::vec3 Position;
@@ -27,7 +31,8 @@ class Mesh
 public:
 	// Constructors
 	// ------------
-	Mesh(std::vector<Vertex> vertices, std::vector<GLuint> indices, std::vector<Texture> textures);
+	Mesh(std::vector<Vertex> vertices, std::vector<GLuint> indices,
+		 std::vector<std::shared_ptr<Texture>> textures);
 
 	// Public Methods
 	// --------------
@@ -48,7 +53,7 @@ private:
 	// ------------------
 	std::vector<Vertex> vertices;
 	std::vector<GLuint> indices;
-	std::vector<Texture> textures;
+	std::vector<std::shared_ptr<Texture>> textures;
 	GLuint VAO, VBO, EBO;
 
 	// Private Methods

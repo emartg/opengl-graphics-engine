@@ -1,7 +1,7 @@
 #version 420 core
 out vec4 FragColor;
 
-uniform int encodedId; // 24-bit safe (Asset ids reasonably small)
+uniform int encodedId; // 24-bit safe (node ids are reasonably small)
 
 // Encode an integer ID into an RGB color
 vec3 encodeId(int id)

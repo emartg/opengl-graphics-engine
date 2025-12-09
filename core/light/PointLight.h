@@ -6,11 +6,12 @@
 
 #pragma once
 
-#include <glad/glad.h> // holds all OpenGL type declarations
-
-#include <glm/glm.hpp>
-
 #include "Light.h"
+
+#include <iostream>
+
+#include <glad/glad.h> // holds all OpenGL type declarations
+#include <glm/glm.hpp>
 
 class PointLight : public Light
 {

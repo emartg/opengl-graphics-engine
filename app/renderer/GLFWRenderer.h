@@ -6,15 +6,15 @@
 
 #pragma once
 
+#include "../core/renderer/Renderer.h"
+
 #include <iostream>
 
 #define GLFW_INCLUDE_NONE // prevent GLFW from including OpenGL headers
 #include <GLFW/glfw3.h>
 
-#include "../gui/Gui.h"
-
-#include "../core/renderer/Renderer.h"
-#include "../core/managers/InputManager.h"
+// Forward declaration of classes to avoid cyclic includes and allow virtual interfaces and pointers
+class GUI;
 
 class GLFWRenderer : public Renderer
 {

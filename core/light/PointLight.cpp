@@ -7,7 +7,7 @@
 #include "PointLight.h"
 
 #include "../model/Shape.h" // to create the gizmo for the PointLight
-#include "../gizmos/DECAHEDRON.h" // the Point Light gizmo is a decahedron shape
+#include "../gizmos/DECAHEDRON.h" // the Point Light gizmo is a decahedron
 
 // Static Private Attributes
 // -------------------------

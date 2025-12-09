@@ -1,24 +1,25 @@
 /*
 * Shader.h
-* This file defines the Shader class (a derived class of Asset),
+* This file defines the Shader class (a derived class of Node),
 * which is used to read, compile, and link shaders to a shader program.
 * It also provides methods to set uniform variables in the shader program.
 */
 
 #pragma once
 
+#include "../Node.h"
+
+#include <iostream>
 #include <string>
 #include <fstream>
 #include <sstream>
-#include <iostream>
+#include <memory>
 
 #include <glad/glad.h> // holds all OpenGL type declarations
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include "../Asset.h"
-
-class Shader : public Asset
+class Shader : public Node
 {
 public:
 	// Public Attributes
@@ -51,6 +52,11 @@ public:
 
 	// Deallocates all the resources of the shader
 	void DeallocateResources() override { glDeleteProgram(shaderProgramId); }
+
+	// Does not draw anything by default, as a shader program has no visual representation
+	virtual void Draw() const override {}
+	// Does not draw anything by default, as a shader program has no visual representation
+	virtual void Draw(const Shader& shader) const override {}
 
 	// Compiles the shader from the source code and links it to a shader program
 	// Returns true if compilation and linking were successful, false otherwise

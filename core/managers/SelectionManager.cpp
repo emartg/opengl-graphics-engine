@@ -5,19 +5,20 @@
 
 #include "SelectionManager.h"
 
-#include "AssetManager.h"
+#include "NodeManager.h"
 #include "../Core.h"
-#include "../model/ModelComponent.h"
+#include "../Node.h"
 #include "../shader/Shader.h"
 #include "../camera/Camera.h"
 #include "../light/Light.h"
 #include "../light/DirectionalLight.h"
 #include "../light/PointLight.h"
 #include "../light/Spotlight.h"
+#include "../renderer/Renderer.h"
 
 // Constructor
 // -----------
-SelectionManager::SelectionManager() : m_width{ 0 }, m_height{ 0 }, m_selectedAssetId{ 0 } {}
+SelectionManager::SelectionManager() : m_width{ 0 }, m_height{ 0 }, m_selectedNodeId{ 0 } {}
 
 // Destructor
 // ----------
@@ -39,10 +40,10 @@ void SelectionManager::QueuePick(GLdouble mouseX, GLdouble mouseY,
 	m_pendingPick = glm::ivec2(static_cast<GLint>(mouseX), oglY);
 }
 
-void SelectionManager::ProcessPendingPick(const Camera* camera, AssetManager* assetManager)
+void SelectionManager::ProcessPendingPick(const Camera* camera, NodeManager* nodeManager)
 {
-	// if there is no pending pick, no camera, or no asset manager, return
-	if (!m_pendingPick.has_value() || !camera || !assetManager) return;
+	// if there is no pending pick, no camera, or no node manager, return
+	if (!m_pendingPick.has_value() || !camera || !nodeManager) return;
 	if (!m_pickingShader)
 	{ // if no picking shader is set, print a warning and return
 		std::cerr << "[WARNING::SELECTIONMANAGER::ProcessPendingPick] Picking shader not set" << std::endl;
@@ -55,17 +56,17 @@ void SelectionManager::ProcessPendingPick(const Camera* camera, AssetManager* as
 		ensurePickingPass();
 
 	// previous selection state (for change detection and logging)
-	std::uint32_t previousSelectedId = m_selectedAssetId;
-	std::shared_ptr<Asset> previousAsset;
+	std::uint32_t previousSelectedId = m_selectedNodeId;
+	std::shared_ptr<Node> previousNode;
 	std::string previousSelectedName;
 	if (previousSelectedId != 0)
 	{ // if there was a previous selection, get its name for logging
-		previousAsset = findAssetById(assetManager, previousSelectedId);
-		if (previousAsset) // if the asset still exists, get its name
-			previousSelectedName = previousAsset->GetName();
+		previousNode = findNodeById(nodeManager, previousSelectedId);
+		if (previousNode) // if the node still exists, get its name
+			previousSelectedName = previousNode->GetName();
 	}
 	// check if previous selection was outline-eligible, i.e. a real model (not a gizmo)
-	bool previousOutlineEligible = isOutlineEligible(previousAsset);
+	bool previousOutlineEligible = isOutlineEligible(previousNode);
 
 	m_pickingPass.Bind(); // bind picking FBO
 	// ensure sRGB transform does not corrupt ID encoding (if enabled elsewhere)
@@ -85,7 +86,7 @@ void SelectionManager::ProcessPendingPick(const Camera* camera, AssetManager* as
 	glm::mat4 view = camera->GetViewMatrix();
 
 	// render every model once; encode each node's own id (no root promotion)
-	auto& assetModels = assetManager->GetAssets(AssetType::MODEL);
+	auto& modelNodes = nodeManager->GetNodes(NodeType::MODEL);
 
 	m_pickingShader->Use();
 	m_pickingShader->SetMat4("view", view);
@@ -94,15 +95,15 @@ void SelectionManager::ProcessPendingPick(const Camera* camera, AssetManager* as
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); // ensure solid fill for picking
 
 	std::unordered_set<std::uint32_t> visited; // track processed root models to avoid duplicates
-	for (const auto& asset : assetModels)
+	for (const auto& node : modelNodes)
 	{ // iterate through all models in the scene
-		// dynamically cast the asset to a Model object
-		auto node = std::dynamic_pointer_cast<ModelComponent>(asset);
-		if (!node) continue; // skip if not a model
-		if (visited.count(node->GetId())) continue; // skip if already visited
+		// dynamically cast the node to a Model object
+		auto modelNode = std::dynamic_pointer_cast<Node>(node);
+		if (!modelNode) continue; // skip if not a model
+		if (visited.count(modelNode->GetId())) continue; // skip if already visited
 
 		// draw this node and all its descendants with their own ids
-		std::vector<std::shared_ptr<ModelComponent>> stack{ node };
+		std::vector<std::shared_ptr<Node>> stack{ modelNode };
 		while (!stack.empty())
 		{ // perform DFS to process all child models in the hierarchy
 			auto& current = stack.back();
@@ -139,37 +140,37 @@ void SelectionManager::ProcessPendingPick(const Camera* camera, AssetManager* as
 	{ // if no object was picked, log deselection (if any) and clear selection if needed
 		if (previousSelectedId != 0)
 		{ // if there was a previous selection, log its deselection
-			std::cout << "[INFO::SELECTIONMANAGER::ProcessPendingPick] Deselected asset "
+			std::cout << "[INFO::SELECTIONMANAGER::ProcessPendingPick] Deselected node "
 				<< previousSelectedName << " (ID " << previousSelectedId << ")" << std::endl;
 		}
 		ClearSelection(); // ensures stale outline mask cannot persist
 		return;
 	}
 
-	// if the user clicked on an object, find the corresponding asset by id
-	auto pickedAsset = findAssetById(assetManager, pickedId);
-	if (!pickedAsset)
-	{ // if no asset with that id exists, print a warning and clear selection (also clears outline mask)
-		std::cout << "[WARNING::SELECTIONMANAGER::ProcessPendingPick] No asset with textureId "
+	// if the user clicked on an object, find the corresponding node by id
+	auto pickedNode = findNodeById(nodeManager, pickedId);
+	if (!pickedNode)
+	{ // if no node with that id exists, print a warning and clear selection (also clears outline mask)
+		std::cout << "[WARNING::SELECTIONMANAGER::ProcessPendingPick] No node with textureId "
 			<< pickedId << std::endl;
 		ClearSelection(); // ensures stale outline mask cannot persist
 		return;
 	}
 
 	// if a gizmo model was picked, resolve it to its owning light and bypass cycle-up
-	if (pickedAsset->GetType() == AssetType::MODEL &&
-		std::dynamic_pointer_cast<ModelComponent>(pickedAsset)->GetGizmoType() != GizmoType::NONE)
+	if (pickedNode->GetNodeType() == NodeType::MODEL &&
+		std::dynamic_pointer_cast<Node>(pickedNode)->GetGizmoType() != GizmoType::NONE)
 	{
-		if (auto resolved = resolveGizmoToLight(assetManager, pickedAsset))
-			pickedAsset = resolved; // switch to the owning light asset
+		if (auto resolved = resolveGizmoToLight(nodeManager, pickedNode))
+			pickedNode = resolved; // switch to the owning light node
 		// reset cycle state when a gizmo is selected
 		m_lastPickedId = 0;
 		m_lastPickTime = 0.0;
 	}
 	// cycle-up selection for models (non-gizmos)
-	else if (pickedAsset->GetType() == AssetType::MODEL)
-	{ // if the picked asset is a model, check for cycle-up conditions
-		auto modelComp = std::dynamic_pointer_cast<ModelComponent>(pickedAsset);
+	else if (pickedNode->GetNodeType() == NodeType::MODEL)
+	{ // if the picked node is a model, check for cycle-up conditions
+		auto modelComp = std::dynamic_pointer_cast<Node>(pickedNode);
 		bool sameAsLast = (m_lastPickedId == modelComp->GetId());
 		bool withinThreshold = (currentTime - m_lastPickTime) <= CYCLE_TIME_THRESHOLD;
 
@@ -177,7 +178,7 @@ void SelectionManager::ProcessPendingPick(const Camera* camera, AssetManager* as
 		{ // if picking the same model within the threshold, climb to parent if any
 			if (auto parent = modelComp->GetParent())
 			{ // if there is a parent, switch selection to it
-				pickedAsset = parent;
+				pickedNode = parent;
 				// update cycle state to the new parent to allow further climbing
 				m_lastPickedId = parent->GetId();
 				m_lastPickTime = currentTime;
@@ -196,34 +197,34 @@ void SelectionManager::ProcessPendingPick(const Camera* camera, AssetManager* as
 		m_lastPickTime = 0.0;
 	}
 
-	// check if the newly picked asset is outline-eligible, i.e. a real model (not a gizmo)
-	bool newOutlineEligible = isOutlineEligible(pickedAsset);
+	// check if the newly picked node is outline-eligible, i.e. a real model (not a gizmo)
+	bool newOutlineEligible = isOutlineEligible(pickedNode);
 
 	// update only if changed
-	if (pickedAsset->GetId() != previousSelectedId)
-	{ // if the selection changed, update the selected asset id, clear outline if needed, and log the change
-		m_selectedAssetId = pickedAsset->GetId();
+	if (pickedNode->GetId() != previousSelectedId)
+	{ // if the selection changed, update the selected node id, clear outline if needed, and log the change
+		m_selectedNodeId = pickedNode->GetId();
 
-		// clear outline mask when switching from an outline-eligible asset to a non-eligible one
+		// clear outline mask when switching from an outline-eligible node to a non-eligible one
 		if (previousOutlineEligible && !newOutlineEligible)
 			clearOutlineMask();
 
 		if (previousSelectedId != 0)
 		{ // if switching from another selection, print implicit deselection as well
-			std::cout << "[INFO::SELECTIONMANAGER::ProcessPendingPick] Deselected asset "
+			std::cout << "[INFO::SELECTIONMANAGER::ProcessPendingPick] Deselected node "
 				<< previousSelectedName << " (ID " << previousSelectedId << ")" << std::endl;
 		}
 		// print info about the new selection
-		std::cout << "[INFO::SELECTIONMANAGER::ProcessPendingPick] Selected asset "
-			<< pickedAsset->GetName() << " (ID " << m_selectedAssetId << ")" << std::endl;
+		std::cout << "[INFO::SELECTIONMANAGER::ProcessPendingPick] Selected node "
+			<< pickedNode->GetName() << " (ID " << m_selectedNodeId << ")" << std::endl;
 	}
-	// clicking same selected asset leads to no logging or state change
+	// clicking same selected node leads to no logging or state change
 }
 
-void SelectionManager::RenderPickingVisualization(const Camera* camera, AssetManager* assetManager)
+void SelectionManager::RenderPickingVisualization(const Camera* camera, NodeManager* nodeManager)
 {
-	// if shader, camera, or asset manager are missing, return
-	if (!camera || !m_pickingShader || !assetManager) return;
+	// if shader, camera, or node manager are missing, return
+	if (!camera || !m_pickingShader || !nodeManager) return;
 	if (m_width == 0 || m_height == 0) return; // if the window is zero-sized, return
 	if (m_pickingPass.GetFboId() == 0) // ensure FBO exists
 		ensurePickingPass();
@@ -246,7 +247,7 @@ void SelectionManager::RenderPickingVisualization(const Camera* camera, AssetMan
 	glm::mat4 view = camera->GetViewMatrix();
 
 	// render all selectable models (including gizmos - lights themselves are not drawn; their gizmos are)
-	auto& assetModels = assetManager->GetAssets(AssetType::MODEL);
+	auto& modelNodes = nodeManager->GetNodes(NodeType::MODEL);
 	m_pickingShader->Use();
 	m_pickingShader->SetMat4("view", view);
 	m_pickingShader->SetMat4("projection", projection);
@@ -254,14 +255,15 @@ void SelectionManager::RenderPickingVisualization(const Camera* camera, AssetMan
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); // ensure solid fill for picking
 
 	std::unordered_set<std::uint32_t> visited; // track processed models to avoid duplicates
-	for (const auto& asset : assetModels)
+	for (const auto& node : modelNodes)
 	{ // iterate through all models in the scene
-		auto node = std::dynamic_pointer_cast<ModelComponent>(asset);
-		if (!node) continue; // skip if not a model
+		// dynamically cast the node to a Model object
+		auto modelNode = std::dynamic_pointer_cast<Node>(node);
+		if (!modelNode) continue; // skip if not a model
 		if (visited.count(node->GetId())) continue; // skip if already visited
 
 		// DFS to draw this node and all its descendants with their own ids
-		std::vector<std::shared_ptr<ModelComponent>> stack{ node };
+		std::vector<std::shared_ptr<Node>> stack{ modelNode };
 		while (!stack.empty())
 		{ // perform DFS to process all child models in the hierarchy
 			auto& current = stack.back();
@@ -284,47 +286,47 @@ void SelectionManager::RenderPickingVisualization(const Camera* camera, AssetMan
 	if (sRGBWasEnabled) glEnable(GL_FRAMEBUFFER_SRGB); // restore sRGB state if needed
 }
 
-std::shared_ptr<Asset> SelectionManager::GetSelectedAsset(AssetManager* assetManager) const
+std::shared_ptr<Node> SelectionManager::GetSelectedNode(NodeManager* nodeManager) const
 {
-	if (m_selectedAssetId == 0) return nullptr; // no selection, return null
-	// find and return the selected asset by id (may be null if id is invalid)
-	return findAssetById(assetManager, m_selectedAssetId);
+	if (m_selectedNodeId == 0) return nullptr; // no selection, return null
+	// find and return the selected node by id (may be null if id is invalid)
+	return findNodeById(nodeManager, m_selectedNodeId);
 }
 
 void SelectionManager::ClearSelection()
 {
 	// if there was a selection, clear it
-	if (m_selectedAssetId != 0) m_selectedAssetId = 0;
+	if (m_selectedNodeId != 0) m_selectedNodeId = 0;
 	clearOutlineMask(); // explicit mask clear to prevent stale outline persistence
 }
 
-void SelectionManager::DeleteSelected(AssetManager* assetManager)
+void SelectionManager::DeleteSelected(NodeManager* nodeManager)
 {
-	if (m_selectedAssetId == 0) return; // no selection, nothing to delete
+	if (m_selectedNodeId == 0) return; // no selection, nothing to delete
 
-	// find the selected asset by id and check validity, if invalid clear selection and return
-	auto asset = findAssetById(assetManager, m_selectedAssetId);
-	if (!asset) { ClearSelection(); return; }
+	// find the selected node by id and check validity, if invalid clear selection and return
+	auto node = findNodeById(nodeManager, m_selectedNodeId);
+	if (!node) { ClearSelection(); return; }
 
 	// if deleting an outlined model, clear outline before removal (avoid one-frame ghost)
-	bool wasOutlineEligible = isOutlineEligible(asset);
+	bool wasOutlineEligible = isOutlineEligible(node);
 	if (wasOutlineEligible)
 		clearOutlineMask();
 
-	if (asset->GetType() == AssetType::LIGHT)
-	{ // if the selected asset is a light, also remove its gizmo model (if any)
-		// dynamically cast the asset to a Light object
-		auto light = static_cast<Light*>(asset.get());
-		// if the light has a gizmo model, remove it from the asset manager
+	if (node->GetNodeType() == NodeType::LIGHT)
+	{ // if the selected node is a light, also remove its gizmo model (if any)
+		// dynamically cast the node to a Light object
+		auto light = static_cast<Light*>(node.get());
+		// if the light has a gizmo model, remove it from the node manager
 		if (auto& gizmo = light->GetGizmo())
-			assetManager->RemoveAssetById(gizmo->GetId());
+			nodeManager->RemoveNodeById(gizmo->GetId());
 	}
 
-	// remove the selected asset itself and print info
-	assetManager->RemoveAssetById(asset->GetId());
-	std::cout << "[INFO::SELECTIONMANAGER::DeleteSelected] Deleted selected asset ID "
-		<< m_selectedAssetId << std::endl;
-	m_selectedAssetId = 0;
+	// remove the selected node itself and print info
+	nodeManager->RemoveNodeById(node->GetId());
+	std::cout << "[INFO::SELECTIONMANAGER::DeleteSelected] Deleted selected node ID "
+		<< m_selectedNodeId << std::endl;
+	m_selectedNodeId = 0;
 }
 
 void SelectionManager::Resize(GLuint width, GLuint height)
@@ -405,16 +407,16 @@ GLuint SelectionManager::GetPickingTextureId() const
 	return m_pickingPass.GetTextureId(0);
 }
 
-void SelectionManager::RenderOutlineMask(const Camera* camera, AssetManager* assetManager)
+void SelectionManager::RenderOutlineMask(const Camera* camera, NodeManager* nodeManager)
 {
-	if (m_selectedAssetId == 0) return; // no selection, nothing to outline, return
-	if (!camera || !assetManager) return; // if no camera or asset manager, return
+	if (m_selectedNodeId == 0) return; // no selection, nothing to outline, return
+	if (!camera || !nodeManager) return; // if no camera or node manager, return
 	if (m_width == 0 || m_height == 0) return; // if the window is zero-sized, return
 
-	// find the selected asset; if it vanished, clear mask (avoid ghost) and return
-	auto selected = findAssetById(assetManager, m_selectedAssetId);
+	// find the selected node; if it vanished, clear mask (avoid ghost) and return
+	auto selected = findNodeById(nodeManager, m_selectedNodeId);
 	if (!selected)
-	{ // if the selected asset no longer exists, clear mask (if any) and return
+	{ // if the selected node no longer exists, clear mask (if any) and return
 		clearOutlineMask();
 		return;
 	}
@@ -449,16 +451,16 @@ void SelectionManager::RenderOutlineMask(const Camera* camera, AssetManager* ass
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	// determine geometry to render for outline mask (light -> gizmo model, model -> itself)
-	std::shared_ptr<ModelComponent> model;
-	if (selected->GetType() == AssetType::LIGHT)
-	{ // if the selected asset is a light, get its gizmo model
-		// dynamically cast the asset to a Light object
+	std::shared_ptr<Node> model;
+	if (selected->GetNodeType() == NodeType::LIGHT)
+	{ // if the selected node is a light, get its gizmo model
+		// dynamically cast the node to a Light object
 		auto light = static_cast<Light*>(selected.get());
 		model = light->GetGizmo(); // may be null if no gizmo exists
 	}
-	else if (selected->GetType() == AssetType::MODEL)
-	{ // if the selected asset is a model, use it directly
-		model = std::dynamic_pointer_cast<ModelComponent>(selected);
+	else if (selected->GetNodeType() == NodeType::MODEL)
+	{ // if the selected node is a model, use it directly
+		model = std::dynamic_pointer_cast<Node>(selected);
 	}
 
 	if (!model) { clearOutlineMask(); return; } // no model to outline, clear mask and return
@@ -478,7 +480,7 @@ void SelectionManager::RenderOutlineMask(const Camera* camera, AssetManager* ass
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); // ensure solid fill for outline mask
 
 	// DFS traversal to render selected model and its children (no climb to root)
-	std::vector<std::shared_ptr<ModelComponent>> stack;
+	std::vector<std::shared_ptr<Node>> stack;
 	stack.push_back(model); // start from the selected model
 	while (!stack.empty())
 	{ // perform DFS to process all child models in the hierarchy
@@ -604,25 +606,25 @@ void SelectionManager::clearOutlineMask()
 	glViewport(prevViewport[0], prevViewport[1], prevViewport[2], prevViewport[3]);
 }
 
-bool SelectionManager::isOutlineEligible(const std::shared_ptr<Asset>& asset) const
+bool SelectionManager::isOutlineEligible(const std::shared_ptr<Node>& node) const
 {
-	if (!asset) return false; // null asset is not outline-eligible
+	if (!node) return false; // null node is not outline-eligible
 
-	if (asset->GetType() == AssetType::MODEL)
+	if (node->GetNodeType() == NodeType::MODEL)
 	{ // outline any non-gizmo model
-		auto model = dynamic_cast<ModelComponent*>(asset.get());
+		auto model = dynamic_cast<Node*>(node.get());
 		if (!model) return false;
 		// outline any non-gizmo model
 		return model->GetGizmoType() == GizmoType::NONE;
 	}
-	if (asset->GetType() == AssetType::LIGHT)
+	if (node->GetNodeType() == NodeType::LIGHT)
 	{ // outline lights only via their gizmo if present
-		auto light = static_cast<Light*>(asset.get());
+		auto light = static_cast<Light*>(node.get());
 		// outline via gizmo geometry if present
 		return light && light->GetGizmo() != nullptr;
 	}
 
-	return false; // other asset types are not outline-eligible
+	return false; // other node types are not outline-eligible
 }
 
 std::uint32_t SelectionManager::readPixelId(GLint x, GLint y) const
@@ -642,33 +644,32 @@ std::uint32_t SelectionManager::readPixelId(GLint x, GLint y) const
 	return id; // return the decoded id from RGB
 }
 
-std::shared_ptr<Asset> SelectionManager::findAssetById(AssetManager* assetManager,
-													   std::uint32_t id) const
+std::shared_ptr<Node> SelectionManager::findNodeById(NodeManager* nodeManager, std::uint32_t id) const
 {
-	for (auto type : { AssetType::MODEL, AssetType::LIGHT })
-	{ // iterate over asset types to search (models and lights)
-		// search all assets of the current type for a matching id
-		for (const auto& asset : assetManager->GetAssets(type))
-			if (asset && asset->GetId() == id) // if found, return the asset
-				return asset;
+	for (auto type : { NodeType::MODEL, NodeType::LIGHT })
+	{ // iterate over node types to search (models and lights)
+		// search all nodes of the current type for a matching id
+		for (const auto& node : nodeManager->GetNodes(type))
+			if (node && node->GetId() == id) // if found, return the node
+				return node;
 	}
 	return nullptr; // if not found, return null
 }
 
-std::shared_ptr<Asset> SelectionManager::resolveGizmoToLight(AssetManager* assetManager,
-															 const std::shared_ptr<Asset>& gizmoModel) const
+std::shared_ptr<Node> SelectionManager::resolveGizmoToLight(NodeManager* nodeManager,
+															const std::shared_ptr<Node>& gizmoModel) const
 {
 	// a light owns a gizmo model whose pointer id we can match
-	for (const auto& asset : assetManager->GetAssets(AssetType::LIGHT))
+	for (const auto& node : nodeManager->GetNodes(NodeType::LIGHT))
 	{ // iterate through all lights in the scene
-		// dynamically cast the asset to a Light object
-		auto light = dynamic_cast<Light*>(asset.get());
+		// dynamically cast the node to a Light object
+		auto light = dynamic_cast<Light*>(node.get());
 		if (!light) continue; // skip if not a light
 
 		// if the light's gizmo matches the given model, return the light
 		auto& gizmo = light->GetGizmo();
 		if (gizmo && gizmo->GetId() == gizmoModel->GetId())
-			return asset; // return owning light
+			return node; // return owning light
 	}
 	return nullptr; // if no owning light found, return null
 }

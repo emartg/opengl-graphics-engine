@@ -6,6 +6,9 @@
 
 #pragma once
 
+#include <iostream>
+#include <stdexcept>
+
 #include <glad/glad.h>
 #include <glm/glm.hpp>
 

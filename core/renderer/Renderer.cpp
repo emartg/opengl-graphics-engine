@@ -14,9 +14,22 @@
 
 #include "Renderer.h"
 
-#include "../Core.h"
 #include "SKYBOX.h" // skybox vertex data
 #include "SCREEN_QUAD.h" // screen-quad vertex data
+#include "RenderPass.h"
+#include "../Core.h"
+#include "../Node.h"
+#include "../gizmos/Line.h"
+#include "../camera/Camera.h"
+#include "../light/Light.h"
+#include "../light/DirectionalLight.h"
+#include "../light/PointLight.h"
+#include "../light/Spotlight.h"
+#include "../shader/Shader.h"
+#include "../texture/Texture.h"
+#include "../managers/NodeManager.h"
+#include "../managers/SceneManager.h"
+#include "../managers/SelectionManager.h"
 
 // Constructor
 // -----------
@@ -192,7 +205,7 @@ void Renderer::FrameStartConfig()
 	UpdateDynamicEnvMaps();
 
 	// process pending picking request before main scene rendering
-	core->GetSelectionManager()->ProcessPendingPick(camera.get(), core->GetAssetManager().get());
+	core->GetSelectionManager()->ProcessPendingPick(camera.get(), core->GetNodeManager().get());
 
 	// bind offscreen FBO and clear it
 	m_mainRenderPass->Bind();
@@ -209,8 +222,8 @@ void Renderer::RenderScene()
 		return;
 	}
 
-	// get the asset manager, scene manager, and camera from the core instance
-	auto& assetManager = core->GetAssetManager();
+	// get the node manager, scene manager, and camera from the core instance
+	auto& nodeManager = core->GetNodeManager();
 	auto& sceneManager = core->GetSceneManager();
 	auto& camera = sceneManager->GetCamera();
 
@@ -235,11 +248,11 @@ void Renderer::RenderScene()
 	glm::mat3 invViewRot = glm::transpose(glm::mat3(view));
 
 	// set the view and projection matrices for each shader program
-	auto& shaders = assetManager->GetAssets(AssetType::SHADER);
-	for (const auto& asset : shaders)
+	auto& shaders = nodeManager->GetNodes(NodeType::SHADER);
+	for (const auto& node : shaders)
 	{
-		// dynamically cast the asset to a Shader object
-		auto shader = std::dynamic_pointer_cast<Shader>(asset);
+		// dynamically cast the node to a Shader object
+		auto shader = std::dynamic_pointer_cast<Shader>(node);
 
 		shader->Use();
 		shader->SetMat4("view", view);
@@ -264,13 +277,13 @@ void Renderer::RenderScene()
 	m_refractiveShader->SetInt("skybox", 0); // set skybox texture unit to 0
 
 	// set light uniforms
-	auto& lights = assetManager->GetAssets(AssetType::LIGHT);
+	auto& lights = nodeManager->GetNodes(NodeType::LIGHT);
 	GLint pointLightIdx{}, spotlightIdx{}, directionalLightIdx{};
 	std::for_each(lights.begin(), lights.end(),
-				  [&](const std::shared_ptr<Asset>& asset)
+				  [&](const std::shared_ptr<Node>& node)
 	{
-		// dynamically cast the asset to a Light object
-		auto light = dynamic_cast<Light*>(asset.get());
+		// dynamically cast the node to a Light object
+		auto light = dynamic_cast<Light*>(node.get());
 
 		switch (light->GetLightType()) // switch based on the light type
 		{
@@ -426,16 +439,16 @@ void Renderer::RenderScene()
 	m_assimpModelShader->SetInt("nSpotlights", spotlightIdx);
 
 	// iterate over the vector of models and render them
-	auto& models = assetManager->GetAssets(AssetType::MODEL);
-	for (const auto& asset : models)
+	auto& models = nodeManager->GetNodes("MODEL");
+	for (const auto& node : models)
 	{
-		// dynamically cast the asset to a ModelComponent object
-		auto model = std::dynamic_pointer_cast<ModelComponent>(asset);
-		if (!model) continue; // if the cast fails, skip to the next asset
+		// dynamically cast the node to a Node object
+		auto model = std::dynamic_pointer_cast<Node>(node);
+		if (!model) continue; // if the cast fails, skip to the next node
 
 		if (model->GetParent()) continue; // skip child models (they are rendered by their parent composite)
 
-		RenderModel(model); // render the model component
+		RenderModel(model); // render the node
 	}
 
 	// set the polygon mode to line for the directional light gizmo lines
@@ -443,10 +456,10 @@ void Renderer::RenderScene()
 
 	// iterate over the vector of lights and render the directional light gizmo lines
 	std::for_each(lights.begin(), lights.end(),
-				  [&](const std::shared_ptr<Asset>& asset)
+				  [&](const std::shared_ptr<Node>& node)
 	{
-		// dynamically cast the asset to a Light object
-		auto light = dynamic_cast<Light*>(asset.get());
+		// dynamically cast the node to a Light object
+		auto light = dynamic_cast<Light*>(node.get());
 
 		// check if the light is a directional light
 		if (light->GetLightType() == LightType::DIRECTIONAL_LIGHT)
@@ -549,11 +562,11 @@ void Renderer::UnregisterModelForDynamicEnvMapCapture(std::uint32_t modelId)
 
 // Protected Methods
 // -----------------
-void Renderer::RenderModel(const std::shared_ptr<ModelComponent>& model)
+void Renderer::RenderModel(const std::shared_ptr<Node>& model)
 {
 	if (!model)
 	{ // if the model is null, print an error message and return
-		std::cerr << "[ERROR::RENDERER::RenderModel] ModelComponent is null" << std::endl;
+		std::cerr << "[ERROR::RENDERER::RenderModel] Node is null" << std::endl;
 		return;
 	}
 
@@ -568,9 +581,9 @@ void Renderer::RenderModel(const std::shared_ptr<ModelComponent>& model)
 	{
 		case GizmoType::NONE: // if the model is not a gizmo
 		{
-			switch (model->GetModelType()) // use the appropriate shader based on the model type
+			switch (model->GetNodeType()) // use the appropriate shader based on the model type
 			{
-				case ModelType::COMPOSITE_MODEL: // basic composite models do not have their own meshes
+				case NodeType::COMPOSITE_MODEL: // basic composite models do not have their own meshes
 				{
 					// assign a default shader for composite models without meshes
 					renderShader = m_singleAlbedoShader;
@@ -580,15 +593,15 @@ void Renderer::RenderModel(const std::shared_ptr<ModelComponent>& model)
 					renderShader->SetVec3("albedo", glm::vec3(0.25f, 0.25f, 0.25f));
 				}
 				break;
-				case ModelType::COMPOSITE_ASSIMP_MODEL: // composite Assimp models have their own meshes
-				case ModelType::ASSIMP_MODEL:
+				case NodeType::COMPOSITE_ASSIMP_MODEL: // composite Assimp models have their own meshes
+				case NodeType::ASSIMP_MODEL:
 				{
 					renderShader = m_assimpModelShader; // use the Assimp model shader
 					renderShader->Use(); // activate the current shader program
 				}
 				break;
-				case ModelType::COMPOSITE_SHAPE_MODEL: // composite shape models have their own meshes
-				case ModelType::SHAPE_MODEL:
+				case NodeType::COMPOSITE_SHAPE_MODEL: // composite shape models have their own meshes
+				case NodeType::SHAPE_MODEL:
 				{
 					renderShader = m_untexturedMattShapeShader; // use the untextured matt shape shader
 					renderShader->Use(); // activate the current shader program
@@ -606,7 +619,8 @@ void Renderer::RenderModel(const std::shared_ptr<ModelComponent>& model)
 			// set the polygon mode to fill for regular models
 			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-			break;
+		}
+		break;
 		case GizmoType::DIRECTIONAL_LIGHT: // if the model is a directional light gizmo
 		case GizmoType::POINT_LIGHT: // if the model is a point light gizmo
 		case GizmoType::SPOTLIGHT: // if the model is a spotlight gizmo
@@ -624,7 +638,6 @@ void Renderer::RenderModel(const std::shared_ptr<ModelComponent>& model)
 			std::cerr << "[ERROR::RENDERER::RenderModel] Unknown gizmo type for model: " << model->GetName()
 				<< std::endl;
 			return;
-		}
 	}
 
 	if (renderShader)
@@ -637,7 +650,6 @@ void Renderer::RenderModel(const std::shared_ptr<ModelComponent>& model)
 		for (const auto& childModel : model->GetChildren()) RenderModel(childModel);
 	}
 }
-
 
 void Renderer::EnsureOffscreenRenderPass()
 {
@@ -728,13 +740,13 @@ void Renderer::CompositeToScreen()
 		// if debug mode is either Normal mode (1) or Inverted Colors mode (3), and there is a selection,
 		// render the outline mask
 		auto camera = core->GetSceneManager()->GetCamera();
-		selectionManager->RenderOutlineMask(camera.get(), core->GetAssetManager().get());
+		selectionManager->RenderOutlineMask(camera.get(), core->GetNodeManager().get());
 	}
 	else if (m_screenDebugParams.debugMode == 2)
 	{
 		// if debug mode is the Picking Colors mode (2), render picking visualization
 		auto camera = core->GetSceneManager()->GetCamera();
-		selectionManager->RenderPickingVisualization(camera.get(), core->GetAssetManager().get());
+		selectionManager->RenderPickingVisualization(camera.get(), core->GetNodeManager().get());
 	}
 
 	// unbind offscreen target, effectively switching back to the default framebuffer
@@ -796,7 +808,7 @@ void Renderer::CompositeToScreen()
 	}
 
 	// local variables for outline parameters
-	// there is only and outline if there is a selected asset and the outline mask texture is available
+	// there is only and outline if there is a selected node and the outline mask texture is available
 	const bool hasOutline =
 		selectionManager->GetSelectedAssetId() != 0 && selectionManager->GetOutlineMaskTextureId() != 0;
 	glm::vec3 outlineColor{ 0.0f };
@@ -1061,8 +1073,8 @@ void Renderer::UpdateDynamicEnvMaps()
 	if (m_isCapturingDynamicEnvMap || m_dynamicEnvMaps.empty()) return;
 
 	auto core = Core::GetInstance(); // get the core instance
-	auto& AssetManager = core->GetAssetManager(); // get the asset manager
-	auto& models = AssetManager->GetAssets(AssetType::MODEL); // get the models from the asset manager
+	auto& NodeManager = core->GetNodeManager(); // get the node manager
+	auto& models = NodeManager->GetNodes(NodeType::MODEL); // get the models from the node manager
 	if (models.empty()) return; // if no models, return
 
 	// ensure a skybox cubemap exists for the dynamic env map captures
@@ -1081,10 +1093,10 @@ void Renderer::UpdateDynamicEnvMaps()
 	m_isCapturingDynamicEnvMap = true;
 
 	// iterate over the models and capture dynamic env maps for those registered
-	for (const auto& asset : models)
+	for (const auto& node : models)
 	{
-		// dynamically cast the asset to a Model object
-		auto model = dynamic_cast<ModelComponent*>(asset.get());
+		// dynamically cast the node to a Model object
+		auto model = dynamic_cast<Node*>(node.get());
 		// if the cast fails or the model has a gizmo, skip to next model
 		if (!model || model->GetGizmoType() != GizmoType::NONE) continue;
 
@@ -1094,7 +1106,7 @@ void Renderer::UpdateDynamicEnvMaps()
 
 		auto& entry = it->second; // get the dynamic env map entry
 		// dynamically cast the model to a shared pointer for passing to the capture function
-		auto modelPtr = std::dynamic_pointer_cast<ModelComponent>(asset);
+		auto modelPtr = std::dynamic_pointer_cast<Node>(node);
 		// capture the dynamic environment map for the model into the "write" buffer (cubemapTexId)
 		CaptureDynamicEnvMapForModel(modelPtr, entry);
 	}
@@ -1102,7 +1114,7 @@ void Renderer::UpdateDynamicEnvMaps()
 	m_isCapturingDynamicEnvMap = false; // reset capturing flag after processing all models
 }
 
-void Renderer::CaptureDynamicEnvMapForModel(const std::shared_ptr<ModelComponent>& model,
+void Renderer::CaptureDynamicEnvMapForModel(const std::shared_ptr<Node>& model,
 											DynamicEnvMapEntry& entry)
 {
 	// lazy initialization of cubemap texture, FBO, and RBO for the dynamic env map entry
@@ -1196,10 +1208,10 @@ void Renderer::CaptureDynamicEnvMapForModel(const std::shared_ptr<ModelComponent
 }
 
 void Renderer::RenderSceneForEnvMapCapture(const glm::mat4& captureView, const glm::mat4& captureProj,
-										   const std::shared_ptr<ModelComponent>& excludeModel)
+										   const std::shared_ptr<Node>& excludeModel)
 {
 	auto core = Core::GetInstance(); // get the core instance
-	auto& assetManager = core->GetAssetManager(); // get the asset manager
+	auto& nodeManager = core->GetNodeManager(); // get the node manager
 	auto& sceneManager = core->GetSceneManager(); // get the scene manager
 
 	// pre-compute uniforms common to all shaders used for env map capture
@@ -1231,12 +1243,12 @@ void Renderer::RenderSceneForEnvMapCapture(const glm::mat4& captureView, const g
 	m_refractiveShader->SetInt("skybox", 0);
 
 	// set light uniforms
-	auto& lights = assetManager->GetAssets(AssetType::LIGHT); // get lights from the asset manager
+	auto& lights = nodeManager->GetNodes(NodeType::LIGHT); // get lights from the node manager
 	GLint pointLightIdx{}, spotlightIdx{}, directionalLightIdx{}; // light type indices
-	for (const auto& asset : lights)
+	for (const auto& node : lights)
 	{ // iterate over the lights and set their parameters in the shaders
-		// dynamically cast the asset to a Light object
-		auto light = dynamic_cast<Light*>(asset.get());
+		// dynamically cast the node to a Light object
+		auto light = dynamic_cast<Light*>(node.get());
 
 		switch (light->GetLightType()) // set light parameters based on light type
 		{
@@ -1346,20 +1358,20 @@ void Renderer::RenderSceneForEnvMapCapture(const glm::mat4& captureView, const g
 	m_assimpModelShader->SetInt("nSpotlights", spotlightIdx);
 
 	// render all models in the scene except the excluded model
-	auto& models = assetManager->GetAssets(AssetType::MODEL); // get models from the asset manager
-	for (const auto& asset : models)
+	auto& models = nodeManager->GetNodes(NodeType::MODEL); // get models from the node manager
+	for (const auto& node : models)
 	{ // iterate over the models and render them
-		// dynamically cast the asset to a Model Component object
-		auto model = dynamic_cast<ModelComponent*>(asset.get());
+		// dynamically cast the node to a Model Component object
+		auto model = dynamic_cast<Node*>(node.get());
 
 		// skip excluded model (the one for which we are capturing the env map) and gizmos early
 		if (excludeModel && model == excludeModel.get()) continue;
 		if (model->GetGizmoType() != GizmoType::NONE) continue;
 
 		// render the model for enviroment map capture, using recursive rendering for composite models
-		if (model->HasChildren())
+		if (model->IsComposite())
 		{ // if the model is composite, render all its child models recursively in a depth-first traversal
-			std::vector<std::shared_ptr<ModelComponent>> stack{ model->GetChildren() };
+			std::vector<std::shared_ptr<Node>> stack{ model->GetChildren() };
 			while (!stack.empty())
 			{ // process models in the stack until empty
 				auto& currentModel = stack.back(); // get the model at the top of the stack
@@ -1370,7 +1382,7 @@ void Renderer::RenderSceneForEnvMapCapture(const glm::mat4& captureView, const g
 				if (excludeModel && currentModel == excludeModel) continue;
 				if (currentModel->GetGizmoType() != GizmoType::NONE) continue;
 
-				if (currentModel->HasChildren())
+				if (currentModel->IsComposite())
 				{ // if the current model is composite, add its children to the stack for further processing
 					auto children = currentModel->GetChildren();
 					stack.insert(stack.end(), children.begin(), children.end());
@@ -1379,9 +1391,9 @@ void Renderer::RenderSceneForEnvMapCapture(const glm::mat4& captureView, const g
 				// leaf model rendering based on the model type (child models)
 				std::shared_ptr<Shader> renderShader;
 
-				switch (currentModel->GetModelType())// use the appropriate shader based on the model type
+				switch (currentModel->GetNodeType())// use the appropriate shader based on the model type
 				{
-					case ModelType::COMPOSITE_MODEL: // basic composite models do not have their own meshes
+					case NodeType::COMPOSITE_MODEL: // basic composite models do not have their own meshes
 					{
 						// assign a default shader for composite models without meshes
 						renderShader = m_singleAlbedoShader;
@@ -1391,15 +1403,15 @@ void Renderer::RenderSceneForEnvMapCapture(const glm::mat4& captureView, const g
 						renderShader->SetVec3("albedo", glm::vec3(0.25f, 0.25f, 0.25f));
 					}
 					break;
-					case ModelType::COMPOSITE_ASSIMP_MODEL: // composite Assimp models have their own meshes
-					case ModelType::ASSIMP_MODEL:
+					case NodeType::COMPOSITE_ASSIMP_MODEL: // composite Assimp models have their own meshes
+					case NodeType::ASSIMP_MODEL:
 					{
 						renderShader = m_assimpModelShader; // use the Assimp model shader
 						renderShader->Use(); // activate the current shader program
 					}
 					break;
-					case ModelType::COMPOSITE_SHAPE_MODEL: // composite shape models have their own meshes
-					case ModelType::SHAPE_MODEL:
+					case NodeType::COMPOSITE_SHAPE_MODEL: // composite shape models have their own meshes
+					case NodeType::SHAPE_MODEL:
 					{
 						renderShader = m_untexturedMattShapeShader; // use the untextured matt shape shader
 						renderShader->Use(); // activate the current shader program
@@ -1421,7 +1433,7 @@ void Renderer::RenderSceneForEnvMapCapture(const glm::mat4& captureView, const g
 				{ // if a valid shader is set, proceed with rendering
 					// set the model matrix uniform (hierarchical world transformation)
 					renderShader->SetMat4("model", currentModel->GetWorldModelMatrix());
-					// render the current model component
+					// render the current node
 					currentModel->Draw(*renderShader);
 					// children rendering is handled via the stack, so no recursive call here
 				}
@@ -1430,9 +1442,9 @@ void Renderer::RenderSceneForEnvMapCapture(const glm::mat4& captureView, const g
 		else
 		{ // leaf model rendering based on the model type (non-composite models)
 			std::shared_ptr<Shader> renderShader;
-			switch (model->GetModelType())// use the appropriate shader based on the model type
+			switch (model->GetNodeType())// use the appropriate shader based on the model type
 			{
-				case ModelType::COMPOSITE_MODEL: // basic composite models do not have their own meshes
+				case NodeType::COMPOSITE_MODEL: // basic composite models do not have their own meshes
 				{
 					// assign a default shader for composite models without meshes
 					renderShader = m_singleAlbedoShader;
@@ -1442,15 +1454,15 @@ void Renderer::RenderSceneForEnvMapCapture(const glm::mat4& captureView, const g
 					renderShader->SetVec3("albedo", glm::vec3(0.25f, 0.25f, 0.25f));
 				}
 				break;
-				case ModelType::COMPOSITE_ASSIMP_MODEL: // composite Assimp models have their own meshes
-				case ModelType::ASSIMP_MODEL:
+				case NodeType::COMPOSITE_ASSIMP_MODEL: // composite Assimp models have their own meshes
+				case NodeType::ASSIMP_MODEL:
 				{
 					renderShader = m_assimpModelShader; // use the Assimp model shader
 					renderShader->Use(); // activate the current shader program
 				}
 				break;
-				case ModelType::COMPOSITE_SHAPE_MODEL: // composite shape models have their own meshes
-				case ModelType::SHAPE_MODEL:
+				case NodeType::COMPOSITE_SHAPE_MODEL: // composite shape models have their own meshes
+				case NodeType::SHAPE_MODEL:
 				{
 					renderShader = m_untexturedMattShapeShader; // use the untextured matt shape shader
 					renderShader->Use(); // activate the current shader program

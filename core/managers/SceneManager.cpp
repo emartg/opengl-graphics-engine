@@ -6,6 +6,10 @@
 
 #include "SceneManager.h"
 
+#include "NodeManager.h"
+#include "../camera/Camera.h"
+#include "../texture/Texture.h"
+
 // Public Methods
 // --------------
 GLboolean SceneManager::LoadSkybox(const std::vector<std::string>& faces)

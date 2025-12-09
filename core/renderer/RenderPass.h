@@ -12,7 +12,7 @@
 
 #include <glad/glad.h> // holds all OpenGL type declarations
 
-// this struct defines the specifications for the render pass
+// Struct that defines the specification for creating a render pass
 struct RenderPassSpecification
 {
 	GLuint Width{ 0 };

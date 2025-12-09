@@ -9,8 +9,9 @@
 #pragma once
 
 #include <iostream>
-#include <memory> // for smart pointers
+#include <memory>
 
+#include <glm/glm.hpp>
 #define GLFW_INCLUDE_NONE // prevent GLFW from including OpenGL headers
 #include <GLFW/glfw3.h>
 
@@ -19,10 +20,17 @@
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_opengl3.h>
 
-#include "../core/Core.h"
-#include "../core/managers/AssetManager.h"
-#include "../core/managers/SceneManager.h"
-#include "../core/utils/random/Random.h"
+// Forward declaration of classes to avoid cyclic includes and allow virtual interfaces and pointers
+class Node;
+class Light;
+class DirectionalLight;
+class PointLight;
+class Spotlight;
+class Random;
+
+// Forward declaration of enum class to avoid cyclic includes
+enum class NodeType;
+enum class LightType;
 
 class GUI
 {
@@ -150,12 +158,12 @@ private:
 	// Draws controls for a spotlight
 	void drawSpotlightControls(Spotlight* spotlight);
 	// Draws controls for a model
-	void drawModelControls(ModelComponent* model);
+	void drawModelControls(Node* model);
 
-	// Draws a remove button for an asset and adds its Id to the vector of assets marked for removal
-	void drawRemoveAssetButton(Asset* asset, std::vector<std::uint32_t>& assetsToRemoveIds,
-							   const std::string& label = "Remove",
-							   float buttonWidth = BUTTON_WIDTH, float buttonHeight = BUTTON_HEIGHT);
+	// Draws a remove button for an node and adds its Id to the vector of nodes marked for removal
+	void drawRemoveNodeButton(Node* node, std::vector<std::uint32_t>& nodesToRemoveIds,
+							  const std::string& label = "Remove",
+							  float buttonWidth = BUTTON_WIDTH, float buttonHeight = BUTTON_HEIGHT);
 
 	// Draws a pop-up modal window to create a new directional light
 	void drawCreateDirectionalLightPopup();

@@ -1,26 +1,29 @@
 /*
 * SelectionManager.h
-* Manages selection of assets in the scene via picking passes,
-* and an outlining mask pass for the selected asset.
+* Manages selection of nodes in the scene via picking passes,
+* and an outlining mask pass for the selected node.
 */
 
 #pragma once
 
+#include <iostream>
+#include <unordered_set>
 #include <optional>
-#include <memory>
 #include <cstdint>
+#include <memory>
 
 #include <glad/glad.h> // holds all OpenGL type declarations
 #include <glm/glm.hpp>
 
-#include "../Asset.h"
 #include "../renderer/RenderPass.h"
 
+// Forward declaration of classes to avoid cyclic includes and allow virtual interfaces and pointers
+class Node;
 class Camera;
 class Shader;
-class AssetManager;
+class NodeManager;
 
-// Struct to hold outline parameters for the selected asset
+// Struct to hold outline parameters for the selected node
 struct OutlineParams
 {
 	glm::vec3 color{ 0.0f, 0.95f, 1.0f };	// outline color - highly visible cyan by default
@@ -44,22 +47,22 @@ public:
 	void QueuePick(GLdouble mouseX, GLdouble mouseY, GLsizei windowWidth, GLsizei windowHeight);
 
 	// Called from the renderer at frame start to perform the queued pick (if any)
-	void ProcessPendingPick(const Camera* camera, AssetManager* assetManager);
+	void ProcessPendingPick(const Camera* camera, NodeManager* nodeManager);
 
 	// Renders (or re-renders) the full picking buffer for visualization (no selection readback)
-	void RenderPickingVisualization(const Camera* camera, AssetManager* assetManager);
+	void RenderPickingVisualization(const Camera* camera, NodeManager* nodeManager);
 
-	// Get currently selected asset id (0 means none)
-	std::uint32_t GetSelectedAssetId() const { return m_selectedAssetId; }
+	// Get currently selected node id (0 means none)
+	std::uint32_t GetSelectedAssetId() const { return m_selectedNodeId; }
 
-	// Returns a shared_ptr to the currently selected asset (may be null)
-	std::shared_ptr<Asset> GetSelectedAsset(AssetManager* assetManager) const;
+	// Returns a shared_ptr to the currently selected node (may be null)
+	std::shared_ptr<Node> GetSelectedNode(NodeManager* nodeManager) const;
 
 	// Clears the selection and explicitly clears the outline mask
 	void ClearSelection();
 
-	// Deletes currently selected asset (and associated gizmo if a light)
-	void DeleteSelected(AssetManager* assetManager);
+	// Deletes currently selected node (and associated gizmo if a light)
+	void DeleteSelected(NodeManager* nodeManager);
 
 	// Ensure internal picking FBO matches window size
 	void Resize(GLuint width, GLuint height);
@@ -70,8 +73,8 @@ public:
 	// Returns the texture id of the picking color attachment (0 if unavailable or FBO not created)
 	GLuint GetPickingTextureId() const;
 
-	// Renders the outline mask for the selected asset (if any)
-	void RenderOutlineMask(const Camera* camera, AssetManager* assetManager);
+	// Renders the outline mask for the selected node (if any)
+	void RenderOutlineMask(const Camera* camera, NodeManager* nodeManager);
 
 	// Returns the texture id of the outline mask color attachment (0 if unavailable or FBO not created)
 	GLuint GetOutlineMaskTextureId() const;
@@ -90,10 +93,10 @@ private:
 	// ------------------
 	// general selection manager attributes
 	GLuint m_width, m_height;
-	std::uint32_t m_selectedAssetId;
+	std::uint32_t m_selectedNodeId;
 
 	// cycle-up selection helpers
-	std::uint32_t m_lastPickedId{ 0 }; // id of last picked asset for cycling
+	std::uint32_t m_lastPickedId{ 0 }; // id of last picked node for cycling
 	double m_lastPickTime{ 0.0 }; // time of last pick
 
 	// picking attributes
@@ -113,21 +116,21 @@ private:
 	// Ensures the outline pass is created
 	void ensureOutlinePass();
 
-	// Clears the outline mask FBO (used when selection changes to a non-outline-eligible asset or is cleared)
+	// Clears the outline mask FBO (used when selection changes to a non-outline-eligible node or is cleared)
 	void clearOutlineMask();
 
-	// Returns true if the asset should have an outline mask generated (real scene model, not a gizmo)
-	bool isOutlineEligible(const std::shared_ptr<Asset>& asset) const;
+	// Returns true if the node should have an outline mask generated (real scene model, not a gizmo)
+	bool isOutlineEligible(const std::shared_ptr<Node>& node) const;
 
 	// Reads the pixel id at the given coordinates from the picking FBO
 	std::uint32_t readPixelId(GLint x, GLint y) const;
 
-	// Finds an asset by its id among models and lights
-	std::shared_ptr<Asset> findAssetById(AssetManager* assetManager, std::uint32_t id) const;
+	// Finds an node by its id among models and lights
+	std::shared_ptr<Node> findNodeById(NodeManager* nodeManager, std::uint32_t id) const;
 
-	// If the given asset is a gizmo model, resolves it to the owning light asset
-	std::shared_ptr<Asset> resolveGizmoToLight(AssetManager* assetManager,
-											   const std::shared_ptr<Asset>& gizmoModel) const;
+	// If the given node is a gizmo model, resolves it to the owning light node
+	std::shared_ptr<Node> resolveGizmoToLight(NodeManager* nodeManager,
+											  const std::shared_ptr<Node>& gizmoModel) const;
 
 	// Private Static Attributes
 	// -------------------------

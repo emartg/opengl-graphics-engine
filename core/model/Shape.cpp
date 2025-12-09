@@ -1,8 +1,8 @@
 /*
 * Shape.cpp
-* This file implements the Shape class (a derived class of ModelComponent),
-* which is used to create and draw geometric shapes from vertex, normal, texture coordinate, index
-* and texture data (if added).
+* This file implements the Shape class (a derived class of Model),
+* which is used to create and draw geometric shapes from vertex, normal, texture coordinate,
+* index and texture data (if added).
 */
 
 #include "Shape.h"
@@ -18,8 +18,8 @@ Shape::Shape(const std::string& name,
 			 const glm::vec3 albedo,
 			 const glm::vec3 position, const glm::quat rotation, const glm::vec3 scale,
 			 const glm::vec3 forward, const glm::vec3 meshForward)
-	: ModelComponent(name, albedo, position, rotation, scale, forward, meshForward,
-					 ModelType::SHAPE_MODEL), // set the model type to SHAPE
+	: Model(name, NodeType::SHAPE_MODEL, // set the model type to SHAPE_MODEL
+			albedo, position, rotation, scale, forward, meshForward),
 	vertices{ processVertexData(vertices) }, indices{ indices }
 {
 	createMesh();
@@ -32,8 +32,8 @@ Shape::Shape(const std::string& name,
 			 const glm::vec3 albedo,
 			 const glm::vec3 position, const glm::quat rotation, const glm::vec3 scale,
 			 const glm::vec3 forward, const glm::vec3 meshForward)
-	: ModelComponent(name, albedo, position, rotation, scale, forward, meshForward,
-					 ModelType::SHAPE_MODEL), // set the model type to SHAPE
+	: Model(name, NodeType::SHAPE_MODEL, // set the model type to SHAPE_MODEL
+			albedo, position, rotation, scale, forward, meshForward),
 	vertices{ processVertexData(positions, normals, texCoords) }, indices{ indices }
 {
 	createMesh();
@@ -46,8 +46,8 @@ Shape::Shape(const std::string& name,
 			 const glm::vec3 albedo,
 			 const glm::vec3 position, const glm::quat rotation, const glm::vec3 scale,
 			 const glm::vec3 forward, const glm::vec3 meshForward)
-	: ModelComponent(name, albedo, position, rotation, scale, forward, meshForward,
-					 ModelType::SHAPE_MODEL) // set the model type to SHAPE
+	: Model(name, NodeType::SHAPE_MODEL, // set the model type to SHAPE_MODEL
+			albedo, position, rotation, scale, forward, meshForward)
 {
 	std::vector<GLfloat> vertexData{ vertices, vertices + nVertices * 8 };
 	std::vector<GLuint> indexData{ indices, indices + nIndices };
@@ -65,8 +65,8 @@ Shape::Shape(const std::string& name,
 			 const glm::vec3 albedo,
 			 const glm::vec3 position, const glm::quat rotation, const glm::vec3 scale,
 			 const glm::vec3 forward, const glm::vec3 meshForward)
-	: ModelComponent(name, albedo, position, rotation, scale, forward, meshForward,
-					 ModelType::SHAPE_MODEL) // set the model type to SHAPE
+	: Model(name, NodeType::SHAPE_MODEL, // set the model type to SHAPE_MODEL
+			albedo, position, rotation, scale, forward, meshForward)
 {
 	std::vector<GLfloat> positionData{ positions, positions + nVertices * 3 };
 	std::vector<GLfloat> normalData{ normals, normals + nVertices * 3 };
@@ -81,18 +81,9 @@ Shape::Shape(const std::string& name,
 
 // Public Methods
 // --------------
-void Shape::AddTextureData(const Texture* textures, const GLuint nTextures)
+void Shape::AddTextureData(const std::vector<std::shared_ptr<Texture>>& textures)
 {
-	for (GLuint i{}; i < nTextures; i++)
-		this->textures.push_back(textures[i]);
-	meshes.clear();
-	createMesh();
-}
-
-void Shape::AddTextureData(const std::vector<Texture> textures)
-{
-	for (const Texture& texture : textures)
-		this->textures.push_back(texture);
+	this->textures = textures;
 	meshes.clear();
 	createMesh();
 }
@@ -128,5 +119,5 @@ std::vector<Vertex> Shape::processVertexData(std::vector<GLfloat> vertices, std:
 	return vertexData;
 }
 
-void Shape::createMesh() { meshes.emplace_back(vertices, indices, textures); }
+void Shape::createMesh() { meshes.emplace_back(std::make_shared<Mesh>(vertices, indices, textures)); }
 

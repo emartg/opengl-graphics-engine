@@ -7,7 +7,8 @@
 #include "DirectionalLight.h"
 
 #include "../model/Shape.h" // to create the gizmo for the DirectionalLight
-#include "../gizmos/TRIANGLE_FAN_PLANE.h"
+#include "../gizmos/Line.h" // to create the direction line for the DirectionalLight gizmo
+#include "../gizmos/TRIANGLE_FAN_PLANE.h" // the DirectionalLight gizmo is a triangle fan plane
 
 // Static Protected Attributes
 // ---------------------------

@@ -1,10 +1,15 @@
 /*
 * AssimpModel.cpp
-* This file implements the AssimpModel class (a derived class of ModelComponent),
+* This file implements the AssimpModel class (a derived class of Model),
 * which is used to load and draw 3D models from files using the Assimp library.
 */
 
 #include "AssimpModel.h"
+
+#include "mesh/Mesh.h"
+#include "../Node.h"
+#include "../shader/Shader.h"
+#include "../texture/Texture.h"
 
 // Static Protected Attributes
 // ---------------------------
@@ -17,8 +22,8 @@ AssimpModel::AssimpModel(const std::string& name, const std::string& path,
 						 const glm::vec3 albedo, const glm::vec3 position,
 						 const glm::quat rotation, const glm::vec3 scale,
 						 const glm::vec3 forward, const glm::vec3 meshForward)
-	: ModelComponent(name, albedo, position, rotation, scale, forward, meshForward,
-					 ModelType::ASSIMP_MODEL) // set the model type to ASSIMP_MODEL
+	: Model(name, NodeType::ASSIMP_MODEL, // set the model type to ASSIMP_MODEL
+			albedo, position, rotation, scale, forward, meshForward)
 {
 	loadAssimpModel(path); // load the model from the specified path
 	nAssimpModels++;
@@ -97,12 +102,13 @@ void AssimpModel::processNode(aiNode* node, const aiScene* scene)
 
 }
 
-Mesh AssimpModel::processMesh(aiMesh* mesh, const aiScene* scene)
+std::shared_ptr<Mesh> AssimpModel::processMesh(aiMesh* mesh, const aiScene* scene)
 {
 	// vector to store vertices, indices and textures
 	std::vector<Vertex> vertices; // each vertex contains position, normal and texture coordinates
 	std::vector<GLuint> indices; // each index corresponds to a vertex in the vertices vector
-	std::vector<Texture> textures; // each texture corresponds to a material texture of the mesh
+	// each texture corresponds to a material texture of the mesh
+	std::vector<std::shared_ptr<Texture>> textures;
 
 	// process vertices
 	for (GLuint i{}; i < mesh->mNumVertices; i++)
@@ -151,7 +157,8 @@ Mesh AssimpModel::processMesh(aiMesh* mesh, const aiScene* scene)
 		// lambda function to load and append textures of a specific type
 		auto append = [&](aiTextureType aiType, TextureType textureType)
 		{
-			std::vector<Texture> maps = loadMaterialTextures(material, aiType, textureType);
+			std::vector<std::shared_ptr<Texture>> maps =
+				loadMaterialTextures(material, aiType, textureType);
 			textures.insert(textures.end(), maps.begin(), maps.end());
 		};
 
@@ -175,14 +182,15 @@ Mesh AssimpModel::processMesh(aiMesh* mesh, const aiScene* scene)
 	}
 
 	// return a mesh object created from the extracted mesh data
-	return Mesh(vertices, indices, textures);
+	return std::make_shared<Mesh>(vertices, indices, textures);
 }
 
-std::vector<Texture> AssimpModel::loadMaterialTextures(aiMaterial* mat, aiTextureType type,
-													   TextureType textureType)
+std::vector<std::shared_ptr<Texture>> AssimpModel::loadMaterialTextures(aiMaterial* mat, aiTextureType type,
+																		TextureType textureType)
 {
-	// a vector to store already loaded textures to avoid loading the same texture multiple times
-	std::vector<Texture> textures;
+	// vector to store the loaded textures of the specified type from the material,
+	// avoiding duplicates
+	std::vector<std::shared_ptr<Texture>> loadedTextures;
 
 	// iterate over all textures of the specified type in the material
 	// and add them to the textures vector if they haven't been loaded before
@@ -209,7 +217,7 @@ std::vector<Texture> AssimpModel::loadMaterialTextures(aiMaterial* mat, aiTextur
 		GLboolean skip{ false };
 		for (GLuint j{}; j < loadedTextures.size(); j++)
 		{
-			if (std::strcmp(loadedTextures[j].GetPath().data(), texturePath.c_str()) == 0)
+			if (std::strcmp(loadedTextures[j]->GetPath().data(), texturePath.c_str()) == 0)
 			{
 				// if the texture has already been loaded, add it to the textures vector
 				textures.push_back(loadedTextures[j]);
@@ -221,14 +229,12 @@ std::vector<Texture> AssimpModel::loadMaterialTextures(aiMaterial* mat, aiTextur
 		// if the texture hasn't been loaded already, load it
 		if (!skip)
 		{
-			Texture texture{ str.C_Str(), texturePath.c_str(), textureType };
-			textures.push_back(texture);
-			// to ensure we won't load the same texture again, store it in the loaded textures
-			loadedTextures.push_back(texture);
+			auto texture = std::make_shared<Texture>(str.C_Str(), texturePath, textureType);
+			loadedTextures.push_back(texture); // add the texture to the loaded textures vector
 		}
 	}
 
-	return textures;
+	return loadedTextures;
 }
 
 void AssimpModel::calculateBoundingBox()
@@ -242,7 +248,7 @@ void AssimpModel::calculateBoundingBox()
 	// iterate over all meshes and their vertices to calculate the bounding box values
 	for (const auto& mesh : meshes)
 	{
-		for (const auto& vertex : mesh.GetVertices())
+		for (const auto& vertex : mesh->GetVertices())
 		{
 			m_boundingBoxMin.x = std::min(m_boundingBoxMin.x, vertex.Position.x);
 			m_boundingBoxMin.y = std::min(m_boundingBoxMin.y, vertex.Position.y);

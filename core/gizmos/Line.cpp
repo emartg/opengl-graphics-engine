@@ -4,8 +4,6 @@
 * and provides methods for rendering and manipulating the line.
 */
 
-#include <stdexcept>
-
 #include "Line.h"
 
 // Constructors

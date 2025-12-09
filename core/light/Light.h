@@ -1,33 +1,31 @@
 /*
 * Light.h
-* This file defines the Light class (a derived class of Asset),
+* This file defines the Light class (a derived class of Node),
 * which is an abstract base class used to create a light source.
 */
 
 #pragma once
 
+#include "../Node.h"
+
 #include <iostream>
 #include <string>
-#include <memory> // for smart pointers
+#include <memory> 
 
 #include <glad/glad.h> // holds all OpenGL type declarations
-
 #include <glm/glm.hpp>
 
-#include "../Asset.h"
-#include "../model/ModelComponent.h" // to allow the light to have a gizmo model
-
-// enumeration for the different types of lights
+// Enumeration for the different types of lights
 enum class LightType { UNDEFINED = 0, DIRECTIONAL_LIGHT, POINT_LIGHT, SPOTLIGHT };
 
-class Light : public Asset
+class Light : public Node
 {
 public:
 	// Constructors
 	// ------------
 	Light(const std::string& name,
 		  const glm::vec3 ambient, const glm::vec3 diffuse, const glm::vec3 specular,
-		  const std::shared_ptr<ModelComponent> gizmo = nullptr,
+		  const std::shared_ptr<Node> gizmo = nullptr,
 		  const LightType type = LightType::UNDEFINED);
 
 	// Virtual destructor
@@ -42,19 +40,24 @@ public:
 	// Deallocates all the resources of the light
 	virtual void DeallocateResources() override {}
 
+	// Does not draw anything by default, as a light by itself has no visual representation
+	virtual void Draw() const override {}
+	// Does not draw anything by default, as a light by itself has no visual representation
+	virtual void Draw(const Shader& shader) const override {}
+
 	// Getters
 	glm::vec3 GetAmbient() const { return ambient; }
 	glm::vec3 GetDiffuse() const { return diffuse; }
 	glm::vec3 GetSpecular() const { return specular; }
 	LightType GetLightType() const { return lightType; }
-	std::shared_ptr<ModelComponent>& GetGizmo() { return gizmo; }
+	std::shared_ptr<Node>& GetGizmo() { return gizmo; }
 
 	// Setters
 	void SetAmbient(glm::vec3 ambient) { this->ambient = ambient; }
 	void SetDiffuse(glm::vec3 diffuse) { this->diffuse = diffuse; }
 	void SetSpecular(glm::vec3 specular) { this->specular = specular; }
 	void SetLightType(LightType type) { this->lightType = type; }
-	void SetGizmo(std::shared_ptr<ModelComponent> gizmo) { this->gizmo = gizmo; }
+	void SetGizmo(std::shared_ptr<Node> gizmo) { this->gizmo = gizmo; }
 
 	// Create the gizmo for the light
 	virtual void CreateGizmo() = 0;
@@ -76,7 +79,7 @@ protected:
 	glm::vec3 diffuse;
 	glm::vec3 specular;
 
-	std::shared_ptr<ModelComponent> gizmo; // the model used to represent the light in the scene
+	std::shared_ptr<Node> gizmo; // the model used to represent the light in the scene
 
 	LightType lightType; // type of the light (e.g., DIRECTIONAL_LIGHT, POINT_LIGHT, SPOTLIGHT)
 

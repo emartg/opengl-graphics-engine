@@ -2,29 +2,31 @@
 * Core.h
 * This file defines the Core class, which is is responsible for initializing OpenGL,
 * creating a window, and running the main loop.
-* It also manages the camera, the lighting and models that are to be rendered.
+* It also manages the various managers used in the engine and holds the renderer instance,
+* and is thus responsible for coordinating their interactions.
 * It is a Singleton class.
 */
 
 #pragma once
 
+#include <iostream>
 #include <string>
 #include <vector>
-#include <memory> // for smart pointers
+#include <memory>
 
 #include <glad/glad.h> // holds all OpenGL type declarations
+#include <stb_image.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
-#include <stb_image.h>
 
-#include "Asset.h"
-#include "camera/Camera.h"
-#include "managers/AssetManager.h"
-#include "managers/InputManager.h"
-#include "managers/SceneManager.h"
-#include "managers/SelectionManager.h"
-#include "renderer/Renderer.h"
+// Forward declaration of classes to avoid cyclic includes and allow virtual interfaces and pointers
+class Camera;
+class Renderer;
+class NodeManager;
+class InputManager;
+class SceneManager;
+class SelectionManager;
 
 class Core
 {
@@ -46,7 +48,7 @@ private:
 	Renderer* m_renderer;
 
 	// manager instances
-	std::shared_ptr<AssetManager> m_assetManager;
+	std::shared_ptr<NodeManager> m_nodeManager;
 	std::shared_ptr<InputManager> m_inputManager;
 	std::shared_ptr<SceneManager> m_sceneManager;
 	std::shared_ptr<SelectionManager> m_selectionManager;
@@ -64,8 +66,8 @@ public:
 	// ------------
 	Core(Core const&) = delete; // copy constructor (Singleton is not cloneable)
 
-	// Operator overloading
-	// --------------------
+	// Operator overloads
+	// ------------------
 	void operator=(Core const&) = delete; // assignment operator (Singleton is not assignable)
 
 	// Public Static Methods
@@ -78,7 +80,7 @@ public:
 	// Getters
 	Renderer* GetRenderer() const { return m_renderer; }
 
-	const std::shared_ptr<AssetManager>& GetAssetManager() const { return m_assetManager; }
+	const std::shared_ptr<NodeManager>& GetNodeManager() const { return m_nodeManager; }
 	const std::shared_ptr<InputManager>& GetInputManager() const { return m_inputManager; }
 	const std::shared_ptr<SceneManager>& GetSceneManager() const { return m_sceneManager; }
 	const std::shared_ptr<SelectionManager>& GetSelectionManager() const { return m_selectionManager; }

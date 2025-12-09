@@ -1,6 +1,6 @@
 /*
 * Shader.cpp
-* This file implements the Shader class (a derived class of Asset),
+* This file implements the Shader class (a derived class of Node),
 * which is used to read, compile, and link shaders to a shader program.
 * It also provides methods to set uniform variables in the shader program.
 */
@@ -17,7 +17,7 @@ Shader::Shader(const std::string& name,
 			   const std::string& vertexPath,
 			   const std::string& fragmentPath,
 			   const GLboolean deferredCompilation)
-	: Asset(name, AssetType::SHADER),
+	: Node(name, NodeType::SHADER), // set the node type to SHADER
 	shaderProgramId{}, // initialize the ID to 0
 	m_vertexPath{ vertexPath },
 	m_geometryPath{ "" },
@@ -34,7 +34,7 @@ Shader::Shader(const std::string& name,
 			   const std::string& geometryPath,
 			   const std::string& fragmentPath,
 			   const GLboolean deferredCompilation)
-	: Asset(name, AssetType::SHADER),
+	: Node(name, NodeType::SHADER), // set the node type to SHADER
 	shaderProgramId{}, // initialize the ID to 0
 	m_vertexPath{ vertexPath },
 	m_geometryPath{ geometryPath },

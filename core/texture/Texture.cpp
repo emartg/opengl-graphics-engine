@@ -1,30 +1,32 @@
 /*
 * Texture.cpp
-* This file implements the Texture class (a derived class of Asset),
+* This file implements the Texture class (a derived class of Node),
 * which is used to load a texture from a file and bind it to a unit.
 * The Texture class supports both 2D textures and cubemap textures.
 */
+
+#include "Texture.h"
 
 #include <iostream>
 
 #include <stb_image.h>
 
-#include "Texture.h"
+#include "../shader/Shader.h"
 
 // Constructors
 // ------------
 Texture::Texture(const std::string& name, const std::string& path, const TextureType type)
-	: Asset(name, AssetType::TEXTURE),
+	: Node(name, NodeType::TEXTURE), // set the node type to TEXTURE
 	textureId{ LoadTextureFromFile(path.c_str()) }, path{ path }, textureType{ type }
 {}
 
 Texture::Texture(const std::string& name, GLuint existingId, TextureType type)
-	: Asset(name, AssetType::TEXTURE),
+	: Node(name, NodeType::TEXTURE), // set the node type to TEXTURE
 	textureId{ existingId }, textureType{ type }
 {}
 
 Texture::Texture(const std::string& name, const std::string& hdrPath, const bool asHDR)
-	: Asset(name, AssetType::TEXTURE),
+	: Node(name, NodeType::TEXTURE), // set the node type to TEXTURE
 	textureId{ asHDR ? LoadHDRTextureFromFile(hdrPath.c_str()) : LoadTextureFromFile(hdrPath.c_str()) },
 	path{ hdrPath }, textureType{ asHDR ? TextureType::HDR_EQUIRECTANGULAR : TextureType::UNDEFINED }
 {
@@ -35,7 +37,7 @@ Texture::Texture(const std::string& name, const std::string& hdrPath, const bool
 }
 
 Texture::Texture(const std::string& name, const std::vector<std::string>& faces)
-	: Asset(name, AssetType::TEXTURE),
+	: Node(name, NodeType::TEXTURE), // set the node type to TEXTURE
 	textureId{ LoadCubemapFromFiles(faces) }, textureType{ TextureType::CUBEMAP }
 {
 	if (faces.size() == 6)

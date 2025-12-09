@@ -4,14 +4,18 @@
 * including the camera and other scene-related objects.
 */
 
-
 #pragma once
 
-#include <memory> // for smart pointers
+#include <iostream>
+#include <string>
+#include <vector>
+#include <memory>
 
-#include "AssetManager.h"
-#include "../camera/Camera.h"
-#include "../texture/Texture.h"
+#include <glad/glad.h> // holds all OpenGL type declarations
+
+// Forward declaration of classes to avoid cyclic includes and allow smart pointers
+class Camera;
+class Texture;
 
 class SceneManager
 {

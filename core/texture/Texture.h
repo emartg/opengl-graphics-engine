@@ -1,19 +1,25 @@
 /*
 * Texture.h
-* This file defines the Texture class (a derived class of Asset),
+* This file defines the Texture class (a derived class of Node),
 * which is used to load a texture from a file and bind it to a unit.
 * The Texture class supports both 2D textures and cubemap textures.
 */
 
 #pragma once
 
+#include "../Node.h"
+
+#include <iostream>
 #include <vector>
 #include <string>
+#include <memory>
 
 #include <glad/glad.h> // holds the OpenGL function pointers
 
-#include "../Asset.h"
+// Forward declaration of classes to avoid cyclic includes
+class Shader;
 
+// Enumeration class for different texture types
 enum class TextureType
 {
 	UNDEFINED = 0,
@@ -34,7 +40,7 @@ enum class TextureType
 	HDR_EQUIRECTANGULAR
 };
 
-class Texture : public Asset
+class Texture : public Node
 {
 public:
 	// Constructors
@@ -54,6 +60,14 @@ public:
 	// Constructor for a cubemap texture from 6 individual 2D face file paths
 	Texture(const std::string& name, const std::vector<std::string>& faces);
 
+	// Copy constructor and copy assignment operator (deleted - Texture is not copyable)
+	Texture(const Texture&) = delete;
+	Texture& operator=(const Texture&) = delete;
+
+	// Move constructor and move assignment operator (deleted - Node base class is not movable)
+	Texture(Texture&&) = delete;
+	Texture& operator=(Texture&&) = delete;
+
 	// Public Methods
 	// --------------
 	// Loads the texture
@@ -61,6 +75,11 @@ public:
 
 	// Deallocates all the resources of the texture
 	void DeallocateResources() override { glDeleteTextures(1, &textureId); }
+
+	// Does not draw anything by default, as a texture has no visual representation
+	virtual void Draw() const override {}
+	// Does not draw anything by default, as a texture has no visual representation
+	virtual void Draw(const Shader& shader) const override {}
 
 	// Getters
 	GLuint GetTextureId() const { return textureId; }

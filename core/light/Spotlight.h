@@ -6,13 +6,14 @@
 
 #pragma once
 
-#include <glad/glad.h> // holds all OpenGL type declarations
+#include "Light.h"
 
+#include <iostream>
+
+#include <glad/glad.h> // holds all OpenGL type declarations
 #include <glm/glm.hpp>
 #include <glm/gtc/constants.hpp> // for glm::pi
 #include <glm/gtc/quaternion.hpp>
-
-#include "Light.h"
 
 class Spotlight : public Light
 {

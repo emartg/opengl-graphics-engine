@@ -1,23 +1,30 @@
 /*
 * AssimpModel.h
-* This file defines the AssimpModel class (a derived class of ModelComponent),
+* This file defines the AssimpModel class (a derived class of Model),
 * which is used to load and draw 3D models from files using the Assimp library.
 */
 
 #pragma once
 
+#include "Model.h"
+
+#include <iostream>
 #include <algorithm>
+#include <memory>
 
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 
-#include "../texture/Texture.h"
-#include "../shader/Shader.h"
+// Forward declaration of classes to avoid cyclic includes and allow virtual interfaces and pointers
+class Shader;
+class Mesh;
+class Texture;
 
-#include "ModelComponent.h"
+// Forward declaration of enum to avoid cyclic includes
+enum class TextureType;
 
-class AssimpModel : public ModelComponent
+class AssimpModel : public Model
 {
 public:
 	// Constructors
@@ -31,32 +38,6 @@ public:
 	// Destructor
 	// ----------
 	~AssimpModel() { nAssimpModels--; } // decrements the number of Assimp models
-
-	// Public Methods
-	// --------------
-	// Loads the AssimpModel
-	void Load() override {}
-
-	// Deallocates all the resources of the AssimpModel, that is, all its meshes
-	void DeallocateResources() override { for (Mesh& mesh : meshes) mesh.DeallocateResources(); }
-
-	// Draws only its own meshes
-	void Draw() const override { for (const Mesh& mesh : meshes) mesh.Draw(); }
-	// Draws only its own meshes with the specified shader (binds the textures before drawing)
-	void Draw(const Shader& shader) const override
-	{
-		// need to cast away the constness of the shader to use it
-		auto& nonConstShader = const_cast<Shader&>(shader);
-		nonConstShader.Use(); // activate the shader program
-		// set the appropiate world model matrix uniform per model before drawing
-		nonConstShader.SetMat4("model", GetWorldModelMatrix());
-
-		for (const Mesh& mesh : meshes)
-		{
-			const_cast<Mesh&>(mesh).BindTextures(nonConstShader); // bind the textures
-			mesh.Draw();
-		}
-	}
 
 	// Static Public Methods
 	// ---------------------
@@ -77,12 +58,12 @@ private:
 	// and repeats this process on its children nodes (if any)
 	void processNode(aiNode* node, const aiScene* scene);
 
-	// Processes a mesh and returns a mesh object
-	Mesh processMesh(aiMesh* mesh, const aiScene* scene);
+	// Processes a mesh and returns a shared pointer to the resulting Mesh object
+	std::shared_ptr<Mesh> processMesh(aiMesh* mesh, const aiScene* scene);
 
 	// Loads the material textures of a mesh
-	std::vector<Texture> loadMaterialTextures(aiMaterial* mat, aiTextureType type,
-											  TextureType textureType);
+	std::vector<std::shared_ptr<Texture>> loadMaterialTextures(aiMaterial* mat, aiTextureType type,
+															   TextureType textureType);
 
 	// Calculates the bounding box of the model based on the vertices of the meshes
 	void calculateBoundingBox();
