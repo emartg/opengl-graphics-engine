@@ -157,9 +157,14 @@ void SelectionManager::ProcessPendingPick(const Camera* camera, NodeManager* nod
 		return;
 	}
 
+	NodeType pickedNodeType = pickedNode->GetNodeType();
 	// if a gizmo model was picked, resolve it to its owning light and bypass cycle-up
-	if (pickedNode->GetNodeType() == NodeType::MODEL &&
-		std::dynamic_pointer_cast<Node>(pickedNode)->GetGizmoType() != GizmoType::NONE)
+	if ((pickedNodeType == NodeType::COMPOSITE_MODEL ||
+		 pickedNodeType == NodeType::COMPOSITE_ASSIMP_MODEL ||
+		 pickedNodeType == NodeType::COMPOSITE_SHAPE_MODEL ||
+		 pickedNodeType == NodeType::ASSIMP_MODEL ||
+		 pickedNodeType == NodeType::SHAPE_MODEL) // any model type
+		&& (std::dynamic_pointer_cast<Node>(pickedNode)->GetGizmoType() != GizmoType::NONE))
 	{
 		if (auto resolved = resolveGizmoToLight(nodeManager, pickedNode))
 			pickedNode = resolved; // switch to the owning light node
@@ -168,7 +173,11 @@ void SelectionManager::ProcessPendingPick(const Camera* camera, NodeManager* nod
 		m_lastPickTime = 0.0;
 	}
 	// cycle-up selection for models (non-gizmos)
-	else if (pickedNode->GetNodeType() == NodeType::MODEL)
+	else if (pickedNodeType == NodeType::COMPOSITE_MODEL ||
+			 pickedNodeType == NodeType::COMPOSITE_ASSIMP_MODEL ||
+			 pickedNodeType == NodeType::COMPOSITE_SHAPE_MODEL ||
+			 pickedNodeType == NodeType::ASSIMP_MODEL ||
+			 pickedNodeType == NodeType::SHAPE_MODEL) // any model type
 	{ // if the picked node is a model, check for cycle-up conditions
 		auto modelComp = std::dynamic_pointer_cast<Node>(pickedNode);
 		bool sameAsLast = (m_lastPickedId == modelComp->GetId());
@@ -312,15 +321,6 @@ void SelectionManager::DeleteSelected(NodeManager* nodeManager)
 	bool wasOutlineEligible = isOutlineEligible(node);
 	if (wasOutlineEligible)
 		clearOutlineMask();
-
-	if (node->GetNodeType() == NodeType::LIGHT)
-	{ // if the selected node is a light, also remove its gizmo model (if any)
-		// dynamically cast the node to a Light object
-		auto light = static_cast<Light*>(node.get());
-		// if the light has a gizmo model, remove it from the node manager
-		if (auto& gizmo = light->GetGizmo())
-			nodeManager->RemoveNodeById(gizmo->GetId());
-	}
 
 	// remove the selected node itself and print info
 	nodeManager->RemoveNodeById(node->GetId());
@@ -659,17 +659,24 @@ std::shared_ptr<Node> SelectionManager::findNodeById(NodeManager* nodeManager, s
 std::shared_ptr<Node> SelectionManager::resolveGizmoToLight(NodeManager* nodeManager,
 															const std::shared_ptr<Node>& gizmoModel) const
 {
-	// a light owns a gizmo model whose pointer id we can match
-	for (const auto& node : nodeManager->GetNodes(NodeType::LIGHT))
-	{ // iterate through all lights in the scene
-		// dynamically cast the node to a Light object
-		auto light = dynamic_cast<Light*>(node.get());
-		if (!light) continue; // skip if not a light
-
-		// if the light's gizmo matches the given model, return the light
-		auto& gizmo = light->GetGizmo();
-		if (gizmo && gizmo->GetId() == gizmoModel->GetId())
-			return node; // return owning light
+	if (!gizmoModel)
+	{
+		std::cerr << "[WARNING::SELECTIONMANAGER::resolveGizmoToLight] Ivalid gizmo model provided"
+			<< std::endl;
+		return nullptr;
 	}
-	return nullptr; // if no owning light found, return null
+
+	// return the parent of the gizmo model, which should be the owning light
+	auto parent = gizmoModel->GetParent();
+	if (parent && parent->GetNodeType() == NodeType::LIGHT)
+	{
+		std::cout << "[INFO::SELECTIONMANAGER::resolveGizmoToLight] Resolved gizmo model ID "
+			<< gizmoModel->GetId() << " to owning parent light ID " << parent->GetId() << std::endl;
+		return parent;
+	}
+
+	// if no valid parent light found, print a warning and return null
+	std::cerr << "[WARNING::SELECTIONMANAGER::resolveGizmoToLight] Could not resolve gizmo model ID "
+		<< gizmoModel->GetId() << " to an owning parent light" << std::endl;
+	return nullptr;
 }

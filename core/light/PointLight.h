@@ -48,7 +48,7 @@ public:
 	// Creates the gizmo for the point light
 	void CreateGizmo() override;
 	// Syncronizes gizmo's position with the light's position
-	void SyncGizmoPositionFromLight() { if (gizmo) gizmo->SetPosition(position); }
+	void SyncGizmoPositionFromLight();
 
 	// Static Public Functions
 	// -----------------------

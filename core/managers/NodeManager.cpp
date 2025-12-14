@@ -96,30 +96,56 @@ void NodeManager::RemoveNodeById(std::uint32_t id)
 {
 	bool found = false; // flag to track if a node with the specified id was found
 	std::string foundNodeType; // to store the type of the found node
+	std::shared_ptr<Node> nodeToRemove; // store the node to check for children
 
+	// first, find the node with the specified id in the map
 	for (auto& [nodeType, nodes] : m_nodes)
-	{ // iterate through each node of each type in the map
-		// try to find the node with the specified id in the vector of nodes of the current type
-		auto it = std::remove_if(nodes.begin(), nodes.end(),
-								 [id](const std::shared_ptr<Node>& node) { return node->GetId() == id; });
-
-		if (it != nodes.end())
-		{ // if a node with the id was found, store the type and erase it
-			if (!found)
-			{ // only log once for the specific type
-				foundNodeType = nodeType;
-				std::cout << "[INFO::NODEMANAGER::RemoveNodeById] Removed "
-					<< nodeType << " node with ID: " << id << std::endl;
-				found = true;
-			}
-			nodes.erase(it, nodes.end());
-			// continue to remove from other collections (e.g., "MODEL")
+	{ // iterate through each node type in the map
+		// search for the node with the specified id in the vector of nodes of the current type
+		auto nodeIt = std::find_if(nodes.begin(), nodes.end(),
+								   [id](const std::shared_ptr<Node>& node) { return node->GetId() == id; });
+		if (nodeIt != nodes.end() && !found)
+		{ // node with the specified id found, store the iterator, type, and mark as found, and then break
+			nodeToRemove = *nodeIt;
+			foundNodeType = nodeType;
+			found = true;
+			break; // found the node, no need to continue searching
 		}
 	}
 
 	if (!found)
-	{ // if no node with the specified ID was found, print an error message
+	{ // if no node with the specified id was found, print an error message and return
 		std::cerr << "[ERROR::NODEMANAGER::RemoveNodeById] No node found with ID: " << id << std::endl;
+		return;
+	}
+
+	// if the node has children, remove them first (recursively)
+	if (nodeToRemove)
+	{
+		auto children = nodeToRemove->GetChildren();
+		if (!children.empty())
+		{
+			std::cout << "[INFO::NODEMANAGER::RemoveNodeById] Node with ID " << id
+				<< " has " << children.size() << " children.\n\tRemoving children first..." << std::endl;
+
+			for (const auto& child : children) if (child) RemoveNodeById(child->GetId()); // recursive call
+		}
+	}
+
+	// now remove the node from all categories
+	std::cout << "[INFO::NODEMANAGER::RemoveNodeById] Removed "
+		<< foundNodeType << " node with ID " << id << " and name " << nodeToRemove->GetName() << std::endl;
+
+	for (auto& [nodeType, nodes] : m_nodes)
+	{ // iterate through each node type in the map
+		// remove the node with the specified id from the vector
+		auto it = std::remove_if(nodes.begin(), nodes.end(),
+								 [id](const std::shared_ptr<Node>& node) { return node->GetId() == id; });
+
+		if (it != nodes.end())
+		{ // if the node was found and removed, erase the "removed" elements from the vector
+			nodes.erase(it, nodes.end());
+		}
 	}
 }
 

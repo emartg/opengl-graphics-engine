@@ -128,7 +128,7 @@ private:
 	// Finds an node by its id among models and lights
 	std::shared_ptr<Node> findNodeById(NodeManager* nodeManager, std::uint32_t id) const;
 
-	// If the given node is a gizmo model, resolves it to the owning light node
+	// If the given node is a gizmo model, resolves it to the owning parent light node
 	std::shared_ptr<Node> resolveGizmoToLight(NodeManager* nodeManager,
 											  const std::shared_ptr<Node>& gizmoModel) const;
 

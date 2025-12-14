@@ -35,6 +35,12 @@ public:
 
 	// Public Methods
 	// --------------
+	// Draws the gizmo representing the directional light (if any) and its direction line (if any)
+	void Draw() const override;
+	// Draws the gizmo representing the directional light (if any) and its direction line (if any),
+	// with the specified shader
+	void Draw(const Shader& shader) const override;
+
 	// Getters
 	glm::vec3 GetPosition() const { return position; }
 	glm::vec3 GetDirection() const { return direction; }
@@ -65,7 +71,7 @@ public:
 	// Creates the gizmo for the directional light
 	void CreateGizmo() override;
 	// Syncronizes gizmo's position with the light's position
-	void SyncGizmoPositionFromLight() { gizmo->SetPosition(position); }
+	void SyncGizmoPositionFromLight();
 	// Updates the vertices of the gizmo's direction line 
 	// based on the light's current position and direction
 	void UpdateGizmoDirectionLine();

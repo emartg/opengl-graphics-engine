@@ -324,7 +324,7 @@ void GUI::drawInformationWindow()
 	{ // show a window that displays all information about the nodes in the scene
 		// begin the Information window
 		ImGui::PushFont(m_boldFont);
-		ImGui::Begin("OBJECT INFORMATION", nullptr,
+		ImGui::Begin("SCENE GRAPH INFORMATION", nullptr,
 					 ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoFocusOnAppearing);
 		ImGui::PopFont();
 
@@ -662,7 +662,11 @@ void GUI::drawPropertiesWindow()
 				auto light = dynamic_cast<Light*>(selected.get()); // dynamic cast to Light object
 				drawLightControls(light); // draw the light controls
 			}
-			else if (selected->GetNodeType() == NodeType::MODEL)
+			else if (selected->GetNodeType() == NodeType::COMPOSITE_MODEL ||
+					 selected->GetNodeType() == NodeType::COMPOSITE_ASSIMP_MODEL ||
+					 selected->GetNodeType() == NodeType::ASSIMP_MODEL ||
+					 selected->GetNodeType() == NodeType::COMPOSITE_SHAPE_MODEL ||
+					 selected->GetNodeType() == NodeType::SHAPE_MODEL) // any model type
 			{ // if the selected node is a model, draw the model controls
 				auto model = dynamic_cast<Node*>(selected.get()); // dynamic cast to Model object
 				// only draw the model controls if the model is not a gizmo, since that is handled
@@ -1013,7 +1017,7 @@ void GUI::drawModelsInformation() const
 	ImGui::Text("\tNumber of Shapes in the scene: %d", nShapes);
 
 	// display the attributes of each model in the scene
-	ImGui::Text("\nNodes in the scene:");
+	ImGui::Text("\nModes in the scene:");
 	std::for_each(nodeManager->GetNodes("MODEL").begin(), nodeManager->GetNodes("MODEL").end(),
 				  [&](const std::shared_ptr<Node>& node)
 	{ // iterate over all models in the node manager and display their attributes
@@ -1106,7 +1110,6 @@ void GUI::drawDirectionalLightControls(DirectionalLight* directionalLight)
 	if (drawColorControl("Albedo", color))
 	{ // if the color control is used
 		directionalLight->SetDiffuse(color); // set the new color of the directional light
-		directionalLight->SyncGizmoColorFromLight(); // set the new color of the gizmo
 	}
 
 	// get the position of the directional light (it only serves visualization purposes)
@@ -1117,22 +1120,24 @@ void GUI::drawDirectionalLightControls(DirectionalLight* directionalLight)
 						INPUT_FIELD_WIDTH, POSITION_SPEED, POSITION_RESET_VALUE))
 	{ // if the control is used
 		directionalLight->SetPosition(pos); // set the new position of the directional light
-		directionalLight->SyncGizmoPositionFromLight(); // set the new position of the gizmo
 	}
 
 	// retrieve the gizmo of the directional light and its rotation in Euler angles
 	auto gizmo = directionalLight->GetGizmo();
-	glm::vec3 rotDegrees = gizmo->GetRotationInEulerAngles();
-	// create a control for the x, y, and z components of the directional light's rotation
-	if (drawVec3Control("Rotation", rotDegrees, false, // is not the scale control
-						MIN_ROTATION_VALUE, MAX_ROTATION_VALUE,
-						INPUT_FIELD_WIDTH, ROTATION_SPEED, ROTATION_RESET_VALUE))
-	{ // if the control is used
-					// set the new rotation of the directional light's gizmo
-		gizmo->SetRotationInEulerAngles(rotDegrees);
-		// update the light's direction based on the gizmo's new forward vector,
-		// without causing the gizmo to be re-oriented by SetForward() again
-		directionalLight->SetDirectionOnly(gizmo->GetForward());
+	if (gizmo)
+	{ // only proceed if the gizmo exists
+		glm::vec3 rotDegrees = gizmo->GetRotationInEulerAngles();
+		// create a control for the x, y, and z components of the directional light's rotation
+		if (drawVec3Control("Rotation", rotDegrees, false, // is not the scale control
+							MIN_ROTATION_VALUE, MAX_ROTATION_VALUE,
+							INPUT_FIELD_WIDTH, ROTATION_SPEED, ROTATION_RESET_VALUE))
+		{ // if the control is used
+			// set the new rotation of the directional light's gizmo
+			gizmo->SetRotationInEulerAngles(rotDegrees);
+			// update the light's direction based on the gizmo's new forward vector,
+			// without causing the gizmo to be re-oriented by SetForward() again
+			directionalLight->SetDirectionOnly(gizmo->GetForward());
+		}
 	}
 
 	ImGui::PopID(); // use PopID to end the unique ID scope
@@ -1149,7 +1154,6 @@ void GUI::drawPointLightControls(PointLight* pointLight)
 	if (drawColorControl("Albedo", color))
 	{ // if the color control is used
 		pointLight->SetDiffuse(color); // set the new color of the point light
-		pointLight->SyncGizmoColorFromLight(); // set the new color of the gizmo
 	}
 
 	// get the position of the point light
@@ -1160,7 +1164,6 @@ void GUI::drawPointLightControls(PointLight* pointLight)
 						INPUT_FIELD_WIDTH, POSITION_SPEED, POSITION_RESET_VALUE))
 	{ // if the control is used
 		pointLight->SetPosition(pos); // set the new position of the point light
-		pointLight->SyncGizmoPositionFromLight(); // set the new position of the gizmo
 	}
 
 	ImGui::PopID(); // use PopID to end the unique ID scope
@@ -1177,7 +1180,6 @@ void GUI::drawSpotlightControls(Spotlight* spotlight)
 	if (drawColorControl("Albedo", color))
 	{ // if the color control is used
 		spotlight->SetDiffuse(color); // set the new color of the spotlight
-		spotlight->SyncGizmoColorFromLight(); // set the new color of the gizmo
 	}
 
 	// get the position of the spotlight
@@ -1188,22 +1190,24 @@ void GUI::drawSpotlightControls(Spotlight* spotlight)
 						INPUT_FIELD_WIDTH, POSITION_SPEED, POSITION_RESET_VALUE))
 	{ // if the control is used
 		spotlight->SetPosition(pos); // set the new position of the spotlight
-		spotlight->SyncGizmoPositionFromLight(); // set the new position of the gizmo
 	}
 
 	// retrieve the gizmo of the spotlight and its rotation in Euler angles
 	auto gizmo = spotlight->GetGizmo();
-	glm::vec3 rotDegrees = gizmo->GetRotationInEulerAngles();
-	// create a control for the x, y, and z components of the spotlight's rotation
-	if (drawVec3Control("Rotation", rotDegrees, false, // is not the scale control
-						MIN_ROTATION_VALUE, MAX_ROTATION_VALUE,
-						INPUT_FIELD_WIDTH, ROTATION_SPEED, ROTATION_RESET_VALUE))
-	{ // if the control are used
-					// set the new rotation of the spotlight's gizmo
-		gizmo->SetRotationInEulerAngles(rotDegrees);
-		// update the light's direction based on the gizmo's new forward vector,
-		// without causing the gizmo to be re-oriented by SetForward() again
-		spotlight->SetDirectionOnly(gizmo->GetForward());
+	if (gizmo)
+	{ // only proceed if the gizmo exists
+		glm::vec3 rotDegrees = gizmo->GetRotationInEulerAngles();
+		// create a control for the x, y, and z components of the spotlight's rotation
+		if (drawVec3Control("Rotation", rotDegrees, false, // is not the scale control
+							MIN_ROTATION_VALUE, MAX_ROTATION_VALUE,
+							INPUT_FIELD_WIDTH, ROTATION_SPEED, ROTATION_RESET_VALUE))
+		{ // if the control are used
+						// set the new rotation of the spotlight's gizmo
+			gizmo->SetRotationInEulerAngles(rotDegrees);
+			// update the light's direction based on the gizmo's new forward vector,
+			// without causing the gizmo to be re-oriented by SetForward() again
+			spotlight->SetDirectionOnly(gizmo->GetForward());
+		}
 	}
 
 	// get the inner and outer cut-off angles of the spotlight and 
@@ -1334,15 +1338,10 @@ void GUI::drawCreateDirectionalLightPopup()
 				"Directional Light " + nDirectionalLights,
 				glm::vec3{ 0.1f }, m_newAlbedo, glm::vec3{ 1.0f }, m_newPosition, m_newDirection
 			);
-
-			// get the gizmo of the new directional light before creating the light to the engine
-			auto newDirectionalLightGizmo = newDirectionalLight->GetGizmo();
+			// create the gizmo child (the light has been fully constructed and placed in a shared_ptr)
+			newDirectionalLight->CreateGizmo();
 			// add the new directional light to the engine
 			nodeManager->AddNode(std::move(newDirectionalLight));
-			// set the name of the gizmo to include the model number
-			newDirectionalLightGizmo->SetName(newDirectionalLightGizmo->GetName() + " (Model " + nModels + ")");
-			// create the gizmo of the new directional light to the engine
-			nodeManager->AddNode(std::move(newDirectionalLightGizmo));
 
 			ImGui::CloseCurrentPopup(); // close the popup
 		}
@@ -1402,15 +1401,10 @@ void GUI::drawCreatePointLightPopup()
 				"Point Light " + nPointLights,
 				glm::vec3{ 0.1f }, m_newAlbedo, glm::vec3{ 1.0f }, m_newPosition
 			);
-
-			// get the gizmo of the new point light before creating the light to the engine
-			auto newPointLightGizmo = newPointLight->GetGizmo();
+			// create the gizmo child (the light has been fully constructed and placed in a shared_ptr)
+			newPointLight->CreateGizmo();
 			// add the new point light to the engine
 			nodeManager->AddNode(std::move(newPointLight));
-			// set the name of the gizmo to include the model number
-			newPointLightGizmo->SetName(newPointLightGizmo->GetName() + " (Model " + nModels + ")");
-			// create the gizmo of the new point light to the engine
-			nodeManager->AddNode(std::move(newPointLightGizmo));
 
 			ImGui::CloseCurrentPopup(); // close the popup
 		}
@@ -1487,15 +1481,10 @@ void GUI::drawCreateSpotlightPopup()
 				"Spotlight " + nSpotlights,
 				glm::vec3{ 0.1f }, m_newAlbedo, glm::vec3{ 1.0f }, m_newPosition, m_newDirection
 			);
-
-			// get the gizmo of the new spotlight before creating the light to the engine
-			auto newSpotlightGizmo = newSpotlight->GetGizmo();
+			// create the gizmo child (the light has been fully constructed and placed in a shared_ptr)
+			newSpotlight->CreateGizmo();
 			// add the new spotlight to the engine
 			nodeManager->AddNode(std::move(newSpotlight));
-			// set the name of the gizmo to include the model number
-			newSpotlightGizmo->SetName(newSpotlightGizmo->GetName() + " (Model " + nModels + ")");
-			// create the gizmo of the new spotlight to the engine
-			nodeManager->AddNode(std::move(newSpotlightGizmo));
 
 			ImGui::CloseCurrentPopup(); // close the popup
 		}
@@ -2128,15 +2117,6 @@ void GUI::drawRemoveNodeButton(Node* node, std::vector<uint32_t>& nodesToRemoveI
 	std::string buttonLabel = "Remove " + label;
 	if (ImGui::Button(buttonLabel.c_str(), ImVec2(buttonWidth, buttonHeight)))
 	{ // if the button is clicked
-		if (node->GetNodeType() == NodeType::LIGHT)
-		{ // if the node is a light, also add its gizmo to the list of nodes to remove
-			auto light = static_cast<Light*>(node); // cast the node to a Light pointer
-			auto& gizmo = light->GetGizmo(); // get the gizmo from the light
-			uint32_t gizmoId = gizmo->GetId(); // get the id of the gizmo
-			nodesToRemoveIds.push_back(gizmoId); // add the gizmo id to the list of nodes to remove
-			std::cout << "[INFO::GUI::drawRemoveNodeButton] "
-				<< gizmo->GetName() << " with ID " << gizmoId << " marked for removal" << std::endl;
-		}
 		nodesToRemoveIds.push_back(node->GetId()); // add the node id to the list of nodes to remove
 		std::cout << "[INFO::GUI::drawRemoveNodeButton] "
 			<< node->GetName() << " with ID " << node->GetId() << " marked for removal" << std::endl;

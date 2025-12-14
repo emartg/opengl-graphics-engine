@@ -27,17 +27,52 @@ DirectionalLight::DirectionalLight(const std::string& name,
 	position{ position }, direction{ direction },
 	gizmoDirectionLine{ nullptr }
 {
-	CreateGizmo(); // create the gizmo for the spotlight
 	nDirectionalLights++;
 }
 
 // Public Methods
 // --------------
+void DirectionalLight::Draw() const
+{
+	// draw the gizmo representing the light via the base class method
+	Light::Draw();
+
+	// draw the direction line specific to directional lights (if it exists)
+	if (gizmoDirectionLine)
+	{
+
+		// Update the line's vertices before drawing to match the light's current position and direction
+		// (const_cast is used here because the Draw method is const, 
+		// but the Line class's UpdateVertices method is non-const)
+		const_cast<DirectionalLight*>(this)->UpdateGizmoDirectionLine();
+
+		gizmoDirectionLine->Draw(); // draw the direction line using its own Draw method
+	}
+}
+
+void DirectionalLight::Draw(const Shader& shader) const
+{
+	// draw the gizmo representing the light with the specified shader via the base class method
+	Light::Draw(shader);
+
+	// draw the direction line specific to directional lights (if it exists)
+	if (gizmoDirectionLine)
+	{
+		// Update the line's vertices before drawing to match the light's current position and direction
+		// (const_cast is used here because the Draw method is const, 
+		// but the Line class's UpdateVertices method is non-const)
+		const_cast<DirectionalLight*>(this)->UpdateGizmoDirectionLine();
+
+		gizmoDirectionLine->Draw(); // draw the direction line using its own Draw method
+	}
+}
+
 void DirectionalLight::SetPosition(glm::vec3 position)
 {
 	this->position = position;
 	// update gizmo position based on the light position
-	gizmo->SetPosition(position);
+	auto gizmo = GetGizmo();
+	if (gizmo) gizmo->SetPosition(position);
 	// update the position of the vertices of the direction line
 	UpdateGizmoDirectionLine();
 }
@@ -51,7 +86,8 @@ void DirectionalLight::SetDirectionAndAlignGizmo(const glm::vec3& direction)
 {
 	this->direction = glm::normalize(direction);
 	// update the gizmo's forward direction when the light's direction changes
-	gizmo->SetForward(this->direction);
+	auto gizmo = GetGizmo();
+	if (gizmo) gizmo->SetForward(this->direction);
 	// update the position of the vertices of the direction line
 	UpdateGizmoDirectionLine();
 }
@@ -68,7 +104,7 @@ void DirectionalLight::CreateGizmo()
 	glm::quat rotation = lookAt * meshToZ;
 
 	// create a triangle fan plane gizmo for the directional light gizmo
-	gizmo = std::make_shared<Shape>(
+	auto gizmo = std::make_shared<Shape>(
 		name + " Gizmo",
 		triangleFanPlaneVerticesVec, triangleFanPlaneIndicesVec,
 		diffuse, // set the color of the gizmo to the light's diffuse color
@@ -82,6 +118,9 @@ void DirectionalLight::CreateGizmo()
 	// set the gizmo's type to DIRECTIONAL_LIGHT (used for rendering and interaction purposes)
 	gizmo->SetGizmoType(GizmoType::DIRECTIONAL_LIGHT);
 
+	// add the gizmo as a child node of the light
+	AddChild(gizmo);
+
 	// create the line that represents the direction of the light,
 	// initializing it with the current position and direction of the light
 	glm::vec3 start = this->position;
@@ -92,6 +131,12 @@ void DirectionalLight::CreateGizmo()
 	};
 	// the gizmo direction line is only created once and then updated when needed
 	gizmoDirectionLine = std::make_shared<Line>(lineVertices);
+}
+
+void DirectionalLight::SyncGizmoPositionFromLight()
+{
+	auto gizmo = GetGizmo(); // get the gizmo representing the light
+	if (gizmo) gizmo->SetPosition(position); // set the gizmo's position to the light's position
 }
 
 void DirectionalLight::UpdateGizmoDirectionLine()

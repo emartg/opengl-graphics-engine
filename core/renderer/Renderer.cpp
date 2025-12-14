@@ -451,52 +451,34 @@ void Renderer::RenderScene()
 		RenderModel(model); // render the node
 	}
 
-	// set the polygon mode to line for the directional light gizmo lines
-	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-
-	// iterate over the vector of lights and render the directional light gizmo lines
-	std::for_each(lights.begin(), lights.end(),
-				  [&](const std::shared_ptr<Node>& node)
+	// iterate over the vector of lights and render their gizmo children (if any)
+	for (const auto& node : lights)
 	{
 		// dynamically cast the node to a Light object
-		auto light = dynamic_cast<Light*>(node.get());
+		auto light = std::dynamic_pointer_cast<Light>(node);
+		if (!light) continue; // if the cast fails, skip to the next node
 
-		// check if the light is a directional light
-		if (light->GetLightType() == LightType::DIRECTIONAL_LIGHT)
+		// set up the single albedo shader for rendering light gizmos
+		m_singleAlbedoShader->Use();
+		m_singleAlbedoShader->SetMat4("projection", projection);
+		m_singleAlbedoShader->SetMat4("view", view);
+
+		auto gizmo = light->GetGizmo();
+		if (gizmo)
 		{
-			// cast the light to a DirectionalLight object
-			auto dirLight = dynamic_cast<DirectionalLight*>(light);
+			// set rendering mode to wireframe for light gizmos
+			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
-			// update the line's vertices to match the light's current position and direction
-			// (prevents constantly re-creating Line objects)
-			dirLight->UpdateGizmoDirectionLine();
+			// set the model matrix and albedo color for the light gizmo
+			m_singleAlbedoShader->SetMat4("model", gizmo->GetModelMatrix());
+			m_singleAlbedoShader->SetVec3("albedo", light->GetAlbedo());
 
-			// retrieve the line from the directional light
-			auto& line = dirLight->GetGizmoDirectionLine();
+			gizmo->Draw(); // draw the light gizmo
 
-			// activate the single albedo shader for rendering the line
-			m_singleAlbedoShader->Use();
-
-			// set the projection and view matrices for the line						
-			m_singleAlbedoShader->SetMat4("projection", projection);
-			m_singleAlbedoShader->SetMat4("view", view);
-
-			// the model matrix is not used for lines, but we set it to identity for consistency
-			// (the line is drawn in world space, so it doesn't need a model matrix transformation)
-			glm::mat4 model{ 1.0f };
-			// set the model matrix for the line
-			m_singleAlbedoShader->SetMat4("model", model);
-
-			// set the color of the line based on the directional light's diffuse color
-			m_singleAlbedoShader->SetVec3("albedo", dirLight->GetDiffuse());
-
-			// render the directional light gizmo line with its bespoke Draw method
-			line->Draw();
+			// reset rendering mode to fill after rendering the light gizmo
+			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		}
-	});
-
-	// set the polygon mode back to fill for the skybox rendering
-	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	}
 
 	// create and render the skybox last if a skybox texture is set
 	// (rendering it last leverages the early depth test optimization,

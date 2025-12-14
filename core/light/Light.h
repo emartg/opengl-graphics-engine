@@ -34,35 +34,39 @@ public:
 
 	// Public Methods
 	// --------------
-	// Loads the light
-	virtual void Load() override {}
+	// Loads the light and its resources, including its children if the light is composite
+	void Load() override { for (const auto& child : children) if (child) child->Load(); }
 
-	// Deallocates all the resources of the light
-	virtual void DeallocateResources() override {}
+	// Deallocates all the resources of the light, including its children if the light is composite
+	void DeallocateResources() override
+	{
+		for (const auto& child : children) if (child) child->DeallocateResources();
+	}
 
-	// Does not draw anything by default, as a light by itself has no visual representation
-	virtual void Draw() const override {}
-	// Does not draw anything by default, as a light by itself has no visual representation
-	virtual void Draw(const Shader& shader) const override {}
+	// Draws the meshes of the gizmos representing the light (if any),
+	// as the light itself has no visual representation
+	virtual void Draw() const override;
+	// Draws the meshes of the gizmos representing the light (if any) with the specified shader,
+	// as the light itself has no visual representation
+	virtual void Draw(const Shader& shader) const override;
 
 	// Getters
 	glm::vec3 GetAmbient() const { return ambient; }
 	glm::vec3 GetDiffuse() const { return diffuse; }
 	glm::vec3 GetSpecular() const { return specular; }
 	LightType GetLightType() const { return lightType; }
-	std::shared_ptr<Node>& GetGizmo() { return gizmo; }
+	std::shared_ptr<Node> GetGizmo() const;
 
 	// Setters
 	void SetAmbient(glm::vec3 ambient) { this->ambient = ambient; }
 	void SetDiffuse(glm::vec3 diffuse) { this->diffuse = diffuse; }
 	void SetSpecular(glm::vec3 specular) { this->specular = specular; }
 	void SetLightType(LightType type) { this->lightType = type; }
-	void SetGizmo(std::shared_ptr<Node> gizmo) { this->gizmo = gizmo; }
 
 	// Create the gizmo for the light
 	virtual void CreateGizmo() = 0;
 	// Syncronize gizmo's diffuse color with the light's diffuse color
-	void SyncGizmoColorFromLight() { if (gizmo) gizmo->SetAlbedo(diffuse); }
+	void SyncGizmoColorFromLight();
 
 	// Static Public Functions
 	// -----------------------
@@ -78,8 +82,6 @@ protected:
 	glm::vec3 ambient;
 	glm::vec3 diffuse;
 	glm::vec3 specular;
-
-	std::shared_ptr<Node> gizmo; // the model used to represent the light in the scene
 
 	LightType lightType; // type of the light (e.g., DIRECTIONAL_LIGHT, POINT_LIGHT, SPOTLIGHT)
 

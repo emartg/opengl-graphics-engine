@@ -91,7 +91,7 @@ public:
 
 	void SetId(std::uint32_t id) { this->id = id; }
 	void SetName(const std::string& name) { this->name = name; }
-	void SetType(const NodeType& type) { this->type = type; }
+	void SetNodeType(const NodeType& type) { this->type = type; }
 
 	const glm::vec3& GetAlbedo() const { return albedo; }
 	const glm::vec3& GetPosition() const { return position; }

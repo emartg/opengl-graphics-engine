@@ -162,7 +162,7 @@ void SetupInitialScene(Core* engine)
 	sceneManager->SetCamera(camera);
 	nodeManager->AddNode(std::move(camera));
 
-	// create a directional light and its gizmo, then add them to the node manager
+	// create a directional light and add it along with its gizmo to the node manager
 	auto directionalLight = std::make_shared<DirectionalLight>(
 		"Directional Light",
 		glm::vec3{ 0.1f }, // ambient color (default)
@@ -171,12 +171,14 @@ void SetupInitialScene(Core* engine)
 		glm::vec3{ 2.4f, 8.0f, -3.0f }, // position (overridden)
 		glm::vec3{ -0.2f, -0.8, 0.5f } // direction (overridden)
 	);
-	auto& directionalLightGizmo = directionalLight->GetGizmo();
-	nodeManager->AddNode(std::move(directionalLight));
-	directionalLightGizmo->SetName(directionalLightGizmo->GetName());
+	// create the gizmo child (the light has been fully constructed and placed in a shared_ptr)
+	directionalLight->CreateGizmo();
+	// register the gizmo child for selection/picking before moving the light
+	auto directionalLightGizmo = directionalLight->GetGizmo();
 	nodeManager->AddNode(std::move(directionalLightGizmo));
+	nodeManager->AddNode(std::move(directionalLight));
 
-	// create a point light and its gizmo, then add them to the node manager
+	// create a point light and add it along with its gizmo to the node manager
 	auto pointLight = std::make_shared<PointLight>(
 		"Point Light",
 		glm::vec3{ 0.1f }, // ambient color (default)
@@ -184,12 +186,14 @@ void SetupInitialScene(Core* engine)
 		glm::vec3{ 1.0f }, // specular color (same as default)
 		glm::vec3{ -0.6f, 3.2f, 3.2f } // position (overridden)
 	);
-	auto& pointLightGizmo = pointLight->GetGizmo();
-	nodeManager->AddNode(std::move(pointLight));
-	pointLightGizmo->SetName(pointLightGizmo->GetName());
+	// create the gizmo child (the light has been fully constructed and placed in a shared_ptr)
+	pointLight->CreateGizmo();
+	// register the gizmo child for selection/picking before moving the light
+	auto pointLightGizmo = pointLight->GetGizmo();
 	nodeManager->AddNode(std::move(pointLightGizmo));
+	nodeManager->AddNode(std::move(pointLight));
 
-	// create a spotlight and its gizmo, then add them to the node manager
+	// create a spotlight and add it along with its gizmo to the node manager
 	auto spotlight = std::make_shared<Spotlight>(
 		"Spotlight",
 		glm::vec3{ 0.1f }, // ambient color (override required although it is the default)
@@ -200,10 +204,12 @@ void SetupInitialScene(Core* engine)
 		glm::cos(glm::radians(15.0f)), // inner cut-off (overridden)
 		glm::cos(glm::radians(32.5f)) // outer cut-off (overridden)
 	);
-	auto& spotlightGizmo = spotlight->GetGizmo();
+	// create the gizmo child (the light has been fully constructed and placed in a shared_ptr)
+	spotlight->CreateGizmo();
+	// register the gizmo child for selection/picking before moving the light
+	auto spotlightGizmo = spotlight->GetGizmo();
+	if (spotlightGizmo) nodeManager->AddNode(std::move(spotlightGizmo));
 	nodeManager->AddNode(std::move(spotlight));
-	spotlightGizmo->SetName(spotlightGizmo->GetName());
-	nodeManager->AddNode(std::move(spotlightGizmo));
 
 	// create a composite model hierarchy mixing shapes and an Assimp model
 	auto rootGroup = std::make_shared<Model>("Root Group");

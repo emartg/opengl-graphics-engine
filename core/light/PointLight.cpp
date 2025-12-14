@@ -25,7 +25,6 @@ PointLight::PointLight(const std::string& name,
 	position{ position },
 	constant{ constant }, linear{ linear }, quadratic{ quadratic }
 {
-	CreateGizmo(); // create the gizmo for the point light
 	nPointLights++;
 }
 
@@ -34,7 +33,7 @@ PointLight::PointLight(const std::string& name,
 void PointLight::CreateGizmo()
 {
 	// create a decahedron shape for the point light gizmo  
-	gizmo = std::make_shared<Shape>(
+	auto gizmo = std::make_shared<Shape>(
 		name + " Gizmo",
 		decahedronVerticesVec, decahedronIndicesVec,
 		diffuse, // set the color of the gizmo to the light's diffuse color
@@ -45,4 +44,13 @@ void PointLight::CreateGizmo()
 
 	// set the gizmo's type to POINT_LIGHT (used for rendering and interaction purposes)
 	gizmo->SetGizmoType(GizmoType::POINT_LIGHT);
+
+	// add the gizmo as a child node of the light
+	AddChild(gizmo);
+}
+
+void PointLight::SyncGizmoPositionFromLight()
+{
+	auto gizmo = GetGizmo(); // get the gizmo representing the light
+	if (gizmo) gizmo->SetPosition(position); // set the gizmo's position to the light's position
 }

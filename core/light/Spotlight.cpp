@@ -32,7 +32,6 @@ Spotlight::Spotlight(const std::string& name,
 	innerCutOff{ innerCutOff }, outerCutOff{ outerCutOff },
 	constant{ constant }, linear{ linear }, quadratic{ quadratic }
 {
-	CreateGizmo(); // create the gizmo for the spotlight
 	nSpotlights++;
 }
 
@@ -42,7 +41,8 @@ void Spotlight::SetPosition(glm::vec3 position)
 {
 	this->position = position;
 	// update gizmo position based on the light position
-	gizmo->SetPosition(position);
+	auto gizmo = GetGizmo();
+	if (gizmo) gizmo->SetPosition(position);
 }
 void Spotlight::SetDirectionOnly(const glm::vec3& direction)
 {
@@ -52,7 +52,8 @@ void Spotlight::SetDirectionAndAlignGizmo(const glm::vec3& direction)
 {
 	this->direction = glm::normalize(direction);
 	// update the gizmo's forward direction when the light's direction changes
-	gizmo->SetForward(this->direction);
+	auto gizmo = GetGizmo();
+	if (gizmo) gizmo->SetForward(this->direction);
 }
 
 void Spotlight::CreateGizmo()
@@ -67,7 +68,7 @@ void Spotlight::CreateGizmo()
 	glm::quat rotation = lookAt * meshToZ;
 
 	// create a hexagonal pyramid shape for the spotlight gizmo
-	gizmo = std::make_shared<Shape>(
+	auto gizmo = std::make_shared<Shape>(
 		name + " Gizmo",
 		hexPyramidVerticesVec, hexPyramidIndicesVec,
 		diffuse, // set the color of the gizmo to the light's diffuse color
@@ -80,4 +81,13 @@ void Spotlight::CreateGizmo()
 
 	// set the gizmo's type to SPOTLIGHT (used for rendering and interaction purposes)
 	gizmo->SetGizmoType(GizmoType::SPOTLIGHT);
+
+	// add the gizmo as a child node of the light
+	AddChild(gizmo);
+}
+
+void Spotlight::SyncGizmoPositionFromLight()
+{
+	auto gizmo = GetGizmo(); // get the gizmo representing the light
+	if (gizmo) gizmo->SetPosition(position); // set the gizmo's position to the light's position
 }

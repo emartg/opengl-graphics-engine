@@ -37,9 +37,11 @@ void Model::Draw() const
 void Model::Draw(const Shader& shader) const
 {
 	for (const auto& mesh : meshes)
+	{
 		if (mesh)
 		{
 			mesh->BindTextures(const_cast<Shader&>(shader)); // bind the textures
 			mesh->Draw();
 		}
+	}
 }
