@@ -738,7 +738,7 @@ void Renderer::CompositeToScreen()
 
 	// depending on the debug mode and whether there is a selection,
 	// render the outline mask or the picking visualization
-	if (m_screenDebugParams.debugMode <= 1 && selectionManager->GetSelectedAssetId() != 0)
+	if (m_screenDebugParams.debugMode <= 1 && selectionManager->GetSelectedNodeId() != 0)
 	{
 		// if debug mode is either Normal mode (1) or Inverted Colors mode (3), and there is a selection,
 		// render the outline mask
@@ -813,7 +813,7 @@ void Renderer::CompositeToScreen()
 	// local variables for outline parameters
 	// there is only and outline if there is a selected node and the outline mask texture is available
 	const bool hasOutline =
-		selectionManager->GetSelectedAssetId() != 0 && selectionManager->GetOutlineMaskTextureId() != 0;
+		selectionManager->GetSelectedNodeId() != 0 && selectionManager->GetOutlineMaskTextureId() != 0;
 	glm::vec3 outlineColor{ 0.0f };
 	GLuint outlineThickness = 0;
 

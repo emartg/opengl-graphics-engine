@@ -44,18 +44,21 @@ GUI::GUI()
 	m_newScale{ 1.0f }, // default scale for new objects is 1.0
 	m_newInnerCutOff{ 12.5f }, // default inner cutoff angle for new spotlights
 	m_newOuterCutOff{ 32.5f }, // default outer cutoff angle for new spotlights
+	m_selectedNodeIds{}, // initialize empty set for selected nodes
+	m_lastClickedNodeId{ 0 }, // initialize last clicked node id to 0 (no selection)
 	m_mediumFont{ nullptr }, // medium font for the GUI (default font) is nullptr initially
 	m_boldFont{ nullptr } // bold font for the GUI is nullptr initially
 {
 	initGUILayoutAttributes(); // initialize the display size-independent layout attributes
 	// initialize the positions and sizes of the GUI windows to default values
 	// (since they require the ImGui context to be created first to access the ImGui IO object)
-	m_informationWindowPosition, m_debugWindowPosition, m_creationWindowPosition, m_propertiesWindowPosition
-		= ImVec2{ 0.0f, 0.0f };
-	m_informationWindowSize, m_debugWindowSize, m_creationWindowSize, m_propertiesWindowSize
-		= ImVec2{ 0.0f, 0.0f };
+	m_informationWindowPosition, m_sceneGraphWindowPosition, m_debugWindowPosition,
+		m_creationWindowPosition, m_propertiesWindowPosition = ImVec2{ 0.0f, 0.0f };
+	m_informationWindowSize, m_sceneGraphWindowSize, m_debugWindowSize,
+		m_creationWindowSize, m_propertiesWindowSize = ImVec2{ 0.0f, 0.0f };
 	// initialize the flags for the windows to prevent focus on the first frame
 	m_informationWindowJustAppeared = true;
+	m_sceneGraphWindowJustAppeared = true;
 	m_debugWindowJustAppeared = true;
 	m_propertiesWindowJustAppeared = true;
 	m_creationWindowJustAppeared = true;
@@ -117,6 +120,8 @@ void GUI::initGUILayoutAttributes()
 	// set the private variables for the GUI layout
 	m_informationWindowRelativeWidth = 0.3f;
 	m_informationWindowRelativeHeight = 0.6f;
+	m_sceneGraphWindowRelativeWidth = 0.3f;
+	m_sceneGraphWindowRelativeHeight = 0.6f;
 	m_debugWindowRelativeWidth = 0.3f;
 	m_debugWindowRelativeHeight = 0.4f;
 	m_propertiesWindowRelativeWidth = 0.2f;
@@ -126,6 +131,8 @@ void GUI::initGUILayoutAttributes()
 
 	m_informationWindowXOffset = 0.0f;
 	m_informationWindowYOffset = 0.0f;
+	m_sceneGraphWindowXOffset = 0.0f;
+	m_sceneGraphWindowYOffset = 0.0f;
 	m_debugWindowXOffset = 0.0f;
 	m_debugWindowYOffset = 1.0f - m_debugWindowRelativeHeight;
 	m_propertiesWindowXOffset = 1.0f - m_propertiesWindowRelativeWidth;
@@ -260,6 +267,16 @@ void GUI::configureGUILayout()
 		io.DisplaySize.x * m_informationWindowRelativeWidth - m_windowSizePadding.x, // width
 		io.DisplaySize.y * m_informationWindowRelativeHeight - m_windowSizePadding.y * 0.5f // height
 	};
+	// position of the Scene Graph Window
+	m_sceneGraphWindowPosition = ImVec2{
+		io.DisplaySize.x * m_sceneGraphWindowXOffset + m_windowPositionPadding.x, // x position
+		io.DisplaySize.y * m_sceneGraphWindowYOffset + m_windowPositionPadding.y // y position
+	};
+	// size (width and height) of the Scene Graph Window
+	m_sceneGraphWindowSize = ImVec2{
+		io.DisplaySize.x * m_sceneGraphWindowRelativeWidth - m_windowSizePadding.x, // width
+		io.DisplaySize.y * m_sceneGraphWindowRelativeHeight - m_windowSizePadding.y * 0.5f // height
+	};
 	// position of the Debug Window (bottom left corner with padding)
 	m_debugWindowPosition = ImVec2{
 		io.DisplaySize.x * m_debugWindowXOffset + m_windowPositionPadding.x, // x position
@@ -294,7 +311,8 @@ void GUI::configureGUILayout()
 
 void GUI::drawGUIWindows()
 {
-	drawInformationWindow();
+	//drawInformationWindow(); // currently disabled to test the Scene Graph Window
+	drawSceneGraphWindow();
 	drawDebugWindow();
 	drawPropertiesWindow();
 	drawCreationWindow();
@@ -324,7 +342,7 @@ void GUI::drawInformationWindow()
 	{ // show a window that displays all information about the nodes in the scene
 		// begin the Information window
 		ImGui::PushFont(m_boldFont);
-		ImGui::Begin("SCENE GRAPH INFORMATION", nullptr,
+		ImGui::Begin("NODE INFORMATION", nullptr,
 					 ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoFocusOnAppearing);
 		ImGui::PopFont();
 
@@ -651,7 +669,7 @@ void GUI::drawPropertiesWindow()
 		{ // if an node is selected, display its name and ID, and draw its controls
 			// display the name and ID of the selected node in bold font
 			ImGui::PushFont(m_boldFont);
-			ImGui::TextWrapped("%s\n(ID: %u)", selected->GetName().c_str(), selected->GetId());
+			ImGui::TextWrapped("%s\n(ID %u)", selected->GetName().c_str(), selected->GetId());
 			ImGui::PopFont();
 
 			ImGui::Separator();
@@ -1057,6 +1075,306 @@ void GUI::drawModelsInformation() const
 
 		ImGui::PopID(); // use PopID to end the unique ID scope
 	});
+}
+
+
+void GUI::drawSceneGraphWindow()
+{
+	// set initial size and position for the Scene Graph Window
+	ImGui::SetNextWindowSize(m_sceneGraphWindowSize, ImGuiCond_Appearing);
+	ImGui::SetNextWindowPos(m_sceneGraphWindowPosition, ImGuiCond_Appearing);
+	// set the Scene Graph Window to be expanded (i.e. not minimized)
+	ImGui::SetNextWindowCollapsed(false, ImGuiCond_Appearing);
+
+	{ // show a window that displays the scene graph as a hierarchical tree
+		// begin the Scene Graph window
+		ImGui::PushFont(m_boldFont);
+		ImGui::Begin("SCENE GRAPH", nullptr,
+					 ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoFocusOnAppearing);
+		ImGui::PopFont();
+
+		// get the node manager from the Core instance
+		auto& nodeManager = Core::GetInstance()->GetNodeManager();
+
+		// display instruction text
+		ImGui::TextWrapped("Click: Select | Ctrl+Click: Multi-select | Shift+Click: Range | Del: Delete");
+		ImGui::Separator();
+
+		// get all root nodes (nodes without parents)
+		std::vector<std::shared_ptr<Node>> rootNodes;
+		// collect cameras
+		for (const auto& node : nodeManager->GetNodes("CAMERA"))
+			if (!node->GetParent())
+				rootNodes.push_back(node);
+		// collect lights (excluding gizmos which have parents)
+		for (const auto& node : nodeManager->GetNodes("LIGHT"))
+			if (!node->GetParent())
+				rootNodes.push_back(node);
+		// collect models (excluding children which have parents)
+		for (const auto& node : nodeManager->GetNodes("MODEL"))
+			if (!node->GetParent())
+				rootNodes.push_back(node);
+
+		// draw the tree recursively starting from root nodes
+		for (const auto& rootNode : rootNodes)
+			if (rootNode) // ensure the node is valid
+				drawNodeTreeRecursive(rootNode);
+
+		ImGui::End(); // end the Scene Graph window
+
+		if (m_sceneGraphWindowJustAppeared)
+		{ // if the window just appeared (first frame), prevent it from being focused
+			ImGui::SetWindowFocus(nullptr); // set focus to no window
+			m_sceneGraphWindowJustAppeared = false; // no longer the first frame
+		}
+	}
+
+	// handle delete key press for selected nodes
+	handleDeleteSelectedNodes();
+}
+
+void GUI::drawNodeTreeRecursive(const std::shared_ptr<Node>& node)
+{
+	if (!node) return; // safety check
+
+	// determine if this node is currently selected
+	bool isSelected = m_selectedNodeIds.find(node->GetId()) != m_selectedNodeIds.end();
+
+	// create flags for the tree node
+	ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick;
+
+	// if the node is selected, add the Selected flag
+	if (isSelected)
+		flags |= ImGuiTreeNodeFlags_Selected;
+
+	// if the node has no children, make it a leaf node
+	if (!node->IsComposite())
+		flags |= ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
+
+	// determine icon/prefix based on node type
+	std::string nodeLabel;
+	switch (node->GetNodeType())
+	{
+		case NodeType::CAMERA:
+			nodeLabel = "[CAMERA] " + node->GetName();
+			break;
+		case NodeType::LIGHT:
+			nodeLabel = "[LIGHT] " + node->GetName();
+			break;
+		case NodeType::COMPOSITE_MODEL:
+		case NodeType::COMPOSITE_ASSIMP_MODEL:
+		case NodeType::COMPOSITE_SHAPE_MODEL:
+			nodeLabel = "[GROUP] " + node->GetName();
+			break;
+		case NodeType::MODEL:
+		case NodeType::ASSIMP_MODEL:
+		case NodeType::SHAPE_MODEL:
+			// check if it's a gizmo
+			if (node->GetGizmoType() != GizmoType::NONE)
+				nodeLabel = "[GIZMO] " + node->GetName();
+			else
+				nodeLabel = "[MODEL] " + node->GetName();
+			break;
+		default:
+			nodeLabel = node->GetName();
+			break;
+	}
+
+	// push a unique ID for this tree node
+	ImGui::PushID(static_cast<int>(node->GetId()));
+
+	// draw the tree node
+	bool nodeOpen = ImGui::TreeNodeEx(nodeLabel.c_str(), flags);
+
+	// handle selection on click
+	if (ImGui::IsItemClicked())
+	{
+		ImGuiIO& io = ImGui::GetIO();
+		bool isCtrlPressed = io.KeyCtrl;
+		bool isShiftPressed = io.KeyShift;
+
+		handleNodeSelection(node->GetId(), isCtrlPressed, isShiftPressed);
+	}
+
+	// if the node is open and has children, draw them recursively
+	if (nodeOpen && node->IsComposite())
+	{
+		for (const auto& child : node->GetChildren())
+			if (child) // ensure child is valid
+				drawNodeTreeRecursive(child);
+		ImGui::TreePop(); // end the tree node
+	}
+
+	ImGui::PopID(); // pop the unique ID
+}
+
+void GUI::handleNodeSelection(std::uint32_t nodeId, bool isCtrlPressed, bool isShiftPressed)
+{
+	// get the node manager and selection manager from the Core instance
+	auto& nodeManager = Core::GetInstance()->GetNodeManager();
+	auto& selectionManager = Core::GetInstance()->GetSelectionManager();
+
+	if (isShiftPressed && m_lastClickedNodeId != 0)
+	{
+		// range selection: select all nodes between last clicked and current
+		// (for simplicity, collect all visible node ids in order and select the range)
+		std::vector<std::uint32_t> allNodeIds;
+
+		// helper lambda to collect node ids in traversal order
+		std::function<void(const std::shared_ptr<Node>&)> collectIds;
+		collectIds = [&](const std::shared_ptr<Node>& node)
+		{
+			if (!node) return;
+			allNodeIds.push_back(node->GetId());
+			for (const auto& child : node->GetChildren())
+				collectIds(child);
+		};
+
+		// collect all root nodes
+		for (const auto& node : nodeManager->GetNodes("CAMERA"))
+			if (!node->GetParent()) collectIds(node);
+		for (const auto& node : nodeManager->GetNodes("LIGHT"))
+			if (!node->GetParent()) collectIds(node);
+		for (const auto& node : nodeManager->GetNodes("MODEL"))
+			if (!node->GetParent()) collectIds(node);
+
+		// find indices of the range
+		auto startIt = std::find(allNodeIds.begin(), allNodeIds.end(), m_lastClickedNodeId);
+		auto endIt = std::find(allNodeIds.begin(), allNodeIds.end(), nodeId);
+
+		if (startIt != allNodeIds.end() && endIt != allNodeIds.end())
+		{ // if both nodes found, select all the nodes in the range
+			if (startIt > endIt) std::swap(startIt, endIt); // ensure start comes before end
+
+			for (auto it = startIt; it <= endIt; ++it) m_selectedNodeIds.insert(*it);
+		}
+	}
+	else if (isCtrlPressed)
+	{
+		// multi-selection: toggle selection of this node
+		if (m_selectedNodeIds.find(nodeId) != m_selectedNodeIds.end())
+		{ // if already selected, deselect it
+			m_selectedNodeIds.erase(nodeId);
+		}
+		else
+		{ // if not selected, add it to selection
+			m_selectedNodeIds.insert(nodeId);
+		}
+	}
+	else
+	{
+		// single selection: clear previous selection and select only this node
+		bool wasSelected = m_selectedNodeIds.find(nodeId) != m_selectedNodeIds.end();
+		m_selectedNodeIds.clear();
+
+		// if clicking the same node again, deselect it
+		if (!wasSelected) m_selectedNodeIds.insert(nodeId);
+	}
+
+	// update the last clicked node
+	m_lastClickedNodeId = nodeId;
+
+	// sync with SelectionManager for Properties Window
+	// (select the first selected node, or clear if none selected)
+	if (!m_selectedNodeIds.empty())
+	{
+		auto firstSelectedId = *m_selectedNodeIds.begin();
+		selectionManager->SetSelectedNodeId(firstSelectedId);
+	}
+	else
+	{
+		selectionManager->ClearSelection();
+	}
+}
+
+void GUI::handleDeleteSelectedNodes()
+{
+	// check if the Delete key is pressed
+	ImGuiIO& io = ImGui::GetIO();
+	if (ImGui::IsKeyPressed(ImGuiKey_Delete) && !m_selectedNodeIds.empty())
+	{ // if Delete key is pressed and there are selected nodes, proceed to delete them
+		// get the node manager and selection manager from the Core instance
+		auto& nodeManager = Core::GetInstance()->GetNodeManager();
+		auto& selectionManager = Core::GetInstance()->GetSelectionManager();
+
+		// collect nodes to delete (need to validate they exist and can be deleted)
+		std::vector<std::uint32_t> nodesToDelete;
+		std::vector<std::string> undeletableNodes;
+
+		for (const auto& nodeId : m_selectedNodeIds)
+		{ // iterate over selected node ids
+			auto node = nodeManager->GetNodeById(nodeId);
+			if (!node)
+			{ // if the node does not exist, log a warning and skip it
+				std::cerr << "[WARNING::GUI::handleDeleteSelectedNodes] Node with ID "
+					<< nodeId << " not found" << std::endl;
+				continue;
+			}
+
+			// check if the node can be deleted (e.g., cameras cannot be deleted for now)
+			if (node->GetNodeType() == NodeType::CAMERA)
+			{ // if the node is a camera, mark it as undeletable
+				undeletableNodes.push_back(node->GetName() + " (Camera)");
+				continue;
+			}
+
+			nodesToDelete.push_back(nodeId); // mark the node for deletion
+		}
+
+		// show error popup if some nodes cannot be deleted
+		if (!undeletableNodes.empty())
+		{ // if there are undeletable nodes, prepare the error message
+			// store error message in a static variable to persist across frames
+			static std::string deleteErrorMessage;
+			deleteErrorMessage = "The following nodes cannot be deleted:\n";
+			for (const auto& name : undeletableNodes)
+				deleteErrorMessage += "  - " + name + "\n";
+
+			ImGui::OpenPopup("Delete Error"); // open the error popup
+		}
+
+		// delete the valid nodes
+		for (const auto& nodeId : nodesToDelete)
+		{ // iterate over nodes to delete
+			auto node = nodeManager->GetNodeById(nodeId);
+			if (node)
+			{ // if the node exists, print info and delete it
+				std::cout << "[INFO::GUI::handleDeleteSelectedNodes] Deleting node: "
+					<< node->GetName() << " (ID " << nodeId << ")" << std::endl;
+
+				nodeManager->RemoveNodeById(nodeId);
+			}
+		}
+
+		// clear the selection after deletion
+		m_selectedNodeIds.clear();
+		m_lastClickedNodeId = 0;
+		selectionManager->ClearSelection();
+	}
+
+	// draw the delete error popup when opened
+	if (ImGui::BeginPopupModal("Delete Error", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+	{ // if the delete error popup is open
+		static std::string deleteErrorMessage; // needs to persist, thus static
+		ImGui::TextWrapped("%s", deleteErrorMessage.c_str()); // display the error message
+
+		ImGui::Dummy(ImVec2(0.0f, 10.0f)); // add some vertical spacing
+
+		// center the OK button
+		ImVec2 buttonSize{ ITEM_WIDTH, 0.0f };
+		float availWidth = ImGui::GetContentRegionAvail().x;
+		float offsetX = (availWidth - buttonSize.x) * 0.5f;
+		if (offsetX > 0.0f) ImGui::SetCursorPosX(ImGui::GetCursorPosX() + offsetX);
+
+		// draw the OK button to close the popup
+		if (ImGui::Button("OK", ImVec2(ITEM_WIDTH, 0.0f)))
+		{ // if the OK button is clicked, clear the error message and close the popup
+			deleteErrorMessage.clear();
+			ImGui::CloseCurrentPopup();
+		}
+
+		ImGui::EndPopup(); // end the delete error popup
+	}
 }
 
 

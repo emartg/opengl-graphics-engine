@@ -46,12 +46,18 @@ public:
 	// Getters
 	const std::vector<std::shared_ptr<Node>>& GetNodes(NodeType nodeType) const;
 	const std::vector<std::shared_ptr<Node>>& GetNodes(const std::string& nodeType) const;
+
+	// Gets a node by its index within its type category (throws out_of_range if index invalid)
 	const std::shared_ptr<Node>& GetNodeByIndex(NodeType nodeType, GLuint index) const;
 	const std::shared_ptr<Node>& GetNodeByIndex(const std::string& nodeType, GLuint index) const;
 
+	// Gets a node by its unique id (returns nullptr if not found)
+	std::shared_ptr<Node> GetNodeById(std::uint32_t id) const;
+
 	// Adds a node to the node manager
 	void AddNode(std::shared_ptr<Node> node);
-	// Removes an node from the node manager by its ID
+
+	// Removes a node from the node manager by its unique id
 	void RemoveNodeById(std::uint32_t id);
 
 	// Getters for the number of nodes of different types

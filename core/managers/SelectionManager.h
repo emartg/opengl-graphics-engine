@@ -53,7 +53,10 @@ public:
 	void RenderPickingVisualization(const Camera* camera, NodeManager* nodeManager);
 
 	// Get currently selected node id (0 means none)
-	std::uint32_t GetSelectedAssetId() const { return m_selectedNodeId; }
+	std::uint32_t GetSelectedNodeId() const { return m_selectedNodeId; }
+
+	// Set the selected node id directly (for programmatic selection, e.g., from GUI)
+	void SetSelectedNodeId(std::uint32_t id) { m_selectedNodeId = id; }
 
 	// Returns a shared_ptr to the currently selected node (may be null)
 	std::shared_ptr<Node> GetSelectedNode(NodeManager* nodeManager) const;

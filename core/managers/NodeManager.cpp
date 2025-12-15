@@ -73,6 +73,20 @@ const std::shared_ptr<Node>& NodeManager::GetNodeByIndex(const std::string& node
 	return empty;
 }
 
+std::shared_ptr<Node> NodeManager::GetNodeById(std::uint32_t id) const
+{
+	for (const auto& [nodeType, nodes] : m_nodes)
+	{ // iterate through each node type in the map
+		// search for the node with the specified id in the vector of nodes of the current type
+		auto it = std::find_if(nodes.begin(), nodes.end(),
+							   [id](const std::shared_ptr<Node>& node) { return node->GetId() == id; });
+		if (it != nodes.end()) return *it; // node with the specified id found, return it
+	}
+
+	// if no node with the specified id was found, return nullptr
+	return nullptr;
+}
+
 void NodeManager::AddNode(std::shared_ptr<Node> node)
 {
 	// convert NodeType to string for map lookup
@@ -115,7 +129,7 @@ void NodeManager::RemoveNodeById(std::uint32_t id)
 
 	if (!found)
 	{ // if no node with the specified id was found, print an error message and return
-		std::cerr << "[ERROR::NODEMANAGER::RemoveNodeById] No node found with ID: " << id << std::endl;
+		std::cerr << "[ERROR::NODEMANAGER::RemoveNodeById] No node found with ID " << id << std::endl;
 		return;
 	}
 
