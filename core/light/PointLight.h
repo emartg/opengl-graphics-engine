@@ -40,7 +40,7 @@ public:
 	GLfloat GetQuadratic() const { return quadratic; }
 
 	// Setters
-	void SetPosition(glm::vec3 position) { this->position = position; }
+	void SetPosition(glm::vec3 position);
 	void SetConstant(GLfloat constant) { this->constant = constant; }
 	void SetLinear(GLfloat linear) { this->linear = linear; }
 	void SetQuadratic(GLfloat quadratic) { this->quadratic = quadratic; }

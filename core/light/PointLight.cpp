@@ -30,6 +30,14 @@ PointLight::PointLight(const std::string& name,
 
 // Public Methods  
 // --------------
+void PointLight::SetPosition(glm::vec3 position)
+{
+	this->position = position;
+	// update gizmo position based on the light position
+	auto gizmo = GetGizmo();
+	if (gizmo) gizmo->SetPosition(position);
+}
+
 void PointLight::CreateGizmo()
 {
 	// create a decahedron shape for the point light gizmo  

@@ -471,9 +471,30 @@ void Renderer::RenderScene()
 
 			// set the model matrix and albedo color for the light gizmo
 			m_singleAlbedoShader->SetMat4("model", gizmo->GetModelMatrix());
-			m_singleAlbedoShader->SetVec3("albedo", light->GetAlbedo());
+			// use light's diffuse color for the gizmo (to match light color)
+			m_singleAlbedoShader->SetVec3("albedo", light->GetDiffuse());
 
 			gizmo->Draw(); // draw the light gizmo
+
+			// for directional lights, also render the direction line as part of the gizmo
+			if (light->GetLightType() == LightType::DIRECTIONAL_LIGHT)
+			{
+				auto directionalLight = std::dynamic_pointer_cast<DirectionalLight>(light);
+				if (directionalLight)
+				{
+					auto& directionLine = directionalLight->GetGizmoDirectionLine();
+					if (directionLine)
+					{
+						// set the model matrix and albedo color for the direction line
+						// identity matrix for the line (as it does not need any further transformation)
+						m_singleAlbedoShader->SetMat4("model", glm::mat4(1.0f));
+						// use light's diffuse color for the direction line (to match light color)
+						m_singleAlbedoShader->SetVec3("albedo", directionalLight->GetDiffuse());
+
+						directionLine->Draw(); // draw the directional light direction line
+					}
+				}
+			}
 
 			// reset rendering mode to fill after rendering the light gizmo
 			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);

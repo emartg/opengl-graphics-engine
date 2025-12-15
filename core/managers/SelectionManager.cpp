@@ -458,7 +458,11 @@ void SelectionManager::RenderOutlineMask(const Camera* camera, NodeManager* node
 		auto light = static_cast<Light*>(selected.get());
 		model = light->GetGizmo(); // may be null if no gizmo exists
 	}
-	else if (selected->GetNodeType() == NodeType::MODEL)
+	else if (selected->GetNodeType() == NodeType::COMPOSITE_MODEL ||
+			 selected->GetNodeType() == NodeType::COMPOSITE_ASSIMP_MODEL ||
+			 selected->GetNodeType() == NodeType::COMPOSITE_SHAPE_MODEL ||
+			 selected->GetNodeType() == NodeType::ASSIMP_MODEL ||
+			 selected->GetNodeType() == NodeType::SHAPE_MODEL) // any model type
 	{ // if the selected node is a model, use it directly
 		model = std::dynamic_pointer_cast<Node>(selected);
 	}
@@ -610,14 +614,19 @@ bool SelectionManager::isOutlineEligible(const std::shared_ptr<Node>& node) cons
 {
 	if (!node) return false; // null node is not outline-eligible
 
-	if (node->GetNodeType() == NodeType::MODEL)
+	// check node type for outline eligibility
+	if (node->GetNodeType() == NodeType::COMPOSITE_ASSIMP_MODEL ||
+		node->GetNodeType() == NodeType::COMPOSITE_SHAPE_MODEL ||
+		node->GetNodeType() == NodeType::COMPOSITE_MODEL ||
+		node->GetNodeType() == NodeType::ASSIMP_MODEL ||
+		node->GetNodeType() == NodeType::SHAPE_MODEL) // any model type
 	{ // outline any non-gizmo model
 		auto model = dynamic_cast<Node*>(node.get());
 		if (!model) return false;
 		// outline any non-gizmo model
 		return model->GetGizmoType() == GizmoType::NONE;
 	}
-	if (node->GetNodeType() == NodeType::LIGHT)
+	else if (node->GetNodeType() == NodeType::LIGHT)
 	{ // outline lights only via their gizmo if present
 		auto light = static_cast<Light*>(node.get());
 		// outline via gizmo geometry if present
