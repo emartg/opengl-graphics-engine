@@ -322,11 +322,11 @@ void SelectionManager::DeleteSelected(NodeManager* nodeManager)
 	if (wasOutlineEligible)
 		clearOutlineMask();
 
-	// remove the selected node itself and print info
-	nodeManager->RemoveNodeById(node->GetId());
-	std::cout << "[INFO::SELECTIONMANAGER::DeleteSelected] Deleted selected node ID "
-		<< m_selectedNodeId << std::endl;
-	m_selectedNodeId = 0;
+	// remove the selected node itself, print info, and clear selection
+	nodeManager->RemoveNodeById(node->GetId()); // use the node manager to remove the node
+	std::cout << "[INFO::SELECTIONMANAGER::DeleteSelected] Selection (ID " << m_selectedNodeId << ") deleted"
+		<< std::endl;
+	m_selectedNodeId = 0; // clear selection after deletion (0 means none)
 }
 
 void SelectionManager::Resize(GLuint width, GLuint height)
@@ -670,7 +670,7 @@ std::shared_ptr<Node> SelectionManager::resolveGizmoToLight(NodeManager* nodeMan
 {
 	if (!gizmoModel)
 	{
-		std::cerr << "[WARNING::SELECTIONMANAGER::resolveGizmoToLight] Ivalid gizmo model provided"
+		std::cerr << "[WARNING::SELECTIONMANAGER::resolveGizmoToLight] Invalid gizmo model provided"
 			<< std::endl;
 		return nullptr;
 	}

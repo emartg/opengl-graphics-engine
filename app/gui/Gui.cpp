@@ -44,24 +44,22 @@ GUI::GUI()
 	m_newScale{ 1.0f }, // default scale for new objects is 1.0
 	m_newInnerCutOff{ 12.5f }, // default inner cutoff angle for new spotlights
 	m_newOuterCutOff{ 32.5f }, // default outer cutoff angle for new spotlights
-	m_selectedNodeIds{}, // initialize empty set for selected nodes
-	m_lastClickedNodeId{ 0 }, // initialize last clicked node id to 0 (no selection)
 	m_mediumFont{ nullptr }, // medium font for the GUI (default font) is nullptr initially
 	m_boldFont{ nullptr } // bold font for the GUI is nullptr initially
 {
 	initGUILayoutAttributes(); // initialize the display size-independent layout attributes
 	// initialize the positions and sizes of the GUI windows to default values
 	// (since they require the ImGui context to be created first to access the ImGui IO object)
-	m_informationWindowPosition, m_sceneGraphWindowPosition, m_debugWindowPosition,
-		m_creationWindowPosition, m_propertiesWindowPosition = ImVec2{ 0.0f, 0.0f };
-	m_informationWindowSize, m_sceneGraphWindowSize, m_debugWindowSize,
-		m_creationWindowSize, m_propertiesWindowSize = ImVec2{ 0.0f, 0.0f };
+	m_nodeInformationWindowPosition, m_sceneGraphWindowPosition, m_propertiesWindowPosition,
+		m_creationWindowPosition, m_debugWindowPosition = ImVec2{ 0.0f, 0.0f };
+	m_nodeInformationWindowSize, m_sceneGraphWindowSize, m_propertiesWindowSize, m_creationWindowSize,
+		m_debugWindowSize = ImVec2{ 0.0f, 0.0f };
 	// initialize the flags for the windows to prevent focus on the first frame
-	m_informationWindowJustAppeared = true;
+	m_nodeInformationWindowJustAppeared = true;
 	m_sceneGraphWindowJustAppeared = true;
-	m_debugWindowJustAppeared = true;
 	m_propertiesWindowJustAppeared = true;
 	m_creationWindowJustAppeared = true;
+	m_debugWindowJustAppeared = true;
 }
 
 // Destructor
@@ -118,27 +116,28 @@ void GUI::ShutdownGUI() const
 void GUI::initGUILayoutAttributes()
 {
 	// set the private variables for the GUI layout
-	m_informationWindowRelativeWidth = 0.3f;
-	m_informationWindowRelativeHeight = 0.6f;
-	m_sceneGraphWindowRelativeWidth = 0.3f;
+	m_sceneGraphWindowRelativeWidth = 0.25f;
 	m_sceneGraphWindowRelativeHeight = 0.6f;
-	m_debugWindowRelativeWidth = 0.3f;
-	m_debugWindowRelativeHeight = 0.4f;
-	m_propertiesWindowRelativeWidth = 0.2f;
-	m_propertiesWindowRelativeHeight = 0.8f;
-	m_creationWindowRelativeWidth = 0.2f;
+	m_nodeInformationWindowRelativeWidth = 0.25f;
+	m_nodeInformationWindowRelativeHeight = 0.4f;
+	m_propertiesWindowRelativeWidth = 0.25f;
+	m_propertiesWindowRelativeHeight = 0.4f;
+	m_creationWindowRelativeWidth = 0.25f;
 	m_creationWindowRelativeHeight = 0.2f;
+	m_debugWindowRelativeWidth = 0.25f;
+	m_debugWindowRelativeHeight = 0.4f;
 
-	m_informationWindowXOffset = 0.0f;
-	m_informationWindowYOffset = 0.0f;
 	m_sceneGraphWindowXOffset = 0.0f;
 	m_sceneGraphWindowYOffset = 0.0f;
-	m_debugWindowXOffset = 0.0f;
-	m_debugWindowYOffset = 1.0f - m_debugWindowRelativeHeight;
+	m_nodeInformationWindowXOffset = 0.0f;
+	m_nodeInformationWindowYOffset = 1.0f - m_nodeInformationWindowRelativeHeight;
 	m_propertiesWindowXOffset = 1.0f - m_propertiesWindowRelativeWidth;
 	m_propertiesWindowYOffset = 0.0f;
 	m_creationWindowXOffset = 1.0f - m_creationWindowRelativeWidth;
-	m_creationWindowYOffset = 1.0f - m_creationWindowRelativeHeight;
+	m_creationWindowYOffset = m_propertiesWindowRelativeHeight;
+	m_debugWindowXOffset = 1.0f - m_debugWindowRelativeWidth;
+	m_debugWindowYOffset = 1.0f - m_debugWindowRelativeHeight;
+
 	m_windowPositionPadding = ImVec2{ 10.f, 10.0f };
 	m_windowSizePadding = ImVec2{ 20.f, 20.0f };
 }
@@ -257,17 +256,7 @@ void GUI::configureGUILayout()
 {
 	ImGuiIO& io = ImGui::GetIO(); // get ImGui IO object for font and style settings
 
-	// position of the Information Window (top left corner with padding)
-	m_informationWindowPosition = ImVec2{
-		io.DisplaySize.x * m_informationWindowXOffset + m_windowPositionPadding.x, // x position
-		io.DisplaySize.y * m_informationWindowYOffset + m_windowPositionPadding.y // y position
-	};
-	// size (width and height) of the Information Window
-	m_informationWindowSize = ImVec2{
-		io.DisplaySize.x * m_informationWindowRelativeWidth - m_windowSizePadding.x, // width
-		io.DisplaySize.y * m_informationWindowRelativeHeight - m_windowSizePadding.y * 0.5f // height
-	};
-	// position of the Scene Graph Window
+	// position of the Scene Graph Window - top left corner with padding
 	m_sceneGraphWindowPosition = ImVec2{
 		io.DisplaySize.x * m_sceneGraphWindowXOffset + m_windowPositionPadding.x, // x position
 		io.DisplaySize.y * m_sceneGraphWindowYOffset + m_windowPositionPadding.y // y position
@@ -277,17 +266,17 @@ void GUI::configureGUILayout()
 		io.DisplaySize.x * m_sceneGraphWindowRelativeWidth - m_windowSizePadding.x, // width
 		io.DisplaySize.y * m_sceneGraphWindowRelativeHeight - m_windowSizePadding.y * 0.5f // height
 	};
-	// position of the Debug Window (bottom left corner with padding)
-	m_debugWindowPosition = ImVec2{
-		io.DisplaySize.x * m_debugWindowXOffset + m_windowPositionPadding.x, // x position
-		io.DisplaySize.y * m_debugWindowYOffset + m_windowPositionPadding.y // y position
+	// position of the Node Information Window - bottom left corner with padding
+	m_nodeInformationWindowPosition = ImVec2{
+		io.DisplaySize.x * m_nodeInformationWindowXOffset + m_windowPositionPadding.x, // x position
+		io.DisplaySize.y * m_nodeInformationWindowYOffset + m_windowPositionPadding.y // y position
 	};
-	// size (width and height) of the Debug Window
-	m_debugWindowSize = ImVec2{
-		io.DisplaySize.x * m_debugWindowRelativeWidth - m_windowSizePadding.x, // width
-		io.DisplaySize.y * m_debugWindowRelativeHeight - m_windowSizePadding.y // height
+	// size (width and height) of the Node Information Window
+	m_nodeInformationWindowSize = ImVec2{
+		io.DisplaySize.x * m_nodeInformationWindowRelativeWidth - m_windowSizePadding.x, // width
+		io.DisplaySize.y * m_nodeInformationWindowRelativeHeight - m_windowSizePadding.y // height
 	};
-	// position of the Properties Window (top right corner with padding)
+	// position of the Properties Window - top right corner with padding
 	m_propertiesWindowPosition = ImVec2{
 		io.DisplaySize.x * m_propertiesWindowXOffset + m_windowPositionPadding.x, // x position
 		io.DisplaySize.y * m_propertiesWindowYOffset + m_windowPositionPadding.y // y position
@@ -297,25 +286,37 @@ void GUI::configureGUILayout()
 		io.DisplaySize.x * m_propertiesWindowRelativeWidth - m_windowSizePadding.x, // width
 		io.DisplaySize.y * m_propertiesWindowRelativeHeight - m_windowSizePadding.y * 0.5f // height
 	};
-	// position of the Create Window (bottom right corner with padding)
+	// position of the Creation Window - right side, below Properties with padding
 	m_creationWindowPosition = ImVec2{
 		io.DisplaySize.x * m_creationWindowXOffset + m_windowPositionPadding.x, // x position
 		io.DisplaySize.y * m_creationWindowYOffset + m_windowPositionPadding.y // y position
 	};
-	// size (width and height) of the Create Window
+	// size (width and height) of the Creation Window
+	// (account for the padding between Creation and Debug Windows)
 	m_creationWindowSize = ImVec2{
 		io.DisplaySize.x * m_creationWindowRelativeWidth - m_windowSizePadding.x, // width
-		io.DisplaySize.y * m_creationWindowRelativeHeight - m_windowSizePadding.y // height
+		io.DisplaySize.y * m_creationWindowRelativeHeight - m_windowPositionPadding.y // height
+	};
+	// position of the Debug Window - bottom right corner with padding
+	// (no vertical padding at top since Creation window handles the gap)
+	m_debugWindowPosition = ImVec2{
+		io.DisplaySize.x * m_debugWindowXOffset + m_windowPositionPadding.x, // x position
+		io.DisplaySize.y * m_debugWindowYOffset + m_windowPositionPadding.y // y position
+	};
+	// size (width and height) of the Debug Window
+	m_debugWindowSize = ImVec2{
+		io.DisplaySize.x * m_debugWindowRelativeWidth - m_windowSizePadding.x, // width
+		io.DisplaySize.y * m_debugWindowRelativeHeight - m_windowSizePadding.y // height
 	};
 }
 
 void GUI::drawGUIWindows()
 {
-	//drawInformationWindow(); // currently disabled to test the Scene Graph Window
 	drawSceneGraphWindow();
-	drawDebugWindow();
+	drawNodeInformationWindow();
 	drawPropertiesWindow();
 	drawCreationWindow();
+	drawDebugWindow();
 }
 
 void GUI::handleImGuiInput() const
@@ -330,313 +331,269 @@ void GUI::handleImGuiInput() const
 		inputManager->SetCameraControlEnabled(true);
 }
 
-
-void GUI::drawInformationWindow()
+void GUI::resetGUILayout()
 {
-	// set initial size and position for the Information Window
-	ImGui::SetNextWindowSize(m_informationWindowSize, ImGuiCond_Appearing);
-	ImGui::SetNextWindowPos(m_informationWindowPosition, ImGuiCond_Appearing);
-	// set the Information Window to be expanded (i.e. not minimized)
+	// recalculate layout for current window size
+	configureGUILayout();
+
+	// reset all window states (positions, sizes, collapsed states)
+	ImGui::SetWindowPos("NODE INFORMATION", m_nodeInformationWindowPosition);
+	ImGui::SetWindowSize("NODE INFORMATION", m_nodeInformationWindowSize);
+	ImGui::SetWindowCollapsed("NODE INFORMATION", false);
+
+	ImGui::SetWindowPos("SCENE GRAPH", m_sceneGraphWindowPosition);
+	ImGui::SetWindowSize("SCENE GRAPH", m_sceneGraphWindowSize);
+	ImGui::SetWindowCollapsed("SCENE GRAPH", false);
+
+	ImGui::SetWindowPos("DEBUG", m_debugWindowPosition);
+	ImGui::SetWindowSize("DEBUG", m_debugWindowSize);
+	ImGui::SetWindowCollapsed("DEBUG", false);
+
+	ImGui::SetWindowPos("PROPERTIES", m_propertiesWindowPosition);
+	ImGui::SetWindowSize("PROPERTIES", m_propertiesWindowSize);
+	ImGui::SetWindowCollapsed("PROPERTIES", false);
+
+	ImGui::SetWindowPos("CREATION", m_creationWindowPosition);
+	ImGui::SetWindowSize("CREATION", m_creationWindowSize);
+	ImGui::SetWindowCollapsed("CREATION", false);
+
+	// log info message
+	std::cout << "[INFO::GUI::resetGUILayout] GUI layout reset to default" << std::endl;
+}
+
+
+void GUI::drawSceneGraphWindow()
+{
+	// set initial size and position for the Scene Graph Window
+	ImGui::SetNextWindowSize(m_sceneGraphWindowSize, ImGuiCond_Appearing);
+	ImGui::SetNextWindowPos(m_sceneGraphWindowPosition, ImGuiCond_Appearing);
+	// set the Scene Graph Window to be expanded (i.e. not minimized)
 	ImGui::SetNextWindowCollapsed(false, ImGuiCond_Appearing);
 
-	{ // show a window that displays all information about the nodes in the scene
-		// begin the Information window
+	{ // show a window that displays the scene graph as a hierarchical tree
+		// begin the Scene Graph window
 		ImGui::PushFont(m_boldFont);
-		ImGui::Begin("NODE INFORMATION", nullptr,
-					 ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoFocusOnAppearing);
+		ImGui::Begin("SCENE GRAPH", nullptr, ImGuiWindowFlags_NoFocusOnAppearing);
 		ImGui::PopFont();
 
-		drawCamerasInformation();
-		ImGui::Text("\n");
-		ImGui::Separator();
-		drawLightsInformation();
-		ImGui::Text("\n");
-		ImGui::Separator();
-		drawModelsInformation();
-		ImGui::Text("\n");
+		// get the node manager from the Core instance
+		auto& nodeManager = Core::GetInstance()->GetNodeManager();
 
-		ImGui::End(); // end the Information window
+		// display instruction text
+		ImGui::TextWrapped("Click: Select/Deselect | Del: Delete");
+		ImGui::Separator();
 
-		if (m_informationWindowJustAppeared)
+		// get all root nodes (nodes without parents)
+		std::vector<std::shared_ptr<Node>> rootNodes;
+		// collect cameras
+		for (const auto& node : nodeManager->GetNodes("CAMERA"))
+			if (!node->GetParent())
+				rootNodes.push_back(node);
+		// collect lights (excluding gizmos which have parents)
+		for (const auto& node : nodeManager->GetNodes("LIGHT"))
+			if (!node->GetParent())
+				rootNodes.push_back(node);
+		// collect models (excluding children which have parents)
+		for (const auto& node : nodeManager->GetNodes("MODEL"))
+			if (!node->GetParent())
+				rootNodes.push_back(node);
+
+		// draw the tree recursively starting from root nodes
+		for (const auto& rootNode : rootNodes)
+			if (rootNode) // ensure the node is valid
+				drawNodeTreeRecursive(rootNode);
+
+		ImGui::End(); // end the Scene Graph window
+
+		if (m_sceneGraphWindowJustAppeared)
 		{ // if the window just appeared (first frame), prevent it from being focused
 			ImGui::SetWindowFocus(nullptr); // set focus to no window
-			m_informationWindowJustAppeared = false; // no longer the first frame
+			m_sceneGraphWindowJustAppeared = false; // no longer the first frame
 		}
 	}
 }
 
-void GUI::drawDebugWindow()
+void GUI::drawNodeInformationWindow()
 {
-	// set initial size and position for the Debug Window
-	ImGui::SetNextWindowSize(m_debugWindowSize, ImGuiCond_Appearing);
-	ImGui::SetNextWindowPos(m_debugWindowPosition, ImGuiCond_Appearing);
-	// set the Debug Window to be expanded (i.e. not minimized)
+	// set initial size and position for the Node Information Window
+	ImGui::SetNextWindowSize(m_nodeInformationWindowSize, ImGuiCond_Appearing);
+	ImGui::SetNextWindowPos(m_nodeInformationWindowPosition, ImGuiCond_Appearing);
+	// set the Node Information Window to be expanded (i.e. not minimized)
 	ImGui::SetNextWindowCollapsed(false, ImGuiCond_Appearing);
 
-	{ // show a window that contains debug information and controls
-		// begin the Debug window
+	{ // show a window that displays information about the selected node
+		// begin the Node Information window
 		ImGui::PushFont(m_boldFont);
-		ImGui::Begin("DEBUG", nullptr,
-					 ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoFocusOnAppearing);
+		ImGui::Begin("NODE INFORMATION", nullptr, ImGuiWindowFlags_NoFocusOnAppearing);
 		ImGui::PopFont();
 
-		// get the renderer screen debug params from the Core instance
-		auto renderer = Core::GetInstance()->GetRenderer();
-		auto& params = renderer->GetScreenDebugParams();
-		// vector of strings that represent the different debug modes
-		std::vector<std::string> debugModes = {
-			"Normal",
-			"Inverted Colors",
-			"Picking Colors",
-			"Solid Color",
-			"Grid Overlay"
-		};
-		int debugModeIndex = static_cast<int>(params.debugMode); // current debug mode index
-		bool paramsChanged{ false }; // dirty flag to check if any of the params were changed
+		// get the selection manager from the Core instance
+		auto& nodeManager = Core::GetInstance()->GetNodeManager();
+		auto& selectionManager = Core::GetInstance()->GetSelectionManager();
 
-		// local helper to draw the outline color palette (used for outline-capable modes: 0 and 1)
-		auto drawOutlineColorPalette = []()
-		{
-			ImGui::Text("\tConfiguration");
-			// access SelectionManager outline params
-			auto& selectionManager = Core::GetInstance()->GetSelectionManager();
-			auto outlineParams = selectionManager->GetOutlineParams(); // copy current outline params
+		auto selected = selectionManager->GetSelectedNode(nodeManager.get());
+		if (!selected)
+		{ // if no node is selected, display a message prompting the user to select one
+			ImGui::TextWrapped("No node selected."
+							   "\nClick a node in the Scene Graph or viewport to inspect it.");
+		}
+		else
+		{ // if a node is selected, display its detailed information
+			// display the name and id of the selected node in bold font
+			ImGui::PushFont(m_boldFont);
+			ImGui::TextWrapped("%s", selected->GetName().c_str());
+			ImGui::Text("ID: %u", selected->GetId());
+			ImGui::PopFont();
 
-			// palette of vibrant outline colors (first item is the default color)
-			static const std::vector<std::pair<const char*, glm::vec3>> outlineColorPalette = {
-			{ "Cyan",     glm::vec3{ 0.00f, 0.95f, 1.00f } },
-			{ "Lime",     glm::vec3{ 0.30f, 1.00f, 0.30f } },
-			{ "Magenta",  glm::vec3{ 1.00f, 0.20f, 0.90f } },
-			{ "Yellow",   glm::vec3{ 1.00f, 0.95f, 0.20f } },
-			{ "Orange",   glm::vec3{ 1.00f, 0.60f, 0.20f } },
-			{ "Red",      glm::vec3{ 1.00f, 0.20f, 0.20f } },
-			{ "Blue",     glm::vec3{ 0.20f, 0.50f, 1.00f } },
-			{ "Purple",   glm::vec3{ 0.75f, 0.40f, 1.00f } },
-			{ "White",    glm::vec3{ 1.00f, 1.00f, 1.00f } }
-			};
+			ImGui::Separator(); // to separate the header from the details
 
-			// find nearest palette entry to current color (keeps UI in sync if color changed elsewhere)
-			auto currentOutlineColor = outlineParams.color;
-			int currentIdx{}; // index of the currently selected color in the palette
-			float best = std::numeric_limits<float>::max();
-			for (int i{}; i < static_cast<int>(outlineColorPalette.size()); ++i)
-			{
-				glm::vec3 d = currentOutlineColor - outlineColorPalette[i].second;
-				float dist2 = glm::dot(d, d);
-				if (dist2 < best) { best = dist2; currentIdx = i; }
+			// display type-specific information
+			if (selected->GetNodeType() == NodeType::CAMERA)
+			{ // if the selected node is a camera, display camera-specific information
+				auto camera = dynamic_cast<Camera*>(selected.get());
+				ImGui::Text("Type: Camera");
+				ImGui::Text("Position: (%.3f, %.3f, %.3f)",
+							camera->GetPosition().x,
+							camera->GetPosition().y,
+							camera->GetPosition().z);
+				ImGui::Text("Front: (%.3f, %.3f, %.3f)",
+							camera->GetFront().x,
+							camera->GetFront().y,
+							camera->GetFront().z);
+				ImGui::Text("Yaw: %.3f", camera->GetYaw());
+				ImGui::Text("Pitch: %.3f", camera->GetPitch());
+				ImGui::Text("Zoom: %.3f", camera->GetZoom());
 			}
+			else if (selected->GetNodeType() == NodeType::LIGHT)
+			{ // if the selected node is a light, display light-specific information
+				auto light = dynamic_cast<Light*>(selected.get());
+				ImGui::Text("Type: Light");
 
-			ImGui::Text("\t\t"); // add some vertical spacing for better visual separation
-			ImGui::SameLine();
-			ImGui::Text("Outline Color");
-			ImGui::SameLine(); // keep the combo box on the same line as the label
-			ImGui::SetNextItemWidth(120.0f); // set a fixed width for the combo box
-			if (ImGui::BeginCombo("##OutlineColorComboBox", outlineColorPalette[currentIdx].first,
-								  ImGuiComboFlags_HeightSmall))
-			{ // if the combo box is opened, iterate through all colors in the palette and display them
-				for (int n{}; n < static_cast<int>(outlineColorPalette.size()); ++n)
+				switch (light->GetLightType()) // display information based on the light type
 				{
-					bool isSelected = (currentIdx == n); // check if the current color is selected
-					if (ImGui::Selectable(outlineColorPalette[n].first, isSelected))
-					{ // if a color is selected, update the outline params in the SelectionManager
-						OutlineParams updated = outlineParams;
-						updated.color = outlineColorPalette[n].second;
-						selectionManager->SetOutlineParams(updated);
+					case LightType::DIRECTIONAL_LIGHT:
+					{ // if the light is a directional light, display directional light-specific properties
+						auto dirLight = dynamic_cast<DirectionalLight*>(light);
+						ImGui::Text("Light Type: Directional");
+						ImGui::Text("Color: (%.3f, %.3f, %.3f)",
+									dirLight->GetDiffuse().x,
+									dirLight->GetDiffuse().y,
+									dirLight->GetDiffuse().z);
+						ImGui::Text("Position: (%.3f, %.3f, %.3f)",
+									dirLight->GetPosition().x,
+									dirLight->GetPosition().y,
+									dirLight->GetPosition().z);
+						ImGui::Text("Direction: (%.3f, %.3f, %.3f)",
+									dirLight->GetDirection().x,
+									dirLight->GetDirection().y,
+									dirLight->GetDirection().z);
+						break;
 					}
-					// set the selected color as the default focus, i.e. highlight it
-					if (isSelected) ImGui::SetItemDefaultFocus();
+					case LightType::POINT_LIGHT:
+					{ // if the light is a point light, display point light-specific properties
+						auto pointLight = dynamic_cast<PointLight*>(light);
+						ImGui::Text("Light Type: Point");
+						ImGui::Text("Color: (%.3f, %.3f, %.3f)",
+									pointLight->GetDiffuse().x,
+									pointLight->GetDiffuse().y,
+									pointLight->GetDiffuse().z);
+						ImGui::Text("Position: (%.3f, %.3f, %.3f)",
+									pointLight->GetPosition().x,
+									pointLight->GetPosition().y,
+									pointLight->GetPosition().z);
+						break;
+					}
+					case LightType::SPOTLIGHT:
+					{ // if the light is a spotlight, display spotlight-specific properties
+						auto spotlight = dynamic_cast<Spotlight*>(light);
+						ImGui::Text("Light Type: Spotlight");
+						ImGui::Text("Color: (%.3f, %.3f, %.3f)",
+									spotlight->GetDiffuse().x,
+									spotlight->GetDiffuse().y,
+									spotlight->GetDiffuse().z);
+						ImGui::Text("Position: (%.3f, %.3f, %.3f)",
+									spotlight->GetPosition().x,
+									spotlight->GetPosition().y,
+									spotlight->GetPosition().z);
+						ImGui::Text("Direction: (%.3f, %.3f, %.3f)",
+									spotlight->GetDirection().x,
+									spotlight->GetDirection().y,
+									spotlight->GetDirection().z);
+						ImGui::Text("Inner Cut-off: %.3f°",
+									glm::degrees(glm::acos(spotlight->GetInnerCutOff())));
+						ImGui::Text("Outer Cut-off: %.3f°",
+									glm::degrees(glm::acos(spotlight->GetOuterCutOff())));
+						break;
+					}
+					default: // unknown light type, display a generic message
+						ImGui::Text("Light Type: Unknown");
+						break;
 				}
-				ImGui::EndCombo(); // end the combo box
 			}
-		};
-
-		// scene settings section title
-		ImGui::PushFont(m_boldFont);
-		ImGui::Text("SCENE SETTINGS");
-		ImGui::PopFont();
-
-		auto& sceneManager = Core::GetInstance()->GetSceneManager();
-		// button to reset the camera position and orientation
-		if (ImGui::Button("Reset Camera", ImVec2{ BUTTON_WIDTH * 2, BUTTON_HEIGHT }))
-		{ // if the button is pressed, set the camera to its default position and orientation
-			sceneManager->ResetCamera();
-		}
-		ImGui::SameLine(); // keep the buttons on the same line
-		// button to clear the skybox
-		if (ImGui::Button("Clear Skybox", ImVec2{ BUTTON_WIDTH * 2, BUTTON_HEIGHT }))
-		{ // if the button is pressed, clear the skybox, i.e. remove the current skybox texture
-			sceneManager->ClearSkybox();
-		}
-
-		ImGui::Text("\n"); // add some vertical spacing for better visual separation
-
-		// rendering settings section title
-		ImGui::PushFont(m_boldFont);
-		ImGui::Text("RENDERING INFORMATION");
-		ImGui::PopFont();
-
-		// display the current FPS and frame time
-		ImGui::Text("FPS: %.1f", ImGui::GetIO().Framerate);
-		ImGui::Text("Frame Time: %.3f ms/frame", 1000.0f / ImGui::GetIO().Framerate);
-
-		// display the screen texture debug mode currently in use and the values of its parameters
-		ImGui::Text("Screen Texture Debug Mode: %s", debugModes[debugModeIndex].c_str());
-		switch (debugModeIndex)
-		{
-			case 0: // Normal mode
-				break; // no parameters to display
-			case 1: // Inverted Colors mode
-				break; // no parameters to display
-			case 2: // Picking Colors (raw picking buffer visualization)
-				// no parameters to display, draw a text to explain what is shown
-				ImGui::Text("\tShowing per-object encoded IDs as colors");
-				break;
-			case 3: // Solid Color mode
-				ImGui::Text("\tSolid Color: (%.3f, %.3f, %.3f)",
-							params.solidColor.r, params.solidColor.g, params.solidColor.b);
-				break;
-			case 4: // Grid Overlay mode
-				ImGui::Text("\tGrid Line Count: %d", params.gridLineCount);
-				ImGui::Text("\tGrid Line Thickness: %.2f", params.gridLineThickness);
-				ImGui::Text("\tGrid Background Color: (%.3f, %.3f, %.3f)",
-							params.gridBgColor.r, params.gridBgColor.g, params.gridBgColor.b);
-				ImGui::Text("\tGrid Line Color: (%.3f, %.3f, %.3f)",
-							params.gridLineColor.r, params.gridLineColor.g, params.gridLineColor.b);
-				break;
-			default:
-				std::cerr << "[ERROR::GUI::drawDebugWindow] Unknown screen texture debug mode index: "
-					<< debugModeIndex << std::endl;
-				break;
-		}
-
-		ImGui::Text("\n"); // add some vertical spacing for better visual separation
-
-		// rendering settings section title
-		ImGui::PushFont(m_boldFont);
-		ImGui::Text("RENDERING SETTINGS");
-		ImGui::PopFont();
-
-		ImGui::Text("Screen Texture Debug Mode");
-		ImGui::SameLine(); // keep the combo box on the same line as the label
-		// make the combo box take the full width of the window
-		ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
-		// draw a combo box to select the screen texture debug mode (with the current mode as preview)
-		if (ImGui::BeginCombo("##ScreenTextureDebugMode", debugModes[debugModeIndex].c_str(),
-							  ImGuiComboFlags_HeightSmall))
-		{ // if the combo box is opened
-			for (int n{}; n < debugModes.size(); n++)
-			{ // iterate through all debug modes
-				bool isSelected = (debugModeIndex == n); // check if the current mode is selected
-				if (ImGui::Selectable(debugModes[n].c_str(), isSelected))
-				{ // if a mode is selected, update the current debug mode locally and in the renderer
-					debugModeIndex = n;
-					params.debugMode = debugModeIndex;
-					paramsChanged = true; // mark the params as changed
+			else if (selected->GetNodeType() == NodeType::COMPOSITE_MODEL ||
+					 selected->GetNodeType() == NodeType::COMPOSITE_ASSIMP_MODEL ||
+					 selected->GetNodeType() == NodeType::COMPOSITE_SHAPE_MODEL)
+			{ // if the selected node is a composite model, display composite-specific information
+				ImGui::Text("Type: Composite Model (Group)");
+				ImGui::Text("Children: %zu", selected->GetChildren().size());
+				ImGui::Text("Position: (%.3f, %.3f, %.3f)",
+							selected->GetPosition().x,
+							selected->GetPosition().y,
+							selected->GetPosition().z);
+				ImGui::Text("Rotation: (%.3f, %.3f, %.3f)",
+							selected->GetRotationInEulerAngles().x,
+							selected->GetRotationInEulerAngles().y,
+							selected->GetRotationInEulerAngles().z);
+				ImGui::Text("Scale: (%.3f, %.3f, %.3f)",
+							selected->GetScale().x,
+							selected->GetScale().y,
+							selected->GetScale().z);
+			}
+			else if (selected->GetNodeType() == NodeType::ASSIMP_MODEL ||
+					 selected->GetNodeType() == NodeType::SHAPE_MODEL)
+			{ // if the selected node is a model, display model-specific information
+				if (selected->GetGizmoType() != GizmoType::NONE)
+				{ // if the model is a gizmo, display its gizmo type
+					ImGui::Text("Type: Gizmo");
 				}
-				if (isSelected) // whatever mode is selected, set it as the default focus
-					ImGui::SetItemDefaultFocus();
-			}
-			ImGui::EndCombo(); // end the combo box
-		}
-
-		// depending on the selected debug mode, draw additional controls
-		switch (debugModeIndex)
-		{
-			case 0: // Normal mode
-			{ // draw the outline color palette in a combo box to allow for outline color selection
-				drawOutlineColorPalette();
-			}
-			break;
-			case 1: // Inverted Colors mode
-			{ // draw the outline color palette in a combo box to allow for outline color selection
-				drawOutlineColorPalette();
-			}
-			break;
-			case 2: // Picking Colors mode (raw picking buffer visualization)
-				break; // no additional controls needed
-			case 3: // Solid Color mode
-			{ // draw a color picker to select the solid color
-				ImGui::Text("\tConfiguration");
-				ImGui::Text("\t\t"); // add some vertical spacing for better visual separation
-				ImGui::SameLine();
-				ImGui::Text("Solid Color");
-				ImGui::SameLine(); // keep the color picker on the same line as the label
-				// use the custom drawColorControl helper to draw the color picker
-				if (drawColorControl("##SolidColor", params.solidColor,
-									 false, ImGui::GetContentRegionAvail().x))
-					paramsChanged = true; // mark the params as changed
-			}
-			break;
-			case 4: // Grid Overlay mode
-			{ // draw controls for each parameter
-				ImGui::Text("\tConfiguration");
-				ImGui::Text("\t\t"); // add some vertical spacing for better visual separation
-				ImGui::SameLine();
-				ImGui::Text("Grid Line Count      ");
-				ImGui::SameLine(); // keep the input field on the same line as the label
-				ImGui::SetNextItemWidth(100.0f); // set a fixed width for the input field
-				if (ImGui::InputInt("##GridLineCount", (int*)&params.gridLineCount,
-									1, 10)) // set step values for the input field (normal and fast)
-				{ // if the input field is changed, update the number of grid lines
-					// clamp the value to a reasonable range [2, 1000]
-					if (params.gridLineCount < 2)
-						params.gridLineCount = 2;
-					else if (params.gridLineCount > 1000)
-						params.gridLineCount = 1000;
-
-					// update the number of grid lines in the params
-					params.gridLineCount = params.gridLineCount;
-					paramsChanged = true; // mark the params as changed
-				}
-				ImGui::Text("\t\t"); // add some vertical spacing for better visual separation
-				ImGui::SameLine();
-				ImGui::Text("Grid Line Thickness  ");
-				ImGui::SameLine(); // keep the input field on the same line as the label
-				ImGui::SetNextItemWidth(100.0f); // set a fixed width for the input field
-				if (ImGui::InputFloat("##GridLineThickness", &params.gridLineThickness,
-									  0.05f, 0.5f, // set step values for the input field (normal and fast)
-									  "%.2f"))
-				{ // if the input field is changed, update the grid line thickness
-					// clamp the value to a reasonable range [1.0, 10.0]
-					params.gridLineThickness = std::clamp(params.gridLineThickness, 1.0f, 10.0f);
-					paramsChanged = true; // mark the params as changed
+				else
+				{ // if the model is not a gizmo, display its type
+					if (selected->GetNodeType() == NodeType::ASSIMP_MODEL)
+						ImGui::Text("Type: Assimp Model");
+					else if (selected->GetNodeType() == NodeType::SHAPE_MODEL)
+						ImGui::Text("Type: Shape");
+					else
+						ImGui::Text("Type: Unknown");
 				}
 
-				ImGui::Text("\t\t"); // add some vertical spacing for better visual separation
-				ImGui::SameLine();
-				ImGui::Text("Grid Background Color");
-				ImGui::SameLine(); // keep the color picker on the same line as the label
-				// for the background color and the line color,
-				// disable the alpha channel and the inputs (only show an RGB color picker)
-				if (ImGui::ColorEdit3("##GridBackgroundColor", (float*)&params.gridBgColor,
-									  ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoAlpha))
-					paramsChanged = true; // mark the params as changed
-				ImGui::Text("\t\t"); // add some vertical spacing for better visual separation
-				ImGui::SameLine();
-				ImGui::Text("Grid Line Color      ");
-				ImGui::SameLine(); // keep the color picker on the same line as the label
-				if (ImGui::ColorEdit3("##GridLineColor", (float*)&params.gridLineColor,
-									  ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoAlpha))
-					paramsChanged = true; // mark the params as changed
+				if (selected->GetNodeType() == NodeType::SHAPE_MODEL)
+				{ // if the model is a shape, display its color
+					ImGui::Text("Color: (%.3f, %.3f, %.3f)",
+								selected->GetAlbedo().x,
+								selected->GetAlbedo().y,
+								selected->GetAlbedo().z);
+				}
+				ImGui::Text("Position: (%.3f, %.3f, %.3f)",
+							selected->GetPosition().x,
+							selected->GetPosition().y,
+							selected->GetPosition().z);
+				ImGui::Text("Rotation: (%.3f, %.3f, %.3f)",
+							selected->GetRotationInEulerAngles().x,
+							selected->GetRotationInEulerAngles().y,
+							selected->GetRotationInEulerAngles().z);
+				ImGui::Text("Scale: (%.3f, %.3f, %.3f)",
+							selected->GetScale().x,
+							selected->GetScale().y,
+							selected->GetScale().z);
 			}
-			break;
-			default:
-				std::cerr << "[ERROR::GUI::drawDebugWindow] Unknown screen texture debug mode: "
-					<< debugModeIndex << std::endl;
-				break;
 		}
 
-		if (paramsChanged)
-		{ // if any of the renderer debug params were changed, apply the changes to the renderer
-			renderer->SetScreenDebugParams(params);
-		}
+		ImGui::End(); // end the Node Information window
 
-		ImGui::End(); // end the Debug window
-
-		if (m_debugWindowJustAppeared)
+		if (m_nodeInformationWindowJustAppeared)
 		{ // if the window just appeared (first frame), prevent it from being focused
 			ImGui::SetWindowFocus(nullptr); // set focus to no window
-			m_debugWindowJustAppeared = false; // no longer the first frame
+			m_nodeInformationWindowJustAppeared = false; // no longer the first frame
 		}
 	}
 }
@@ -656,8 +613,7 @@ void GUI::drawPropertiesWindow()
 	{ // show a window that allows the user to change the properties of the nodes in the scene
 		// begin the Properties window
 		ImGui::PushFont(m_boldFont);
-		ImGui::Begin("PROPERTIES", nullptr,
-					 ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoFocusOnAppearing);
+		ImGui::Begin("PROPERTIES", nullptr, ImGuiWindowFlags_NoFocusOnAppearing);
 		ImGui::PopFont();
 
 		auto selected = selectionManager->GetSelectedNode(nodeManager.get());
@@ -722,8 +678,7 @@ void GUI::drawCreationWindow()
 	{ // show a window that contains buttons to create new objects to the scene
 		// begin the Creation window
 		ImGui::PushFont(m_boldFont);
-		ImGui::Begin("CREATION", nullptr,
-					 ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoFocusOnAppearing);
+		ImGui::Begin("CREATION", nullptr, ImGuiWindowFlags_NoFocusOnAppearing);
 		ImGui::PopFont();
 
 		// button to create a new directional light to the scene
@@ -823,333 +778,311 @@ void GUI::drawCreationWindow()
 	}
 }
 
-
-void GUI::drawCamerasInformation() const
+void GUI::drawDebugWindow()
 {
-	// get the node manager and scene manager from the Core instance
-	auto& nodeManager = Core::GetInstance()->GetNodeManager();
-	auto& sceneManager = Core::GetInstance()->GetSceneManager();
-
-	ImGui::PushFont(m_boldFont);
-	ImGui::Text("CAMERAS");
-	ImGui::PopFont();
-
-	// get the number of cameras in the scene
-	unsigned int nCameras = nodeManager->GetNCameras();
-	// display the number of cameras in the scene
-	ImGui::PushFont(m_boldFont);
-	ImGui::Text("\nNumber of Cameras in the scene: %d", nCameras);
-	ImGui::PopFont();
-
-	// display the attributes of each camera in the scene
-	ImGui::Text("\nCameras in the scene:");
-	std::for_each(nodeManager->GetNodes("CAMERA").begin(),
-				  nodeManager->GetNodes("CAMERA").end(),
-				  [&](const std::shared_ptr<Node>& node)
-	{ // iterate over all cameras in the node manager and display their attributes
-		// dynamically cast the node to a Camera object
-		auto camera = dynamic_cast<Camera*>(node.get());
-
-		// use PushID to create a unique ID for each camera
-		ImGui::PushID(camera->GetName().c_str());
-
-		// display the attributes of the camera
-		ImGui::PushFont(m_boldFont);
-		ImGui::TextWrapped("\t%s", camera->GetName().c_str());
-		ImGui::PopFont();
-		ImGui::Text("\t\tPosition: (%.3f, %.3f, %.3f)",
-					camera->GetPosition().x,
-					camera->GetPosition().y,
-					camera->GetPosition().z);
-		ImGui::Text("\t\tFront: (%.3f, %.3f, %.3f)",
-					camera->GetFront().x,
-					camera->GetFront().y,
-					camera->GetFront().z);
-		ImGui::Text("\t\tUp: (%.3f, %.3f, %.3f)",
-					camera->GetUp().x,
-					camera->GetUp().y,
-					camera->GetUp().z);
-		ImGui::Text("\t\tRight: (%.3f, %.3f, %.3f)",
-					camera->GetRight().x,
-					camera->GetRight().y,
-					camera->GetRight().z);
-		ImGui::Text("\t\tWorld Up: (%.3f, %.3f, %.3f)",
-					camera->GetWorldUp().x,
-					camera->GetWorldUp().y,
-					camera->GetWorldUp().z);
-		ImGui::Text("\t\tYaw: %.3f", camera->GetYaw());
-		ImGui::Text("\t\tPitch: %.3f", camera->GetPitch());
-		ImGui::Text("\t\tMovement Speed: %.3f", camera->GetMovementSpeed());
-		ImGui::Text("\t\tMouse Sensitivity: %.3f", camera->GetMouseSensitivity());
-		ImGui::Text("\t\tZoom: %.3f", camera->GetZoom());
-
-		ImGui::PopID(); // use PopID to end the unique ID scope
-	});
-}
-
-void GUI::drawLightsInformation() const
-{
-	// get the node manager from the Core instance
-	auto& nodeManager = Core::GetInstance()->GetNodeManager();
-
-	ImGui::PushFont(m_boldFont);
-	ImGui::Text("LIGHTS");
-	ImGui::PopFont();
-
-	// get the number of lights and of each type of light in the scene
-	unsigned int nLights = nodeManager->GetNLights();
-	unsigned int nDirectionalLights = nodeManager->GetNDirectionalLights();
-	unsigned int nPointLights = nodeManager->GetNPointLights();
-	unsigned int nSpotlights = nodeManager->GetNSpotlights();
-	// display the number of lights and each type of light in the scene
-	ImGui::PushFont(m_boldFont);
-	ImGui::Text("\nNumber of Lights in the scene: %d", nLights);
-	ImGui::PopFont();
-	ImGui::Text("\tNumber of Directional Lights in the scene: %d", nDirectionalLights);
-	ImGui::Text("\tNumber of Point Lights in the scene: %d", nPointLights);
-	ImGui::Text("\tNumber of Spotlights in the scene: %d", nSpotlights);
-
-	// display the attributes of each light in the scene
-	ImGui::Text("\nLights in the scene:");
-	std::for_each(nodeManager->GetNodes("LIGHT").begin(),
-				  nodeManager->GetNodes("LIGHT").end(),
-				  [&](const std::shared_ptr<Node>& node)
-	{ // iterate over all lights in the node manager and display their attributes
-		// dynamically cast the node to a Light object
-		auto light = dynamic_cast<Light*>(node.get());
-
-		switch (light->GetLightType()) // switch based on the type of the light
-		{
-			case LightType::DIRECTIONAL_LIGHT: // if the Light is a DirectionalLight
-			{
-				// get the DirectionalLight object
-				auto directionalLight = dynamic_cast<DirectionalLight*>(light);
-
-				// use PushID to create a unique ID for each light 
-				ImGui::PushID(directionalLight->GetName().c_str());
-
-				// display the attributes of the directional light (position is just for visualization)
-				ImGui::PushFont(m_boldFont);
-				ImGui::TextWrapped("\t%s", directionalLight->GetName().c_str());
-				ImGui::PopFont();
-				ImGui::Text("\t\tColor: (%.3f, %.3f, %.3f)",
-							directionalLight->GetDiffuse().x,
-							directionalLight->GetDiffuse().y,
-							directionalLight->GetDiffuse().z);
-				ImGui::Text("\t\tPosition: (%.3f, %.3f, %.3f)",
-							directionalLight->GetPosition().x,
-							directionalLight->GetPosition().y,
-							directionalLight->GetPosition().z);
-				ImGui::Text("\t\tDirection: (%.3f, %.3f, %.3f)",
-							directionalLight->GetDirection().x,
-							directionalLight->GetDirection().y,
-							directionalLight->GetDirection().z);
-
-				ImGui::PopID(); // use PopID to end the unique ID scope
-			}
-			break;
-			case LightType::POINT_LIGHT: // if the Light is a PointLight
-			{
-				// dynamically cast the node to a PointLight object
-				auto pointLight = dynamic_cast<PointLight*>(light);
-
-				// use PushID to create a unique ID for each light 
-				ImGui::PushID(pointLight->GetName().c_str());
-
-				// display the attributes of the point light
-				ImGui::PushFont(m_boldFont);
-				ImGui::TextWrapped("\t%s", pointLight->GetName().c_str());
-				ImGui::PopFont();
-				ImGui::Text("\t\tColor: (%.3f, %.3f, %.3f)",
-							pointLight->GetDiffuse().x,
-							pointLight->GetDiffuse().y,
-							pointLight->GetDiffuse().z);
-				ImGui::Text("\t\tPosition: (%.3f, %.3f, %.3f)",
-							pointLight->GetPosition().x,
-							pointLight->GetPosition().y,
-							pointLight->GetPosition().z);
-
-				ImGui::PopID(); // use PopID to end the unique ID scope
-			}
-			break;
-			case LightType::SPOTLIGHT: // if the Light is a Spotlight
-			{
-				// dynamically cast the node to a Spotlight object
-				auto spotlight = dynamic_cast<Spotlight*>(light);
-
-				// use PushID to create a unique ID for each spotlight 
-				ImGui::PushID(spotlight->GetName().c_str());
-
-				// display the attributes of the spotlight
-				ImGui::PushFont(m_boldFont);
-				ImGui::TextWrapped("\t%s", spotlight->GetName().c_str());
-				ImGui::PopFont();
-				ImGui::Text("\t\tColor: (%.3f, %.3f, %.3f)",
-							spotlight->GetDiffuse().x,
-							spotlight->GetDiffuse().y,
-							spotlight->GetDiffuse().z);
-				ImGui::Text("\t\tPosition: (%.3f, %.3f, %.3f)",
-							spotlight->GetPosition().x,
-							spotlight->GetPosition().y,
-							spotlight->GetPosition().z);
-				ImGui::Text("\t\tDirection: (%.3f, %.3f, %.3f)",
-							spotlight->GetDirection().x,
-							spotlight->GetDirection().y,
-							spotlight->GetDirection().z);
-				ImGui::Text("\t\tInner cut-off: %.3f", glm::degrees(glm::acos(spotlight->GetInnerCutOff())));
-				ImGui::Text("\t\tOuter cut-off: %.3f", glm::degrees(glm::acos(spotlight->GetOuterCutOff())));
-
-				ImGui::PopID(); // use PopID to end the unique ID scope
-			}
-			break;
-			case LightType::UNDEFINED: // if the Light is of an undefined type
-				std::cerr << "[ERROR::GUI::drawLightsInformation] UNDEFINED light type for light: "
-					<< light->GetName() << std::endl;
-				return;
-			default: // if the Light is of an unknown type
-				std::cerr << "[ERROR::GUI::drawLightsInformation] Unknown light type for light: "
-					<< light->GetName() << std::endl;
-				return;
-		}
-	});
-}
-
-void GUI::drawModelsInformation() const
-{
-	// get the node manager from the Core instance
-	auto& nodeManager = Core::GetInstance()->GetNodeManager();
-
-	ImGui::PushFont(m_boldFont);
-	ImGui::Text("MODELS");
-	ImGui::PopFont();
-
-	// get the number of models and of each type of model in the scene
-	unsigned int nModels = nodeManager->GetNModels();
-	unsigned int nAssimpModels = nodeManager->GetNAssimpModels();
-	unsigned int nShapes = nodeManager->GetNShapes();
-	// display the number of models and each type of model in the scene
-	ImGui::PushFont(m_boldFont);
-	ImGui::Text("\nNumber of Models in the scene: %d", nModels);
-	ImGui::PopFont();
-	ImGui::Text("\tNumber of Assimp models in the scene: %d", nAssimpModels);
-	ImGui::Text("\tNumber of Shapes in the scene: %d", nShapes);
-
-	// display the attributes of each model in the scene
-	ImGui::Text("\nModes in the scene:");
-	std::for_each(nodeManager->GetNodes("MODEL").begin(), nodeManager->GetNodes("MODEL").end(),
-				  [&](const std::shared_ptr<Node>& node)
-	{ // iterate over all models in the node manager and display their attributes
-		// dynamically cast the node to a Model object
-		auto model = dynamic_cast<Node*>(node.get());
-
-		ImGui::PushID(model->GetName().c_str()); // use PushID to create a unique ID for each model
-
-		// display the attributes of the model
-		ImGui::PushFont(m_boldFont);
-		ImGui::TextWrapped("\t%s", model->GetName().c_str());
-		ImGui::PopFont();
-
-		if (model->GetNodeType() == NodeType::SHAPE_MODEL)
-		{ // only display the albedo color for shapes
-			ImGui::Text("\t\tColor: (%.3f, %.3f, %.3f)",
-						model->GetAlbedo().x,
-						model->GetAlbedo().y,
-						model->GetAlbedo().z);
-		}
-		ImGui::Text("\t\tPosition: (%.3f, %.3f, %.3f)",
-					model->GetPosition().x,
-					model->GetPosition().y,
-					model->GetPosition().z);
-		ImGui::Text("\t\tRotation: (%.3f, %.3f, %.3f)",
-					model->GetRotationInEulerAngles().x,
-					model->GetRotationInEulerAngles().y,
-					model->GetRotationInEulerAngles().z);
-		ImGui::Text("\t\tScale: (%.3f, %.3f, %.3f)",
-					model->GetScale().x,
-					model->GetScale().y,
-					model->GetScale().z);
-		ImGui::Text("\t\tForward: (%.3f, %.3f, %.3f)",
-					model->GetForward().x,
-					model->GetForward().y,
-					model->GetForward().z);
-
-		ImGui::PopID(); // use PopID to end the unique ID scope
-	});
-}
-
-
-void GUI::drawSceneGraphWindow()
-{
-	// set initial size and position for the Scene Graph Window
-	ImGui::SetNextWindowSize(m_sceneGraphWindowSize, ImGuiCond_Appearing);
-	ImGui::SetNextWindowPos(m_sceneGraphWindowPosition, ImGuiCond_Appearing);
-	// set the Scene Graph Window to be expanded (i.e. not minimized)
+	// set initial size and position for the Debug Window
+	ImGui::SetNextWindowSize(m_debugWindowSize, ImGuiCond_Appearing);
+	ImGui::SetNextWindowPos(m_debugWindowPosition, ImGuiCond_Appearing);
+	// set the Debug Window to be expanded (i.e. not minimized)
 	ImGui::SetNextWindowCollapsed(false, ImGuiCond_Appearing);
 
-	{ // show a window that displays the scene graph as a hierarchical tree
-		// begin the Scene Graph window
+	{ // show a window that contains debug information and controls
+		// begin the Debug window
 		ImGui::PushFont(m_boldFont);
-		ImGui::Begin("SCENE GRAPH", nullptr,
-					 ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoFocusOnAppearing);
+		ImGui::Begin("DEBUG", nullptr, ImGuiWindowFlags_NoFocusOnAppearing);
 		ImGui::PopFont();
 
-		// get the node manager from the Core instance
-		auto& nodeManager = Core::GetInstance()->GetNodeManager();
+		// get the renderer screen debug params from the Core instance
+		auto renderer = Core::GetInstance()->GetRenderer();
+		auto& params = renderer->GetScreenDebugParams();
+		// vector of strings that represent the different debug modes
+		std::vector<std::string> debugModes = {
+			"Normal",
+			"Inverted Colors",
+			"Picking Colors",
+			"Solid Color",
+			"Grid Overlay"
+		};
+		int debugModeIndex = static_cast<int>(params.debugMode); // current debug mode index
+		bool paramsChanged{ false }; // dirty flag to check if any of the params were changed
 
-		// display instruction text
-		ImGui::TextWrapped("Click: Select | Ctrl+Click: Multi-select | Shift+Click: Range | Del: Delete");
-		ImGui::Separator();
+		// local helper to draw the outline color palette (used for outline-capable modes: 0 and 1)
+		auto drawOutlineColorPalette = []()
+		{
+			ImGui::Text("\tConfiguration");
+			// access SelectionManager outline params
+			auto& selectionManager = Core::GetInstance()->GetSelectionManager();
+			auto& outlineParams = selectionManager->GetOutlineParams(); // copy current outline params
 
-		// get all root nodes (nodes without parents)
-		std::vector<std::shared_ptr<Node>> rootNodes;
-		// collect cameras
-		for (const auto& node : nodeManager->GetNodes("CAMERA"))
-			if (!node->GetParent())
-				rootNodes.push_back(node);
-		// collect lights (excluding gizmos which have parents)
-		for (const auto& node : nodeManager->GetNodes("LIGHT"))
-			if (!node->GetParent())
-				rootNodes.push_back(node);
-		// collect models (excluding children which have parents)
-		for (const auto& node : nodeManager->GetNodes("MODEL"))
-			if (!node->GetParent())
-				rootNodes.push_back(node);
+			// palette of vibrant outline colors (first item is the default color)
+			static const std::vector<std::pair<const char*, glm::vec3>> outlineColorPalette = {
+			{ "Cyan",     glm::vec3{ 0.00f, 0.95f, 1.00f } },
+			{ "Lime",     glm::vec3{ 0.30f, 1.00f, 0.30f } },
+			{ "Magenta",  glm::vec3{ 1.00f, 0.20f, 0.90f } },
+			{ "Yellow",   glm::vec3{ 1.00f, 0.95f, 0.20f } },
+			{ "Orange",   glm::vec3{ 1.00f, 0.60f, 0.20f } },
+			{ "Red",      glm::vec3{ 1.00f, 0.20f, 0.20f } },
+			{ "Blue",     glm::vec3{ 0.20f, 0.50f, 1.00f } },
+			{ "Purple",   glm::vec3{ 0.75f, 0.40f, 1.00f } },
+			{ "White",    glm::vec3{ 1.00f, 1.00f, 1.00f } }
+			};
 
-		// draw the tree recursively starting from root nodes
-		for (const auto& rootNode : rootNodes)
-			if (rootNode) // ensure the node is valid
-				drawNodeTreeRecursive(rootNode);
+			// find nearest palette entry to current color (keeps UI in sync if color changed elsewhere)
+			auto currentOutlineColor = outlineParams.color;
+			int currentIdx{}; // index of the currently selected color in the palette
+			float best = std::numeric_limits<float>::max();
+			for (int i{}; i < static_cast<int>(outlineColorPalette.size()); ++i)
+			{
+				glm::vec3 d = currentOutlineColor - outlineColorPalette[i].second;
+				float dist2 = glm::dot(d, d);
+				if (dist2 < best) { best = dist2; currentIdx = i; }
+			}
 
-		ImGui::End(); // end the Scene Graph window
+			ImGui::Text("\t\t"); // add some vertical spacing for better visual separation
+			ImGui::SameLine();
+			ImGui::Text("Outline Color");
+			ImGui::SameLine(); // keep the combo box on the same line as the label
+			// make the combo box take the full width of the window
+			ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+			if (ImGui::BeginCombo("##OutlineColorComboBox", outlineColorPalette[currentIdx].first,
+								  ImGuiComboFlags_HeightSmall))
+			{ // if the combo box is opened, iterate through all colors in the palette and display them
+				for (int n{}; n < static_cast<int>(outlineColorPalette.size()); ++n)
+				{
+					bool isSelected = (currentIdx == n); // check if the current color is selected
+					if (ImGui::Selectable(outlineColorPalette[n].first, isSelected))
+					{ // if a color is selected, update the outline params in the SelectionManager
+						OutlineParams updated = outlineParams;
+						updated.color = outlineColorPalette[n].second;
+						selectionManager->SetOutlineParams(updated);
+					}
+					// set the selected color as the default focus, i.e. highlight it
+					if (isSelected) ImGui::SetItemDefaultFocus();
+				}
+				ImGui::EndCombo(); // end the combo box
+			}
+		};
 
-		if (m_sceneGraphWindowJustAppeared)
+		// scene settings section title
+		ImGui::PushFont(m_boldFont);
+		ImGui::Text("SCENE SETTINGS");
+		ImGui::PopFont();
+
+		auto& sceneManager = Core::GetInstance()->GetSceneManager();
+
+		ImGui::Dummy(ImVec2(0.0f, 10.0f)); // add spacing before button section
+
+		// calculate button width based on available space and spacing between buttons (3 buttons total)
+		float buttonWidth = (ImGui::GetContentRegionAvail().x - 2 * ImGui::GetStyle().ItemSpacing.x) / 3.0f;
+
+		// button to reset the camera position and orientation
+		if (ImGui::Button("Reset\nCamera", ImVec2{ buttonWidth, BUTTON_HEIGHT * 2 }))
+		{ // if the button is pressed, set the camera to its default position and orientation
+			sceneManager->ResetCamera();
+		}
+		ImGui::SameLine(); // keep the buttons on the same line
+		// button to clear the skybox
+		if (ImGui::Button("Clear\nSkybox", ImVec2{ buttonWidth, BUTTON_HEIGHT * 2 }))
+		{ // if the button is pressed, clear the skybox, i.e. remove the current skybox texture
+			sceneManager->ClearSkybox();
+		}
+		ImGui::SameLine(); // keep the buttons on the same line
+		// button to reset GUI layout
+		if (ImGui::Button("Reset GUI\nLayout", ImVec2{ buttonWidth, BUTTON_HEIGHT * 2 }))
+		{ // if the button is pressed, reset all GUI windows to default layout
+			resetGUILayout();
+		}
+
+		ImGui::Dummy(ImVec2(0.0f, 10.0f)); // add spacing after button section
+
+		// rendering settings section title
+		ImGui::PushFont(m_boldFont);
+		ImGui::Text("RENDERING INFORMATION");
+		ImGui::PopFont();
+
+		// display the current FPS and frame time
+		ImGui::TextWrapped("FPS: %.1f", ImGui::GetIO().Framerate);
+		ImGui::TextWrapped("Frame Time: %.3f ms/frame", 1000.0f / ImGui::GetIO().Framerate);
+
+		// display the screen texture debug mode currently in use and the values of its parameters
+		ImGui::TextWrapped("Screen Texture Debug Mode: %s", debugModes[debugModeIndex].c_str());
+		switch (debugModeIndex)
+		{
+			case 0: // Normal mode
+				break; // no parameters to display
+			case 1: // Inverted Colors mode
+				break; // no parameters to display
+			case 2: // Picking Colors (raw picking buffer visualization)
+				// no parameters to display, draw a text to explain what is shown
+				ImGui::TextWrapped(" Showing per-object encoded IDs as colors");
+				break;
+			case 3: // Solid Color mode
+				ImGui::Text(" Solid Color: (%.3f, %.3f, %.3f)",
+							params.solidColor.r, params.solidColor.g, params.solidColor.b);
+				break;
+			case 4: // Grid Overlay mode
+				ImGui::Text(" Grid Line Count: %d", params.gridLineCount);
+				ImGui::Text(" Grid Line Thickness: %.2f", params.gridLineThickness);
+				ImGui::Text(" Grid Background Color: (%.3f, %.3f, %.3f)",
+							params.gridBgColor.r, params.gridBgColor.g, params.gridBgColor.b);
+				ImGui::Text(" Grid Line Color: (%.3f, %.3f, %.3f)",
+							params.gridLineColor.r, params.gridLineColor.g, params.gridLineColor.b);
+				break;
+			default:
+				std::cerr << "[ERROR::GUI::drawDebugWindow] Unknown screen texture debug mode index: "
+					<< debugModeIndex << std::endl;
+				break;
+		}
+
+		ImGui::Dummy(ImVec2(0.0f, 10.0f)); // add spacing before next section
+
+		// rendering settings section title
+		ImGui::PushFont(m_boldFont);
+		ImGui::Text("RENDERING SETTINGS");
+		ImGui::PopFont();
+
+		ImGui::Text("Screen Texture Debug Mode");
+		ImGui::SameLine(); // keep the combo box on the same line as the label
+		// make the combo box take the full width of the window
+		ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+		// draw a combo box to select the screen texture debug mode (with the current mode as preview)
+		if (ImGui::BeginCombo("##ScreenTextureDebugMode", debugModes[debugModeIndex].c_str(),
+							  ImGuiComboFlags_HeightSmall))
+		{ // if the combo box is opened
+			for (int n{}; n < debugModes.size(); n++)
+			{ // iterate through all debug modes
+				bool isSelected = (debugModeIndex == n); // check if the current mode is selected
+				if (ImGui::Selectable(debugModes[n].c_str(), isSelected))
+				{ // if a mode is selected, update the current debug mode locally and in the renderer
+					debugModeIndex = n;
+					params.debugMode = debugModeIndex;
+					paramsChanged = true; // mark the params as changed
+				}
+				if (isSelected) // whatever mode is selected, set it as the default focus
+					ImGui::SetItemDefaultFocus();
+			}
+			ImGui::EndCombo(); // end the combo box
+		}
+
+		// depending on the selected debug mode, draw additional controls
+		switch (debugModeIndex)
+		{
+			case 0: // Normal mode
+			{ // draw the outline color palette in a combo box to allow for outline color selection
+				drawOutlineColorPalette();
+			}
+			break;
+			case 1: // Inverted Colors mode
+			{ // draw the outline color palette in a combo box to allow for outline color selection
+				drawOutlineColorPalette();
+			}
+			break;
+			case 2: // Picking Colors mode (raw picking buffer visualization)
+				break; // no additional controls needed
+			case 3: // Solid Color mode
+			{ // draw a color picker to select the solid color
+				ImGui::Text(" Configuration");
+				ImGui::Text("  "); // add some vertical spacing for better visual separation
+				ImGui::SameLine();
+				ImGui::Text("Solid Color");
+				ImGui::SameLine(); // keep the color picker on the same line as the label
+				// use the custom drawColorControl helper to draw the color picker
+				if (drawColorControl("##SolidColor", params.solidColor,
+									 false, ImGui::GetContentRegionAvail().x))
+					paramsChanged = true; // mark the params as changed
+			}
+			break;
+			case 4: // Grid Overlay mode
+			{ // draw controls for each parameter
+				ImGui::Text(" Configuration");
+				ImGui::Text("  "); // add some vertical spacing for better visual separation
+				ImGui::SameLine();
+				ImGui::Text("Grid Line Count      ");
+				ImGui::SameLine(); // keep the input field on the same line as the label
+				ImGui::SetNextItemWidth(100.0f); // set a fixed width for the input field
+				if (ImGui::InputInt("##GridLineCount", (int*)&params.gridLineCount,
+									1, 10)) // set step values for the input field (normal and fast)
+				{ // if the input field is changed, update the number of grid lines
+					// clamp the value to a reasonable range [2, 1000]
+					if (params.gridLineCount < 2)
+						params.gridLineCount = 2;
+					else if (params.gridLineCount > 1000)
+						params.gridLineCount = 1000;
+
+					// update the number of grid lines in the params
+					params.gridLineCount = params.gridLineCount;
+					paramsChanged = true; // mark the params as changed
+				}
+				ImGui::Text("  "); // add some vertical spacing for better visual separation
+				ImGui::SameLine();
+				ImGui::Text("Grid Line Thickness  ");
+				ImGui::SameLine(); // keep the input field on the same line as the label
+				ImGui::SetNextItemWidth(100.0f); // set a fixed width for the input field
+				if (ImGui::InputFloat("##GridLineThickness", &params.gridLineThickness,
+									  0.05f, 0.5f, // set step values for the input field (normal and fast)
+									  "%.2f"))
+				{ // if the input field is changed, update the grid line thickness
+					// clamp the value to a reasonable range [1.0, 10.0]
+					params.gridLineThickness = std::clamp(params.gridLineThickness, 1.0f, 10.0f);
+					paramsChanged = true; // mark the params as changed
+				}
+
+				ImGui::Text("  "); // add some vertical spacing for better visual separation
+				ImGui::SameLine();
+				ImGui::Text("Grid Background Color");
+				ImGui::SameLine(); // keep the color picker on the same line as the label
+				// for the background color and the line color,
+				// disable the alpha channel and the inputs (only show an RGB color picker)
+				if (ImGui::ColorEdit3("##GridBackgroundColor", (float*)&params.gridBgColor,
+									  ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoAlpha))
+					paramsChanged = true; // mark the params as changed
+				ImGui::Text("  "); // add some vertical spacing for better visual separation
+				ImGui::SameLine();
+				ImGui::Text("Grid Line Color      ");
+				ImGui::SameLine(); // keep the color picker on the same line as the label
+				if (ImGui::ColorEdit3("##GridLineColor", (float*)&params.gridLineColor,
+									  ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoAlpha))
+					paramsChanged = true; // mark the params as changed
+			}
+			break;
+			default:
+				std::cerr << "[ERROR::GUI::drawDebugWindow] Unknown screen texture debug mode: "
+					<< debugModeIndex << std::endl;
+				break;
+		}
+
+		if (paramsChanged)
+		{ // if any of the renderer debug params were changed, apply the changes to the renderer
+			renderer->SetScreenDebugParams(params);
+		}
+
+		ImGui::End(); // end the Debug window
+
+		if (m_debugWindowJustAppeared)
 		{ // if the window just appeared (first frame), prevent it from being focused
 			ImGui::SetWindowFocus(nullptr); // set focus to no window
-			m_sceneGraphWindowJustAppeared = false; // no longer the first frame
+			m_debugWindowJustAppeared = false; // no longer the first frame
 		}
 	}
-
-	// handle delete key press for selected nodes
-	handleDeleteSelectedNodes();
 }
+
 
 void GUI::drawNodeTreeRecursive(const std::shared_ptr<Node>& node)
 {
 	if (!node) return; // safety check
 
-	// determine if this node is currently selected
-	bool isSelected = m_selectedNodeIds.find(node->GetId()) != m_selectedNodeIds.end();
+	// get selection manager to check if this node is selected
+	auto& selectionManager = Core::GetInstance()->GetSelectionManager();
+	bool isSelected = (selectionManager->GetSelectedNodeId() == node->GetId());
 
-	// create flags for the tree node
+	// create flags for the tree node based on its state and type
 	ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick;
 
 	// if the node is selected, add the Selected flag
-	if (isSelected)
-		flags |= ImGuiTreeNodeFlags_Selected;
+	if (isSelected) flags |= ImGuiTreeNodeFlags_Selected;
 
 	// if the node has no children, make it a leaf node
-	if (!node->IsComposite())
-		flags |= ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
+	if (!node->IsComposite()) flags |= ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
 
 	// determine icon/prefix based on node type
 	std::string nodeLabel;
@@ -1169,7 +1102,7 @@ void GUI::drawNodeTreeRecursive(const std::shared_ptr<Node>& node)
 		case NodeType::MODEL:
 		case NodeType::ASSIMP_MODEL:
 		case NodeType::SHAPE_MODEL:
-			// check if it's a gizmo
+			// check if it is a gizmo, and adjust label accordingly
 			if (node->GetGizmoType() != GizmoType::NONE)
 				nodeLabel = "[GIZMO] " + node->GetName();
 			else
@@ -1183,197 +1116,69 @@ void GUI::drawNodeTreeRecursive(const std::shared_ptr<Node>& node)
 	// push a unique ID for this tree node
 	ImGui::PushID(static_cast<int>(node->GetId()));
 
-	// draw the tree node
+	// draw the tree node and get whether it is open
 	bool nodeOpen = ImGui::TreeNodeEx(nodeLabel.c_str(), flags);
 
 	// handle selection on click
 	if (ImGui::IsItemClicked())
-	{
-		ImGuiIO& io = ImGui::GetIO();
-		bool isCtrlPressed = io.KeyCtrl;
-		bool isShiftPressed = io.KeyShift;
-
-		handleNodeSelection(node->GetId(), isCtrlPressed, isShiftPressed);
-	}
+		handleNodeSelection(node->GetId());
 
 	// if the node is open and has children, draw them recursively
 	if (nodeOpen && node->IsComposite())
 	{
 		for (const auto& child : node->GetChildren())
 			if (child) // ensure child is valid
-				drawNodeTreeRecursive(child);
+				drawNodeTreeRecursive(child); // recursive call for child nodes
 		ImGui::TreePop(); // end the tree node
 	}
 
 	ImGui::PopID(); // pop the unique ID
 }
 
-void GUI::handleNodeSelection(std::uint32_t nodeId, bool isCtrlPressed, bool isShiftPressed)
+void GUI::handleNodeSelection(std::uint32_t nodeId)
 {
 	// get the node manager and selection manager from the Core instance
 	auto& nodeManager = Core::GetInstance()->GetNodeManager();
 	auto& selectionManager = Core::GetInstance()->GetSelectionManager();
 
-	if (isShiftPressed && m_lastClickedNodeId != 0)
+	// resolve gizmo to parent light if applicable
+	auto node = nodeManager->GetNodeById(nodeId);
+	if (node && node->GetGizmoType() != GizmoType::NONE)
 	{
-		// range selection: select all nodes between last clicked and current
-		// (for simplicity, collect all visible node ids in order and select the range)
-		std::vector<std::uint32_t> allNodeIds;
+		// this is a gizmo, resolve to parent light
+		std::uint32_t gizmoId = nodeId; // store the gizmo id for logging
+		auto parent = node->GetParent();
+		if (parent && parent->GetNodeType() == NodeType::LIGHT)
+		{ // if the parent exists and is a light, use its id instead and update the node pointer
+			nodeId = parent->GetId();
+			node = parent;
 
-		// helper lambda to collect node ids in traversal order
-		std::function<void(const std::shared_ptr<Node>&)> collectIds;
-		collectIds = [&](const std::shared_ptr<Node>& node)
-		{
-			if (!node) return;
-			allNodeIds.push_back(node->GetId());
-			for (const auto& child : node->GetChildren())
-				collectIds(child);
-		};
-
-		// collect all root nodes
-		for (const auto& node : nodeManager->GetNodes("CAMERA"))
-			if (!node->GetParent()) collectIds(node);
-		for (const auto& node : nodeManager->GetNodes("LIGHT"))
-			if (!node->GetParent()) collectIds(node);
-		for (const auto& node : nodeManager->GetNodes("MODEL"))
-			if (!node->GetParent()) collectIds(node);
-
-		// find indices of the range
-		auto startIt = std::find(allNodeIds.begin(), allNodeIds.end(), m_lastClickedNodeId);
-		auto endIt = std::find(allNodeIds.begin(), allNodeIds.end(), nodeId);
-
-		if (startIt != allNodeIds.end() && endIt != allNodeIds.end())
-		{ // if both nodes found, select all the nodes in the range
-			if (startIt > endIt) std::swap(startIt, endIt); // ensure start comes before end
-
-			for (auto it = startIt; it <= endIt; ++it) m_selectedNodeIds.insert(*it);
-		}
-	}
-	else if (isCtrlPressed)
-	{
-		// multi-selection: toggle selection of this node
-		if (m_selectedNodeIds.find(nodeId) != m_selectedNodeIds.end())
-		{ // if already selected, deselect it
-			m_selectedNodeIds.erase(nodeId);
+			std::cout << "[INFO::GUI::handleNodeSelection] Resolved gizmo model ID "
+				<< gizmoId << " to owning parent light ID " << nodeId << std::endl;
 		}
 		else
-		{ // if not selected, add it to selection
-			m_selectedNodeIds.insert(nodeId);
+		{
+			// otherwise, print a warning and return without changing selection
+			std::cerr << "[WARNING::GUI::handleNodeSelection] Could not resolve gizmo model ID "
+				<< gizmoId << " to an owning parent light" << std::endl;
+			return;
 		}
+	}
+
+	// toggle selection state and log the action
+	if (selectionManager->GetSelectedNodeId() == nodeId)
+	{ // if the node is already selected, deselect it and log the deselection
+		selectionManager->ClearSelection();
+
+		std::cout << "[INFO::GUI::handleNodeSelection] Deselected node "
+			<< (node ? node->GetName() : "Unknown") << " (ID " << nodeId << ")" << std::endl;
 	}
 	else
-	{
-		// single selection: clear previous selection and select only this node
-		bool wasSelected = m_selectedNodeIds.find(nodeId) != m_selectedNodeIds.end();
-		m_selectedNodeIds.clear();
+	{ // if the node is not selected, select it and log the selection
+		selectionManager->SetSelectedNodeId(nodeId);
 
-		// if clicking the same node again, deselect it
-		if (!wasSelected) m_selectedNodeIds.insert(nodeId);
-	}
-
-	// update the last clicked node
-	m_lastClickedNodeId = nodeId;
-
-	// sync with SelectionManager for Properties Window
-	// (select the first selected node, or clear if none selected)
-	if (!m_selectedNodeIds.empty())
-	{
-		auto firstSelectedId = *m_selectedNodeIds.begin();
-		selectionManager->SetSelectedNodeId(firstSelectedId);
-	}
-	else
-	{
-		selectionManager->ClearSelection();
-	}
-}
-
-void GUI::handleDeleteSelectedNodes()
-{
-	// check if the Delete key is pressed
-	ImGuiIO& io = ImGui::GetIO();
-	if (ImGui::IsKeyPressed(ImGuiKey_Delete) && !m_selectedNodeIds.empty())
-	{ // if Delete key is pressed and there are selected nodes, proceed to delete them
-		// get the node manager and selection manager from the Core instance
-		auto& nodeManager = Core::GetInstance()->GetNodeManager();
-		auto& selectionManager = Core::GetInstance()->GetSelectionManager();
-
-		// collect nodes to delete (need to validate they exist and can be deleted)
-		std::vector<std::uint32_t> nodesToDelete;
-		std::vector<std::string> undeletableNodes;
-
-		for (const auto& nodeId : m_selectedNodeIds)
-		{ // iterate over selected node ids
-			auto node = nodeManager->GetNodeById(nodeId);
-			if (!node)
-			{ // if the node does not exist, log a warning and skip it
-				std::cerr << "[WARNING::GUI::handleDeleteSelectedNodes] Node with ID "
-					<< nodeId << " not found" << std::endl;
-				continue;
-			}
-
-			// check if the node can be deleted (e.g., cameras cannot be deleted for now)
-			if (node->GetNodeType() == NodeType::CAMERA)
-			{ // if the node is a camera, mark it as undeletable
-				undeletableNodes.push_back(node->GetName() + " (Camera)");
-				continue;
-			}
-
-			nodesToDelete.push_back(nodeId); // mark the node for deletion
-		}
-
-		// show error popup if some nodes cannot be deleted
-		if (!undeletableNodes.empty())
-		{ // if there are undeletable nodes, prepare the error message
-			// store error message in a static variable to persist across frames
-			static std::string deleteErrorMessage;
-			deleteErrorMessage = "The following nodes cannot be deleted:\n";
-			for (const auto& name : undeletableNodes)
-				deleteErrorMessage += "  - " + name + "\n";
-
-			ImGui::OpenPopup("Delete Error"); // open the error popup
-		}
-
-		// delete the valid nodes
-		for (const auto& nodeId : nodesToDelete)
-		{ // iterate over nodes to delete
-			auto node = nodeManager->GetNodeById(nodeId);
-			if (node)
-			{ // if the node exists, print info and delete it
-				std::cout << "[INFO::GUI::handleDeleteSelectedNodes] Deleting node: "
-					<< node->GetName() << " (ID " << nodeId << ")" << std::endl;
-
-				nodeManager->RemoveNodeById(nodeId);
-			}
-		}
-
-		// clear the selection after deletion
-		m_selectedNodeIds.clear();
-		m_lastClickedNodeId = 0;
-		selectionManager->ClearSelection();
-	}
-
-	// draw the delete error popup when opened
-	if (ImGui::BeginPopupModal("Delete Error", NULL, ImGuiWindowFlags_AlwaysAutoResize))
-	{ // if the delete error popup is open
-		static std::string deleteErrorMessage; // needs to persist, thus static
-		ImGui::TextWrapped("%s", deleteErrorMessage.c_str()); // display the error message
-
-		ImGui::Dummy(ImVec2(0.0f, 10.0f)); // add some vertical spacing
-
-		// center the OK button
-		ImVec2 buttonSize{ ITEM_WIDTH, 0.0f };
-		float availWidth = ImGui::GetContentRegionAvail().x;
-		float offsetX = (availWidth - buttonSize.x) * 0.5f;
-		if (offsetX > 0.0f) ImGui::SetCursorPosX(ImGui::GetCursorPosX() + offsetX);
-
-		// draw the OK button to close the popup
-		if (ImGui::Button("OK", ImVec2(ITEM_WIDTH, 0.0f)))
-		{ // if the OK button is clicked, clear the error message and close the popup
-			deleteErrorMessage.clear();
-			ImGui::CloseCurrentPopup();
-		}
-
-		ImGui::EndPopup(); // end the delete error popup
+		std::cout << "[INFO::GUI::handleNodeSelection] Selected node "
+			<< (node ? node->GetName() : "Unknown") << " (ID " << nodeId << ")" << std::endl;
 	}
 }
 
@@ -2270,7 +2075,7 @@ bool GUI::drawVec3Control(const std::string& label, glm::vec3& values, bool scal
 	}
 	ImGui::PopButtonRepeat(); // end the repeat mode for the arrow buttons
 	ImGui::SameLine();
-	if (ImGui::Button("Reset", ImVec2(resetButtonWidth, resetButtonHeight)))
+	if (ImGui::Button("Reset", ImVec2(ImGui::GetContentRegionAvail().x, resetButtonHeight)))
 	{ // if the Reset button is pressed
 		values.x = resetValue; // reset the x component to the reset value
 		value_changed = true; // set the value_changed flag to true
@@ -2304,7 +2109,7 @@ bool GUI::drawVec3Control(const std::string& label, glm::vec3& values, bool scal
 	}
 	ImGui::PopButtonRepeat(); // end the repeat mode for the arrow buttons
 	ImGui::SameLine();
-	if (ImGui::Button("Reset", ImVec2(resetButtonWidth, resetButtonHeight)))
+	if (ImGui::Button("Reset", ImVec2(ImGui::GetContentRegionAvail().x, resetButtonHeight)))
 	{ // if the Reset button is pressed
 		values.y = resetValue; // reset the y component to the reset value
 		value_changed = true; // set the value_changed flag to true
@@ -2339,7 +2144,7 @@ bool GUI::drawVec3Control(const std::string& label, glm::vec3& values, bool scal
 	}
 	ImGui::PopButtonRepeat(); // end the repeat mode for the arrow buttons
 	ImGui::SameLine();
-	if (ImGui::Button("Reset", ImVec2(resetButtonWidth, resetButtonHeight)))
+	if (ImGui::Button("Reset", ImVec2(ImGui::GetContentRegionAvail().x, resetButtonHeight)))
 	{ // if the Reset button is pressed
 		values.z = resetValue; // reset the z component to the reset value
 		value_changed = true; // set the value_changed flag to true
@@ -2415,7 +2220,7 @@ bool GUI::drawFloatControl(const std::string& label, float& value,
 	}
 	ImGui::PopButtonRepeat(); // end the repeat mode for the arrow buttons
 	ImGui::SameLine();
-	if (ImGui::Button("Reset", ImVec2(resetButtonWidth, resetButtonHeight)))
+	if (ImGui::Button("Reset", ImVec2(ImGui::GetContentRegionAvail().x, resetButtonHeight)))
 	{ // if the Reset button is pressed
 		value = resetValue; // reset the value to the reset value
 		value_changed = true; // set the value_changed flag to true

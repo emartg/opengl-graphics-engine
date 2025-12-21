@@ -54,7 +54,7 @@ private:
 	std::shared_ptr<SelectionManager> m_selectionManager;
 
 	// screen settings
-	GLuint m_screenWidth{ 1400 }, m_screenHeight{ 1000 }; // default screen width and height
+	GLuint m_screenWidth{ 1600 }, m_screenHeight{ 1000 }; // default screen width and height
 
 	// Private Static Methods
 	// ----------------------

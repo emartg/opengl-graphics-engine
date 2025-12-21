@@ -133,23 +133,42 @@ void NodeManager::RemoveNodeById(std::uint32_t id)
 		return;
 	}
 
-	// if the node has children, remove them first (recursively)
+	// remove the node from its parent's children vector before the recursive deletion,
+	// which would otherwise leave dangling references in the parent's children, leading to
+	// ghost nodes appearing in the scene graph tree and viewport
+	if (nodeToRemove)
+	{
+		auto parent = nodeToRemove->GetParent();
+		if (parent)
+		{ // if the node has a parent, remove it from the parent's children vector and print info
+			parent->RemoveChild(nodeToRemove);
+
+			std::cout << "[INFO::NODEMANAGER::RemoveNodeById] Severed node ID " << id
+				<< " from parent with ID " << parent->GetId() << std::endl;
+		}
+	}
+
+	// if the node to remove has children, remove them first recursively
 	if (nodeToRemove)
 	{
 		auto children = nodeToRemove->GetChildren();
 		if (!children.empty())
-		{
+		{ // if the node has children, print info and recursively remove each child, then print confirmation
 			std::cout << "[INFO::NODEMANAGER::RemoveNodeById] Node with ID " << id
-				<< " has " << children.size() << " children.\n\tRemoving children first..." << std::endl;
+				<< " has " << children.size() << " children. Removing children first..." << std::endl;
 
-			for (const auto& child : children) if (child) RemoveNodeById(child->GetId()); // recursive call
+			// create a copy of the children vector to avoid iteratior invalidation during removal
+			std::vector<std::shared_ptr<Node>> childrenCopy = children;
+			for (const auto& child : childrenCopy)
+				if (child)
+					RemoveNodeById(child->GetId()); // recursive call to remove each child by its id
+
+			std::cout << "[INFO::NODEMANAGER::RemoveNodeById] All children of node with ID " << id
+				<< " have been removed" << std::endl;
 		}
 	}
 
-	// now remove the node from all categories
-	std::cout << "[INFO::NODEMANAGER::RemoveNodeById] Removed "
-		<< foundNodeType << " node with ID " << id << " and name " << nodeToRemove->GetName() << std::endl;
-
+	// now actually remove the node from all relevant vectors in the map
 	for (auto& [nodeType, nodes] : m_nodes)
 	{ // iterate through each node type in the map
 		// remove the node with the specified id from the vector
@@ -161,6 +180,10 @@ void NodeManager::RemoveNodeById(std::uint32_t id)
 			nodes.erase(it, nodes.end());
 		}
 	}
+
+	// print confirmation message
+	std::cout << "[INFO::NODEMANAGER::RemoveNodeById] Removed " << foundNodeType << " node with ID " << id
+		<< std::endl;
 }
 
 const GLuint NodeManager::GetNNodes() const { return Node::GetNNodes(); }

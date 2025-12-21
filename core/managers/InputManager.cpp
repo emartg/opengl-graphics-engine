@@ -6,6 +6,7 @@
 
 #include "InputManager.h"
 
+#include "NodeManager.h"
 #include "SceneManager.h"
 #include "SelectionManager.h"
 #include "../Core.h"
@@ -77,10 +78,23 @@ void InputManager::KeyCallback(std::string input)
 		std::cout << "[INFO::INPUTMANAGER::KeyCallback] Escape key pressed, closing window..." << std::endl;
 	}
 	else if (input == "DEL_PRESSED")
-	{ // if the 'Delete' key is pressed, delete the currently selected node (if any)
-		auto selectionMgr = core->GetSelectionManager();
-		selectionMgr->DeleteSelected(core->GetNodeManager().get());
-		std::cout << "[INFO::INPUTMANAGER::KeyCallback] Delete pressed, attempting to delete selection..." << std::endl;
+	{ // if the 'Delete' key is pressed, delete the selected node (if any) via the selection manager
+		auto& selectionMgr = core->GetSelectionManager();
+		auto& nodeManager = core->GetNodeManager();
+
+		// get the currently selected node id
+		std::uint32_t selectedNodeId = selectionMgr->GetSelectedNodeId();
+		if (selectedNodeId != 0)
+		{ // if a node is selected, delete it
+			auto node = nodeManager->GetNodeById(selectedNodeId);
+			if (node)
+			{ // if the node exists, log an info message and delete it via the selection manager
+				std::cout << "[INFO::INPUTMANAGER::KeyCallback] Delete key pressed, deleting selected node "
+					<< node->GetName() << " (ID " << selectedNodeId << ")" << std::endl;
+
+				selectionMgr->DeleteSelected(nodeManager.get());
+			}
+		}
 	}
 	else
 	{ // if the input is not recognized, print an error message

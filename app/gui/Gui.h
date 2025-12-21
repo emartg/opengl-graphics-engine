@@ -10,7 +10,6 @@
 
 #include <iostream>
 #include <memory>
-#include <set>
 
 #include <glm/glm.hpp>
 #define GLFW_INCLUDE_NONE // prevent GLFW from including OpenGL headers
@@ -64,19 +63,15 @@ private:
 	glm::vec3 m_newAlbedo, m_newPosition, m_newRotation, m_newDirection, m_newScale;
 	float m_newInnerCutOff, m_newOuterCutOff;
 
-	// scene graph window attributes
-	std::set<std::uint32_t> m_selectedNodeIds; // set of selected node ids for multi-selection
-	std::uint32_t m_lastClickedNodeId; // id of the last clicked node for range selection
-
-	// parameters for the windows (left and right)
+	// parameters for the GUI layout and windows
 	// relative widths and heights of the windows relative to the display size
-	float m_informationWindowRelativeWidth, m_informationWindowRelativeHeight;
 	float m_sceneGraphWindowRelativeWidth, m_sceneGraphWindowRelativeHeight;
+	float m_nodeInformationWindowRelativeWidth, m_nodeInformationWindowRelativeHeight;
 	float m_debugWindowRelativeWidth, m_debugWindowRelativeHeight;
 	float m_creationWindowRelativeWidth, m_creationWindowRelativeHeight;
 	float m_propertiesWindowRelativeWidth, m_propertiesWindowRelativeHeight;
 	// offsets the windows from the edges of the display
-	float m_informationWindowXOffset, m_informationWindowYOffset;
+	float m_nodeInformationWindowXOffset, m_nodeInformationWindowYOffset;
 	float m_sceneGraphWindowXOffset, m_sceneGraphWindowYOffset;
 	float m_debugWindowXOffset, m_debugWindowYOffset;
 	float m_propertiesWindowXOffset, m_propertiesWindowYOffset;
@@ -84,12 +79,12 @@ private:
 	// padding of the windows from the edges of the display
 	ImVec2 m_windowPositionPadding, m_windowSizePadding;
 	// positions and sizes of the windows in the display
-	ImVec2 m_informationWindowPosition, m_sceneGraphWindowPosition, m_debugWindowPosition,
+	ImVec2 m_nodeInformationWindowPosition, m_sceneGraphWindowPosition, m_debugWindowPosition,
 		m_creationWindowPosition, m_propertiesWindowPosition;
-	ImVec2 m_informationWindowSize, m_sceneGraphWindowSize, m_debugWindowSize,
+	ImVec2 m_nodeInformationWindowSize, m_sceneGraphWindowSize, m_debugWindowSize,
 		m_creationWindowSize, m_propertiesWindowSize;
 	// flags for the windows to prevent focus on the first frame (indicating that the window just appeared)
-	bool m_informationWindowJustAppeared, m_sceneGraphWindowJustAppeared, m_debugWindowJustAppeared,
+	bool m_nodeInformationWindowJustAppeared, m_sceneGraphWindowJustAppeared, m_debugWindowJustAppeared,
 		m_creationWindowJustAppeared, m_propertiesWindowJustAppeared;
 
 	// style attributes for the GUI
@@ -138,31 +133,24 @@ private:
 	void drawGUIWindows();
 	// Handles input events for ImGui
 	void handleImGuiInput() const;
+	// Resets all GUI windows to their default layout for the current display size
+	void resetGUILayout();
 
-	// Draws the Information Window with information about the objects in the scene
-	void drawInformationWindow();
+	// Draws the Node Node Information Window with details about the selected node
+	void drawNodeInformationWindow();
 	// Draws the Scene Graph Window with a hierarchical tree view of all nodes
 	void drawSceneGraphWindow();
-	// Draws the Debug Window with debug information and controls
-	void drawDebugWindow();
 	// Draws the Properties Window with controls for the objects in the scene
 	void drawPropertiesWindow();
 	// Draws the Creation Window with buttons to create new objects to the scene
 	void drawCreationWindow();
-
-	// Draws information about the cameras in the scene
-	void drawCamerasInformation() const;
-	// Draws information about the lights in the scene
-	void drawLightsInformation() const;
-	// Draws information about the models in the scene
-	void drawModelsInformation() const;
+	// Draws the Debug Window with debug information and scene and GUI controls
+	void drawDebugWindow();
 
 	// Recursively draws a node and its children in the scene graph tree
 	void drawNodeTreeRecursive(const std::shared_ptr<Node>& node);
-	// Handles node selection logic (single, multi, range selection)
-	void handleNodeSelection(std::uint32_t nodeId, bool isCtrlPressed, bool isShiftPressed);
-	// Handles deletion of selected nodes
-	void handleDeleteSelectedNodes();
+	// Handles node selection logic (single selection only)
+	void handleNodeSelection(std::uint32_t nodeId);
 
 	// Draws controls for a light. Depending on the type of light, 
 	// it will call dynamically cast to the appropriate light type and draw the corresponding controls
