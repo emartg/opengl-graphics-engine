@@ -2,6 +2,7 @@
 * InputManager.h
 * This file implements the InputManager class, which is responsible for handling user input:
 * - Mouse cursor position and scroll input
+* - Keyboard key input
 */
 
 #include "InputManager.h"

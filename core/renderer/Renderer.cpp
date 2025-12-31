@@ -97,6 +97,11 @@ void Renderer::ConfigOpenGL() const
 
 	// texture configuration:
 	glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS); // enable seamless cubemap sampling
+
+	// face culling configuration:
+	glEnable(GL_CULL_FACE); // enable face culling
+	glCullFace(GL_BACK); // cull back faces (default)
+	glFrontFace(GL_CCW); // counter-clockwise wound faces are front faces (default)
 }
 
 void Renderer::ClearBuffers(BufferType bufferType) const
@@ -451,6 +456,12 @@ void Renderer::RenderScene()
 		RenderModel(model); // render the node
 	}
 
+	// disable face culling for light gizmos to ensure they are always visible
+	glDisable(GL_CULL_FACE);
+
+	// set rendering mode to wireframe for light gizmos
+	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
 	// iterate over the vector of lights and render their gizmo children (if any)
 	for (const auto& node : lights)
 	{
@@ -466,8 +477,6 @@ void Renderer::RenderScene()
 		auto gizmo = light->GetGizmo();
 		if (gizmo)
 		{
-			// set rendering mode to wireframe for light gizmos
-			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
 			// set the model matrix and albedo color for the light gizmo
 			m_singleAlbedoShader->SetMat4("model", gizmo->GetModelMatrix());
@@ -496,10 +505,13 @@ void Renderer::RenderScene()
 				}
 			}
 
-			// reset rendering mode to fill after rendering the light gizmo
-			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		}
 	}
+	// reset rendering mode to fill after rendering the light gizmos
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+	// re-enable face culling after rendering the light gizmos
+	glEnable(GL_CULL_FACE);
 
 	// create and render the skybox last if a skybox texture is set
 	// (rendering it last leverages the early depth test optimization,
@@ -906,6 +918,11 @@ void Renderer::RenderSkyboxCube(std::shared_ptr<Texture> skyboxTexture,
 	// correctly when depth values are equal (skybox depth is 1.0) - avoids z-fighting
 	glDepthMask(GL_FALSE); glDepthFunc(GL_LEQUAL);
 
+	// disable face culling for skybox rendering since camera is inside the cube
+	// looking at the interior (back) faces. This ensures the skybox is rendered correctly, 
+	// and avoids winding order ambiguity when rendering from the inside
+	glDisable(GL_CULL_FACE);
+
 	// set view and projection matrices for the skybox shader
 	m_skyboxShader->Use();
 	// for the skybox, remove the translation from the view matrix, since the skybox 
@@ -927,6 +944,9 @@ void Renderer::RenderSkyboxCube(std::shared_ptr<Texture> skyboxTexture,
 
 	// reset depth function and re-enable depth writing after rendering the skybox
 	glDepthFunc(GL_LESS); glDepthMask(GL_TRUE);
+
+	// re-enable face culling after skybox rendering
+	glEnable(GL_CULL_FACE);
 
 	glBindVertexArray(0); // unbind the VAO after rendering
 }

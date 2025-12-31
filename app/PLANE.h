@@ -49,10 +49,10 @@ const GLfloat planeTexCoordsArr[] = {
 };
 
 // Plane index data (2 triangles * 3 vertices)
-// Winding order is counter-clockwise (CCW) for a +Y normal
+// Winding order is counter-clockwise (CCW) when viewed from outside
 const GLuint planeIndicesArr[] = {
-	0,	3,	2,	// first triangle (bottom-left, top-left, top-right)
-	0,	2,	1	// second triangle (bottom-left, top-right, bottom-right)
+	0,  1,  2,  // first triangle (bottom-left, bottom-right, top-right)
+	0,  2,  3   // second triangle (bottom-left, top-right, top-left)
 };
 
 // Interleaved plane vertex data

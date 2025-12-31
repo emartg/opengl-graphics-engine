@@ -54,11 +54,12 @@ const GLfloat triangleFanPlaneTexCoordsArr[] = {
 };
 
 // Triangle fan plane index data (4 triangles * 3 vertices)
+// Winding order is counter-clockwise (CCW) when viewed from outside
 const GLuint triangleFanPlaneIndicesArr[] = {
-	0,	4,	1,	// bottom
-	1,	4,	2,	// right
-	2,	4,	3,	// top
-	3,	4,	0	// left
+	0,  1,  4,  // bottom triangle
+	1,  2,  4,  // right triangle
+	2,  3,  4,  // top triangle
+	3,  0,  4   // left triangle
 };
 
 // Interleaved triangle fan plane vertex data

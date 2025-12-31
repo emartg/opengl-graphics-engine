@@ -8,7 +8,7 @@ uniform mat4 projection;
 
 void main()
 {
-	TexCoords = aPos;
+	TexCoords = aPos; // pass through the position as texture coordinates
 
 	// push depth to far plane so that the cube is rendered behind all other geometry
 	vec4 pos = projection * view * vec4(aPos, 1.0);

@@ -30,9 +30,10 @@ const GLfloat screenQuadTexCoordsArr[] = {
 };
 
 // Screen quad index data (2 triangles x 3 vertices)
+// Winding order is counter-clockwise (CCW) when viewed from outside
 const GLuint screenQuadIndicesArr[] = {
-	0,	2,	1,
-	0,	3,	2
+	0,  1,  2,  // bottom-left, bottom-right, top-right
+	0,  2,  3   // bottom-left, top-right, top-left
 };
 
 // Interleaved vertex data for the screen quad

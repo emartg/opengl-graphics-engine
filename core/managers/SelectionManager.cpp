@@ -72,6 +72,9 @@ void SelectionManager::ProcessPendingPick(const Camera* camera, NodeManager* nod
 	// ensure sRGB transform does not corrupt ID encoding (if enabled elsewhere)
 	GLboolean sRGBWasEnabled = glIsEnabled(GL_FRAMEBUFFER_SRGB);
 	if (sRGBWasEnabled) glDisable(GL_FRAMEBUFFER_SRGB);
+	// disable culling to avoid missing backfacing geometry during picking
+	GLboolean cullWasEnabled = glIsEnabled(GL_CULL_FACE);
+	if (cullWasEnabled) glDisable(GL_CULL_FACE);
 	// enable depth testing for correct occlusion during picking
 	glEnable(GL_DEPTH_TEST);
 	// clear color and depth buffers
@@ -128,6 +131,7 @@ void SelectionManager::ProcessPendingPick(const Camera* camera, NodeManager* nod
 	std::uint32_t pickedId = readPixelId(px, py);
 
 	m_pickingPass.Unbind(); // unbind FBO after rendering
+	if (cullWasEnabled) glEnable(GL_CULL_FACE); // restore culling state if needed
 	if (sRGBWasEnabled) glEnable(GL_FRAMEBUFFER_SRGB); // restore sRGB state if needed
 	m_pendingPick.reset(); // clear pending pick
 
@@ -242,6 +246,9 @@ void SelectionManager::RenderPickingVisualization(const Camera* camera, NodeMana
 	// disable sRGB transform to avoid corrupting ID encoding (if enabled elsewhere)
 	GLboolean sRGBWasEnabled = glIsEnabled(GL_FRAMEBUFFER_SRGB);
 	if (sRGBWasEnabled) glDisable(GL_FRAMEBUFFER_SRGB);
+	// disable culling to avoid missing backfacing geometry during picking
+	GLboolean cullWasEnabled = glIsEnabled(GL_CULL_FACE);
+	if (cullWasEnabled) glDisable(GL_CULL_FACE);
 	// enable depth testing for correct occlusion during picking
 	glEnable(GL_DEPTH_TEST);
 	// clear color and depth buffers
@@ -292,6 +299,7 @@ void SelectionManager::RenderPickingVisualization(const Camera* camera, NodeMana
 	}
 
 	m_pickingPass.Unbind(); // unbind FBO after rendering
+	if (cullWasEnabled) glEnable(GL_CULL_FACE); // restore culling state if needed
 	if (sRGBWasEnabled) glEnable(GL_FRAMEBUFFER_SRGB); // restore sRGB state if needed
 }
 
@@ -444,9 +452,14 @@ void SelectionManager::RenderOutlineMask(const Camera* camera, NodeManager* node
 	GLfloat prevClearColor[4]; glGetFloatv(GL_COLOR_CLEAR_VALUE, prevClearColor);
 	GLint prevViewport[4]; glGetIntegerv(GL_VIEWPORT, prevViewport);
 
-	// bind outline FBO, enable depth testing for correct occlusion, and clear buffers
+	// bind outline FBO, set state, and clear buffers
 	m_outlinePass.Bind();
+	// disable culling to avoid missing backfacing geometry during outline mask rendering
+	GLboolean cullWasEnabled = glIsEnabled(GL_CULL_FACE);
+	if (cullWasEnabled) glDisable(GL_CULL_FACE);
+	// enable depth testing for correct occlusion
 	glEnable(GL_DEPTH_TEST);
+	// clear color and depth buffers
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f); // black means no outline (mask = 0)
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -504,6 +517,7 @@ void SelectionManager::RenderOutlineMask(const Camera* camera, NodeManager* node
 	m_outlinePass.Unbind(); // unbind FBO after rendering
 
 	// after unbinding, restore prior GL state, i.e. sRGB, clear color, and viewport
+	if (cullWasEnabled) glEnable(GL_CULL_FACE); // restore culling state if needed
 	if (sRGBWasEnabled) glEnable(GL_FRAMEBUFFER_SRGB);
 	glClearColor(prevClearColor[0], prevClearColor[1], prevClearColor[2], prevClearColor[3]);
 	glViewport(prevViewport[0], prevViewport[1], prevViewport[2], prevViewport[3]);

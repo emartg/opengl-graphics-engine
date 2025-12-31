@@ -121,25 +121,31 @@ const GLfloat cubeTexCoordsArr[] = {
 };
 
 // Cube index data
+// Winding order is counter-clockwise (CCW) when viewed from outside
 const GLuint cubeIndicesArr[] = {
-	// front
-	0,	1,	2,
-	2,	3,	0,
-	// back
-	4,	5,	6,
-	6,	7,	4,
-	// left
-	8,	9,	10,
-	10, 11, 8,
-	// right
-	12, 13, 14,
-	14, 15, 12,
-	// top
-	16, 17, 18,
-	18, 19, 16,
-	// bottom
-	20, 21, 22,
-	22, 23, 20
+	// front (face toward +Z)
+	0, 1, 2,  // bottom-left, bottom-right, top-right (CCW)
+	0, 2, 3,  // bottom-left, top-right, top-left (CCW)
+
+	// back (face toward -Z)
+	4, 6, 5,  // bottom-left, top-right, bottom-right (CCW when viewed from -Z)
+	4, 7, 6,  // bottom-left, top-left, top-right (CCW)
+
+	// left (face toward -X)
+	8, 9, 10, // bottom-left, bottom-right, top-right (CCW when viewed from -X)
+	8, 10, 11,// bottom-left, top-right, top-left (CCW)
+
+	// right (face toward +X)
+	12, 14, 13, // bottom-left, top-right, bottom-right (CCW when viewed from +X)
+	12, 15, 14, // bottom-left, top-left, top-right (CCW)
+
+	// top (face toward +Y)
+	16, 19, 18,  // front-left, back-left, back-right (CCW when viewed from +Y)
+	16, 18, 17,  // front-left, back-right, front-right (CCW)
+
+	// bottom (face toward -Y)
+	20, 21, 22,  // front-left, front-right, back-right (CCW when viewed from -Y)
+	20, 22, 23,  // front-left, back-right, back-left (CCW)
 };
 
 // Interleaved cube vertex data (position, normal, texture coordinates)

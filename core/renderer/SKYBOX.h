@@ -21,14 +21,25 @@ const GLfloat skyboxPositionsArr[] = {
 	 1.0f,  1.0f,  1.0f,	-1.0f,  1.0f,  1.0f
 };
 
-// Skybox cube inde	x data (6 faces x 2 triangles x 3 vertices)
+// Skybox cube index data (6 faces x 2 triangles x 3 vertices)
+// Winding order is clockwise (CW) when viewed from inside the cube
 const GLuint skyboxIndicesArr[] = {
-	0,  1,  2,		2,  3,  0,		// front face  (z = -1)
-	4,  5,  6,		6,  7,  4,		// back face   (z = +1)
-	0,  4,  7,		7,  3,  0,		// left face   (x = -1)
-	1,  5,  6,		6,  2,  1,		// right face  (x = +1)
-	3,  2,  6,		6,  7,  3,		// top face    (y = +1)
-	0,  1,  5,		5,  4,  0		// bottom face (y = -1)
+	// front face
+	0, 1, 2,	2, 3, 0,	// front face (facing -Z)
+	// back face
+	4, 7, 6,	6, 5, 4,	// back face (facing +Z)
+	// left face
+	4, 0, 3,
+	3, 7, 4,
+	// right face
+	1, 5, 6,
+	6, 2, 1,
+	// top face
+	3, 2, 6,
+	6, 7, 3,
+	// bottom face
+	4, 5, 1,
+	1, 0, 4
 };
 
 // Skybox cube data in vector form
