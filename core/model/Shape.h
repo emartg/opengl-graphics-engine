@@ -25,7 +25,7 @@ public:
 	// and index data
 	Shape(const std::string& name,
 		  const std::vector<GLfloat> vertices, const std::vector<GLuint> indices,
-		  const glm::vec3 albedo = ALBEDO,
+		  const glm::vec4 albedo = ALBEDO,
 		  const glm::vec3 position = POSITION, const glm::quat rotation = ROTATION,
 		  const glm::vec3 scale = SCALE,
 		  const glm::vec3 forward = FORWARD, const glm::vec3 meshForward = FORWARD);
@@ -35,7 +35,7 @@ public:
 	Shape(const std::string& name,
 		  const std::vector<GLfloat> positions, const std::vector<GLfloat> normals,
 		  const std::vector<GLfloat> texCoords, const std::vector<GLuint> indices,
-		  const glm::vec3 albedo = ALBEDO,
+		  const glm::vec4 albedo = ALBEDO,
 		  const glm::vec3 position = POSITION, const glm::quat rotation = ROTATION,
 		  const glm::vec3 scale = SCALE,
 		  const glm::vec3 forward = FORWARD, const glm::vec3 meshForward = FORWARD);
@@ -47,7 +47,7 @@ public:
 	Shape(const std::string& name,
 		  const GLfloat* vertices, const GLuint nVertices,
 		  const GLuint* indices, const GLuint nIndices,
-		  const glm::vec3 albedo = ALBEDO,
+		  const glm::vec4 albedo = ALBEDO,
 		  const glm::vec3 position = POSITION, const glm::quat rotation = ROTATION,
 		  const glm::vec3 scale = SCALE,
 		  const glm::vec3 forward = FORWARD, const glm::vec3 meshForward = FORWARD);
@@ -60,7 +60,7 @@ public:
 		  const GLfloat* positions, const GLfloat* normals,
 		  const GLfloat* texCoords, const GLuint nVertices,
 		  const GLuint* indices, const GLuint nIndices,
-		  const glm::vec3 albedo = ALBEDO,
+		  const glm::vec4 albedo = ALBEDO,
 		  const glm::vec3 position = POSITION, const glm::quat rotation = ROTATION,
 		  const glm::vec3 scale = SCALE,
 		  const glm::vec3 forward = FORWARD, const glm::vec3 meshForward = FORWARD);

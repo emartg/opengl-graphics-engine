@@ -19,7 +19,7 @@ GLuint AssimpModel::nAssimpModels{}; // initialize the number of Assimp models i
 // ------------
 // Constructor that loads a model from a file
 AssimpModel::AssimpModel(const std::string& name, const std::string& path,
-						 const glm::vec3 albedo, const glm::vec3 position,
+						 const glm::vec4 albedo, const glm::vec3 position,
 						 const glm::quat rotation, const glm::vec3 scale,
 						 const glm::vec3 forward, const glm::vec3 meshForward)
 	: Model(name, NodeType::ASSIMP_MODEL, // set the model type to ASSIMP_MODEL

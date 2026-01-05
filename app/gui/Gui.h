@@ -60,7 +60,8 @@ private:
 	std::unique_ptr<Random> m_randomizer; // random generator to get random colors, positions, etc.
 
 	// attributes for the new objects to be created
-	glm::vec3 m_newAlbedo, m_newPosition, m_newRotation, m_newDirection, m_newScale;
+	glm::vec4 m_newAlbedo;
+	glm::vec3 m_newPosition, m_newRotation, m_newDirection, m_newScale;
 	float m_newInnerCutOff, m_newOuterCutOff;
 
 	// parameters for the GUI layout and windows
@@ -185,6 +186,10 @@ private:
 	// Creates a color picker with sliders for RGB components
 	// and returns true if the color was changed
 	bool drawColorControl(const std::string& label, glm::vec3& color,
+						  bool showLabel = true, float colorControlWidth = ITEM_WIDTH);
+	// Creates a color picker with sliders for RGBA components
+	// and returns true if the color was changed
+	bool drawColorControl(const std::string& label, glm::vec4& color,
 						  bool showLabel = true, float colorControlWidth = ITEM_WIDTH);
 	// Creates a 3-component vector control with input fields and buttons
 	// and returns true if any of the components were changed

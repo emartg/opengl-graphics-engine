@@ -15,7 +15,7 @@ GLuint Shape::nShapes{}; // initialize the number of shapes in the scene to 0
 // ------------
 Shape::Shape(const std::string& name,
 			 const std::vector<GLfloat> vertices, const std::vector<GLuint> indices,
-			 const glm::vec3 albedo,
+			 const glm::vec4 albedo,
 			 const glm::vec3 position, const glm::quat rotation, const glm::vec3 scale,
 			 const glm::vec3 forward, const glm::vec3 meshForward)
 	: Model(name, NodeType::SHAPE_MODEL, // set the model type to SHAPE_MODEL
@@ -29,7 +29,7 @@ Shape::Shape(const std::string& name,
 Shape::Shape(const std::string& name,
 			 const std::vector<GLfloat> positions, const std::vector<GLfloat> normals,
 			 const std::vector<GLfloat> texCoords, const std::vector<GLuint> indices,
-			 const glm::vec3 albedo,
+			 const glm::vec4 albedo,
 			 const glm::vec3 position, const glm::quat rotation, const glm::vec3 scale,
 			 const glm::vec3 forward, const glm::vec3 meshForward)
 	: Model(name, NodeType::SHAPE_MODEL, // set the model type to SHAPE_MODEL
@@ -43,7 +43,7 @@ Shape::Shape(const std::string& name,
 Shape::Shape(const std::string& name,
 			 const GLfloat* vertices, const GLuint nVertices,
 			 const GLuint* indices, const GLuint nIndices,
-			 const glm::vec3 albedo,
+			 const glm::vec4 albedo,
 			 const glm::vec3 position, const glm::quat rotation, const glm::vec3 scale,
 			 const glm::vec3 forward, const glm::vec3 meshForward)
 	: Model(name, NodeType::SHAPE_MODEL, // set the model type to SHAPE_MODEL
@@ -62,7 +62,7 @@ Shape::Shape(const std::string& name,
 			 const GLfloat* positions, const GLfloat* normals,
 			 const GLfloat* texCoords, const GLuint nVertices,
 			 const GLuint* indices, const GLuint nIndices,
-			 const glm::vec3 albedo,
+			 const glm::vec4 albedo,
 			 const glm::vec3 position, const glm::quat rotation, const glm::vec3 scale,
 			 const glm::vec3 forward, const glm::vec3 meshForward)
 	: Model(name, NodeType::SHAPE_MODEL, // set the model type to SHAPE_MODEL

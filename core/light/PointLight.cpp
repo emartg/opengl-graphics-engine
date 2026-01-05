@@ -44,7 +44,7 @@ void PointLight::CreateGizmo()
 	auto gizmo = std::make_shared<Shape>(
 		name + " Gizmo",
 		decahedronVerticesVec, decahedronIndicesVec,
-		diffuse, // set the color of the gizmo to the light's diffuse color
+		glm::vec4(diffuse, 1.0f), // set the color of the gizmo to the light's diffuse color
 		position, // set the position of the gizmo to the light's position
 		glm::quat{ 1.0f, 0.0f, 0.0f, 0.0f }, // set the orientation of the gizmo to identity quaternion
 		GIZMO_SCALE // set the scale of the gizmo to a predefined constant

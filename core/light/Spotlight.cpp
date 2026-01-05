@@ -71,7 +71,7 @@ void Spotlight::CreateGizmo()
 	auto gizmo = std::make_shared<Shape>(
 		name + " Gizmo",
 		hexPyramidVerticesVec, hexPyramidIndicesVec,
-		diffuse, // set the color of the gizmo to the light's diffuse color
+		glm::vec4(diffuse, 1.0f), // set the color of the gizmo to the light's diffuse color
 		position, // set the position of the gizmo to the light's position
 		rotation, // set the rotation of the gizmo based on the light's direction
 		GIZMO_SCALE, // set the scale of the gizmo to a predefined constant

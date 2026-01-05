@@ -35,8 +35,8 @@ public:
 	// --------------
 	// Generate a random float within a specified range [minValue, maxValue]
 	const float GenerateRandomFloat(float minValue, float maxValue) const;
-	// Generate a random color
-	const glm::vec3 GenerateRandomColor() const;
+	// Generate a random color with RGBA components
+	const glm::vec4 GenerateRandomColor() const;
 	// Generate a random position within a certain range with respect to a target
 	const glm::vec3 GenerateRandomPosition(glm::vec3 target,
 										   float minDistanceFromTarget,

@@ -31,7 +31,7 @@ public:
 	// ------------
 	// Constructor that loads a model from a file
 	AssimpModel(const std::string& name, std::string const& path,
-				const glm::vec3 albedo = ALBEDO, const glm::vec3 position = POSITION,
+				const glm::vec4 albedo = ALBEDO, const glm::vec3 position = POSITION,
 				const glm::quat rotation = ROTATION, const glm::vec3 scale = SCALE,
 				const glm::vec3 forward = FORWARD, const glm::vec3 meshForward = FORWARD);
 

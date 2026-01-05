@@ -51,5 +51,5 @@ std::shared_ptr<Node> Light::GetGizmo() const
 void Light::SyncGizmoColorFromLight()
 {
 	auto gizmo = GetGizmo(); // get the gizmo representing the light
-	if (gizmo) gizmo->SetAlbedo(diffuse); // set the gizmo's albedo to the light's diffuse color
+	if (gizmo) gizmo->SetAlbedo(glm::vec4(diffuse, 1.0f)); // set gizmo's albedo to the light's diffuse color
 }

@@ -102,6 +102,11 @@ void Renderer::ConfigOpenGL() const
 	glEnable(GL_CULL_FACE); // enable face culling
 	glCullFace(GL_BACK); // cull back faces (default)
 	glFrontFace(GL_CCW); // counter-clockwise wound faces are front faces (default)
+
+	// blending configuration:
+	glEnable(GL_BLEND); // enable blending
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // standard alpha blending function (default)
+	glBlendEquation(GL_FUNC_ADD); // standard blend equation (default)
 }
 
 void Renderer::ClearBuffers(BufferType bufferType) const

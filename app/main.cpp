@@ -39,6 +39,9 @@ std::tuple<
 	std::vector<std::string>> DefineShadersInfo();
 // Sets up the initial scene with a camera, lights, a shape, an Assimp model, and a skybox
 void SetupInitialScene(Core* engine);
+// Sets up a simple test scene (alternative to SetupInitialScene) with basic elements to test a
+// specific functionality of the engine that is currently being developed
+void SetupInitialTestScene(Core* engine);
 
 int main(int argc, char** argv)
 {
@@ -166,7 +169,7 @@ void SetupInitialScene(Core* engine)
 	auto directionalLight = std::make_shared<DirectionalLight>(
 		"Directional Light",
 		glm::vec3{ 0.1f }, // ambient color (default)
-		glm::vec3{ 1.0f, 1.0f, 0.7f }, // diffuse color (overridden)
+		glm::vec4{ 1.0f, 1.0f, 0.7f, 1.0f }, // diffuse color (overridden)
 		glm::vec3{ 1.0f }, // specular color (override required although it is the default)
 		glm::vec3{ 2.4f, 8.0f, -3.0f }, // position (overridden)
 		glm::vec3{ -0.2f, -0.8, 0.5f } // direction (overridden)
@@ -182,7 +185,7 @@ void SetupInitialScene(Core* engine)
 	auto pointLight = std::make_shared<PointLight>(
 		"Point Light",
 		glm::vec3{ 0.1f }, // ambient color (default)
-		glm::vec3{ 0.3f, 0.9f, 1.0f }, // diffuse color (overridden)
+		glm::vec4{ 0.3f, 0.9f, 1.0f, 1.0f }, // diffuse color (overridden)
 		glm::vec3{ 1.0f }, // specular color (same as default)
 		glm::vec3{ -0.6f, 3.2f, 3.2f } // position (overridden)
 	);
@@ -197,7 +200,7 @@ void SetupInitialScene(Core* engine)
 	auto spotlight = std::make_shared<Spotlight>(
 		"Spotlight",
 		glm::vec3{ 0.1f }, // ambient color (override required although it is the default)
-		glm::vec3{ 1.0f, 0.4f, 0.4f }, // diffuse color (overridden)
+		glm::vec4{ 1.0f, 0.4f, 0.4f, 1.0f }, // diffuse color (overridden)
 		glm::vec3{ 1.0f }, // specular color (override required although it is the default)
 		glm::vec3{ 3.0f, -0.3f, -0.9f }, // position (overridden)
 		glm::vec3{ -0.8f, 0.3f, 0.6f }, // direction (overridden)
@@ -217,7 +220,7 @@ void SetupInitialScene(Core* engine)
 	// create a shapes group to hold multiple shapes as children of the root group
 	auto shapesGroup = std::make_shared<Model>(
 		"Shapes Group", NodeType::COMPOSITE_MODEL,
-		glm::vec3{ 1.0f }, // albedo (overriden)
+		glm::vec4{ 1.0f }, // albedo (overriden)
 		glm::vec3{ 0.0f, 0.0f, -2.5f } // position (overriden - offset from root)
 	);
 
@@ -225,7 +228,7 @@ void SetupInitialScene(Core* engine)
 	auto redShape = std::make_shared<Shape>(
 		"Red Shape",
 		cubeVerticesVec, cubeIndicesVec,
-		glm::vec3{ 0.9f, 0.2f, 0.2f }, // albedo (overridden)
+		glm::vec4{ 0.9f, 0.2f, 0.2f, 1.0f }, // albedo (overridden)
 		glm::vec3{ -1.0f, 0.0f, 0.0f }, // position (overridden - local offset from parent)
 		glm::quat(glm::vec3{ 0.0f, glm::radians(15.0f), 0.0f }), // rotation (overridden)
 		glm::vec3{ 0.8f } // scale (overridden)
@@ -233,7 +236,7 @@ void SetupInitialScene(Core* engine)
 	auto blueShape = std::make_shared<Shape>(
 		"Blue Shape",
 		cubeVerticesVec, cubeIndicesVec,
-		glm::vec3{ 0.2f, 0.2f, 0.9f }, // albedo (overridden)
+		glm::vec4{ 0.2f, 0.2f, 0.9f, 1.0f }, // albedo (overridden)
 		glm::vec3{ 1.0f, 0.0f, 0.0f }, // position (overridden - local offset from parent)
 		glm::quat(glm::vec3{ 0.0f, glm::radians(-25.0f), 0.0f }), // rotation (overridden)
 		glm::vec3{ 0.6f } // scale (overridden)
@@ -249,7 +252,7 @@ void SetupInitialScene(Core* engine)
 	{ // check if the file exists before loading it
 		auto assimpModel = std::make_shared<AssimpModel>(
 			"Teapot Model", assimpPath,
-			glm::vec3{ 1.0f }, // albedo (overriden - unused if model has textures)
+			glm::vec4{ 1.0f }, // albedo (overriden - unused if model has textures)
 			glm::vec3{ 0.0f, 0.0f, 3.0f }, // position (overriden - offset from root)
 			glm::quat(glm::vec3{ 0.0f }), // rotation (default)
 			glm::vec3{ 0.25f } // scale (overriden)
@@ -306,4 +309,16 @@ void SetupInitialScene(Core* engine)
 	// print a success message indicating the initial scene setup is complete
 	std::cout << "[SUCCESS::main::SetupInitialScene] Initial scene setup completed successfully"
 		<< std::endl;
+}
+
+void SetupInitialTestScene(Core* engine)
+{
+	// retrieve the node manager and scene manager from the engine
+	auto& nodeManager = engine->GetNodeManager();
+	auto& sceneManager = engine->GetSceneManager();
+
+	// create a camera, set it as the active camera in the scene manager and add it to the node manager
+	auto camera = std::make_shared<Camera>("Main Camera");
+	sceneManager->SetCamera(camera);
+	nodeManager->AddNode(std::move(camera));
 }

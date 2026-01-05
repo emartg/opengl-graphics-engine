@@ -6,7 +6,11 @@
 * and allow the user to interact with it, e.g. change certain parameters or create new objects.
 */
 
-#include <limits> // for std::numeric_limits<float>::max()
+#include <algorithm>
+#include <array>
+#include <cctype> // for std::tolower
+#include <limits> // for std::numeric_limits
+#include <string>
 
 #include "Gui.h"
 #include "ImGuiFileDialog.h"
@@ -28,6 +32,42 @@
 #include "../core/managers/InputManager.h"
 #include "../core/renderer/Renderer.h"
 #include "../core/utils/random/Random.h"
+
+// Namespaces
+// ----------
+// Namespace for cubemap face handling (unnamed to limit scope to this file)
+namespace
+{
+	// the expected name tokens (case-insensitive) for each cubemap face are:
+	// right, left, top, bottom, front, back; or posx, negx, posy, negy, posz, negz;
+	// or short forms: px, nx, py, ny, pz, nz; up/down are also accepted for top/bottom
+	enum class CubemapFaceIndex { RIGHT = 0, LEFT, TOP, BOTTOM, FRONT, BACK, COUNT };
+
+	// assigns the given path to the specified cubemap face index if it has not been assigned yet
+	// (returns true if the assignment was successful, false otherwise)
+	bool AssignCubemapFace(
+		std::array<std::string, static_cast<std::size_t>(CubemapFaceIndex::COUNT)>& orderedPaths,
+		std::array<bool, static_cast<std::size_t>(CubemapFaceIndex::COUNT)>& pathAssigned,
+		CubemapFaceIndex idx, const std::string& path)
+	{
+		const std::size_t i = static_cast<std::size_t>(idx);
+		if (!pathAssigned[i])
+		{
+			orderedPaths[i] = path;
+			pathAssigned[i] = true;
+			return true;
+		}
+		return false;
+	}
+
+	// converts a string to lowercase using std::transform and std::tolower
+	std::string ToLowerCopy(std::string s)
+	{
+		std::transform(s.begin(), s.end(), s.begin(),
+					   [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+		return s;
+	}
+}
 
 // Static Attributes
 // -----------------
@@ -1367,8 +1407,8 @@ void GUI::drawModelControls(Node* model)
 	// only if the model is a shape, display the color picker
 	if (model->GetNodeType() == NodeType::SHAPE_MODEL)
 	{
-		// get the color of the model
-		glm::vec3 color = model->GetAlbedo();
+		// get the color of the model (with alpha channel)
+		glm::vec4 color = model->GetAlbedo();
 		// create a color picker for the model's color
 		if (drawColorControl("Albedo", color))
 		{ // if the color control is used
@@ -1771,71 +1811,55 @@ void GUI::drawImportSkyboxPopup()
 				[](const std::vector<std::string>& paths,
 				   std::vector<std::string>& orderedFacePaths) -> bool
 			{
-				// the expected name tokens (case-insensitive) for each cubemap face are:
-				// right, left, top, bottom, front, back; or posx, negx, posy, negy, posz, negz;
-				// or short forms: px, nx, py, ny, pz, nz; up/down are also accepted for top/bottom
-				enum FaceIndex { RIGHT = 0, LEFT, TOP, BOTTOM, FRONT, BACK, COUNT };
-
-				// array to hold the ordered face paths
-				std::array<std::string, COUNT> orderedPaths{};
-				// array to track which faces have been assigned paths
-				std::array<bool, COUNT> pathAssigned{};
-
-				// lambda to convert a string to lowercase
-				auto toLower = [](std::string s)
-				{
-					std::transform(s.begin(), s.end(), s.begin(),
-								   [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
-					return s;
-				};
-
-				// lambda to assign a path to a face if not already assigned
-				auto assignFace = [&](FaceIndex idx, const std::string& path)
-				{
-					if (!pathAssigned[idx])
-					{
-						orderedPaths[idx] = path;
-						pathAssigned[idx] = true;
-						return true; // face successfully assigned, return true
-					}
-					return false; // face already assigned, return false
-				};
+				// get the number of cubemap faces
+				constexpr std::size_t cubemapFaceCount = static_cast<std::size_t>(CubemapFaceIndex::COUNT);
+				// prepare arrays to hold ordered paths and track assigned faces
+				std::array<std::string, cubemapFaceCount> orderedPaths{};
+				std::array<bool, cubemapFaceCount> pathAssigned{};
 
 				// iterate over the selected file paths to infer face ordering
 				for (const auto& fullPath : paths)
 				{
 					// extract filename from the full path and convert to lowercase
-					std::string fileName = toLower(fullPath.substr(fullPath.find_last_of("/\\") + 1));
-					bool matched{ false };
+					const std::string fileName =
+						ToLowerCopy(fullPath.substr(fullPath.find_last_of("/\\") + 1));
+
+					bool matched{ false }; // track if a match was found for this filename
+
 					if (fileName.find("right") != std::string::npos ||
 						fileName.find("posx") != std::string::npos ||
 						fileName.find("px") != std::string::npos)
-						matched |= assignFace(RIGHT, fullPath);
+						matched = AssignCubemapFace(orderedPaths, pathAssigned,
+													CubemapFaceIndex::RIGHT, fullPath);
 					else if (fileName.find("left") != std::string::npos ||
 							 fileName.find("negx") != std::string::npos ||
 							 fileName.find("nx") != std::string::npos)
-						matched |= assignFace(LEFT, fullPath);
+						matched = AssignCubemapFace(orderedPaths, pathAssigned,
+													CubemapFaceIndex::LEFT, fullPath);
 					else if (fileName.find("top") != std::string::npos ||
 							 fileName.find("posy") != std::string::npos ||
 							 fileName.find("py") != std::string::npos ||
 							 fileName.find("up") != std::string::npos)
-						matched |= assignFace(TOP, fullPath);
+						matched = AssignCubemapFace(orderedPaths, pathAssigned,
+													CubemapFaceIndex::TOP, fullPath);
 					else if (fileName.find("bottom") != std::string::npos ||
 							 fileName.find("negy") != std::string::npos ||
 							 fileName.find("ny") != std::string::npos ||
 							 fileName.find("down") != std::string::npos)
-						matched |= assignFace(BOTTOM, fullPath);
+						matched = AssignCubemapFace(orderedPaths, pathAssigned,
+													CubemapFaceIndex::BOTTOM, fullPath);
 					else if (fileName.find("front") != std::string::npos ||
 							 fileName.find("posz") != std::string::npos ||
 							 fileName.find("pz") != std::string::npos)
-						matched |= assignFace(FRONT, fullPath);
+						matched = AssignCubemapFace(orderedPaths, pathAssigned,
+													CubemapFaceIndex::FRONT, fullPath);
 					else if (fileName.find("back") != std::string::npos ||
 							 fileName.find("negz") != std::string::npos ||
 							 fileName.find("nz") != std::string::npos)
-						matched |= assignFace(BACK, fullPath);
+						matched = AssignCubemapFace(orderedPaths, pathAssigned,
+													CubemapFaceIndex::BACK, fullPath);
 
-					// if no match was found for this filename, parsing fails
-					if (!matched) return false;
+					if (!matched) return false; // if no match was found, parsing fails for this filename
 				}
 
 				// if not all faces have been assigned a path, parsing fails
@@ -2022,6 +2046,30 @@ bool GUI::drawColorControl(const std::string& label, glm::vec3& color,
 
 	ImGui::SetNextItemWidth(colorControlWidth); // set the width of the color picker's input fields
 	if (ImGui::ColorEdit3("##color", (float*)&color))
+	{ // if the color picker is used
+		value_changed = true; // set the value_changed flag to true
+	}
+
+	ImGui::PopID(); // end the unique ID scope for the label
+
+	return value_changed; // return whether the color has changed
+}
+
+bool GUI::drawColorControl(const std::string& label, glm::vec4& color,
+						   bool showLabel, float colorControlWidth)
+{
+	bool value_changed{ false }; // flag to indicate if the color has changed
+
+	ImGuiIO& io = ImGui::GetIO(); // get ImGui IO object for font and style settings
+	auto boldFont = io.Fonts->Fonts[0]; // get the bold font from the ImGui IO object
+
+	ImGui::PushID(label.c_str()); // create a unique ID for the label to avoid conflicts with other controls
+
+	if (showLabel) // if indicated, display the label for the control
+		ImGui::Text("%s", label.c_str());
+
+	ImGui::SetNextItemWidth(colorControlWidth); // set the width of the color picker's input fields
+	if (ImGui::ColorEdit4("##color", (float*)&color)) // color picker for vec4 (includes alpha component)
 	{ // if the color picker is used
 		value_changed = true; // set the value_changed flag to true
 	}

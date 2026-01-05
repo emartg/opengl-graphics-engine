@@ -51,7 +51,7 @@ public:
 	// It is pre-incremented to ensure the first node has id 1, not 0 (since 0 is reserved
 	// as a sentinel value for undefined nodes, e.g., when no nodes are selected)
 	Node(const std::string& name, const NodeType type = NodeType::UNDEFINED,
-		 const glm::vec3 albedo = ALBEDO, const glm::vec3 position = POSITION,
+		 const glm::vec4 albedo = ALBEDO, const glm::vec3 position = POSITION,
 		 const glm::quat rotation = ROTATION, const glm::vec3 scale = SCALE,
 		 const glm::vec3 forward = FORWARD, const glm::vec3 meshForward = FORWARD,
 		 const GizmoType gizmoType = GizmoType::NONE)
@@ -93,7 +93,7 @@ public:
 	void SetName(const std::string& name) { this->name = name; }
 	void SetNodeType(const NodeType& type) { this->type = type; }
 
-	const glm::vec3& GetAlbedo() const { return albedo; }
+	const glm::vec4& GetAlbedo() const { return albedo; }
 	const glm::vec3& GetPosition() const { return position; }
 	const glm::quat& GetRotation() const { return rotation; }
 	const glm::vec3 GetRotationInEulerAngles() const; // returns the rotation as Euler angles in degrees
@@ -102,7 +102,7 @@ public:
 	const glm::vec3& GetMeshForward() const { return meshForward; }
 	const GizmoType& GetGizmoType() const { return gizmoType; }
 
-	void SetAlbedo(const glm::vec3& albedo) { this->albedo = albedo; }
+	void SetAlbedo(const glm::vec4& albedo) { this->albedo = albedo; }
 	void SetPosition(const glm::vec3& position) { this->position = position; }
 	void SetRotation(const glm::quat& rotation); // sets the rotation and updates the fwd vector accordingly
 	void SetRotationInEulerAngles(const glm::vec3 eulerAnglesDegrees); // from Euler angles in degrees
@@ -163,7 +163,7 @@ protected:
 	std::vector<std::shared_ptr<Texture>> textures; // textures of the node itself (if any)
 	std::string directory; // directory of the model file of this node (if any)
 
-	glm::vec3 albedo; // current albedo (color when texture is not applied)
+	glm::vec4 albedo; // current albedo (color when texture is not applied)
 
 	glm::vec3 position; // current position vector
 	glm::quat rotation; // current orientation as a quaternion
@@ -180,7 +180,7 @@ protected:
 	// Private Static Attributes
 	// -------------------------
 	// default values for the node attributes
-	static constexpr glm::vec3 ALBEDO{ 0.8 }; // default albedo color (light gray)
+	static constexpr glm::vec4 ALBEDO{ 0.8, 0.8f, 0.8f, 1.0f }; // light gray color as default (RGBA)
 	static constexpr glm::vec3 POSITION{ 0.0f }; // origin position
 	static constexpr glm::quat ROTATION{ 1.0f, 0.0f, 0.0f, 0.0f }; // identity quaternion (no rotation)
 	static constexpr glm::vec3 ROTATION_IN_EULER_ANGLES{ 0.0f, 0.0f, 0.0f }; // no rotation

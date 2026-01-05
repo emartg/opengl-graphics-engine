@@ -17,7 +17,7 @@ GLuint Model::nModels{}; // initialize the number of models in the scene to 0
 // Constructors
 // ------------
 Model::Model(const std::string& name, const NodeType type,
-			 const glm::vec3 albedo, const glm::vec3 position,
+			 const glm::vec4 albedo, const glm::vec3 position,
 			 const glm::quat rotation, const glm::vec3 scale,
 			 const glm::vec3 forward, const glm::vec3 meshForward,
 			 const GizmoType gizmoType)

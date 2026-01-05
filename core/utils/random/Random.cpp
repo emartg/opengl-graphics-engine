@@ -13,9 +13,13 @@ const float Random::GenerateRandomFloat(float minValue, float maxValue) const
 	return minValue + static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * (maxValue - minValue);
 }
 
-const glm::vec3 Random::GenerateRandomColor() const
+const glm::vec4 Random::GenerateRandomColor() const
 {
-	glm::vec3 newColor{ (rand() % 100) / 100.0f, (rand() % 100) / 100.0f, (rand() % 100) / 100.0f };
+	glm::vec4 newColor{ (rand() % 100) / 100.0f,
+						(rand() % 100) / 100.0f,
+						(rand() % 100) / 100.0f,
+						1.0f // set alpha to 1.0f (fully opaque)
+	};
 	return newColor;
 }
 
