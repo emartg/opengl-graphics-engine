@@ -9,8 +9,10 @@
 #include <algorithm>
 #include <array>
 #include <cctype> // for std::tolower
+#include <cstdint>
 #include <limits> // for std::numeric_limits
 #include <string>
+#include <sstream>
 
 #include "Gui.h"
 #include "ImGuiFileDialog.h"
@@ -77,7 +79,7 @@ bool GUI::s_proportionalScaling{ true }; // propertional scaling flag is true by
 // ------------
 GUI::GUI()
 	: m_randomizer{ std::make_unique<Random>() }, // create a random number generator
-	m_newAlbedo{ 0.8f }, // default albedo color for new objects is light gray
+	m_newAlbedo{ 0.8f, 0.8f, 0.8f, 1.0f }, // default albedo color for new objects is light gray
 	m_newPosition{ 0.0f }, // default position for new objects is the origin
 	m_newRotation{ 0.0f }, // default rotation for new objects is no rotation (identity quaternion)
 	m_newDirection{ 0.0f, 0.0f, -1.0f }, // default direction for new objects is negative z-axis
@@ -420,7 +422,9 @@ void GUI::drawSceneGraphWindow()
 		auto& nodeManager = Core::GetInstance()->GetNodeManager();
 
 		// display instruction text
-		ImGui::TextWrapped("Click: Select/Deselect | Del: Delete");
+		ImGui::TextWrapped("Left click on a node: select node\n"
+						   "Left click on empty space: clear selection\n"
+						   "Del / Supr: delete selected node");
 		ImGui::Separator();
 
 		// get all root nodes (nodes without parents)
@@ -442,6 +446,34 @@ void GUI::drawSceneGraphWindow()
 		for (const auto& rootNode : rootNodes)
 			if (rootNode) // ensure the node is valid
 				drawNodeTreeRecursive(rootNode);
+
+		// clear selection when clicking on empty space in the Scene Graph window body
+		// (not on items, not on scrollbars/title bar)
+		if (ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows) &&
+			ImGui::IsMouseClicked(ImGuiMouseButton_Left) &&
+			!ImGui::IsAnyItemHovered())
+		{
+			// if the window is hovered and left mouse button is clicked on empty space,
+			// clear the current selection and print a message to the console
+			auto& nodeManager = Core::GetInstance()->GetNodeManager();
+			auto& selectionManager = Core::GetInstance()->GetSelectionManager();
+
+			// get the selected node id to check if a node was selected
+			std::uint32_t previousSelectedId = selectionManager->GetSelectedNodeId();
+			if (previousSelectedId != 0)
+			{ // only get the name of the node, clear selection, and log if a node was actually selected
+				// get the name of the node that is about to be deselected (for logging purposes)
+				std::string previousSelectedName;
+				auto previousSelectedNode = selectionManager->GetSelectedNode(nodeManager.get());
+				previousSelectedName = previousSelectedNode->GetName();
+
+				// clear the selection and print info message with the deselected node's name and id
+				selectionManager->ClearSelection();
+
+				std::cout << "[INFO::GUI::drawSceneGraphWindow] Deselected node "
+					<< previousSelectedName << " (ID " << previousSelectedId << ")" << std::endl;
+			}
+		}
 
 		ImGui::End(); // end the Scene Graph window
 
@@ -663,9 +695,9 @@ void GUI::drawPropertiesWindow()
 		}
 		else
 		{ // if an node is selected, display its name and ID, and draw its controls
-			// display the name and ID of the selected node in bold font
+			// display the name of the selected node in bold font
 			ImGui::PushFont(m_boldFont);
-			ImGui::TextWrapped("%s\n(ID %u)", selected->GetName().c_str(), selected->GetId());
+			ImGui::Text(selected->GetName().c_str());
 			ImGui::PopFont();
 
 			ImGui::Separator();
@@ -1027,8 +1059,7 @@ void GUI::drawDebugWindow()
 				ImGui::Text("Solid Color");
 				ImGui::SameLine(); // keep the color picker on the same line as the label
 				// use the custom drawColorControl helper to draw the color picker
-				if (drawColorControl("##SolidColor", params.solidColor,
-									 false, ImGui::GetContentRegionAvail().x))
+				if (drawColorControl("##SolidColor", params.solidColor, false))
 					paramsChanged = true; // mark the params as changed
 			}
 			break;
@@ -1111,6 +1142,9 @@ void GUI::drawNodeTreeRecursive(const std::shared_ptr<Node>& node)
 {
 	if (!node) return; // safety check
 
+	// hide gizmo nodes from the tree view to prevent clutter and confusion
+	if (node->GetGizmoType() != GizmoType::NONE) return;
+
 	// get selection manager to check if this node is selected
 	auto& selectionManager = Core::GetInstance()->GetSelectionManager();
 	bool isSelected = (selectionManager->GetSelectedNodeId() == node->GetId());
@@ -1123,6 +1157,10 @@ void GUI::drawNodeTreeRecursive(const std::shared_ptr<Node>& node)
 
 	// if the node has no children, make it a leaf node
 	if (!node->IsComposite()) flags |= ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
+
+	// if the node is a light, do no show an arrow as if it was a leaf node (gizmos are hidden)
+	if (node->GetNodeType() == NodeType::LIGHT)
+		flags |= ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
 
 	// determine icon/prefix based on node type
 	std::string nodeLabel;
@@ -1142,14 +1180,10 @@ void GUI::drawNodeTreeRecursive(const std::shared_ptr<Node>& node)
 		case NodeType::MODEL:
 		case NodeType::ASSIMP_MODEL:
 		case NodeType::SHAPE_MODEL:
-			// check if it is a gizmo, and adjust label accordingly
-			if (node->GetGizmoType() != GizmoType::NONE)
-				nodeLabel = "[GIZMO] " + node->GetName();
-			else
-				nodeLabel = "[MODEL] " + node->GetName();
+			nodeLabel = "[MODEL] " + node->GetName();
 			break;
 		default:
-			nodeLabel = node->GetName();
+			nodeLabel = "[UNKNOWN] " + node->GetName();
 			break;
 	}
 
@@ -1163,12 +1197,15 @@ void GUI::drawNodeTreeRecursive(const std::shared_ptr<Node>& node)
 	if (ImGui::IsItemClicked())
 		handleNodeSelection(node->GetId());
 
-	// if the node is open and has children, draw them recursively
-	if (nodeOpen && node->IsComposite())
-	{
+	// only pop the tree if it was pushed (i.e. node has children)
+	const bool treePushed = (flags & ImGuiTreeNodeFlags_NoTreePushOnOpen) == 0;
+
+	if (nodeOpen && treePushed)
+	{ // if the node is open and has childrenn (i.e. tree level was pushed), draw its children recursively
 		for (const auto& child : node->GetChildren())
 			if (child) // ensure child is valid
 				drawNodeTreeRecursive(child); // recursive call for child nodes
+
 		ImGui::TreePop(); // end the tree node
 	}
 
@@ -1181,6 +1218,8 @@ void GUI::handleNodeSelection(std::uint32_t nodeId)
 	auto& nodeManager = Core::GetInstance()->GetNodeManager();
 	auto& selectionManager = Core::GetInstance()->GetSelectionManager();
 
+	// store the original node id for comparison and logging
+	std::uint32_t originalNodeId = nodeId;
 	// resolve gizmo to parent light if applicable
 	auto node = nodeManager->GetNodeById(nodeId);
 	if (node && node->GetGizmoType() != GizmoType::NONE)
@@ -1205,26 +1244,30 @@ void GUI::handleNodeSelection(std::uint32_t nodeId)
 		}
 	}
 
-	// toggle selection state and log the action
-	if (selectionManager->GetSelectedNodeId() == nodeId)
-	{ // if the node is already selected, deselect it and log the deselection
-		selectionManager->ClearSelection();
+	// if the selected node is already selected, do not proceed (no redundant selection and logging)
+	if (selectionManager->GetSelectedNodeId() == originalNodeId) return;
 
-		std::cout << "[INFO::GUI::handleNodeSelection] Deselected node "
-			<< (node ? node->GetName() : "Unknown") << " (ID " << nodeId << ")" << std::endl;
-	}
-	else
-	{ // if the node is not selected, select it and log the selection
-		selectionManager->SetSelectedNodeId(nodeId);
+	// set the selected node in the selection manager and log the selection
+	selectionManager->SetSelectedNodeId(nodeId);
 
-		std::cout << "[INFO::GUI::handleNodeSelection] Selected node "
-			<< (node ? node->GetName() : "Unknown") << " (ID " << nodeId << ")" << std::endl;
-	}
+	std::cout << "[INFO::GUI::handleNodeSelection] Selected node "
+		<< (node ? node->GetName() : "Unknown") << " (ID " << nodeId << ")" << std::endl;
 }
 
 
 void GUI::drawLightControls(Light* light)
 {
+	if (!light) return; // safety check
+
+	if (auto gizmo = light->GetGizmo())
+	{ // if the light has a gizmo, create a checkbox to toggle its visibility
+		bool gizmoVisible = gizmo->IsVisible(); // get current visibility state
+		if (ImGui::Checkbox("Show Gizmo", &gizmoVisible)) // if the checkbox state is changed
+			gizmo->SetVisible(gizmoVisible); // update the gizmo visibility accordingly
+
+		ImGui::Separator(); // add a separator after the checkbox
+	}
+
 	switch (light->GetLightType()) // switch based on the type of the light
 	{
 		case LightType::DIRECTIONAL_LIGHT: // if the Light is a DirectionalLight
@@ -1467,7 +1510,10 @@ void GUI::drawCreateDirectionalLightPopup()
 		ImGui::Separator();
 
 		// display controls to set the color, position, and direction of the new directional light
-		drawColorControl("Color", m_newAlbedo);
+		// (the color picker should only be RGB, no alpha channel)
+		glm::vec3 albedoRGB = m_newAlbedo;
+		drawColorControl("Albedo", albedoRGB);
+		m_newAlbedo = glm::vec4(albedoRGB, 1.0f); // set alpha to 1.0f
 		drawVec3Control("Position", m_newPosition, false,
 						MIN_POSITION_VALUE, MAX_POSITION_VALUE,
 						INPUT_FIELD_WIDTH, POSITION_SPEED, POSITION_RESET_VALUE);
@@ -1491,20 +1537,23 @@ void GUI::drawCreateDirectionalLightPopup()
 		ImGui::SameLine();
 		if (ImGui::Button("Create", ImVec2(POPUP_BUTTON_WIDTH, 0.0f)))
 		{ // if the Create button is clicked
-			// get the number of models and directional lights in the scene
-			std::string nModels = std::to_string(nodeManager->GetNModels());
-			std::string nDirectionalLights =
-				std::to_string(nodeManager->GetNDirectionalLights());
-
-			// create a new directional light with the specified properties
-			auto newDirectionalLight = std::make_shared<DirectionalLight>(
-				"Directional Light " + nDirectionalLights,
-				glm::vec3{ 0.1f }, m_newAlbedo, glm::vec3{ 1.0f }, m_newPosition, m_newDirection
+			// create a new directional light with a placeholder name and the specified properties
+			auto directionalLight = std::make_shared<DirectionalLight>(
+				"Directional Light", glm::vec3{ 0.1f }, m_newAlbedo,
+				glm::vec3{ 1.0f }, m_newPosition, m_newDirection
 			);
+
+			// convert the light's ID to string and set it as part of the light's name
+			std::ostringstream oss; // create a string stream to hold the ID
+			oss << directionalLight->GetId(); // insert the ID into the stream
+			directionalLight->SetName("{id: " + oss.str() + "} Directional Light"); // ID prefixed name
+
 			// create the gizmo child (the light has been fully constructed and placed in a shared_ptr)
-			newDirectionalLight->CreateGizmo();
-			// add the new directional light to the engine
-			nodeManager->AddNode(std::move(newDirectionalLight));
+			directionalLight->CreateGizmo();
+			// register the gizmo child for selection/picking before moving the light
+			auto directionalLightGizmo = directionalLight->GetGizmo();
+			if (directionalLightGizmo) nodeManager->AddNode(directionalLightGizmo);
+			nodeManager->AddNode(std::move(directionalLight));
 
 			ImGui::CloseCurrentPopup(); // close the popup
 		}
@@ -1535,7 +1584,10 @@ void GUI::drawCreatePointLightPopup()
 		ImGui::Separator();
 
 		// display controls to set the color and position of the new point light
-		drawColorControl("Color", m_newAlbedo);
+		// (the color picker should only be RGB, no alpha channel)
+		glm::vec3 albedoRGB = m_newAlbedo;
+		drawColorControl("Albedo", albedoRGB);
+		m_newAlbedo = glm::vec4(albedoRGB, 1.0f); // set alpha to 1.0f
 		drawVec3Control("Position", m_newPosition, false,
 						MIN_POSITION_VALUE, MAX_POSITION_VALUE,
 						INPUT_FIELD_WIDTH, POSITION_SPEED, POSITION_RESET_VALUE);
@@ -1555,19 +1607,23 @@ void GUI::drawCreatePointLightPopup()
 		// display a button to add the new point light
 		if (ImGui::Button("Create", ImVec2(POPUP_BUTTON_WIDTH, 0.0f)))
 		{ // if the Create button is clicked
-			// get the number of models and point lights in the scene
-			std::string nModels = std::to_string(nodeManager->GetNModels());
-			std::string nPointLights = std::to_string(nodeManager->GetNPointLights());
-
-			// create a new point light with the specified properties
-			auto newPointLight = std::make_shared<PointLight>(
-				"Point Light " + nPointLights,
-				glm::vec3{ 0.1f }, m_newAlbedo, glm::vec3{ 1.0f }, m_newPosition
+			// create a new point light with a placeholder name and the specified properties
+			auto pointLight = std::make_shared<PointLight>(
+				"Point Light", glm::vec3{ 0.1f }, m_newAlbedo,
+				glm::vec3{ 1.0f }, m_newPosition
 			);
+
+			// convert the light's ID to string and set it as part of the light's name
+			std::ostringstream oss; // create a string stream to hold the ID
+			oss << pointLight->GetId(); // insert the ID into the stream
+			pointLight->SetName("{id: " + oss.str() + "} Point Light"); // ID prefixed name
+
 			// create the gizmo child (the light has been fully constructed and placed in a shared_ptr)
-			newPointLight->CreateGizmo();
-			// add the new point light to the engine
-			nodeManager->AddNode(std::move(newPointLight));
+			pointLight->CreateGizmo();
+			// register the gizmo child for selection/picking before moving the light
+			auto pointLightGizmo = pointLight->GetGizmo();
+			if (pointLightGizmo) nodeManager->AddNode(pointLightGizmo);
+			nodeManager->AddNode(std::move(pointLight));
 
 			ImGui::CloseCurrentPopup(); // close the popup
 		}
@@ -1597,12 +1653,15 @@ void GUI::drawCreateSpotlightPopup()
 		ImGui::Separator();
 
 		// display controls to set the color, position, direction, and cut-off angles of the new spotlight
-		drawColorControl("Color", m_newAlbedo);
+		// (the color picker should only be RGB, no alpha channel)
+		glm::vec3 albedoRGB = m_newAlbedo;
+		drawColorControl("Albedo", albedoRGB);
+		m_newAlbedo = glm::vec4(albedoRGB, 1.0f); // set alpha to 1.0f
 		drawVec3Control("Position", m_newPosition, false,
 						MIN_POSITION_VALUE, MAX_POSITION_VALUE,
 						INPUT_FIELD_WIDTH, POSITION_SPEED, POSITION_RESET_VALUE);
 		drawVec3Control("Direction", m_newDirection, false,
-						DIRECTION_RESET_VALUE, DIRECTION_RESET_VALUE,
+						MIN_DIRECTION_VALUE, MAX_DIRECTION_VALUE,
 						INPUT_FIELD_WIDTH, DIRECTION_SPEED, DIRECTION_RESET_VALUE);
 		ImGui::Text("Cut-Off Angles (in degrees):");
 		// initialize the inner and outer cut-off angles with default values before drawing the controls
@@ -1635,19 +1694,23 @@ void GUI::drawCreateSpotlightPopup()
 		ImGui::SameLine();
 		if (ImGui::Button("Create", ImVec2(POPUP_BUTTON_WIDTH, 0.0f)))
 		{ // if the Create button is clicked
-			// get the number of models and spotlights in the scene
-			std::string nModels = std::to_string(nodeManager->GetNModels());
-			std::string nSpotlights = std::to_string(nodeManager->GetNSpotlights());
-
-			// create a new spotlight with the specified properties
-			auto newSpotlight = std::make_shared<Spotlight>(
-				"Spotlight " + nSpotlights,
-				glm::vec3{ 0.1f }, m_newAlbedo, glm::vec3{ 1.0f }, m_newPosition, m_newDirection
+			// create a new spotlight with a placeholder name and the specified properties
+			auto spotlight = std::make_shared<Spotlight>(
+				"Spotlight", glm::vec3{ 0.1f }, m_newAlbedo,
+				glm::vec3{ 1.0f }, m_newPosition, m_newDirection
 			);
+
+			// convert the light's ID to string and set it as part of the light's name
+			std::ostringstream oss; // create a string stream to hold the ID
+			oss << spotlight->GetId(); // insert the ID into the stream
+			spotlight->SetName("{id: " + oss.str() + "} Spotlight"); // ID prefixed name
+
 			// create the gizmo child (the light has been fully constructed and placed in a shared_ptr)
-			newSpotlight->CreateGizmo();
-			// add the new spotlight to the engine
-			nodeManager->AddNode(std::move(newSpotlight));
+			spotlight->CreateGizmo();
+			// register the gizmo child for selection/picking before moving the light
+			auto spotlightGizmo = spotlight->GetGizmo();
+			if (spotlightGizmo) nodeManager->AddNode(spotlightGizmo);
+			nodeManager->AddNode(std::move(spotlight));
 
 			ImGui::CloseCurrentPopup(); // close the popup
 		}
@@ -1704,15 +1767,17 @@ void GUI::drawCreateCubeShapePopup()
 		ImGui::SameLine();
 		if (ImGui::Button("Create", ImVec2(POPUP_BUTTON_WIDTH, 0.0f)))
 		{ // if the Create button is clicked
-			// get the number of models in the scene
-			std::string nModels = std::to_string(nodeManager->GetNModels());
-
-			// create a cube shape with the specified properties
+			// create a cube shape with a placeholder name and the specified properties
 			auto newCubeShape = std::make_shared<Shape>(
-				"Cube (Model " + nModels + ")",
-				cubeVerticesVec, cubeIndicesVec,
-				m_newAlbedo, m_newPosition, glm::quat{ 1.0f, 0.0f, 0.0f, 0.0f }, m_newScale
+				"Cube Shape", cubeVerticesVec, cubeIndicesVec, m_newAlbedo, m_newPosition,
+				glm::quat{ 1.0f, 0.0f, 0.0f, 0.0f }, m_newScale
 			);
+
+			// convert the shape's ID to string and set it as part of the shape's name
+			std::ostringstream oss; // create a string stream to hold the ID
+			oss << newCubeShape->GetId(); // insert the ID into the stream
+			newCubeShape->SetName("{id: " + oss.str() + "} Cube Shape"); // ID prefixed name
+
 			// set the rotation of the new cube shape
 			newCubeShape->SetRotationInEulerAngles(m_newRotation);
 
@@ -1763,14 +1828,20 @@ void GUI::drawImportModelPopup()
 			// get the current number of models in the scene
 			std::string nModels = std::to_string(nodeManager->GetNModels());
 
-			// create a new model from the selected file
-			auto newAssimpModel = std::make_shared<AssimpModel>(
-				fileName + " (Model " + nModels + ")",
-				filePathName
-			);
+			// create a new model with the file name as a placeholder name and the selected file path
+			auto assimpModel = std::make_shared<AssimpModel>(fileName, filePathName);
+
+			// remove the extension from the file name for the model's name
+			std::string assimpModelName = fileName.substr(0, fileName.find_last_of('.'));
+			// uppercase the first letter of the model's name
+			assimpModelName[0] = std::toupper(assimpModelName[0]);
+			// convert the model's ID to string and set it as part of the model's name
+			std::ostringstream oss; // create a string stream to hold the ID
+			oss << assimpModel->GetId(); // insert the ID into the stream
+			assimpModel->SetName("{id: " + oss.str() + "} " + assimpModelName); // ID prefixed name
 
 			// add the new model to the engine
-			nodeManager->AddNode(std::move(newAssimpModel));
+			nodeManager->AddNode(std::move(assimpModel));
 		}
 
 		ImGuiFileDialog::Instance()->Close(); // close the file dialog
@@ -1998,12 +2069,12 @@ void GUI::drawImportSkyboxPopup()
 		ImGui::Dummy(ImVec2(0.0f, 10.0f));
 
 		// center the OK button horizontally within the popup
-		ImVec2 buttonSize{ ITEM_WIDTH, 0.0f };
+		ImVec2 buttonSize{ BUTTON_WIDTH, 0.0f };
 		float availWidth = ImGui::GetContentRegionAvail().x;
 		float offsetX = (availWidth - buttonSize.x) * 0.5f;
 		if (offsetX > 0.0f) ImGui::SetCursorPosX(ImGui::GetCursorPosX() + offsetX);
 
-		if (ImGui::Button("OK", ImVec2(ITEM_WIDTH, 0.0f)))
+		if (ImGui::Button("OK", ImVec2(BUTTON_WIDTH, 0.0f)))
 		{ // if the OK button is clicked, clear error state and close the popup
 			showCountError = false;
 			showMappingError = false;
@@ -2031,8 +2102,8 @@ void GUI::drawImportSkyboxPopup()
 }
 
 
-bool GUI::drawColorControl(const std::string& label, glm::vec3& color,
-						   bool showLabel, float colorControlWidth)
+bool GUI::drawColorControl(const std::string& label, glm::vec3& color, bool showLabel,
+						   float colorPickerWidth)
 {
 	bool value_changed{ false }; // flag to indicate if the color has changed
 
@@ -2044,7 +2115,7 @@ bool GUI::drawColorControl(const std::string& label, glm::vec3& color,
 	if (showLabel) // if indicated, display the label for the control
 		ImGui::Text("%s", label.c_str());
 
-	ImGui::SetNextItemWidth(colorControlWidth); // set the width of the color picker's input fields
+	ImGui::SetNextItemWidth(colorPickerWidth); // set the width of the color picker
 	if (ImGui::ColorEdit3("##color", (float*)&color))
 	{ // if the color picker is used
 		value_changed = true; // set the value_changed flag to true
@@ -2055,8 +2126,8 @@ bool GUI::drawColorControl(const std::string& label, glm::vec3& color,
 	return value_changed; // return whether the color has changed
 }
 
-bool GUI::drawColorControl(const std::string& label, glm::vec4& color,
-						   bool showLabel, float colorControlWidth)
+bool GUI::drawColorControl(const std::string& label, glm::vec4& color, bool showLabel,
+						   float colorPickerWidth)
 {
 	bool value_changed{ false }; // flag to indicate if the color has changed
 
@@ -2068,7 +2139,7 @@ bool GUI::drawColorControl(const std::string& label, glm::vec4& color,
 	if (showLabel) // if indicated, display the label for the control
 		ImGui::Text("%s", label.c_str());
 
-	ImGui::SetNextItemWidth(colorControlWidth); // set the width of the color picker's input fields
+	ImGui::SetNextItemWidth(colorPickerWidth); // set the width of the color picker
 	if (ImGui::ColorEdit4("##color", (float*)&color)) // color picker for vec4 (includes alpha component)
 	{ // if the color picker is used
 		value_changed = true; // set the value_changed flag to true

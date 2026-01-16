@@ -105,7 +105,7 @@ void DirectionalLight::CreateGizmo()
 
 	// create a triangle fan plane gizmo for the directional light gizmo
 	auto gizmo = std::make_shared<Shape>(
-		name + " Gizmo",
+		name + " Gizmo", // set the name of the gizmo based on the light's name
 		triangleFanPlaneVerticesVec, triangleFanPlaneIndicesVec,
 		glm::vec4(diffuse, 1.0f), // set the color of the gizmo to the light's diffuse color
 		position, // set the position of the gizmo to the light's position

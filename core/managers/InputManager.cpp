@@ -85,17 +85,36 @@ void InputManager::KeyCallback(std::string input)
 
 		// get the currently selected node id
 		std::uint32_t selectedNodeId = selectionMgr->GetSelectedNodeId();
-		if (selectedNodeId != 0)
-		{ // if a node is selected, delete it
-			auto node = nodeManager->GetNodeById(selectedNodeId);
-			if (node)
-			{ // if the node exists, log an info message and delete it via the selection manager
-				std::cout << "[INFO::INPUTMANAGER::KeyCallback] Delete key pressed, deleting selected node "
-					<< node->GetName() << " (ID " << selectedNodeId << ")" << std::endl;
 
-				selectionMgr->DeleteSelected(nodeManager.get());
-			}
+		if (selectedNodeId == 0)
+		{ // if no node is selected, print a warning message and return
+			std::cerr << "[WARNING::INPUTMANAGER::KeyCallback] Delete key pressed, but no node is selected"
+				<< std::endl;
+			return;
 		}
+
+		auto node = nodeManager->GetNodeById(selectedNodeId); // get the selected node
+		if (!node)
+		{ // if the selected node does not exist, print an error message and return
+			std::cerr << "[ERROR::INPUTMANAGER::KeyCallback] Delete key pressed, but selected node with ID "
+				<< selectedNodeId << " does not exist" << std::endl;
+			return;
+		}
+
+		// if the selected node is a camera, print an info message and return, 
+		// as cameras cannot be deleted for now
+		if (node->GetNodeType() == NodeType::CAMERA)
+		{
+			std::cout << "[INFO::INPUTMANAGER::KeyCallback] Cameras cannot be deleted for now "
+				"(ID " << selectedNodeId << ")" << std::endl;
+			return;
+		}
+
+		// if the node exists and can be deleted, print a message and delete it from the scene
+		std::cout << "[INFO::INPUTMANAGER::KeyCallback] Delete key pressed, deleting selected node "
+			<< node->GetName() << " (ID " << selectedNodeId << ")" << std::endl;
+
+		selectionMgr->DeleteSelected(nodeManager.get());
 	}
 	else
 	{ // if the input is not recognized, print an error message

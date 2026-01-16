@@ -13,6 +13,7 @@
 
 #include <memory>
 #include <filesystem>
+#include <sstream>
 
 #include "CUBE.h"
 #include "PLANE.h"
@@ -160,45 +161,63 @@ void SetupInitialScene(Core* engine)
 	auto& nodeManager = engine->GetNodeManager();
 	auto& sceneManager = engine->GetSceneManager();
 
-	// create a camera, set it as the active camera in the scene manager and add it to the node manager
-	auto camera = std::make_shared<Camera>("Main Camera");
+	// create a camera with a placeholder name and default parameters
+	auto camera = std::make_shared<Camera>("Camera"); // placeholder name
+
+	// convert the camera's ID to string and set it as part of the camera's name
+	std::ostringstream oss; // create a string stream to hold the ID
+	oss << camera->GetId(); // insert the ID into the stream
+	camera->SetName("{id: " + oss.str() + "} Camera"); // ID prefixed name
+
+	// set the camera as the active camera in the scene manager and add it to the node manager
 	sceneManager->SetCamera(camera);
 	nodeManager->AddNode(std::move(camera));
 
 	// create a directional light and add it along with its gizmo to the node manager
 	auto directionalLight = std::make_shared<DirectionalLight>(
-		"Directional Light",
+		"Directional Light", // placeholder name
 		glm::vec3{ 0.1f }, // ambient color (default)
 		glm::vec4{ 1.0f, 1.0f, 0.7f, 1.0f }, // diffuse color (overridden)
 		glm::vec3{ 1.0f }, // specular color (override required although it is the default)
 		glm::vec3{ 2.4f, 8.0f, -3.0f }, // position (overridden)
 		glm::vec3{ -0.2f, -0.8, 0.5f } // direction (overridden)
 	);
+
+	// convert the light's ID to string and set it as part of the light's name
+	oss.str(""); // clear the string stream
+	oss << directionalLight->GetId(); // insert the ID into the stream
+	directionalLight->SetName("{id: " + oss.str() + "} Directional Light"); // ID prefixed name
+
 	// create the gizmo child (the light has been fully constructed and placed in a shared_ptr)
 	directionalLight->CreateGizmo();
 	// register the gizmo child for selection/picking before moving the light
 	auto directionalLightGizmo = directionalLight->GetGizmo();
-	nodeManager->AddNode(std::move(directionalLightGizmo));
+	if (directionalLightGizmo) nodeManager->AddNode(std::move(directionalLightGizmo));
 	nodeManager->AddNode(std::move(directionalLight));
 
 	// create a point light and add it along with its gizmo to the node manager
 	auto pointLight = std::make_shared<PointLight>(
-		"Point Light",
+		"Point Light", // placeholder name
 		glm::vec3{ 0.1f }, // ambient color (default)
 		glm::vec4{ 0.3f, 0.9f, 1.0f, 1.0f }, // diffuse color (overridden)
 		glm::vec3{ 1.0f }, // specular color (same as default)
 		glm::vec3{ -0.6f, 3.2f, 3.2f } // position (overridden)
 	);
+	// convert the light's ID to string and set it as part of the light's name
+	oss.str(""); // clear the string stream
+	oss << pointLight->GetId(); // insert the ID into the stream
+	pointLight->SetName("{id: " + oss.str() + "} Point Light"); // ID prefixed name
+
 	// create the gizmo child (the light has been fully constructed and placed in a shared_ptr)
 	pointLight->CreateGizmo();
 	// register the gizmo child for selection/picking before moving the light
 	auto pointLightGizmo = pointLight->GetGizmo();
-	nodeManager->AddNode(std::move(pointLightGizmo));
+	if (pointLightGizmo) nodeManager->AddNode(std::move(pointLightGizmo));
 	nodeManager->AddNode(std::move(pointLight));
 
 	// create a spotlight and add it along with its gizmo to the node manager
 	auto spotlight = std::make_shared<Spotlight>(
-		"Spotlight",
+		"Spotlight", // placeholder name
 		glm::vec3{ 0.1f }, // ambient color (override required although it is the default)
 		glm::vec4{ 1.0f, 0.4f, 0.4f, 1.0f }, // diffuse color (overridden)
 		glm::vec3{ 1.0f }, // specular color (override required although it is the default)
@@ -207,6 +226,11 @@ void SetupInitialScene(Core* engine)
 		glm::cos(glm::radians(15.0f)), // inner cut-off (overridden)
 		glm::cos(glm::radians(32.5f)) // outer cut-off (overridden)
 	);
+	// convert the light's ID to string and set it as part of the light's name
+	oss.str(""); // clear the string stream
+	oss << spotlight->GetId(); // insert the ID into the stream
+	spotlight->SetName("{id: " + oss.str() + "} Spotlight"); // ID prefixed name
+
 	// create the gizmo child (the light has been fully constructed and placed in a shared_ptr)
 	spotlight->CreateGizmo();
 	// register the gizmo child for selection/picking before moving the light
@@ -215,18 +239,29 @@ void SetupInitialScene(Core* engine)
 	nodeManager->AddNode(std::move(spotlight));
 
 	// create a composite model hierarchy mixing shapes and an Assimp model
-	auto rootGroup = std::make_shared<Model>("Root Group");
+	auto rootGroup = std::make_shared<Model>("Root Group"); // placeholder name
+
+	// convert the model's ID to string and set it as part of the model's name
+	oss.str(""); // clear the string stream
+	oss << rootGroup->GetId(); // insert the ID into the stream
+	rootGroup->SetName("{id: " + oss.str() + "} Root Group"); // ID prefixed name
 
 	// create a shapes group to hold multiple shapes as children of the root group
 	auto shapesGroup = std::make_shared<Model>(
-		"Shapes Group", NodeType::COMPOSITE_MODEL,
+		"Shapes Group", // placeholder name
+		NodeType::COMPOSITE_MODEL,
 		glm::vec4{ 1.0f }, // albedo (overriden)
 		glm::vec3{ 0.0f, 0.0f, -2.5f } // position (overriden - offset from root)
 	);
 
+	// convert the model's ID to string and set it as part of the model's name
+	oss.str(""); // clear the string stream
+	oss << shapesGroup->GetId(); // insert the ID into the stream
+	shapesGroup->SetName("{id: " + oss.str() + "} Shapes Group"); // ID prefixed name
+
 	// create two shapes with different colors and transformations as children of the shapes group
 	auto redShape = std::make_shared<Shape>(
-		"Red Shape",
+		"Red Cube Shape", // placeholder name
 		cubeVerticesVec, cubeIndicesVec,
 		glm::vec4{ 0.9f, 0.2f, 0.2f, 1.0f }, // albedo (overridden)
 		glm::vec3{ -1.0f, 0.0f, 0.0f }, // position (overridden - local offset from parent)
@@ -234,13 +269,23 @@ void SetupInitialScene(Core* engine)
 		glm::vec3{ 0.8f } // scale (overridden)
 	);
 	auto blueShape = std::make_shared<Shape>(
-		"Blue Shape",
+		"Blue Cube Shape", // placeholder name
 		cubeVerticesVec, cubeIndicesVec,
 		glm::vec4{ 0.2f, 0.2f, 0.9f, 1.0f }, // albedo (overridden)
 		glm::vec3{ 1.0f, 0.0f, 0.0f }, // position (overridden - local offset from parent)
 		glm::quat(glm::vec3{ 0.0f, glm::radians(-25.0f), 0.0f }), // rotation (overridden)
 		glm::vec3{ 0.6f } // scale (overridden)
 	);
+
+	// convert the red shape's ID to string and set it as part of the shape's name
+	oss.str(""); // clear the string stream
+	oss << redShape->GetId(); // insert the ID into the stream
+	redShape->SetName("{id: " + oss.str() + "} Red Cube Shape"); // ID prefixed name
+
+	// convert the blue shape's ID to string and set it as part of the shape's name
+	oss.str(""); // clear the string stream
+	oss << blueShape->GetId(); // insert the ID into the stream
+	blueShape->SetName("{id: " + oss.str() + "} Blue Cube Shape"); // ID prefixed name
 
 	// attach shapes under the shapes group
 	shapesGroup->AddChild(redShape);
@@ -251,23 +296,41 @@ void SetupInitialScene(Core* engine)
 	if (std::filesystem::exists(assimpPath))
 	{ // check if the file exists before loading it
 		auto assimpModel = std::make_shared<AssimpModel>(
-			"Teapot Model", assimpPath,
+			"Teapot", // placeholder name
+			assimpPath, // model file path
 			glm::vec4{ 1.0f }, // albedo (overriden - unused if model has textures)
 			glm::vec3{ 0.0f, 0.0f, 3.0f }, // position (overriden - offset from root)
 			glm::quat(glm::vec3{ 0.0f }), // rotation (default)
 			glm::vec3{ 0.25f } // scale (overriden)
 		);
 
+		// remove the path and the extension from the file path for the model's name
+		std::string assimpModelName = assimpPath.substr(
+			assimpPath.find_last_of("/\\") + 1,
+			assimpPath.find_last_of('.') - assimpPath.find_last_of("/\\") - 1
+		);
+		// uppercase the first letter of the model's name
+		assimpModelName[0] = std::toupper(assimpModelName[0]);
+		// convert the model's ID to string and set it as part of the model's name
+		oss.str(""); // clear the string stream
+		oss << assimpModel->GetId(); // insert the ID into the stream
+		assimpModel->SetName("{id:" + oss.str() + "} " + assimpModelName); // ID prefixed name
+
 		// create a marker shape to indicate the origin of the Assimp model of which it is a child
 		// (demonstrates mixed hierarchy)
 		auto markerShape = std::make_shared<Shape>(
-			"Teapot Origin Marker",
+			"Teapot Origin Marker", // placeholder name
 			cubeVerticesVec, cubeIndicesVec,
 			assimpModel->GetAlbedo(), // albedo (overriden - same as parent)
 			glm::vec3{ 0.5f, 0.0f, 0.5f }, // position (overridden - local offset from parent)
 			glm::quat(glm::vec3{ 0.0f }), // rotation (default)
 			glm::vec3{ 0.1f } // scale (overridden)
 		);
+
+		// convert the marker shape's ID to string and set it as part of the shape's name
+		oss.str(""); // clear the string stream
+		oss << markerShape->GetId(); // insert the ID into the stream
+		markerShape->SetName("{id:" + oss.str() + "} Teapot Origin Marker"); // ID prefixed name
 
 		// attach marker shape under Assimp model
 		assimpModel->AddChild(markerShape);

@@ -58,7 +58,8 @@ public:
 		: id{ ++nodesCount }, name{ name }, type{ type },
 		albedo{ albedo }, position{ position }, rotation{ rotation },
 		scale{ scale }, forward{ forward }, meshForward{ meshForward },
-		gizmoType{ gizmoType }, children{ } // initialize children vector as empty
+		gizmoType{ gizmoType }, isVisible{ true },
+		children{} // initialize children vector as empty
 	{
 		nNodes++;
 	}
@@ -101,6 +102,7 @@ public:
 	const glm::vec3 GetForward() const; // returns the forward vector in world space and normalized
 	const glm::vec3& GetMeshForward() const { return meshForward; }
 	const GizmoType& GetGizmoType() const { return gizmoType; }
+	bool IsVisible() const { return isVisible; }
 
 	void SetAlbedo(const glm::vec4& albedo) { this->albedo = albedo; }
 	void SetPosition(const glm::vec3& position) { this->position = position; }
@@ -110,6 +112,7 @@ public:
 	void SetForward(const glm::vec3& worldForward); // aligns node's fwd vector to the given world fwd vector
 	void SetMeshForward(const glm::vec3& meshForward) { this->meshForward = meshForward; }
 	void SetGizmoType(GizmoType gizmoType) { this->gizmoType = gizmoType; }
+	void SetVisible(bool isVisible) { this->isVisible = isVisible; }
 
 	// Gets the model matrix, the hierarchical world model matrix, or any of its components separately
 	glm::mat4 GetModelMatrix() const;
@@ -176,6 +179,8 @@ protected:
 
 	glm::vec3 m_boundingBoxMin{}; // minimum point of the bounding box
 	glm::vec3 m_boundingBoxMax{}; // maximum point of the bounding box
+
+	bool isVisible; // visibility flag for the node (useful for regular models but specially for gizmos)
 
 	// Private Static Attributes
 	// -------------------------

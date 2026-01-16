@@ -69,7 +69,7 @@ void Spotlight::CreateGizmo()
 
 	// create a hexagonal pyramid shape for the spotlight gizmo
 	auto gizmo = std::make_shared<Shape>(
-		name + " Gizmo",
+		name + " Gizmo", // set the gizmo's name based on the light's name
 		hexPyramidVerticesVec, hexPyramidIndicesVec,
 		glm::vec4(diffuse, 1.0f), // set the color of the gizmo to the light's diffuse color
 		position, // set the position of the gizmo to the light's position

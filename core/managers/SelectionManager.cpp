@@ -112,6 +112,7 @@ void SelectionManager::ProcessPendingPick(const Camera* camera, NodeManager* nod
 			auto& current = stack.back();
 			stack.pop_back();
 			if (!current) continue; // skip null nodes
+			if (!current->IsVisible()) continue; // skip invisible nodes
 
 			visited.insert(current->GetId()); // mark this node as visited
 
@@ -285,6 +286,7 @@ void SelectionManager::RenderPickingVisualization(const Camera* camera, NodeMana
 			auto& current = stack.back();
 			stack.pop_back();
 			if (!current) continue; // skip null nodes
+			if (!current->IsVisible()) continue; // skip invisible nodes
 
 			visited.insert(current->GetId()); // mark this node as visited
 
@@ -324,6 +326,13 @@ void SelectionManager::DeleteSelected(NodeManager* nodeManager)
 	// find the selected node by id and check validity, if invalid clear selection and return
 	auto node = findNodeById(nodeManager, m_selectedNodeId);
 	if (!node) { ClearSelection(); return; }
+
+	if (node->GetNodeType() == NodeType::CAMERA)
+	{ // prevent deletion of cameras for now
+		std::cout << "[INFO::SELECTIONMANAGER::DeleteSelected] Cameras cannot be deleted for now "
+			"(ID " << m_selectedNodeId << ")" << std::endl;
+		return;
+	}
 
 	// if deleting an outlined model, clear outline before removal (avoid one-frame ghost)
 	bool wasOutlineEligible = isOutlineEligible(node);
@@ -428,6 +437,19 @@ void SelectionManager::RenderOutlineMask(const Camera* camera, NodeManager* node
 		clearOutlineMask();
 		return;
 	}
+
+	if (selected->GetNodeType() == NodeType::LIGHT)
+	{ // if the selected node is a light with a missing or invisible gizmo, no outline should be rendered
+		// dynamically cast the node to a Light object
+		auto light = static_cast<Light*>(selected.get());
+		auto gizmo = light->GetGizmo(); // may be null if no gizmo exists
+		if (!gizmo || !gizmo->IsVisible())
+		{ // if no gizmo or invisible, clear mask and return
+			clearOutlineMask();
+			return;
+		}
+	}
+
 	if (!isOutlineEligible(selected))
 	{ // if current selection is not outline eligible (light / gizmo), clear mask (if any) and return
 		clearOutlineMask();
@@ -669,7 +691,7 @@ std::uint32_t SelectionManager::readPixelId(GLint x, GLint y) const
 
 std::shared_ptr<Node> SelectionManager::findNodeById(NodeManager* nodeManager, std::uint32_t id) const
 {
-	for (auto type : { NodeType::MODEL, NodeType::LIGHT })
+	for (auto type : { NodeType::CAMERA, NodeType::LIGHT, NodeType::MODEL })
 	{ // iterate over node types to search (models and lights)
 		// search all nodes of the current type for a matching id
 		for (const auto& node : nodeManager->GetNodes(type))

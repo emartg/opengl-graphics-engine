@@ -97,7 +97,6 @@ private:
 	static bool s_proportionalScaling; // flag for enabling/disabling proportional scaling
 
 	// default values for ImGui widgets
-	static constexpr float ITEM_WIDTH{ 234.0f }, ITEM_HEIGHT{ 20.0f };
 	static constexpr float INPUT_FIELD_WIDTH{ 70.0f }, INPUT_FIELD_HEIGHT{ 20.0f };
 	static constexpr float BUTTON_WIDTH{ 55.0f }, BUTTON_HEIGHT{ 22.5f };
 	static constexpr float POPUP_BUTTON_WIDTH{ 120.0f }, POPUP_BUTTON_HEIGHT{ 20.0f };
@@ -185,12 +184,12 @@ private:
 
 	// Creates a color picker with sliders for RGB components
 	// and returns true if the color was changed
-	bool drawColorControl(const std::string& label, glm::vec3& color,
-						  bool showLabel = true, float colorControlWidth = ITEM_WIDTH);
+	bool drawColorControl(const std::string& label, glm::vec3& color, bool showLabel = true,
+						  float colorPickerWidth = ImGui::GetContentRegionAvail().x);
 	// Creates a color picker with sliders for RGBA components
 	// and returns true if the color was changed
-	bool drawColorControl(const std::string& label, glm::vec4& color,
-						  bool showLabel = true, float colorControlWidth = ITEM_WIDTH);
+	bool drawColorControl(const std::string& label, glm::vec4& color, bool showLabel = true,
+						  float colorPickerWidth = ImGui::GetContentRegionAvail().x);
 	// Creates a 3-component vector control with input fields and buttons
 	// and returns true if any of the components were changed
 	bool drawVec3Control(const std::string& label, glm::vec3& values, bool scaleControls,

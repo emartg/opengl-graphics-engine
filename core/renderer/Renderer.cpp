@@ -455,6 +455,7 @@ void Renderer::RenderScene()
 		// dynamically cast the node to a Node object
 		auto model = std::dynamic_pointer_cast<Node>(node);
 		if (!model) continue; // if the cast fails, skip to the next node
+		if (!model->IsVisible()) continue; // skip invisible models
 
 		if (model->GetParent()) continue; // skip child models (they are rendered by their parent composite)
 
@@ -482,6 +483,7 @@ void Renderer::RenderScene()
 		auto gizmo = light->GetGizmo();
 		if (gizmo)
 		{
+			if (!gizmo->IsVisible()) continue; // skip invisible gizmos
 
 			// set the model matrix and albedo color for the light gizmo
 			m_singleAlbedoShader->SetMat4("model", gizmo->GetModelMatrix());
@@ -589,6 +591,8 @@ void Renderer::RenderModel(const std::shared_ptr<Node>& model)
 		std::cerr << "[ERROR::RENDERER::RenderModel] Node is null" << std::endl;
 		return;
 	}
+
+	if (!model->IsVisible()) return; // if the model is not visible, skip rendering
 
 	// auxiliary shared pointer to the shader program used for rendering the model and its children (if any)
 	std::shared_ptr<Shader> renderShader;
