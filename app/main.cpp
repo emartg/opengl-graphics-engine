@@ -31,6 +31,7 @@
 #include "../core/model/AssimpModel.h"
 #include "../core/managers/SceneManager.h"
 #include "../core/managers/NodeManager.h"
+#include "../core/utils/string/StringUtils.h"
 
 // Defines hardcoded shader names and paths for the initial scene in a tuple
 std::tuple<
@@ -165,9 +166,7 @@ void SetupInitialScene(Core* engine)
 	auto camera = std::make_shared<Camera>("Camera"); // placeholder name
 
 	// convert the camera's ID to string and set it as part of the camera's name
-	std::ostringstream oss; // create a string stream to hold the ID
-	oss << camera->GetId(); // insert the ID into the stream
-	camera->SetName("{id: " + oss.str() + "} Camera"); // ID prefixed name
+	camera->SetName(StringUtils::GenerateIdPrefixedName(camera));
 
 	// set the camera as the active camera in the scene manager and add it to the node manager
 	sceneManager->SetCamera(camera);
@@ -184,9 +183,7 @@ void SetupInitialScene(Core* engine)
 	);
 
 	// convert the light's ID to string and set it as part of the light's name
-	oss.str(""); // clear the string stream
-	oss << directionalLight->GetId(); // insert the ID into the stream
-	directionalLight->SetName("{id: " + oss.str() + "} Directional Light"); // ID prefixed name
+	directionalLight->SetName(StringUtils::GenerateIdPrefixedName(directionalLight));
 
 	// create the gizmo child (the light has been fully constructed and placed in a shared_ptr)
 	directionalLight->CreateGizmo();
@@ -204,9 +201,7 @@ void SetupInitialScene(Core* engine)
 		glm::vec3{ -0.6f, 3.2f, 3.2f } // position (overridden)
 	);
 	// convert the light's ID to string and set it as part of the light's name
-	oss.str(""); // clear the string stream
-	oss << pointLight->GetId(); // insert the ID into the stream
-	pointLight->SetName("{id: " + oss.str() + "} Point Light"); // ID prefixed name
+	pointLight->SetName(StringUtils::GenerateIdPrefixedName(pointLight));
 
 	// create the gizmo child (the light has been fully constructed and placed in a shared_ptr)
 	pointLight->CreateGizmo();
@@ -227,9 +222,7 @@ void SetupInitialScene(Core* engine)
 		glm::cos(glm::radians(32.5f)) // outer cut-off (overridden)
 	);
 	// convert the light's ID to string and set it as part of the light's name
-	oss.str(""); // clear the string stream
-	oss << spotlight->GetId(); // insert the ID into the stream
-	spotlight->SetName("{id: " + oss.str() + "} Spotlight"); // ID prefixed name
+	spotlight->SetName(StringUtils::GenerateIdPrefixedName(spotlight));
 
 	// create the gizmo child (the light has been fully constructed and placed in a shared_ptr)
 	spotlight->CreateGizmo();
@@ -242,9 +235,7 @@ void SetupInitialScene(Core* engine)
 	auto rootGroup = std::make_shared<Model>("Root Group"); // placeholder name
 
 	// convert the model's ID to string and set it as part of the model's name
-	oss.str(""); // clear the string stream
-	oss << rootGroup->GetId(); // insert the ID into the stream
-	rootGroup->SetName("{id: " + oss.str() + "} Root Group"); // ID prefixed name
+	rootGroup->SetName(StringUtils::GenerateIdPrefixedName(rootGroup));
 
 	// create a shapes group to hold multiple shapes as children of the root group
 	auto shapesGroup = std::make_shared<Model>(
@@ -255,9 +246,7 @@ void SetupInitialScene(Core* engine)
 	);
 
 	// convert the model's ID to string and set it as part of the model's name
-	oss.str(""); // clear the string stream
-	oss << shapesGroup->GetId(); // insert the ID into the stream
-	shapesGroup->SetName("{id: " + oss.str() + "} Shapes Group"); // ID prefixed name
+	shapesGroup->SetName(StringUtils::GenerateIdPrefixedName(shapesGroup));
 
 	// create two shapes with different colors and transformations as children of the shapes group
 	auto redShape = std::make_shared<Shape>(
@@ -278,14 +267,10 @@ void SetupInitialScene(Core* engine)
 	);
 
 	// convert the red shape's ID to string and set it as part of the shape's name
-	oss.str(""); // clear the string stream
-	oss << redShape->GetId(); // insert the ID into the stream
-	redShape->SetName("{id: " + oss.str() + "} Red Cube Shape"); // ID prefixed name
+	redShape->SetName(StringUtils::GenerateIdPrefixedName(redShape));
 
 	// convert the blue shape's ID to string and set it as part of the shape's name
-	oss.str(""); // clear the string stream
-	oss << blueShape->GetId(); // insert the ID into the stream
-	blueShape->SetName("{id: " + oss.str() + "} Blue Cube Shape"); // ID prefixed name
+	blueShape->SetName(StringUtils::GenerateIdPrefixedName(blueShape));
 
 	// attach shapes under the shapes group
 	shapesGroup->AddChild(redShape);
@@ -312,9 +297,7 @@ void SetupInitialScene(Core* engine)
 		// uppercase the first letter of the model's name
 		assimpModelName[0] = std::toupper(assimpModelName[0]);
 		// convert the model's ID to string and set it as part of the model's name
-		oss.str(""); // clear the string stream
-		oss << assimpModel->GetId(); // insert the ID into the stream
-		assimpModel->SetName("{id:" + oss.str() + "} " + assimpModelName); // ID prefixed name
+		assimpModel->SetName(StringUtils::GenerateIdPrefixedName(assimpModel));
 
 		// create a marker shape to indicate the origin of the Assimp model of which it is a child
 		// (demonstrates mixed hierarchy)
@@ -328,9 +311,7 @@ void SetupInitialScene(Core* engine)
 		);
 
 		// convert the marker shape's ID to string and set it as part of the shape's name
-		oss.str(""); // clear the string stream
-		oss << markerShape->GetId(); // insert the ID into the stream
-		markerShape->SetName("{id:" + oss.str() + "} Teapot Origin Marker"); // ID prefixed name
+		markerShape->SetName(StringUtils::GenerateIdPrefixedName(markerShape));
 
 		// attach marker shape under Assimp model
 		assimpModel->AddChild(markerShape);
@@ -380,8 +361,9 @@ void SetupInitialTestScene(Core* engine)
 	auto& nodeManager = engine->GetNodeManager();
 	auto& sceneManager = engine->GetSceneManager();
 
-	// create a camera, set it as the active camera in the scene manager and add it to the node manager
-	auto camera = std::make_shared<Camera>("Main Camera");
-	sceneManager->SetCamera(camera);
-	nodeManager->AddNode(std::move(camera));
+	// create a camera with a placeholder name and default parameters
+	auto camera = std::make_shared<Camera>("Camera"); // placeholder name
+
+	// convert the camera's ID to string and set it as part of the camera's name
+	camera->SetName(StringUtils::GenerateIdPrefixedName(camera));
 }

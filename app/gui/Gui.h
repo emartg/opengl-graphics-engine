@@ -10,6 +10,7 @@
 
 #include <iostream>
 #include <memory>
+#include <unordered_set>
 
 #include <glm/glm.hpp>
 #define GLFW_INCLUDE_NONE // prevent GLFW from including OpenGL headers
@@ -63,6 +64,13 @@ private:
 	glm::vec4 m_newAlbedo;
 	glm::vec3 m_newPosition, m_newRotation, m_newDirection, m_newScale;
 	float m_newInnerCutOff, m_newOuterCutOff;
+
+	// set of node ids that should be auto-opened in the scene graph window
+	std::unordered_set<std::uint32_t> m_sceneGraphAutoOpenIds;
+	// ids to actually force-open this frame (re-armed per selection change)
+	std::unordered_set<std::uint32_t> m_sceneGraphPendingOpenIds;
+	// last selected id used to refresh the auto-open ids set (allows manual collapsing)
+	std::uint32_t m_lastAutoOpenSelectedId{ 0 };
 
 	// parameters for the GUI layout and windows
 	// relative widths and heights of the windows relative to the display size
@@ -151,6 +159,8 @@ private:
 	void drawNodeTreeRecursive(const std::shared_ptr<Node>& node);
 	// Handles node selection logic (single selection only)
 	void handleNodeSelection(std::uint32_t nodeId);
+	// Updates the set of node ids that should be auto-opened in the scene graph window
+	void updateSceneGraphAutoOpenSet();
 
 	// Draws controls for a light. Depending on the type of light, 
 	// it will call dynamically cast to the appropriate light type and draw the corresponding controls

@@ -25,7 +25,6 @@
 #include "../core/light/DirectionalLight.h"
 #include "../core/light/PointLight.h"
 #include "../core/light/Spotlight.h"
-#include "../core/model/Model.h"
 #include "../core/model/Shape.h"
 #include "../core/model/AssimpModel.h"
 #include "../core/managers/NodeManager.h"
@@ -34,6 +33,7 @@
 #include "../core/managers/InputManager.h"
 #include "../core/renderer/Renderer.h"
 #include "../core/utils/random/Random.h"
+#include "../core/utils/string/StringUtils.h"
 
 // Namespaces
 // ----------
@@ -60,14 +60,6 @@ namespace
 			return true;
 		}
 		return false;
-	}
-
-	// converts a string to lowercase using std::transform and std::tolower
-	std::string ToLowerCopy(std::string s)
-	{
-		std::transform(s.begin(), s.end(), s.begin(),
-					   [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
-		return s;
 	}
 }
 
@@ -441,6 +433,9 @@ void GUI::drawSceneGraphWindow()
 		for (const auto& node : nodeManager->GetNodes("MODEL"))
 			if (!node->GetParent())
 				rootNodes.push_back(node);
+
+		// update the open-set every frame so viewport selection drives expansion
+		updateSceneGraphAutoOpenSet();
 
 		// draw the tree recursively starting from root nodes
 		for (const auto& rootNode : rootNodes)
@@ -1190,12 +1185,22 @@ void GUI::drawNodeTreeRecursive(const std::shared_ptr<Node>& node)
 	// push a unique ID for this tree node
 	ImGui::PushID(static_cast<int>(node->GetId()));
 
+	// auto-expand only nodes on the selection path (root -> ... -> selected),
+	// but not the selected node itself, and do so only once per selection change
+	if (m_sceneGraphAutoOpenIds.contains(node->GetId())) ImGui::SetNextItemOpen(true, ImGuiCond_Always);
+
 	// draw the tree node and get whether it is open
 	bool nodeOpen = ImGui::TreeNodeEx(nodeLabel.c_str(), flags);
 
+	// consume the pending open request for this node if it exists after drawing the node once
+	if (m_sceneGraphPendingOpenIds.contains(node->GetId()))
+		m_sceneGraphPendingOpenIds.erase(node->GetId());
+
+	// always scroll the selected row into view (do not gate on auto-open set)
+	if (isSelected) ImGui::SetScrollHereY();
+
 	// handle selection on click
-	if (ImGui::IsItemClicked())
-		handleNodeSelection(node->GetId());
+	if (ImGui::IsItemClicked()) handleNodeSelection(node->GetId());
 
 	// only pop the tree if it was pushed (i.e. node has children)
 	const bool treePushed = (flags & ImGuiTreeNodeFlags_NoTreePushOnOpen) == 0;
@@ -1252,6 +1257,42 @@ void GUI::handleNodeSelection(std::uint32_t nodeId)
 
 	std::cout << "[INFO::GUI::handleNodeSelection] Selected node "
 		<< (node ? node->GetName() : "Unknown") << " (ID " << nodeId << ")" << std::endl;
+}
+
+void GUI::updateSceneGraphAutoOpenSet()
+{
+	// get the node manager and selection manager from the Core instance
+	auto& nodeManager = Core::GetInstance()->GetNodeManager();
+	auto& selectionManager = Core::GetInstance()->GetSelectionManager();
+
+	// get the currently selected node id
+	const std::uint32_t selectedId = selectionManager->GetSelectedNodeId();
+
+	// if selection did not change, do not touch open state (allows manual collapsing)
+	if (selectedId == m_lastAutoOpenSelectedId) return;
+	m_lastAutoOpenSelectedId = selectedId; // update last selected id
+
+	m_sceneGraphAutoOpenIds.clear(); // clear previous auto-open set
+
+	if (selectedId == 0) return; // no selection, nothing to auto-open, return
+
+	// get the currently selected node
+	auto selected = selectionManager->GetSelectedNode(nodeManager.get());
+	if (!selected) return; // safety check, return if selected node is invalid
+
+	// even though gizmo nodes are hidden from the tree view,
+	// if a gizmo node is selected, do not auto-open anything
+	if (selected->GetGizmoType() != GizmoType::NONE) return;
+
+	// build the chain of node ids from the selected node up to the root
+	// (only open the ancestor chain, not the selected node itself, which
+	// reveals the selected node but does not auto-expand it)
+	for (auto parent = selected->GetParent(); parent; parent = parent->GetParent())
+	{
+		m_sceneGraphAutoOpenIds.insert(parent->GetId());
+		// arm open requests for this selection change
+		m_sceneGraphPendingOpenIds.insert(parent->GetId());
+	}
 }
 
 
@@ -1425,17 +1466,17 @@ void GUI::drawSpotlightControls(Spotlight* spotlight)
 	if (drawFloatControl("Inner", innerCutOff,
 						 MIN_CUTOFF_VALUE, outerCutOff, // innerCutOff <= outerCutOff
 						 INPUT_FIELD_WIDTH, CUTOFF_ANGLES_SPEED, INNER_CUTOFF_RESET_VALUE))
-	{ // if the control is used
-					// convert back to radians and cosine and
-					// set the new inner cut-off angle for the spotlight
+	{
+		// if the control is used, convert back to radians and cosine 
+		// and set the new inner cut-off angle for the spotlight
 		spotlight->SetInnerCutOff(glm::cos(glm::radians(innerCutOff)));
 	}
 	if (drawFloatControl("Outer", outerCutOff,
 						 innerCutOff, MAX_CUTOFF_VALUE, // outerCutOff >= innerCutOff
 						 INPUT_FIELD_WIDTH, CUTOFF_ANGLES_SPEED, OUTER_CUTOFF_RESET_VALUE))
-	{ // if the control is used
-					// convert back to radians and cosine and
-					// set the new outer cut-off angle for the spotlight
+	{
+		// if the control is used, convert back to radians and cosine 
+		// and set the new outer cut-off angle for the spotlight
 		spotlight->SetOuterCutOff(glm::cos(glm::radians(outerCutOff)));
 	}
 
@@ -1544,9 +1585,7 @@ void GUI::drawCreateDirectionalLightPopup()
 			);
 
 			// convert the light's ID to string and set it as part of the light's name
-			std::ostringstream oss; // create a string stream to hold the ID
-			oss << directionalLight->GetId(); // insert the ID into the stream
-			directionalLight->SetName("{id: " + oss.str() + "} Directional Light"); // ID prefixed name
+			directionalLight->SetName(StringUtils::GenerateIdPrefixedName(directionalLight));
 
 			// create the gizmo child (the light has been fully constructed and placed in a shared_ptr)
 			directionalLight->CreateGizmo();
@@ -1614,9 +1653,7 @@ void GUI::drawCreatePointLightPopup()
 			);
 
 			// convert the light's ID to string and set it as part of the light's name
-			std::ostringstream oss; // create a string stream to hold the ID
-			oss << pointLight->GetId(); // insert the ID into the stream
-			pointLight->SetName("{id: " + oss.str() + "} Point Light"); // ID prefixed name
+			pointLight->SetName(StringUtils::GenerateIdPrefixedName(pointLight));
 
 			// create the gizmo child (the light has been fully constructed and placed in a shared_ptr)
 			pointLight->CreateGizmo();
@@ -1701,9 +1738,7 @@ void GUI::drawCreateSpotlightPopup()
 			);
 
 			// convert the light's ID to string and set it as part of the light's name
-			std::ostringstream oss; // create a string stream to hold the ID
-			oss << spotlight->GetId(); // insert the ID into the stream
-			spotlight->SetName("{id: " + oss.str() + "} Spotlight"); // ID prefixed name
+			spotlight->SetName(StringUtils::GenerateIdPrefixedName(spotlight));
 
 			// create the gizmo child (the light has been fully constructed and placed in a shared_ptr)
 			spotlight->CreateGizmo();
@@ -1768,21 +1803,19 @@ void GUI::drawCreateCubeShapePopup()
 		if (ImGui::Button("Create", ImVec2(POPUP_BUTTON_WIDTH, 0.0f)))
 		{ // if the Create button is clicked
 			// create a cube shape with a placeholder name and the specified properties
-			auto newCubeShape = std::make_shared<Shape>(
+			auto cubeShape = std::make_shared<Shape>(
 				"Cube Shape", cubeVerticesVec, cubeIndicesVec, m_newAlbedo, m_newPosition,
 				glm::quat{ 1.0f, 0.0f, 0.0f, 0.0f }, m_newScale
 			);
 
 			// convert the shape's ID to string and set it as part of the shape's name
-			std::ostringstream oss; // create a string stream to hold the ID
-			oss << newCubeShape->GetId(); // insert the ID into the stream
-			newCubeShape->SetName("{id: " + oss.str() + "} Cube Shape"); // ID prefixed name
+			cubeShape->SetName(StringUtils::GenerateIdPrefixedName(cubeShape));
 
 			// set the rotation of the new cube shape
-			newCubeShape->SetRotationInEulerAngles(m_newRotation);
+			cubeShape->SetRotationInEulerAngles(m_newRotation);
 
 			// add the new cube shape to the engine
-			nodeManager->AddNode(std::move(newCubeShape));
+			nodeManager->AddNode(std::move(cubeShape));
 
 			ImGui::CloseCurrentPopup(); // close the popup
 		}
@@ -1836,9 +1869,7 @@ void GUI::drawImportModelPopup()
 			// uppercase the first letter of the model's name
 			assimpModelName[0] = std::toupper(assimpModelName[0]);
 			// convert the model's ID to string and set it as part of the model's name
-			std::ostringstream oss; // create a string stream to hold the ID
-			oss << assimpModel->GetId(); // insert the ID into the stream
-			assimpModel->SetName("{id: " + oss.str() + "} " + assimpModelName); // ID prefixed name
+			assimpModel->SetName(StringUtils::GenerateIdPrefixedName(assimpModel));
 
 			// add the new model to the engine
 			nodeManager->AddNode(std::move(assimpModel));
@@ -1893,7 +1924,7 @@ void GUI::drawImportSkyboxPopup()
 				{
 					// extract filename from the full path and convert to lowercase
 					const std::string fileName =
-						ToLowerCopy(fullPath.substr(fullPath.find_last_of("/\\") + 1));
+						StringUtils::ToLowercaseFromCopy(fullPath.substr(fullPath.find_last_of("/\\") + 1));
 
 					bool matched{ false }; // track if a match was found for this filename
 
