@@ -107,7 +107,7 @@ std::tuple<std::vector<std::string>,
 	std::vector<std::string>> DefineShadersInfo()
 {
 	std::vector<std::string> shaderNames = {
-		"Untextured Matt Shape Shader",
+		"Shape Model Shader",
 		"Assimp Model Shader",
 		"Single Albedo Shader",
 		"Screen Shader",
@@ -121,7 +121,7 @@ std::tuple<std::vector<std::string>,
 	std::string shadersDir = "resources/shaders/";
 
 	std::vector<std::string> vertexShaderPaths = {
-		shadersDir + "untextured_matt_shape.vert.glsl",
+		shadersDir + "shape_model.vert.glsl",
 		shadersDir + "assimp_model.vert.glsl",
 		shadersDir + "single_albedo.vert.glsl",
 		shadersDir + "screen_quad.vert.glsl",
@@ -132,7 +132,7 @@ std::tuple<std::vector<std::string>,
 		shadersDir + "refractive.vert.glsl"
 	};
 	std::vector<std::string> geometryShaderPaths = {
-		"", // no custom geometry shader for the untextured matt shape shader
+		"", // no custom geometry shader for the shape model shader
 		"", // no custom geometry shader for the assimp model shader
 		""  // no custom geometry shader for the single albedo shader
 		"", // no custom geometry shader for the screen shader
@@ -143,7 +143,7 @@ std::tuple<std::vector<std::string>,
 		""  // no custom geometry shader for the refractive shader
 	};
 	std::vector<std::string> fragmentShaderPaths = {
-		shadersDir + "untextured_matt_shape.frag.glsl",
+		shadersDir + "shape_model.frag.glsl",
 		shadersDir + "assimp_model.frag.glsl",
 		shadersDir + "single_albedo.frag.glsl",
 		shadersDir + "screen_quad.frag.glsl",

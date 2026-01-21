@@ -48,7 +48,7 @@ struct Spotlight
 // struct to hold material properties
 struct Material
 {
-	vec3 albedo;
+	vec4 albedo;
 	float shininess;
 };
 
@@ -118,7 +118,7 @@ void main()
 										 normal, FragPos, viewDir);
 
 	// set the fragment color
-	FragColor   = vec4(result, 1.0);
+	FragColor   = vec4(result, material.albedo.a);
 }
 
 vec3 computeDirectionalLightColor(DirectionalLight light, vec3 directionalLightDir, 
@@ -132,10 +132,13 @@ vec3 computeDirectionalLightColor(DirectionalLight light, vec3 directionalLightD
 	// specular shading
 	vec3 reflectDir = reflect(-lightDir, normal);
 	float spec      = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
+
+	// get RGB components of albedo
+	vec3 albedoRGB = material.albedo.rgb;
 	
 	// combine results
-	vec3 ambient    = light.ambient * material.albedo;
-	vec3 diffuse    = light.diffuse * diff * material.albedo;
+	vec3 ambient    = light.ambient * albedoRGB;
+	vec3 diffuse    = light.diffuse * diff * albedoRGB;
 	vec3 specular   = light.specular * spec; // the object is completely shiny since there is no specular map
 	return (ambient + diffuse + specular);
 }
@@ -157,9 +160,12 @@ vec3 computePointLightColor(PointLight light, vec3 pointLightPos,
 	float attenuation   = 1.0 / (light.constant + light.linear * distance 
 						  + light.quadratic * (distance * distance));
 
+	// get RGB components of albedo
+	vec3 albedoRGB = material.albedo.rgb;
+
 	// combine results
-	vec3 ambient    = light.ambient * material.albedo;
-	vec3 diffuse    = light.diffuse * diff * material.albedo;
+	vec3 ambient    = light.ambient * albedoRGB;
+	vec3 diffuse    = light.diffuse * diff * albedoRGB;
 	vec3 specular   = light.specular * spec; // the object is completely shiny since there is no specular map
 	ambient         *= attenuation;
 	diffuse         *= attenuation;
@@ -189,9 +195,12 @@ vec3 computeSpotlightColor(Spotlight light, vec3 spotlightPos, vec3 spotlightDir
 	float epsilon   = light.innerCutOff - light.outerCutOff;
 	float intensity = clamp((theta - light.outerCutOff) / epsilon, 0.0, 1.0);
 
+	// get RGB components of albedo
+	vec3 albedoRGB = material.albedo.rgb;
+
 	// combine results
-	vec3 ambient    = light.ambient * material.albedo;
-	vec3 diffuse    = light.diffuse * diff * material.albedo;
+	vec3 ambient    = light.ambient * albedoRGB;
+	vec3 diffuse    = light.diffuse * diff * albedoRGB;
 	vec3 specular   = light.specular * spec; // the object is completely shiny since there is no specular map
 	ambient         *= attenuation * intensity;
 	diffuse         *= attenuation * intensity;

@@ -160,8 +160,8 @@ bool Renderer::SetShaderByName(const std::string& name, const std::shared_ptr<Sh
 
 	// check if the shader name matches any of the known shaders, and if so,
 	// assign the shader to the corresponding member variable
-	if (strcmp(name.c_str(), "Untextured Matt Shape Shader") == 0)
-		m_untexturedMattShapeShader = shader;
+	if (strcmp(name.c_str(), "Shape Model Shader") == 0)
+		m_shapeModelShader = shader;
 	else if (strcmp(name.c_str(), "Assimp Model Shader") == 0)
 		m_assimpModelShader = shader;
 	else if (strcmp(name.c_str(), "Single Albedo Shader") == 0)
@@ -238,7 +238,7 @@ void Renderer::RenderScene()
 	auto& camera = sceneManager->GetCamera();
 
 	// ensure camera and shaders are valid before proceeding
-	if (!camera || !m_untexturedMattShapeShader || !m_assimpModelShader || !m_singleAlbedoShader
+	if (!camera || !m_shapeModelShader || !m_assimpModelShader || !m_singleAlbedoShader
 		|| !m_screenShader || !m_pickingShader || !m_skyboxShader || !m_equirectangularToCubemapShader
 		|| !m_reflectiveShader || !m_refractiveShader)
 	{ // if any of them are null, print an error message and return
@@ -270,8 +270,8 @@ void Renderer::RenderScene()
 	}
 
 	// set constant material uniforms
-	m_untexturedMattShapeShader->Use();
-	m_untexturedMattShapeShader->SetFloat("material.shininess", 32.0f); // shininess factor for the material
+	m_shapeModelShader->Use();
+	m_shapeModelShader->SetFloat("material.shininess", 32.0f); // shininess factor for the material
 	m_assimpModelShader->Use();
 	m_assimpModelShader->SetInt("material.albedoMap", 0);		// set albedo map to texture unit 0
 	m_assimpModelShader->SetInt("material.metallicMap", 1);		// set metallic map to texture unit 1
@@ -305,17 +305,17 @@ void Renderer::RenderScene()
 				// prefix for fragment shader uniforms
 				std::string prefix = "directionalLights[" + std::to_string(directionalLightIdx) + "].";
 
-				// activate the untextured matt shape shader program
-				m_untexturedMattShapeShader->Use();
+				// activate the shape model shader program
+				m_shapeModelShader->Use();
 				// vertex shader uniforms
-				m_untexturedMattShapeShader->SetVec3(
+				m_shapeModelShader->SetVec3(
 					"directionalLightDir[" + std::to_string(directionalLightIdx) + "]",
 					directionalLight->GetDirection()
 				);
 				// fragment shader uniforms
-				m_untexturedMattShapeShader->SetVec3(prefix + "ambient", directionalLight->GetAmbient());
-				m_untexturedMattShapeShader->SetVec3(prefix + "diffuse", directionalLight->GetDiffuse());
-				m_untexturedMattShapeShader->SetVec3(prefix + "specular", directionalLight->GetSpecular());
+				m_shapeModelShader->SetVec3(prefix + "ambient", directionalLight->GetAmbient());
+				m_shapeModelShader->SetVec3(prefix + "diffuse", directionalLight->GetDiffuse());
+				m_shapeModelShader->SetVec3(prefix + "specular", directionalLight->GetSpecular());
 
 				// activate the assimp model shader program
 				m_assimpModelShader->Use();
@@ -340,20 +340,20 @@ void Renderer::RenderScene()
 				// prefix for fragment shader uniforms
 				std::string prefix = "pointLights[" + std::to_string(pointLightIdx) + "].";
 
-				// activate the untextured matt shape shader program
-				m_untexturedMattShapeShader->Use();
+				// activate the shape model shader program
+				m_shapeModelShader->Use();
 				// vertex shader uniforms
-				m_untexturedMattShapeShader->SetVec3(
+				m_shapeModelShader->SetVec3(
 					"pointLightPos[" + std::to_string(pointLightIdx) + "]",
 					pointLight->GetPosition()
 				);
 				// fragment shader uniforms
-				m_untexturedMattShapeShader->SetVec3(prefix + "ambient", pointLight->GetAmbient());
-				m_untexturedMattShapeShader->SetVec3(prefix + "diffuse", pointLight->GetDiffuse());
-				m_untexturedMattShapeShader->SetVec3(prefix + "specular", pointLight->GetSpecular());
-				m_untexturedMattShapeShader->SetFloat(prefix + "constant", pointLight->GetConstant());
-				m_untexturedMattShapeShader->SetFloat(prefix + "linear", pointLight->GetLinear());
-				m_untexturedMattShapeShader->SetFloat(prefix + "quadratic", pointLight->GetQuadratic());
+				m_shapeModelShader->SetVec3(prefix + "ambient", pointLight->GetAmbient());
+				m_shapeModelShader->SetVec3(prefix + "diffuse", pointLight->GetDiffuse());
+				m_shapeModelShader->SetVec3(prefix + "specular", pointLight->GetSpecular());
+				m_shapeModelShader->SetFloat(prefix + "constant", pointLight->GetConstant());
+				m_shapeModelShader->SetFloat(prefix + "linear", pointLight->GetLinear());
+				m_shapeModelShader->SetFloat(prefix + "quadratic", pointLight->GetQuadratic());
 
 				// activate the assimp model shader program
 				m_assimpModelShader->Use();
@@ -381,26 +381,26 @@ void Renderer::RenderScene()
 				// prefix for fragment shader uniforms
 				std::string prefix = "spotlights[" + std::to_string(spotlightIdx) + "].";
 
-				// activate the untextured matt shape shader program
-				m_untexturedMattShapeShader->Use();
+				// activate the shape model shader program
+				m_shapeModelShader->Use();
 				// vertex shader uniforms
-				m_untexturedMattShapeShader->SetVec3(
+				m_shapeModelShader->SetVec3(
 					"spotlightPos[" + std::to_string(spotlightIdx) + "]",
 					spotlight->GetPosition()
 				);
-				m_untexturedMattShapeShader->SetVec3(
+				m_shapeModelShader->SetVec3(
 					"spotlightDir[" + std::to_string(spotlightIdx) + "]",
 					spotlight->GetDirection()
 				);
 				// fragment shader uniforms
-				m_untexturedMattShapeShader->SetVec3(prefix + "ambient", spotlight->GetAmbient());
-				m_untexturedMattShapeShader->SetVec3(prefix + "diffuse", spotlight->GetDiffuse());
-				m_untexturedMattShapeShader->SetVec3(prefix + "specular", spotlight->GetSpecular());
-				m_untexturedMattShapeShader->SetFloat(prefix + "constant", spotlight->GetConstant());
-				m_untexturedMattShapeShader->SetFloat(prefix + "linear", spotlight->GetLinear());
-				m_untexturedMattShapeShader->SetFloat(prefix + "quadratic", spotlight->GetQuadratic());
-				m_untexturedMattShapeShader->SetFloat(prefix + "innerCutOff", spotlight->GetInnerCutOff());
-				m_untexturedMattShapeShader->SetFloat(prefix + "outerCutOff", spotlight->GetOuterCutOff());
+				m_shapeModelShader->SetVec3(prefix + "ambient", spotlight->GetAmbient());
+				m_shapeModelShader->SetVec3(prefix + "diffuse", spotlight->GetDiffuse());
+				m_shapeModelShader->SetVec3(prefix + "specular", spotlight->GetSpecular());
+				m_shapeModelShader->SetFloat(prefix + "constant", spotlight->GetConstant());
+				m_shapeModelShader->SetFloat(prefix + "linear", spotlight->GetLinear());
+				m_shapeModelShader->SetFloat(prefix + "quadratic", spotlight->GetQuadratic());
+				m_shapeModelShader->SetFloat(prefix + "innerCutOff", spotlight->GetInnerCutOff());
+				m_shapeModelShader->SetFloat(prefix + "outerCutOff", spotlight->GetOuterCutOff());
 
 				// activate the assimp model shader program
 				m_assimpModelShader->Use();
@@ -439,10 +439,10 @@ void Renderer::RenderScene()
 
 		}
 	});
-	m_untexturedMattShapeShader->Use();
-	m_untexturedMattShapeShader->SetInt("nDirectionalLights", directionalLightIdx);
-	m_untexturedMattShapeShader->SetInt("nPointLights", pointLightIdx);
-	m_untexturedMattShapeShader->SetInt("nSpotlights", spotlightIdx);
+	m_shapeModelShader->Use();
+	m_shapeModelShader->SetInt("nDirectionalLights", directionalLightIdx);
+	m_shapeModelShader->SetInt("nPointLights", pointLightIdx);
+	m_shapeModelShader->SetInt("nSpotlights", spotlightIdx);
 	m_assimpModelShader->Use();
 	m_assimpModelShader->SetInt("nDirectionalLights", directionalLightIdx);
 	m_assimpModelShader->SetInt("nPointLights", pointLightIdx);
@@ -627,10 +627,10 @@ void Renderer::RenderModel(const std::shared_ptr<Node>& model)
 				case NodeType::COMPOSITE_SHAPE_MODEL: // composite shape models have their own meshes
 				case NodeType::SHAPE_MODEL:
 				{
-					renderShader = m_untexturedMattShapeShader; // use the untextured matt shape shader
+					renderShader = m_shapeModelShader; // use the shape model shader
 					renderShader->Use(); // activate the current shader program
-					// set the color of the shape based on the model's albedo
-					renderShader->SetVec3("material.albedo", model->GetAlbedo());
+					// set the color of the shape based on the model's albedo (RGBA)
+					renderShader->SetVec4("material.albedo", model->GetAlbedo());
 				}
 				break;
 				default:
@@ -1251,10 +1251,10 @@ void Renderer::RenderSceneForEnvMapCapture(const glm::mat4& captureView, const g
 	glm::mat3 invViewRot = glm::transpose(glm::mat3(captureView)); // inverse of rotation part of view matrix
 
 	// set parameters on shaders that are used for the env map capture
-	m_untexturedMattShapeShader->Use();
-	m_untexturedMattShapeShader->SetMat4("view", captureView);
-	m_untexturedMattShapeShader->SetMat4("projection", captureProj);
-	m_untexturedMattShapeShader->SetFloat("material.shininess", 32.0f);
+	m_shapeModelShader->Use();
+	m_shapeModelShader->SetMat4("view", captureView);
+	m_shapeModelShader->SetMat4("projection", captureProj);
+	m_shapeModelShader->SetFloat("material.shininess", 32.0f);
 
 	m_assimpModelShader->Use();
 	m_assimpModelShader->SetMat4("view", captureView);
@@ -1288,14 +1288,14 @@ void Renderer::RenderSceneForEnvMapCapture(const glm::mat4& captureView, const g
 			{
 				auto dl = dynamic_cast<DirectionalLight*>(light);
 				std::string prefix = "directionalLights[" + std::to_string(directionalLightIdx) + "].";
-				m_untexturedMattShapeShader->Use();
-				m_untexturedMattShapeShader->SetVec3(
+				m_shapeModelShader->Use();
+				m_shapeModelShader->SetVec3(
 					"directionalLightDir[" + std::to_string(directionalLightIdx) + "]",
 					dl->GetDirection()
 				);
-				m_untexturedMattShapeShader->SetVec3(prefix + "ambient", dl->GetAmbient());
-				m_untexturedMattShapeShader->SetVec3(prefix + "diffuse", dl->GetDiffuse());
-				m_untexturedMattShapeShader->SetVec3(prefix + "specular", dl->GetSpecular());
+				m_shapeModelShader->SetVec3(prefix + "ambient", dl->GetAmbient());
+				m_shapeModelShader->SetVec3(prefix + "diffuse", dl->GetDiffuse());
+				m_shapeModelShader->SetVec3(prefix + "specular", dl->GetSpecular());
 				m_assimpModelShader->Use();
 				m_assimpModelShader->SetVec3(
 					"directionalLightDir[" + std::to_string(directionalLightIdx) + "]",
@@ -1311,17 +1311,17 @@ void Renderer::RenderSceneForEnvMapCapture(const glm::mat4& captureView, const g
 			{
 				auto pl = dynamic_cast<PointLight*>(light);
 				std::string prefix = "pointLights[" + std::to_string(pointLightIdx) + "].";
-				m_untexturedMattShapeShader->Use();
-				m_untexturedMattShapeShader->SetVec3(
+				m_shapeModelShader->Use();
+				m_shapeModelShader->SetVec3(
 					"pointLightPos[" + std::to_string(pointLightIdx) + "]",
 					pl->GetPosition()
 				);
-				m_untexturedMattShapeShader->SetVec3(prefix + "ambient", pl->GetAmbient());
-				m_untexturedMattShapeShader->SetVec3(prefix + "diffuse", pl->GetDiffuse());
-				m_untexturedMattShapeShader->SetVec3(prefix + "specular", pl->GetSpecular());
-				m_untexturedMattShapeShader->SetFloat(prefix + "constant", pl->GetConstant());
-				m_untexturedMattShapeShader->SetFloat(prefix + "linear", pl->GetLinear());
-				m_untexturedMattShapeShader->SetFloat(prefix + "quadratic", pl->GetQuadratic());
+				m_shapeModelShader->SetVec3(prefix + "ambient", pl->GetAmbient());
+				m_shapeModelShader->SetVec3(prefix + "diffuse", pl->GetDiffuse());
+				m_shapeModelShader->SetVec3(prefix + "specular", pl->GetSpecular());
+				m_shapeModelShader->SetFloat(prefix + "constant", pl->GetConstant());
+				m_shapeModelShader->SetFloat(prefix + "linear", pl->GetLinear());
+				m_shapeModelShader->SetFloat(prefix + "quadratic", pl->GetQuadratic());
 				m_assimpModelShader->Use();
 				m_assimpModelShader->SetVec3(
 					"pointLightPos[" + std::to_string(pointLightIdx) + "]",
@@ -1340,22 +1340,22 @@ void Renderer::RenderSceneForEnvMapCapture(const glm::mat4& captureView, const g
 			{
 				auto sl = dynamic_cast<Spotlight*>(light);
 				std::string prefix = "spotlights[" + std::to_string(spotlightIdx) + "].";
-				m_untexturedMattShapeShader->Use();
-				m_untexturedMattShapeShader->SetVec3(
+				m_shapeModelShader->Use();
+				m_shapeModelShader->SetVec3(
 					"spotlightPos[" + std::to_string(spotlightIdx) + "]",
 					sl->GetPosition()
 				);
-				m_untexturedMattShapeShader->SetVec3(
+				m_shapeModelShader->SetVec3(
 					"spotlightDir[" + std::to_string(spotlightIdx) + "]", sl->GetDirection()
 				);
-				m_untexturedMattShapeShader->SetVec3(prefix + "ambient", sl->GetAmbient());
-				m_untexturedMattShapeShader->SetVec3(prefix + "diffuse", sl->GetDiffuse());
-				m_untexturedMattShapeShader->SetVec3(prefix + "specular", sl->GetSpecular());
-				m_untexturedMattShapeShader->SetFloat(prefix + "constant", sl->GetConstant());
-				m_untexturedMattShapeShader->SetFloat(prefix + "linear", sl->GetLinear());
-				m_untexturedMattShapeShader->SetFloat(prefix + "quadratic", sl->GetQuadratic());
-				m_untexturedMattShapeShader->SetFloat(prefix + "innerCutOff", sl->GetInnerCutOff());
-				m_untexturedMattShapeShader->SetFloat(prefix + "outerCutOff", sl->GetOuterCutOff());
+				m_shapeModelShader->SetVec3(prefix + "ambient", sl->GetAmbient());
+				m_shapeModelShader->SetVec3(prefix + "diffuse", sl->GetDiffuse());
+				m_shapeModelShader->SetVec3(prefix + "specular", sl->GetSpecular());
+				m_shapeModelShader->SetFloat(prefix + "constant", sl->GetConstant());
+				m_shapeModelShader->SetFloat(prefix + "linear", sl->GetLinear());
+				m_shapeModelShader->SetFloat(prefix + "quadratic", sl->GetQuadratic());
+				m_shapeModelShader->SetFloat(prefix + "innerCutOff", sl->GetInnerCutOff());
+				m_shapeModelShader->SetFloat(prefix + "outerCutOff", sl->GetOuterCutOff());
 				m_assimpModelShader->Use();
 				m_assimpModelShader->SetVec3(
 					"spotlightPos[" + std::to_string(spotlightIdx) + "]",
@@ -1380,10 +1380,10 @@ void Renderer::RenderSceneForEnvMapCapture(const glm::mat4& captureView, const g
 		}
 	}
 	// set the number of lights of each type in the shader
-	m_untexturedMattShapeShader->Use();
-	m_untexturedMattShapeShader->SetInt("nDirectionalLights", directionalLightIdx);
-	m_untexturedMattShapeShader->SetInt("nPointLights", pointLightIdx);
-	m_untexturedMattShapeShader->SetInt("nSpotlights", spotlightIdx);
+	m_shapeModelShader->Use();
+	m_shapeModelShader->SetInt("nDirectionalLights", directionalLightIdx);
+	m_shapeModelShader->SetInt("nPointLights", pointLightIdx);
+	m_shapeModelShader->SetInt("nSpotlights", spotlightIdx);
 	m_assimpModelShader->Use();
 	m_assimpModelShader->SetInt("nDirectionalLights", directionalLightIdx);
 	m_assimpModelShader->SetInt("nPointLights", pointLightIdx);
@@ -1445,10 +1445,10 @@ void Renderer::RenderSceneForEnvMapCapture(const glm::mat4& captureView, const g
 					case NodeType::COMPOSITE_SHAPE_MODEL: // composite shape models have their own meshes
 					case NodeType::SHAPE_MODEL:
 					{
-						renderShader = m_untexturedMattShapeShader; // use the untextured matt shape shader
+						renderShader = m_shapeModelShader; // use the shape model shader
 						renderShader->Use(); // activate the current shader program
-						// set the color of the shape based on the model's albedo
-						renderShader->SetVec3("material.albedo", currentModel->GetAlbedo());
+						// set the color of the shape based on the model's albedo (RGBA)
+						renderShader->SetVec4("material.albedo", currentModel->GetAlbedo());
 					}
 					break;
 					default:
@@ -1496,10 +1496,10 @@ void Renderer::RenderSceneForEnvMapCapture(const glm::mat4& captureView, const g
 				case NodeType::COMPOSITE_SHAPE_MODEL: // composite shape models have their own meshes
 				case NodeType::SHAPE_MODEL:
 				{
-					renderShader = m_untexturedMattShapeShader; // use the untextured matt shape shader
+					renderShader = m_shapeModelShader; // use the shape model shader
 					renderShader->Use(); // activate the current shader program
-					// set the color of the shape based on the model's albedo
-					renderShader->SetVec3("material.albedo", model->GetAlbedo());
+					// set the color of the shape based on the model's albedo (RGBA)
+					renderShader->SetVec4("material.albedo", model->GetAlbedo());
 				}
 				break;
 				default:

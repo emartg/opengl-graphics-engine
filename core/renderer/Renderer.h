@@ -119,7 +119,7 @@ protected:
 	GLfloat m_deltaTime, m_lastFrameTime; // time settings
 
 	// shader programs' smart pointers
-	std::shared_ptr<Shader> m_untexturedMattShapeShader;
+	std::shared_ptr<Shader> m_shapeModelShader;
 	std::shared_ptr<Shader> m_assimpModelShader;
 	std::shared_ptr<Shader> m_singleAlbedoShader;
 	std::shared_ptr<Shader> m_screenShader;
