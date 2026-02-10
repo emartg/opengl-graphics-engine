@@ -150,7 +150,7 @@ private:
 	void drawSceneGraphWindow();
 	// Draws the Properties Window with controls for the objects in the scene
 	void drawPropertiesWindow();
-	// Draws the Creation Window with buttons to create new objects to the scene
+	// Draws the Creation Window with buttons to add new objects to the scene
 	void drawCreationWindow();
 	// Draws the Debug Window with debug information and scene and GUI controls
 	void drawDebugWindow();
@@ -185,6 +185,8 @@ private:
 	void drawCreatePointLightPopup();
 	// Draws a pop-up modal window to create a new spotlight
 	void drawCreateSpotlightPopup();
+	// Draws a pop-up modal window to create a new plane shape
+	void drawCreatePlaneShapePopup();
 	// Draws a pop-up modal window to create a new cube shape
 	void drawCreateCubeShapePopup();
 	// Draws a pop-up modal window to import a model from a file

@@ -17,6 +17,7 @@
 #include "Gui.h"
 #include "ImGuiFileDialog.h"
 #include "../CUBE.h"
+#include "../PLANE.h"
 
 #include "../core/Core.h"
 #include "../core/Node.h"
@@ -635,10 +636,11 @@ void GUI::drawNodeInformationWindow()
 
 				if (selected->GetNodeType() == NodeType::SHAPE_MODEL)
 				{ // if the model is a shape, display its color
-					ImGui::Text("Color: (%.3f, %.3f, %.3f)",
+					ImGui::Text("Color: (%.3f, %.3f, %.3f, %.3f)",
 								selected->GetAlbedo().x,
 								selected->GetAlbedo().y,
-								selected->GetAlbedo().z);
+								selected->GetAlbedo().z,
+								selected->GetAlbedo().w);
 				}
 				ImGui::Text("Position: (%.3f, %.3f, %.3f)",
 							selected->GetPosition().x,
@@ -742,13 +744,13 @@ void GUI::drawCreationWindow()
 	// set the Create Window to be expanded (i.e. not minimized)
 	ImGui::SetNextWindowCollapsed(false, ImGuiCond_Appearing);
 
-	{ // show a window that contains buttons to create new objects to the scene
+	{ // show a window that contains buttons to add new objects to the scene
 		// begin the Creation window
 		ImGui::PushFont(m_boldFont);
 		ImGui::Begin("CREATION", nullptr, ImGuiWindowFlags_NoFocusOnAppearing);
 		ImGui::PopFont();
 
-		// button to create a new directional light to the scene
+		// button to add a new directional light to the scene
 		if (ImGui::Button("Create Directional Light", ImVec2(ImGui::GetContentRegionAvail().x, 0.0f)))
 		{ // if the button is clicked
 			ImGui::OpenPopup("Create Directional Light");
@@ -760,7 +762,7 @@ void GUI::drawCreationWindow()
 		}
 		drawCreateDirectionalLightPopup(); // draw the popup to create a new directional light
 
-		// button to create a new point light to the scene
+		// button to add a new point light to the scene
 		if (ImGui::Button("Create Point Light", ImVec2(ImGui::GetContentRegionAvail().x, 0.0f)))
 		{ // if the button is clicked
 			ImGui::OpenPopup("Create Point Light");
@@ -771,7 +773,7 @@ void GUI::drawCreationWindow()
 		}
 		drawCreatePointLightPopup(); // draw the popup to create a new point light
 
-		// button to create a new spotlight to the scene
+		// button to add a new spotlight to the scene
 		if (ImGui::Button("Create Spotlight", ImVec2(ImGui::GetContentRegionAvail().x, 0.0f)))
 		{ // if the button is clicked
 			ImGui::OpenPopup("Create Spotlight");
@@ -783,7 +785,21 @@ void GUI::drawCreationWindow()
 		}
 		drawCreateSpotlightPopup(); // draw the popup to create a new spotlight
 
-		// buttom to create a new cube shape to the scene
+		// button to add a new plane shape to the scene
+		if (ImGui::Button("Create Plane Shape", ImVec2(ImGui::GetContentRegionAvail().x, 0.0f)))
+		{ // if the button is clicked
+			ImGui::OpenPopup("Create Plane Shape");
+			// randomize the albedo and position of the new plane shape
+			m_newAlbedo = m_randomizer->GenerateRandomColor();
+			m_newPosition = m_randomizer->GenerateRandomPosition(
+				glm::vec3(0.0f), MIN_DISTANCE_TO_ORIGIN, MAX_DISTANCE_TO_ORIGIN);
+			// initialize the rotation and scale of the new plane shape with default values
+			m_newRotation = glm::vec3{ 0.0f };
+			m_newScale = glm::vec3{ 1.0f };
+		}
+		drawCreatePlaneShapePopup(); // draw the popup to create a new plane shape
+
+		// buttom to add a new cube shape to the scene
 		if (ImGui::Button("Create Cube Shape", ImVec2(ImGui::GetContentRegionAvail().x, 0.0f)))
 		{ // if the button is clicked
 			ImGui::OpenPopup("Create Cube Shape");
@@ -1362,7 +1378,7 @@ void GUI::drawDirectionalLightControls(DirectionalLight* directionalLight)
 	// get the position of the directional light (it only serves visualization purposes)
 	glm::vec3 pos = directionalLight->GetPosition();
 	// create a control for the x, y, and z components of the directional light's position
-	if (drawVec3Control("Position", pos, false, // is not the scale control
+	if (drawVec3Control("Position", pos, false, // this is not a scale control
 						MIN_POSITION_VALUE, MAX_POSITION_VALUE,
 						INPUT_FIELD_WIDTH, POSITION_SPEED, POSITION_RESET_VALUE))
 	{ // if the control is used
@@ -1375,7 +1391,7 @@ void GUI::drawDirectionalLightControls(DirectionalLight* directionalLight)
 	{ // only proceed if the gizmo exists
 		glm::vec3 rotDegrees = gizmo->GetRotationInEulerAngles();
 		// create a control for the x, y, and z components of the directional light's rotation
-		if (drawVec3Control("Rotation", rotDegrees, false, // is not the scale control
+		if (drawVec3Control("Rotation", rotDegrees, false, // this is not a scale control
 							MIN_ROTATION_VALUE, MAX_ROTATION_VALUE,
 							INPUT_FIELD_WIDTH, ROTATION_SPEED, ROTATION_RESET_VALUE))
 		{ // if the control is used
@@ -1406,7 +1422,7 @@ void GUI::drawPointLightControls(PointLight* pointLight)
 	// get the position of the point light
 	glm::vec3 pos = pointLight->GetPosition();
 	// create a control for the x, y, and z components of the point light's position
-	if (drawVec3Control("Position", pos, false, // is not the scale control
+	if (drawVec3Control("Position", pos, false, // this is not a scale control
 						MIN_POSITION_VALUE, MAX_POSITION_VALUE,
 						INPUT_FIELD_WIDTH, POSITION_SPEED, POSITION_RESET_VALUE))
 	{ // if the control is used
@@ -1432,7 +1448,7 @@ void GUI::drawSpotlightControls(Spotlight* spotlight)
 	// get the position of the spotlight
 	glm::vec3 pos = spotlight->GetPosition();
 	// create a control for the x, y, and z components of the spotlight's position
-	if (drawVec3Control("Position", pos, false, // is not the scale control
+	if (drawVec3Control("Position", pos, false, // this is not a scale control
 						MIN_POSITION_VALUE, MAX_POSITION_VALUE,
 						INPUT_FIELD_WIDTH, POSITION_SPEED, POSITION_RESET_VALUE))
 	{ // if the control is used
@@ -1445,7 +1461,7 @@ void GUI::drawSpotlightControls(Spotlight* spotlight)
 	{ // only proceed if the gizmo exists
 		glm::vec3 rotDegrees = gizmo->GetRotationInEulerAngles();
 		// create a control for the x, y, and z components of the spotlight's rotation
-		if (drawVec3Control("Rotation", rotDegrees, false, // is not the scale control
+		if (drawVec3Control("Rotation", rotDegrees, false, // this is not a scale control
 							MIN_ROTATION_VALUE, MAX_ROTATION_VALUE,
 							INPUT_FIELD_WIDTH, ROTATION_SPEED, ROTATION_RESET_VALUE))
 		{ // if the control are used
@@ -1503,7 +1519,7 @@ void GUI::drawModelControls(Node* model)
 	// get the position of the model
 	glm::vec3 pos = model->GetPosition();
 	// create a control for the x, y, and z components of the model's position
-	if (drawVec3Control("Position", pos, false, // is not the scale control
+	if (drawVec3Control("Position", pos, false, // this is not a scale control
 						MIN_POSITION_VALUE, MAX_POSITION_VALUE,
 						INPUT_FIELD_WIDTH, POSITION_SPEED, POSITION_RESET_VALUE))
 	{ // if the control is used
@@ -1513,7 +1529,7 @@ void GUI::drawModelControls(Node* model)
 	// get the rotation in Euler angles
 	glm::vec3 rotDegrees = model->GetRotationInEulerAngles();
 	// create a control for the x, y, and z components of the model's rotation
-	if (drawVec3Control("Rotation", rotDegrees, false, // is not the scale control
+	if (drawVec3Control("Rotation", rotDegrees, false, // this is not a scale control
 						MIN_ROTATION_VALUE, MAX_ROTATION_VALUE,
 						INPUT_FIELD_WIDTH, ROTATION_SPEED, ROTATION_RESET_VALUE))
 	{ // if the control is used
@@ -1525,7 +1541,7 @@ void GUI::drawModelControls(Node* model)
 	// if the model is a shape, use a faster speed for scaling, otherwise use the default speed
 	float speed = model->GetNodeType() == NodeType::SHAPE_MODEL ? SCALE_SPEED * 5.0f : SCALE_SPEED;
 	// create a control for the x, y, and z components of the model's scale
-	if (drawVec3Control("Scale", scale, true, // is the scale control
+	if (drawVec3Control("Scale", scale, true, // this is the scale control
 						MIN_SCALE_VALUE, MAX_SCALE_VALUE,
 						INPUT_FIELD_WIDTH, speed, SCALE_RESET_VALUE))
 	{ // if the control is used
@@ -1555,10 +1571,10 @@ void GUI::drawCreateDirectionalLightPopup()
 		glm::vec3 albedoRGB = m_newAlbedo;
 		drawColorControl("Albedo", albedoRGB);
 		m_newAlbedo = glm::vec4(albedoRGB, 1.0f); // set alpha to 1.0f
-		drawVec3Control("Position", m_newPosition, false,
+		drawVec3Control("Position", m_newPosition, false, // this is not a scale control
 						MIN_POSITION_VALUE, MAX_POSITION_VALUE,
 						INPUT_FIELD_WIDTH, POSITION_SPEED, POSITION_RESET_VALUE);
-		drawVec3Control("Direction", m_newDirection, false,
+		drawVec3Control("Direction", m_newDirection, false, // this is not a scale control
 						MIN_DIRECTION_VALUE, MAX_DIRECTION_VALUE,
 						INPUT_FIELD_WIDTH, DIRECTION_SPEED, DIRECTION_RESET_VALUE);
 
@@ -1627,7 +1643,7 @@ void GUI::drawCreatePointLightPopup()
 		glm::vec3 albedoRGB = m_newAlbedo;
 		drawColorControl("Albedo", albedoRGB);
 		m_newAlbedo = glm::vec4(albedoRGB, 1.0f); // set alpha to 1.0f
-		drawVec3Control("Position", m_newPosition, false,
+		drawVec3Control("Position", m_newPosition, false, // this is not a scale control
 						MIN_POSITION_VALUE, MAX_POSITION_VALUE,
 						INPUT_FIELD_WIDTH, POSITION_SPEED, POSITION_RESET_VALUE);
 
@@ -1694,10 +1710,10 @@ void GUI::drawCreateSpotlightPopup()
 		glm::vec3 albedoRGB = m_newAlbedo;
 		drawColorControl("Albedo", albedoRGB);
 		m_newAlbedo = glm::vec4(albedoRGB, 1.0f); // set alpha to 1.0f
-		drawVec3Control("Position", m_newPosition, false,
+		drawVec3Control("Position", m_newPosition, false, // this is not a scale control
 						MIN_POSITION_VALUE, MAX_POSITION_VALUE,
 						INPUT_FIELD_WIDTH, POSITION_SPEED, POSITION_RESET_VALUE);
-		drawVec3Control("Direction", m_newDirection, false,
+		drawVec3Control("Direction", m_newDirection, false, // this is not a scale control
 						MIN_DIRECTION_VALUE, MAX_DIRECTION_VALUE,
 						INPUT_FIELD_WIDTH, DIRECTION_SPEED, DIRECTION_RESET_VALUE);
 		ImGui::Text("Cut-Off Angles (in degrees):");
@@ -1761,6 +1777,77 @@ void GUI::drawCreateSpotlightPopup()
 	}
 }
 
+void GUI::drawCreatePlaneShapePopup()
+{
+	// get the node manager from the Core instance
+	auto& nodeManager = Core::GetInstance()->GetNodeManager();
+
+	if (ImGui::BeginPopupModal("Create Plane Shape", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+	{ // if the popup is open
+		// display a message to the user
+		ImGui::PushFont(m_boldFont);
+		ImGui::Text("Set initial properties for the new Plane Shape\n");
+		ImGui::PopFont();
+
+		ImGui::Separator();
+
+		// display controls to set the color, position, and size of the new plane shape
+		drawColorControl("Color", m_newAlbedo);
+		drawVec3Control("Position", m_newPosition, false, // this is not a scale control
+						MIN_POSITION_VALUE, MAX_POSITION_VALUE,
+						INPUT_FIELD_WIDTH, POSITION_SPEED, POSITION_RESET_VALUE);
+		drawVec3Control("Rotation", m_newRotation, false, // this is not a scale control
+						MIN_ROTATION_VALUE, MAX_ROTATION_VALUE,
+						INPUT_FIELD_WIDTH, ROTATION_SPEED, ROTATION_RESET_VALUE);
+		drawVec3Control("Scale", m_newScale, true, // this is the scale control
+						MIN_SCALE_VALUE, MAX_SCALE_VALUE,
+						INPUT_FIELD_WIDTH, SCALE_SPEED * 5.0f, SCALE_RESET_VALUE);
+
+		ImGui::Separator();
+
+		// display a button to randomize the properties of the new plane shape
+		if (ImGui::Button("Randomize", ImVec2(POPUP_BUTTON_WIDTH, 0.0f)))
+		{ // if the Randomize button is clicked
+			// generate random values for the new plane shape's properties
+			m_newAlbedo = m_randomizer->GenerateRandomColor();
+			m_newPosition = m_randomizer->GenerateRandomPosition(
+				glm::vec3(0.0f), MIN_DISTANCE_TO_ORIGIN, MAX_DISTANCE_TO_ORIGIN);
+		}
+
+		// display a button to add the new plane shape
+		ImGui::SameLine();
+		if (ImGui::Button("Create", ImVec2(POPUP_BUTTON_WIDTH, 0.0f)))
+		{ // if the Create button is clicked
+			// create a plane shape with a placeholder name and the specified properties
+			auto planeShape = std::make_shared<Shape>(
+				"Plane Shape", planeVerticesVec, planeIndicesVec, m_newAlbedo, m_newPosition,
+				glm::quat{ 1.0f, 0.0f, 0.0f, 0.0f }, m_newScale
+			);
+			// indicate that the plane is a two-sided shape
+			planeShape->SetTwoSided(true);
+			// set the rotation in Euler angles of the new plane shape
+			planeShape->SetRotationInEulerAngles(m_newRotation);
+
+			// convert the shape's ID to string and set it as part of the shape's name
+			planeShape->SetName(StringUtils::GenerateIdPrefixedName(planeShape));
+
+			// add the new plane shape to the engine
+			nodeManager->AddNode(std::move(planeShape));
+
+			ImGui::CloseCurrentPopup(); // close the popup
+		}
+
+		// display a button to cancel the operation and close the popup
+		ImGui::SameLine();
+		if (ImGui::Button("Cancel", ImVec2(POPUP_BUTTON_WIDTH, 0.0f)))
+		{ // if the Cancel button is clicked
+			ImGui::CloseCurrentPopup(); // close the popup
+		}
+
+		ImGui::EndPopup();
+	}
+}
+
 void GUI::drawCreateCubeShapePopup()
 {
 	// get the node manager from the Core instance
@@ -1777,13 +1864,13 @@ void GUI::drawCreateCubeShapePopup()
 
 		// display controls to set the color, position, and size of the new cube shape
 		drawColorControl("Color", m_newAlbedo);
-		drawVec3Control("Position", m_newPosition, false,
+		drawVec3Control("Position", m_newPosition, false, // this is not a scale control
 						MIN_POSITION_VALUE, MAX_POSITION_VALUE,
 						INPUT_FIELD_WIDTH, POSITION_SPEED, POSITION_RESET_VALUE);
-		drawVec3Control("Rotation", m_newRotation, false, // is not the scale control
+		drawVec3Control("Rotation", m_newRotation, false, // this is not a scale control
 						MIN_ROTATION_VALUE, MAX_ROTATION_VALUE,
 						INPUT_FIELD_WIDTH, ROTATION_SPEED, ROTATION_RESET_VALUE);
-		drawVec3Control("Scale", m_newScale, true,
+		drawVec3Control("Scale", m_newScale, true, // this is the scale control
 						MIN_SCALE_VALUE, MAX_SCALE_VALUE,
 						INPUT_FIELD_WIDTH, SCALE_SPEED * 5.0f, SCALE_RESET_VALUE);
 
@@ -1807,12 +1894,11 @@ void GUI::drawCreateCubeShapePopup()
 				"Cube Shape", cubeVerticesVec, cubeIndicesVec, m_newAlbedo, m_newPosition,
 				glm::quat{ 1.0f, 0.0f, 0.0f, 0.0f }, m_newScale
 			);
+			// set the rotation of the new cube shape
+			cubeShape->SetRotationInEulerAngles(m_newRotation);
 
 			// convert the shape's ID to string and set it as part of the shape's name
 			cubeShape->SetName(StringUtils::GenerateIdPrefixedName(cubeShape));
-
-			// set the rotation of the new cube shape
-			cubeShape->SetRotationInEulerAngles(m_newRotation);
 
 			// add the new cube shape to the engine
 			nodeManager->AddNode(std::move(cubeShape));

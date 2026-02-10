@@ -241,15 +241,15 @@ void SetupInitialScene(Core* engine)
 	auto shapesGroup = std::make_shared<Model>(
 		"Shapes Group", // placeholder name
 		NodeType::COMPOSITE_MODEL,
-		glm::vec4{ 1.0f }, // albedo (overriden)
-		glm::vec3{ 0.0f, 0.0f, -2.5f } // position (overriden - offset from root)
+		glm::vec4{ 1.0f }, // albedo (overridden)
+		glm::vec3{ 0.0f, 0.0f, -2.5f } // position (overridden - offset from root)
 	);
 
 	// convert the model's ID to string and set it as part of the model's name
 	shapesGroup->SetName(StringUtils::GenerateIdPrefixedName(shapesGroup));
 
-	// create two shapes with different colors and transformations as children of the shapes group
-	auto redShape = std::make_shared<Shape>(
+	// create three shapes with different colors and transformations as children of the shapes group
+	auto redCube = std::make_shared<Shape>(
 		"Red Cube Shape", // placeholder name
 		cubeVerticesVec, cubeIndicesVec,
 		glm::vec4{ 0.9f, 0.2f, 0.2f, 1.0f }, // albedo (overridden)
@@ -257,7 +257,7 @@ void SetupInitialScene(Core* engine)
 		glm::quat(glm::vec3{ 0.0f, glm::radians(15.0f), 0.0f }), // rotation (overridden)
 		glm::vec3{ 0.8f } // scale (overridden)
 	);
-	auto blueShape = std::make_shared<Shape>(
+	auto blueCube = std::make_shared<Shape>(
 		"Blue Cube Shape", // placeholder name
 		cubeVerticesVec, cubeIndicesVec,
 		glm::vec4{ 0.2f, 0.2f, 0.9f, 1.0f }, // albedo (overridden)
@@ -265,16 +265,32 @@ void SetupInitialScene(Core* engine)
 		glm::quat(glm::vec3{ 0.0f, glm::radians(-25.0f), 0.0f }), // rotation (overridden)
 		glm::vec3{ 0.6f } // scale (overridden)
 	);
+	auto greenPlane = std::make_shared<Shape>(
+		"Blue Plane", // placeholder name
+		planeVerticesVec, planeIndicesVec,
+		glm::vec4{ 0.3f, 0.9f, 0.3f, 0.5f }, // albedo (overridden - alpha below 1 for transparency)
+		glm::vec3{ 0.0f, 0.75f, 0.0f }, // position (overridden - local offset from parent)
+		glm::quat(glm::vec3{ glm::radians(-90.0f), 0.0f, 0.0f }), // rotation (overridden - vertical plane)
+		glm::vec3{ 2.5f } // scale (overridden)
+	);
+	greenPlane->SetTwoSided(true); // set the plane to be two-sided for transparency
 
-	// convert the red shape's ID to string and set it as part of the shape's name
-	redShape->SetName(StringUtils::GenerateIdPrefixedName(redShape));
+	// convert the red cube's ID to string and set it as part of the shape's name
+	redCube->SetName(StringUtils::GenerateIdPrefixedName(redCube));
 
-	// convert the blue shape's ID to string and set it as part of the shape's name
-	blueShape->SetName(StringUtils::GenerateIdPrefixedName(blueShape));
+	// convert the blue cube's ID to string and set it as part of the shape's name
+	blueCube->SetName(StringUtils::GenerateIdPrefixedName(blueCube));
+
+	// convert the green plane's ID to string and set it as part of the shape's name
+	greenPlane->SetName(StringUtils::GenerateIdPrefixedName(greenPlane));
 
 	// attach shapes under the shapes group
-	shapesGroup->AddChild(redShape);
-	shapesGroup->AddChild(blueShape);
+	shapesGroup->AddChild(redCube);
+	shapesGroup->AddChild(blueCube);
+	shapesGroup->AddChild(greenPlane);
+
+	// attach the shapes group under the root group
+	rootGroup->AddChild(shapesGroup);
 
 	// create an Assimp model and add it as a child of the root group
 	std::string assimpPath = "resources/models/gltf/teapot/teapot.gltf";
@@ -283,10 +299,10 @@ void SetupInitialScene(Core* engine)
 		auto assimpModel = std::make_shared<AssimpModel>(
 			"Teapot", // placeholder name
 			assimpPath, // model file path
-			glm::vec4{ 1.0f }, // albedo (overriden - unused if model has textures)
-			glm::vec3{ 0.0f, 0.0f, 3.0f }, // position (overriden - offset from root)
+			glm::vec4{ 1.0f }, // albedo (overridden - unused if model has textures)
+			glm::vec3{ 0.0f, 0.0f, 3.0f }, // position (overridden - offset from root)
 			glm::quat(glm::vec3{ 0.0f }), // rotation (default)
-			glm::vec3{ 0.25f } // scale (overriden)
+			glm::vec3{ 0.25f } // scale (overridden)
 		);
 
 		// remove the path and the extension from the file path for the model's name
@@ -304,7 +320,7 @@ void SetupInitialScene(Core* engine)
 		auto markerShape = std::make_shared<Shape>(
 			"Teapot Origin Marker", // placeholder name
 			cubeVerticesVec, cubeIndicesVec,
-			assimpModel->GetAlbedo(), // albedo (overriden - same as parent)
+			assimpModel->GetAlbedo(), // albedo (overridden - same as parent)
 			glm::vec3{ 0.5f, 0.0f, 0.5f }, // position (overridden - local offset from parent)
 			glm::quat(glm::vec3{ 0.0f }), // rotation (default)
 			glm::vec3{ 0.1f } // scale (overridden)
@@ -329,14 +345,12 @@ void SetupInitialScene(Core* engine)
 			<< std::endl;
 	}
 
-	// attach the shapes group under the root group
-	rootGroup->AddChild(shapesGroup);
-
 	// register all nodes (including children) so they exist as nodes
 	nodeManager->AddNode(rootGroup);
 	nodeManager->AddNode(shapesGroup);
-	nodeManager->AddNode(redShape);
-	nodeManager->AddNode(blueShape);
+	nodeManager->AddNode(redCube);
+	nodeManager->AddNode(blueCube);
+	nodeManager->AddNode(greenPlane);
 
 	// load an HDR skybox texture and set it as the skybox in the scene manager
 	std::string skyboxFilepath = "resources/textures/skyboxes/hdr/tiergarten_4k.hdr";

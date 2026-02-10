@@ -103,6 +103,7 @@ public:
 	const glm::vec3& GetMeshForward() const { return meshForward; }
 	const GizmoType& GetGizmoType() const { return gizmoType; }
 	bool IsVisible() const { return isVisible; }
+	bool IsTwoSided() const { return isTwoSided; }
 
 	void SetAlbedo(const glm::vec4& albedo) { this->albedo = albedo; }
 	void SetPosition(const glm::vec3& position) { this->position = position; }
@@ -113,6 +114,10 @@ public:
 	void SetMeshForward(const glm::vec3& meshForward) { this->meshForward = meshForward; }
 	void SetGizmoType(GizmoType gizmoType) { this->gizmoType = gizmoType; }
 	void SetVisible(bool isVisible) { this->isVisible = isVisible; }
+	void SetTwoSided(bool twoSided) { isTwoSided = twoSided; }
+
+	// Gets the world position of the node, taking into account the hierarchical transformations
+	const glm::vec3 GetWorldPosition() const;
 
 	// Gets the model matrix, the hierarchical world model matrix, or any of its components separately
 	glm::mat4 GetModelMatrix() const;
@@ -181,6 +186,7 @@ protected:
 	glm::vec3 m_boundingBoxMax{}; // maximum point of the bounding box
 
 	bool isVisible; // visibility flag for the node (useful for regular models but specially for gizmos)
+	bool isTwoSided{ false }; // if true, disable face culling for this node while drawing
 
 	// Private Static Attributes
 	// -------------------------

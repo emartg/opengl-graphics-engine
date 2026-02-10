@@ -94,6 +94,13 @@ glm::mat4 Node::GetScaleMatrix() const
 	return scaleMatrix;
 }
 
+const glm::vec3 Node::GetWorldPosition() const
+{
+	// get the world model matrix and extract the translation component
+	glm::mat4 worldModelMatrix = GetWorldModelMatrix();
+	return glm::vec3(worldModelMatrix[3]); // return the translation part
+}
+
 void Node::AddChild(const std::shared_ptr<Node>& child)
 {
 	if (!child) return; // check for null pointer

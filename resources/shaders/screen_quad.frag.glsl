@@ -61,6 +61,7 @@ void main()
 	if (screenDebugParams.debugMode == 0)
 	{ // normal rendering: sample the screen texture
 		baseColor = texture(screenTexture, TexCoords);
+		baseColor.a = 1.0; // ensure alpha is 1.0 to prevent transparency issues
 	}
 	else if (screenDebugParams.debugMode == 1)
 	{ // inverted color rendering: sample the screen texture and invert the color

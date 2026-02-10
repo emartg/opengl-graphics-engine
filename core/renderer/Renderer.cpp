@@ -25,6 +25,7 @@
 #include "../light/DirectionalLight.h"
 #include "../light/PointLight.h"
 #include "../light/Spotlight.h"
+#include "../model/Model.h"
 #include "../shader/Shader.h"
 #include "../texture/Texture.h"
 #include "../managers/NodeManager.h"
@@ -448,19 +449,94 @@ void Renderer::RenderScene()
 	m_assimpModelShader->SetInt("nPointLights", pointLightIdx);
 	m_assimpModelShader->SetInt("nSpotlights", spotlightIdx);
 
-	// iterate over the vector of models and render them
-	auto& models = nodeManager->GetNodes("MODEL");
-	for (const auto& node : models)
+	// flatten scene graph into a single list of drawable nodes
+	std::vector<std::shared_ptr<Node>> drawableNodes;
+	auto& allNodes = nodeManager->GetNodes(NodeType::MODEL);
+
+	// define a recursive lambda function to traverse the scene graph and collect drawable nodes,
+	// which are nodes that are visible and not pure containers (i.e., they have geometry to render)
+	std::function<void(const std::shared_ptr<Node>&)> collectDrawableNodes
+		= [&](const std::shared_ptr<Node>& node)
 	{
-		// dynamically cast the node to a Node object
-		auto model = std::dynamic_pointer_cast<Node>(node);
-		if (!model) continue; // if the cast fails, skip to the next node
-		if (!model->IsVisible()) continue; // skip invisible models
+		if (!node) return; // if the node is null, return
+		if (!node->IsVisible()) return; // skip invisible nodes
 
-		if (model->GetParent()) continue; // skip child models (they are rendered by their parent composite)
+		// if the node is not a pure container, add it to the list of drawables
+		if (node->GetNodeType() != NodeType::COMPOSITE_MODEL)
+			drawableNodes.push_back(node);
 
-		RenderModel(model); // render the node
+		// recursively collect drawable nodes from the children of the current node
+		for (const auto& child : node->GetChildren())
+			collectDrawableNodes(child);
+	};
+
+	// start collecting drawable nodes from all root nodes in the scene graph
+	for (const auto& node : allNodes)
+	{
+		if (node && !node->GetParent())
+			collectDrawableNodes(node);
 	}
+
+	// separate all drawable nodes into opaque and transparent lists for correct rendering order
+	std::vector<std::shared_ptr<Node>> opaqueNodes, transparentNodes;
+	opaqueNodes.reserve(drawableNodes.size());
+	transparentNodes.reserve(drawableNodes.size());
+	for (const auto& node : drawableNodes)
+	{
+		if (node->GetAlbedo().a < 1.0f) // if the node has alpha less than 1, consider it transparent
+			transparentNodes.push_back(node);
+		else // otherwise, consider it opaque
+			opaqueNodes.push_back(node);
+	}
+
+	// sort transparent nodes back-to-front based on their distance to the camera for correct blending
+	const auto& cameraPos = camera->GetPosition();
+	std::sort(transparentNodes.begin(), transparentNodes.end(),
+			  [&](const std::shared_ptr<Node>& a, const std::shared_ptr<Node>& b)
+	{
+		// compute the distance from the camera to each node using their world positions
+		float distA = glm::length(cameraPos - a->GetWorldPosition());
+		float distB = glm::length(cameraPos - b->GetWorldPosition());
+		return distA > distB; // sort in descending order (back-to-front)
+	});
+
+	// opaque pass: render all opaque geometry first to ensure correct depth testing and early z-culling
+	for (const auto& node : opaqueNodes) RenderNode(node);
+
+	// skybox pass: render the skybox after opaque geometry, but before transparent geometry rendering
+	// (this ensures the skybox is rendered behind all opaque geometry, but does not interfere with
+	// transparent geometry rendering, which may require depth sorting and blending with the skybox)
+	auto& skyboxTexture = sceneManager->GetSkybox();
+	if (skyboxTexture)
+	{ // if a skybox texture is set, proceed to render the skybox
+		// perform (or retry) HDR to cubemap conversion if needed
+		ConvertHDRToCubemapIfNeeded();
+
+		skyboxTexture = sceneManager->GetSkybox(); // refresh pointer (conversion replaces the texture)
+
+		// render the skybox only if the texture is a cubemap now
+		if (skyboxTexture && skyboxTexture->GetTextureType() == TextureType::CUBEMAP)
+		{ // if the skybox texture is now a cubemap, render the skybox
+			if (!m_skyboxVAO) InitSkyboxCube(); // initialize the skybox cube if not done yet
+			RenderSkyboxCube(skyboxTexture, view, projection);
+		}
+		else if (skyboxTexture && skyboxTexture->GetTextureType() == TextureType::HDR_EQUIRECTANGULAR)
+		{ // if the skybox is still HDR, print a warning message but continue rendering
+			// only warn occasionally (avoid spamming every frame)
+			static uint32_t warnCounter = 0;
+			if ((warnCounter++ % 240) == 0)
+				std::cerr << "[WARNING::RENDERER::RenderScene] "
+				"Skybox still HDR (conversion pending)" << std::endl;
+		}
+	}
+
+	// transparent pass: render all transparent nodes after opaque geometry and skybox
+	// to ensure correct blending with the background and other geometry, and to allow depth testing 
+	// against the opaque geometry and skybox (but not against other transparent nodes, 
+	// which is why they are sorted back-to-front)
+	glDepthMask(GL_FALSE); // disable depth writing for transparent pass to allow blending with background
+	for (const auto& node : transparentNodes) RenderNode(node);
+	glDepthMask(GL_TRUE); // re-enable depth writing after transparent pass
 
 	// disable face culling for light gizmos to ensure they are always visible
 	glDisable(GL_CULL_FACE);
@@ -514,39 +590,12 @@ void Renderer::RenderScene()
 
 		}
 	}
+
 	// reset rendering mode to fill after rendering the light gizmos
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
 	// re-enable face culling after rendering the light gizmos
 	glEnable(GL_CULL_FACE);
-
-	// create and render the skybox last if a skybox texture is set
-	// (rendering it last leverages the early depth test optimization,
-	// since the skybox is rendered at the farthest depth, so it will
-	// fail the depth test for all other scene objects, avoiding unnecessary fragment shader invocations)
-	auto& skyboxTexture = sceneManager->GetSkybox();
-	if (skyboxTexture)
-	{ // if a skybox texture is set, proceed to render the skybox
-		// perform (or retry) HDR to cubemap conversion if needed
-		ConvertHDRToCubemapIfNeeded();
-
-		skyboxTexture = sceneManager->GetSkybox(); // refresh pointer (conversion replaces the texture)
-
-		// render the skybox only if the texture is a cubemap now
-		if (skyboxTexture && skyboxTexture->GetTextureType() == TextureType::CUBEMAP)
-		{ // if the skybox texture is now a cubemap, render the skybox
-			if (!m_skyboxVAO) InitSkyboxCube(); // initialize the skybox cube if not done yet
-			RenderSkyboxCube(skyboxTexture, view, projection);
-		}
-		else if (skyboxTexture && skyboxTexture->GetTextureType() == TextureType::HDR_EQUIRECTANGULAR)
-		{ // if the skybox is still HDR, print a warning message but continue rendering
-			// only warn occasionally (avoid spamming every frame)
-			static uint32_t warnCounter = 0;
-			if ((warnCounter++ % 240) == 0)
-				std::cerr << "[WARNING::RENDERER::RenderScene] "
-				"Skybox still HDR (conversion pending)" << std::endl;
-		}
-	}
 
 	// after the scene is rendered offscreen, composite to the default framebuffer
 	CompositeToScreen();
@@ -584,94 +633,100 @@ void Renderer::UnregisterModelForDynamicEnvMapCapture(std::uint32_t modelId)
 
 // Protected Methods
 // -----------------
-void Renderer::RenderModel(const std::shared_ptr<Node>& model)
+void Renderer::RenderNode(const std::shared_ptr<Node>& node)
 {
-	if (!model)
-	{ // if the model is null, print an error message and return
-		std::cerr << "[ERROR::RENDERER::RenderModel] Node is null" << std::endl;
+	if (!node)
+	{ // if the node is null, print an error message and return
+		std::cerr << "[ERROR::RENDERER::RenderNode] Node is null" << std::endl;
 		return;
 	}
 
-	if (!model->IsVisible()) return; // if the model is not visible, skip rendering
+	if (!node->IsVisible()) return; // if the node is not visible, skip rendering
 
-	// auxiliary shared pointer to the shader program used for rendering the model and its children (if any)
+	// auxiliary shared pointer to the shader program used for rendering the node and its children (if any)
 	std::shared_ptr<Shader> renderShader;
 
 	// switch based on the gizmo type to:
 	// - set the current shader program accordingly for rendering
-	// - set the appropiate properties for the model for rendering
+	// - set the appropiate properties for the node for rendering
 	// - set the polygon mode (fill or line) for rendering
-	switch (model->GetGizmoType())
+	switch (node->GetGizmoType())
 	{
-		case GizmoType::NONE: // if the model is not a gizmo
+		case GizmoType::NONE: // if the node is not a gizmo
 		{
-			switch (model->GetNodeType()) // use the appropriate shader based on the model type
+			switch (node->GetNodeType()) // use the appropriate shader based on the node type
 			{
-				case NodeType::COMPOSITE_MODEL: // basic composite models do not have their own meshes
-				{
-					// assign a default shader for composite models without meshes
-					renderShader = m_singleAlbedoShader;
-					renderShader->Use(); // activate the current shader program
+				// for container-only nodes (COMPOSITE_MODEL), we don't need to set a shader 
+				// as they don't have their own meshes to render
 
-					// set a default albedo color (e.g., gray) for composite models without meshes
-					renderShader->SetVec3("albedo", glm::vec3(0.25f, 0.25f, 0.25f));
-				}
-				break;
-				case NodeType::COMPOSITE_ASSIMP_MODEL: // composite Assimp models have their own meshes
+				// COMPOSITE_ASSIMP_MODEL nodes have their own meshes, 
+				// so they are handled as regular ASSIMP_MODEL nodes here
+				case NodeType::COMPOSITE_ASSIMP_MODEL:
 				case NodeType::ASSIMP_MODEL:
 				{
-					renderShader = m_assimpModelShader; // use the Assimp model shader
-					renderShader->Use(); // activate the current shader program
+					renderShader = m_assimpModelShader;
+					renderShader->Use();
 				}
 				break;
-				case NodeType::COMPOSITE_SHAPE_MODEL: // composite shape models have their own meshes
+				// COMPOSITE_SHAPE_MODEL nodes have their own meshes, 
+				// so they are handled as regular SHAPE_MODEL nodes here
+				case NodeType::COMPOSITE_SHAPE_MODEL:
 				case NodeType::SHAPE_MODEL:
 				{
-					renderShader = m_shapeModelShader; // use the shape model shader
-					renderShader->Use(); // activate the current shader program
-					// set the color of the shape based on the model's albedo (RGBA)
-					renderShader->SetVec4("material.albedo", model->GetAlbedo());
+					renderShader = m_shapeModelShader;
+					renderShader->Use();
+					// set the color of the shape based on the node's albedo (RGBA)
+					renderShader->SetVec4("material.albedo", node->GetAlbedo());
 				}
 				break;
 				default:
-					// if the model type is unknown, print an error message and return
-					std::cerr << "[ERROR::RENDERER::RenderModel] Unknown model type for " << model->GetName()
+					// if the node type is unknown, print an error message and return
+					std::cerr << "[ERROR::RENDERER::RenderNode] Unknown node type for " << node->GetName()
 						<< std::endl;
 					return;
 			}
 
-			// set the polygon mode to fill for regular models
+			// set the polygon mode to fill for regular nodes
 			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
 		}
 		break;
-		case GizmoType::DIRECTIONAL_LIGHT: // if the model is a directional light gizmo
-		case GizmoType::POINT_LIGHT: // if the model is a point light gizmo
-		case GizmoType::SPOTLIGHT: // if the model is a spotlight gizmo
+		// gizmos for light sources (DIRECTIONAL_LIGHT, POINT_LIGHT, SPOTLIGHT) 
+		// are all rendered with the single albedo shader and in wireframe mode
+		case GizmoType::DIRECTIONAL_LIGHT:
+		case GizmoType::POINT_LIGHT:
+		case GizmoType::SPOTLIGHT:
 		{
-			renderShader = m_singleAlbedoShader; // use the single albedo shader
-			renderShader->Use(); // activate the current shader program
-			// set the color of the gizmo shape based on the model's albedo
-			renderShader->SetVec3("albedo", model->GetAlbedo());
+			renderShader = m_singleAlbedoShader;
+			renderShader->Use();
+			// set the color of the gizmo shape based on the node's albedo
+			renderShader->SetVec3("albedo", node->GetAlbedo());
 
 			// set the polygon mode to line for light gizmos
 			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 		}
 		break;
 		default: // if the gizmo type is unknown, print an error message and return
-			std::cerr << "[ERROR::RENDERER::RenderModel] Unknown gizmo type for model: " << model->GetName()
+			std::cerr << "[ERROR::RENDERER::RenderNode] Unknown gizmo type for node: " << node->GetName()
 				<< std::endl;
 			return;
 	}
 
 	if (renderShader)
-	{ // if a valid shader program is set, proceed to render the model and its children (if any)
-		// set the model matrix for the current model (hierarchical world transformation)
-		renderShader->SetMat4("model", model->GetWorldModelMatrix());
-		// draw the model using its Draw method, passing the current shader program
-		model->Draw(*renderShader);
-		// recursively render each child model
-		for (const auto& childModel : model->GetChildren()) RenderModel(childModel);
+	{ // if the node has a valid shader to render with, finish setting up the shader and render the node
+		// handle two-sided nodes by disabling face culling temporarily if needed
+		const GLboolean cullWasEnabled = glIsEnabled(GL_CULL_FACE);
+		const bool needDisableCulling = node->IsTwoSided();
+		if (needDisableCulling && cullWasEnabled) glDisable(GL_CULL_FACE);
+
+		// set the node matrix for the current node (hierarchical world transformation)
+		renderShader->SetMat4("model", node->GetWorldModelMatrix());
+
+		// draw the node using its Draw method, passing the current shader program
+		node->Draw(*renderShader);
+
+		// re-enable face culling if it was previously enabled
+		if (needDisableCulling && cullWasEnabled) glEnable(GL_CULL_FACE);
 	}
 }
 

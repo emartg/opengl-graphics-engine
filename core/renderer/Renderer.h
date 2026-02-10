@@ -160,8 +160,9 @@ protected:
 
 	// Protected Methods
 	// -----------------
-	// Renders nodes (leaf or composite - composite models will render their children recursively)
-	void RenderModel(const std::shared_ptr<Node>& model);
+	// Renders a single node (i.e., only its own meshes if it has any, without rendering its children) 
+	// with the appropriate shader program
+	void RenderNode(const std::shared_ptr<Node>& node);
 
 	// Ensures the offscreen render pass is created with the current window size
 	void EnsureOffscreenRenderPass();
