@@ -7,10 +7,6 @@
 
 #include "Shape.h"
 
-// Static Private Attributes
-// -------------------------
-GLuint Shape::nShapes{}; // initialize the number of shapes in the scene to 0
-
 // Constructors
 // ------------
 Shape::Shape(const std::string& name,
@@ -23,7 +19,6 @@ Shape::Shape(const std::string& name,
 	vertices{ processVertexData(vertices) }, indices{ indices }
 {
 	createMesh();
-	nShapes++;
 }
 
 Shape::Shape(const std::string& name,
@@ -37,7 +32,6 @@ Shape::Shape(const std::string& name,
 	vertices{ processVertexData(positions, normals, texCoords) }, indices{ indices }
 {
 	createMesh();
-	nShapes++;
 }
 
 Shape::Shape(const std::string& name,
@@ -55,7 +49,6 @@ Shape::Shape(const std::string& name,
 	this->indices = indexData;
 
 	createMesh();
-	nShapes++;
 }
 
 Shape::Shape(const std::string& name,
@@ -76,7 +69,6 @@ Shape::Shape(const std::string& name,
 	this->indices = indexData;
 
 	createMesh();
-	nShapes++;
 }
 
 // Public Methods

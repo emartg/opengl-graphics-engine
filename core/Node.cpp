@@ -16,7 +16,6 @@
 // Static Private Attributes
 // -------------------------
 std::uint32_t Node::nodesCount{}; // initialize the total number of nodes created to 0
-std::uint32_t Node::nNodes{}; // initialize the number of nodes in the scene to 0
 
 // Public Methods
 // --------------

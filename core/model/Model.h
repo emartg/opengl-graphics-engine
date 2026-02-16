@@ -50,13 +50,4 @@ public:
 	// Draws only its own meshes with the specified shader (binds the textures before drawing)
 	void Draw(const Shader& shader) const override;
 
-	// Static Public Methods
-	// ---------------------
-	static GLuint GetNModels() { return nModels; }
-
-protected:
-	// Static Protected Attributes
-	// ---------------------------
-	static GLuint nModels; // number of models in the scene
-
 };

@@ -77,7 +77,7 @@ GLuint Texture::LoadTextureFromFile(const GLchar* path)
 	unsigned char* data = stbi_load(filepath.c_str(), &width, &height, &nComponents, 0);
 	if (data)
 	{ // if the image loaded successfully, determine the format and upload it to OpenGL
-		GLenum format;
+		GLenum format = GL_RGB; // default format
 		if (nComponents == 1)
 			format = GL_RED;
 		else if (nComponents == 3)
@@ -133,7 +133,7 @@ GLuint Texture::LoadHDRTextureFromFile(const GLchar* path)
 	float* data = stbi_loadf(filepath.c_str(), &width, &height, &nComponents, 0);
 	if (data)
 	{ // if the image loaded successfully, determine the format and upload it to OpenGL
-		GLenum format;
+		GLenum format = GL_RGB; // default format
 		if (nComponents == 1)
 			format = GL_RED;
 		else if (nComponents == 3)
@@ -200,7 +200,7 @@ GLuint Texture::LoadCubemapFromFiles(const std::vector<std::string>& faces)
 		data = stbi_load(faces[i].c_str(), &width, &height, &nComponents, 0);
 		if (data)
 		{ // if the face loaded successfully, determine the format and upload it to OpenGL
-			GLenum format;
+			GLenum format = GL_RGB; // default format
 			if (nComponents == 1)
 				format = GL_RED;
 			else if (nComponents == 3)

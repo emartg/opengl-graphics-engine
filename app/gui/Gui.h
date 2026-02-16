@@ -13,6 +13,8 @@
 #include <unordered_set>
 
 #include <glm/glm.hpp>
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/matrix_decompose.hpp> // for glm::decompose
 #define GLFW_INCLUDE_NONE // prevent GLFW from including OpenGL headers
 #include <GLFW/glfw3.h>
 
@@ -112,7 +114,7 @@ private:
 	static constexpr float FILE_DIALOG_POPUP_WIDTH{ 1000.0f }, FILE_DIALOG_POPUP_HEIGHT{ 600.0f };
 	static constexpr float ERROR_POPUP_WIDTH{ 400.0f }, ERROR_POPUP_HEIGHT{ 150.0f };
 	// default values for ImGui controls
-	static constexpr float MIN_POSITION_VALUE{ -15.0f }, MAX_POSITION_VALUE{ 15.0f };
+	static constexpr float MIN_POSITION_VALUE{ -100.0f }, MAX_POSITION_VALUE{ 100.0f };
 	static constexpr float MIN_ROTATION_VALUE{ -360.0f }, MAX_ROTATION_VALUE{ 360.0f };
 	static constexpr float MIN_DIRECTION_VALUE{ -1.0f }, MAX_DIRECTION_VALUE{ 1.0f };
 	static constexpr float MIN_SCALE_VALUE{ 0.001f }, MAX_SCALE_VALUE{ 100.0f };
@@ -144,10 +146,10 @@ private:
 	// Resets all GUI windows to their default layout for the current display size
 	void resetGUILayout();
 
-	// Draws the Node Node Information Window with details about the selected node
-	void drawNodeInformationWindow();
 	// Draws the Scene Graph Window with a hierarchical tree view of all nodes
 	void drawSceneGraphWindow();
+	// Draws the Node Node Information Window with details about the selected node
+	void drawNodeInformationWindow();
 	// Draws the Properties Window with controls for the objects in the scene
 	void drawPropertiesWindow();
 	// Draws the Creation Window with buttons to add new objects to the scene

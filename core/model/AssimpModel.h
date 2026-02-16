@@ -37,16 +37,12 @@ public:
 
 	// Destructor
 	// ----------
-	~AssimpModel() { nAssimpModels--; } // decrements the number of Assimp models
-
-	// Static Public Methods
-	// ---------------------
-	static GLuint GetNAssimpModels() { return nAssimpModels; }
+	~AssimpModel() = default;
 
 private:
-	// Static Private Attributes
-	// -------------------------
-	static GLuint nAssimpModels; // number of Assimp models in the scene
+	// Private Attributes
+	// ------------------
+	std::string directory; // directory path of the model file for loading textures
 
 	// Private Methods
 	// ---------------

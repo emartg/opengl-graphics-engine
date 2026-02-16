@@ -186,16 +186,6 @@ void NodeManager::RemoveNodeById(std::uint32_t id)
 		<< std::endl;
 }
 
-const GLuint NodeManager::GetNNodes() const { return Node::GetNNodes(); }
-const GLuint NodeManager::GetNCameras() const { return Camera::GetNCameras(); }
-const GLuint NodeManager::GetNLights() const { return Light::GetNLights(); }
-const GLuint NodeManager::GetNPointLights() const { return PointLight::GetNPointLights(); }
-const GLuint NodeManager::GetNSpotlights() const { return Spotlight::GetNSpotlights(); }
-const GLuint NodeManager::GetNDirectionalLights() const { return DirectionalLight::GetNDirectionalLights(); }
-const GLuint NodeManager::GetNModels() const { return Model::GetNModels(); }
-const GLuint NodeManager::GetNAssimpModels() const { return AssimpModel::GetNAssimpModels(); }
-const GLuint NodeManager::GetNShapes() const { return Shape::GetNShapes(); }
-
 // Private Methods
 // ---------------
 std::string NodeManager::nodeTypeToString(NodeType type) const

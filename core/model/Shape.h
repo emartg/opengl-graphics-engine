@@ -67,22 +67,14 @@ public:
 
 	// Destructor
 	// ----------
-	~Shape() { nShapes--; }
+	~Shape() = default;
 
 	// Public Methods
 	// --------------
 	// Adds texture data to the shape
 	void AddTextureData(const std::vector<std::shared_ptr<Texture>>& textures);
 
-	// Static Public Methods
-	// ---------------------
-	static GLuint GetNShapes() { return nShapes; }
-
 private:
-	// Static Private Attributes
-	// -------------------------
-	static GLuint nShapes; // number of shapes in the scene
-
 	// Private Attributes
 	// ------------------
 	std::vector<Vertex> vertices; // vertex, normal and texture coordinate data

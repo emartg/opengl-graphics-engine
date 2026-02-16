@@ -37,7 +37,7 @@ public:
 
 	// Destructor
 	// ----------
-	~Camera() { nCameras--; } // decrement the number of cameras
+	~Camera() = default;
 
 	// Public Methods
 	// --------------
@@ -91,15 +91,7 @@ public:
 	// Resets the camera to its default values
 	void Reset();
 
-	// Public Static Methods
-	// ---------------------
-	static GLuint GetNCameras() { return nCameras; }
-
 private:
-	// Private Static Attributes
-	// -------------------------
-	static GLuint nCameras; // number of cameras in the scene
-
 	// Private Attributes
 	// ------------------
 	// camera attributes

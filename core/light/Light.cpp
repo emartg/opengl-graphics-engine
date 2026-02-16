@@ -8,21 +8,16 @@
 
 #include "../texture/Texture.h"
 
-// Static Protected Attributes
-// ---------------------------
-GLuint Light::nLights{}; // initialize the number of lights in the scene to 0
-
 // Constructors
 // ------------
 Light::Light(const std::string& name,
 			 const glm::vec3 ambient, const glm::vec3 diffuse, const glm::vec3 specular,
 			 const std::shared_ptr<Node> gizmo, const LightType lightType)
-	: Node(name, NodeType::LIGHT), // set the node type to LIGHT
+	: Node(name, NodeType::LIGHT, ALBEDO, POSITION, ROTATION, SCALE, FORWARD, FORWARD,
+		   GizmoType::NONE, false, false),
 	ambient{ ambient }, diffuse{ diffuse }, specular{ specular },
 	lightType{ lightType }
-{
-	nLights++;
-}
+{}
 
 // Public Methods
 // --------------

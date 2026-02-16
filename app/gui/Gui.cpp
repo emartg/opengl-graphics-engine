@@ -411,14 +411,20 @@ void GUI::drawSceneGraphWindow()
 		ImGui::Begin("SCENE GRAPH", nullptr, ImGuiWindowFlags_NoFocusOnAppearing);
 		ImGui::PopFont();
 
+		// display instruction text
+		ImGui::TextWrapped("Left click: Select node\n"
+						   "Left click empty space: Clear selection\n"
+						   "Drag models to group/ungroup\n"
+						   "Drop on empty space to make a root node\n"
+						   "Del/Supr: Delete selected node");
+		ImGui::Separator();
+
+		// create a child window to hold the tree. this provides a consistent background
+		// for the drop target and allows for independent scrolling.
+		ImGui::BeginChild("SceneGraphTree", ImVec2(0, 0), true, ImGuiWindowFlags_NoMove);
+
 		// get the node manager from the Core instance
 		auto& nodeManager = Core::GetInstance()->GetNodeManager();
-
-		// display instruction text
-		ImGui::TextWrapped("Left click on a node: select node\n"
-						   "Left click on empty space: clear selection\n"
-						   "Del / Supr: delete selected node");
-		ImGui::Separator();
 
 		// get all root nodes (nodes without parents)
 		std::vector<std::shared_ptr<Node>> rootNodes;
@@ -443,15 +449,55 @@ void GUI::drawSceneGraphWindow()
 			if (rootNode) // ensure the node is valid
 				drawNodeTreeRecursive(rootNode);
 
-		// clear selection when clicking on empty space in the Scene Graph window body
+		// create an invisible "drop zone" that fills the remaining space in the child window
+		// (this acts as a visual drop target - with a border when hovered - for making nodes root nodes)
+		ImVec2 availableSpace = ImGui::GetContentRegionAvail();
+		// ensure minimum height so there's always a droppable area
+		float dropZoneHeight = std::max(availableSpace.y, 40.0f);
+		// use an InvisibleButton to create an interactable area that fills the remaining space
+		ImGui::InvisibleButton("##RootDropZone", ImVec2(availableSpace.x, dropZoneHeight));
+
+		// make this invisible button a drop target for unparenting nodes
+		if (ImGui::BeginDragDropTarget())
+		{
+			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("SCENE_GRAPH_NODE"))
+			{
+				std::uint32_t draggedNodeId = *(const std::uint32_t*)payload->Data;
+				auto draggedNode = nodeManager->GetNodeById(draggedNodeId);
+
+				// only process if the dragged node exists, is draggable, and has a parent
+				if (draggedNode && draggedNode->IsDraggable() && draggedNode->GetParent())
+				{
+					// preserve the node's world transform before un-parenting
+					const glm::mat4 worldTransform = draggedNode->GetWorldModelMatrix();
+
+					// remove from old parent. this sets the node's parent to nullptr
+					draggedNode->GetParent()->RemoveChild(draggedNode);
+
+					// decompose the world matrix and set it as the new local transform
+					glm::vec3 scale, translation, skew;
+					glm::quat rotation;
+					glm::vec4 perspective;
+					glm::decompose(worldTransform, scale, rotation, translation, skew, perspective);
+
+					draggedNode->SetPosition(translation);
+					draggedNode->SetRotation(rotation);
+					draggedNode->SetScale(scale);
+
+					std::cout << "[INFO::GUI] Node '" << draggedNode->GetName()
+						<< "' (ID: " << draggedNodeId << ") is now a root node" << std::endl;
+				}
+			}
+
+			ImGui::EndDragDropTarget(); // end the drop target for unparenting nodes
+		}
+
+		// clear selection when clicking on empty space in the child window
 		// (not on items, not on scrollbars/title bar)
-		if (ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows) &&
-			ImGui::IsMouseClicked(ImGuiMouseButton_Left) &&
-			!ImGui::IsAnyItemHovered())
+		if (ImGui::IsWindowHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Left) && !ImGui::IsAnyItemHovered())
 		{
 			// if the window is hovered and left mouse button is clicked on empty space,
 			// clear the current selection and print a message to the console
-			auto& nodeManager = Core::GetInstance()->GetNodeManager();
 			auto& selectionManager = Core::GetInstance()->GetSelectionManager();
 
 			// get the selected node id to check if a node was selected
@@ -461,15 +507,21 @@ void GUI::drawSceneGraphWindow()
 				// get the name of the node that is about to be deselected (for logging purposes)
 				std::string previousSelectedName;
 				auto previousSelectedNode = selectionManager->GetSelectedNode(nodeManager.get());
-				previousSelectedName = previousSelectedNode->GetName();
+				if (previousSelectedNode)
+					previousSelectedName = previousSelectedNode->GetName();
 
 				// clear the selection and print info message with the deselected node's name and id
 				selectionManager->ClearSelection();
 
-				std::cout << "[INFO::GUI::drawSceneGraphWindow] Deselected node "
-					<< previousSelectedName << " (ID " << previousSelectedId << ")" << std::endl;
+				if (!previousSelectedName.empty())
+				{
+					std::cout << "[INFO::GUI::drawSceneGraphWindow] Deselected node '"
+						<< previousSelectedName << "' (ID " << previousSelectedId << ")" << std::endl;
+				}
 			}
 		}
+
+		ImGui::EndChild(); // end the child window for the tree
 
 		ImGui::End(); // end the Scene Graph window
 
@@ -1208,6 +1260,90 @@ void GUI::drawNodeTreeRecursive(const std::shared_ptr<Node>& node)
 	// draw the tree node and get whether it is open
 	bool nodeOpen = ImGui::TreeNodeEx(nodeLabel.c_str(), flags);
 
+	// DRAG SOURCE: only make draggable nodes a drag source
+	if (node->IsDraggable() && ImGui::BeginDragDropSource())
+	{
+		// set payload to carry the node id
+		std::uint32_t nodeId = node->GetId();
+		ImGui::SetDragDropPayload("SCENE_GRAPH_NODE", &nodeId, sizeof(nodeId));
+
+		// display a preview of the node being dragged
+		ImGui::Text("Moving %s", node->GetName().c_str());
+
+		ImGui::EndDragDropSource(); // end the drag source
+	}
+
+	// DROP TARGET: only make nodes that can be parents a drop target
+	if (node->CanBeParent() && ImGui::BeginDragDropTarget())
+	{
+		if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("SCENE_GRAPH_NODE"))
+		{
+			// get the node manager from the Core instance to resolve node ids to node pointers
+			auto& nodeManager = Core::GetInstance()->GetNodeManager();
+			std::uint32_t draggedNodeId = *(const std::uint32_t*)payload->Data;
+			auto draggedNode = nodeManager->GetNodeById(draggedNodeId);
+			auto targetNode = node; // the current node in the recursion is the target
+
+			// perform validation before re-parenting
+			bool isValidOperation = true;
+			if (!draggedNode || !targetNode || draggedNode == targetNode)
+			{
+				isValidOperation = false; // cannot drop on self or if nodes are invalid
+			}
+			else if (!targetNode->CanBeParent())
+			{
+				std::cerr << "[WARNING::GUI] Invalid drop: Target node '" << targetNode->GetName()
+					<< "' cannot be a parent" << std::endl;
+				isValidOperation = false;
+			}
+			else
+			{
+				// cycle check: a node cannot be parented to its own descendant
+				for (auto p = targetNode->GetParent(); p; p = p->GetParent())
+				{
+					if (p == draggedNode)
+					{ // if any ancestor of the target node is the dragged node, it's an invalid operation
+						std::cerr << "[WARNING::GUI] Invalid drop: "
+							" Cannot parent a node to its own descendant" << std::endl;
+						isValidOperation = false;
+						break;
+					}
+				}
+			}
+
+			// if the operation is valid, proceed with re-parenting and transform preservation
+			if (isValidOperation)
+			{
+				// preserve the world transform before re-parenting
+				const glm::mat4 worldTransform = draggedNode->GetWorldModelMatrix();
+
+				// re-parent the node
+				if (auto oldParent = draggedNode->GetParent()) oldParent->RemoveChild(draggedNode);
+				targetNode->AddChild(draggedNode);
+
+				// calculate the new local transform to maintain the original world transform
+				const glm::mat4 parentWorld = targetNode->GetWorldModelMatrix();
+				const glm::mat4 parentWorldInverse = glm::inverse(parentWorld);
+				const glm::mat4 newLocalTransform = parentWorldInverse * worldTransform;
+
+				// decompose the new local matrix and apply it to the dragged node
+				glm::vec3 scale, translation, skew;
+				glm::quat rotation;
+				glm::vec4 perspective;
+				glm::decompose(newLocalTransform, scale, rotation, translation, skew, perspective);
+
+				draggedNode->SetPosition(translation);
+				draggedNode->SetRotation(rotation);
+				draggedNode->SetScale(scale);
+
+				std::cout << "[INFO::GUI] Reparented node '" << draggedNode->GetName()
+					<< "' to '" << targetNode->GetName() << "'" << std::endl;
+			}
+		}
+
+		ImGui::EndDragDropTarget(); // end the drop target
+	}
+
 	// consume the pending open request for this node if it exists after drawing the node once
 	if (m_sceneGraphPendingOpenIds.contains(node->GetId()))
 		m_sceneGraphPendingOpenIds.erase(node->GetId());
@@ -1253,14 +1389,16 @@ void GUI::handleNodeSelection(std::uint32_t nodeId)
 			nodeId = parent->GetId();
 			node = parent;
 
-			std::cout << "[INFO::GUI::handleNodeSelection] Resolved gizmo model ID "
-				<< gizmoId << " to owning parent light ID " << nodeId << std::endl;
+			std::cout << "[INFO::GUI::handleNodeSelection] Resolved gizmo model '"
+				<< node->GetName() << "' (ID " << gizmoId << ") to its parent light '"
+				<< node->GetName() << "' (ID " << nodeId << ")" << std::endl;
 		}
 		else
 		{
 			// otherwise, print a warning and return without changing selection
-			std::cerr << "[WARNING::GUI::handleNodeSelection] Could not resolve gizmo model ID "
-				<< gizmoId << " to an owning parent light" << std::endl;
+			std::cerr << "[WARNING::GUI::handleNodeSelection] Could not resolve gizmo model '"
+				<< node->GetName() << "' (ID " << gizmoId << ") to a parent light. Selection will not change"
+				<< std::endl;
 			return;
 		}
 	}
@@ -1271,8 +1409,8 @@ void GUI::handleNodeSelection(std::uint32_t nodeId)
 	// set the selected node in the selection manager and log the selection
 	selectionManager->SetSelectedNodeId(nodeId);
 
-	std::cout << "[INFO::GUI::handleNodeSelection] Selected node "
-		<< (node ? node->GetName() : "Unknown") << " (ID " << nodeId << ")" << std::endl;
+	std::cout << "[INFO::GUI::handleNodeSelection] Selected node '"
+		<< (node ? node->GetName() : "Unknown") << "' (ID " << nodeId << ")" << std::endl;
 }
 
 void GUI::updateSceneGraphAutoOpenSet()
@@ -1352,12 +1490,12 @@ void GUI::drawLightControls(Light* light)
 		}
 		break;
 		case LightType::UNDEFINED: // if the Light is of an undefined type
-			std::cerr << "[ERROR::GUI::drawLightControls] UNDEFINED light type for light: "
-				<< light->GetName() << std::endl;
+			std::cerr << "[ERROR::GUI::drawLightControls] UNDEFINED light type for light '"
+				<< light->GetName() << "'" << std::endl;
 			return;
 		default: // if the Light is of an unknown type
-			std::cerr << "[ERROR::GUI::drawLightControls] Unknown light type for light: "
-				<< light->GetName() << std::endl;
+			std::cerr << "[ERROR::GUI::drawLightControls] Unknown light type for light '"
+				<< light->GetName() << "'" << std::endl;
 			return;
 	}
 }
@@ -1403,7 +1541,7 @@ void GUI::drawDirectionalLightControls(DirectionalLight* directionalLight)
 		}
 	}
 
-	ImGui::PopID(); // use PopID to end the unique ID scope
+	ImGui::PopID(); // use PopID to end the unique ID scope for the directional light
 }
 
 void GUI::drawPointLightControls(PointLight* pointLight)
@@ -1429,7 +1567,7 @@ void GUI::drawPointLightControls(PointLight* pointLight)
 		pointLight->SetPosition(pos); // set the new position of the point light
 	}
 
-	ImGui::PopID(); // use PopID to end the unique ID scope
+	ImGui::PopID(); // use PopID to end the unique ID scope for the point light
 }
 
 void GUI::drawSpotlightControls(Spotlight* spotlight)
@@ -1496,7 +1634,7 @@ void GUI::drawSpotlightControls(Spotlight* spotlight)
 		spotlight->SetOuterCutOff(glm::cos(glm::radians(outerCutOff)));
 	}
 
-	ImGui::PopID(); // use PopID to end the unique ID scope
+	ImGui::PopID(); // use PopID to end the unique ID scope for the spotlight
 }
 
 void GUI::drawModelControls(Node* model)
@@ -1548,7 +1686,7 @@ void GUI::drawModelControls(Node* model)
 		model->SetScale(scale); // set the new scale of the model
 	}
 
-	ImGui::PopID(); // use PopID to end the unique ID scope
+	ImGui::PopID(); // use PopID to end the unique ID scope for the model
 }
 
 
@@ -1658,8 +1796,8 @@ void GUI::drawCreatePointLightPopup()
 				glm::vec3(0.0f), MIN_DISTANCE_TO_ORIGIN, MAX_DISTANCE_TO_ORIGIN);
 		}
 
-		ImGui::SameLine();
 		// display a button to add the new point light
+		ImGui::SameLine();
 		if (ImGui::Button("Create", ImVec2(POPUP_BUTTON_WIDTH, 0.0f)))
 		{ // if the Create button is clicked
 			// create a new point light with a placeholder name and the specified properties
@@ -1943,9 +2081,6 @@ void GUI::drawImportModelPopup()
 
 			// normalize slashes to forward slashes for cross-platform texture loading
 			std::replace(filePathName.begin(), filePathName.end(), '\\', '/');
-
-			// get the current number of models in the scene
-			std::string nModels = std::to_string(nodeManager->GetNModels());
 
 			// create a new model with the file name as a placeholder name and the selected file path
 			auto assimpModel = std::make_shared<AssimpModel>(fileName, filePathName);
@@ -2477,7 +2612,7 @@ void GUI::drawRemoveNodeButton(Node* node, std::vector<uint32_t>& nodesToRemoveI
 	if (ImGui::Button(buttonLabel.c_str(), ImVec2(buttonWidth, buttonHeight)))
 	{ // if the button is clicked
 		nodesToRemoveIds.push_back(node->GetId()); // add the node id to the list of nodes to remove
-		std::cout << "[INFO::GUI::drawRemoveNodeButton] "
-			<< node->GetName() << " with ID " << node->GetId() << " marked for removal" << std::endl;
+		std::cout << "[INFO::GUI::drawRemoveNodeButton] Node '"
+			<< node->GetName() << "' (ID " << node->GetId() << ") marked for removal" << std::endl;
 	}
 }

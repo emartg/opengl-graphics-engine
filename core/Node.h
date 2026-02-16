@@ -54,19 +54,19 @@ public:
 		 const glm::vec4 albedo = ALBEDO, const glm::vec3 position = POSITION,
 		 const glm::quat rotation = ROTATION, const glm::vec3 scale = SCALE,
 		 const glm::vec3 forward = FORWARD, const glm::vec3 meshForward = FORWARD,
-		 const GizmoType gizmoType = GizmoType::NONE)
+		 const GizmoType gizmoType = GizmoType::NONE,
+		 bool isDraggable = true, bool canBeParent = true)
 		: id{ ++nodesCount }, name{ name }, type{ type },
 		albedo{ albedo }, position{ position }, rotation{ rotation },
 		scale{ scale }, forward{ forward }, meshForward{ meshForward },
 		gizmoType{ gizmoType }, isVisible{ true },
+		m_isDraggable{ isDraggable }, m_canBeParent{ canBeParent },
 		children{} // initialize children vector as empty
-	{
-		nNodes++;
-	}
+	{}
 
 	// Virtual destructor
 	// ------------------
-	virtual ~Node() { nNodes--; }
+	virtual ~Node() = default;
 
 	// Public Functions
 	// ----------------
@@ -104,6 +104,8 @@ public:
 	const GizmoType& GetGizmoType() const { return gizmoType; }
 	bool IsVisible() const { return isVisible; }
 	bool IsTwoSided() const { return isTwoSided; }
+	bool IsDraggable() const { return m_isDraggable; }
+	bool CanBeParent() const { return m_canBeParent; }
 
 	void SetAlbedo(const glm::vec4& albedo) { this->albedo = albedo; }
 	void SetPosition(const glm::vec3& position) { this->position = position; }
@@ -115,6 +117,8 @@ public:
 	void SetGizmoType(GizmoType gizmoType) { this->gizmoType = gizmoType; }
 	void SetVisible(bool isVisible) { this->isVisible = isVisible; }
 	void SetTwoSided(bool twoSided) { isTwoSided = twoSided; }
+	void SetDraggable(bool isDraggable) { m_isDraggable = isDraggable; }
+	void SetCanBeParent(bool canBeParent) { m_canBeParent = canBeParent; }
 
 	// Gets the world position of the node, taking into account the hierarchical transformations
 	const glm::vec3 GetWorldPosition() const;
@@ -160,42 +164,45 @@ protected:
 	// fundamental node attributes
 	std::uint32_t id; // unique identifier for the node in the scene
 	std::string name;
-	NodeType type; // type of node (e.g., COMPOSITE_MODEL, COMPOSITE_ASSIMP_MODEL, ASSIMP_MODEL, etc.)
+	NodeType type; // type of node (e.g., CAMERA, COMPOSITE_MODEL, SHADER, etc.)
 
-	// weak pointer to the parent node to avoid circular references
-	std::weak_ptr<Node> parent;
-	// vector of shared pointers to the child nodes
-	std::vector<std::shared_ptr<Node>> children;
-
+	// content attributes (for mesh-bearing nodes, empty for pure composite nodes)
 	std::vector<std::shared_ptr<Mesh>> meshes; // meshes of the node itself (if any)
 	std::vector<std::shared_ptr<Texture>> textures; // textures of the node itself (if any)
 	std::string directory; // directory of the model file of this node (if any)
 
-	glm::vec4 albedo; // current albedo (color when texture is not applied)
+	// transform attributes
+	glm::vec3 position; // position of the node in local space
+	glm::quat rotation; // rotation of the node in local space
+	glm::vec3 scale; // scale of the node in local space
+	glm::vec3 forward; // forward vector of the node in world space
+	glm::vec3 meshForward; // original forward vector of the mesh
 
-	glm::vec3 position; // current position vector
-	glm::quat rotation; // current orientation as a quaternion
-	glm::vec3 scale; // current scale vector
+	// appearance attributes
+	glm::vec4 albedo; // albedo color of the node
 
-	glm::vec3 forward; // current forward vector in world space
-	glm::vec3 meshForward; // forward vector in local (mesh) space
+	// state attributes
+	bool isVisible; // visibility of the node in the scene
+	bool isTwoSided{ false }; // whether the node is two-sided (for culling)
 
-	GizmoType gizmoType; // type of the gizmo if the node is a gizmo, or NONE if it is not a gizmo
+	// hierarchy attributes
+	std::weak_ptr<Node> parent; // weak pointer to the parent node
+	std::vector<std::shared_ptr<Node>> children; // vector of shared pointers to the children nodes
 
-	glm::vec3 m_boundingBoxMin{}; // minimum point of the bounding box
-	glm::vec3 m_boundingBoxMax{}; // maximum point of the bounding box
+	// metadata attributes
+	GizmoType gizmoType; // type of gizmo, if any
+	glm::vec3 m_boundingBoxMin{}, m_boundingBoxMax{}; // bounding box of the node
 
-	bool isVisible; // visibility flag for the node (useful for regular models but specially for gizmos)
-	bool isTwoSided{ false }; // if true, disable face culling for this node while drawing
+	// behavioral flags
+	bool m_isDraggable; // whether the node can be dragged in the scene graph
+	bool m_canBeParent; // whether the node can be a parent to other nodes
 
-	// Private Static Attributes
-	// -------------------------
-	// default values for the node attributes
-	static constexpr glm::vec4 ALBEDO{ 0.8, 0.8f, 0.8f, 1.0f }; // light gray color as default (RGBA)
-	static constexpr glm::vec3 POSITION{ 0.0f }; // origin position
-	static constexpr glm::quat ROTATION{ 1.0f, 0.0f, 0.0f, 0.0f }; // identity quaternion (no rotation)
-	static constexpr glm::vec3 ROTATION_IN_EULER_ANGLES{ 0.0f, 0.0f, 0.0f }; // no rotation
-	static constexpr glm::vec3 SCALE{ 1.0f }; // unit vector
-	static constexpr glm::vec3 FORWARD{ 0.0f, 0.0f, 1.0f }; // +Z direction
-
+	// Static Protected Attributes
+	// ---------------------------
+	// default values for node attributes
+	static constexpr glm::vec4 ALBEDO{ 0.8f, 0.8f, 0.8f, 1.0f };
+	static constexpr glm::vec3 POSITION{ 0.0f, 0.0f, 0.0f };
+	static constexpr glm::quat ROTATION{ 1.0f, 0.0f, 0.0f, 0.0f };
+	static constexpr glm::vec3 SCALE{ 1.0f, 1.0f, 1.0f };
+	static constexpr glm::vec3 FORWARD{ 0.0f, 0.0f, -1.0f };
 };

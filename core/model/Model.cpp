@@ -10,10 +10,6 @@
 #include "mesh/Mesh.h"
 #include "../shader/Shader.h"
 
-// Static Protected Attributes
-// ---------------------------
-GLuint Model::nModels{}; // initialize the number of models in the scene to 0
-
 // Constructors
 // ------------
 Model::Model(const std::string& name, const NodeType type,
@@ -22,9 +18,7 @@ Model::Model(const std::string& name, const NodeType type,
 			 const glm::vec3 forward, const glm::vec3 meshForward,
 			 const GizmoType gizmoType)
 	: Node(name, type, albedo, position, rotation, scale, forward, meshForward, gizmoType)
-{
-	nModels++;
-}
+{}
 
 // Public Methods
 // --------------

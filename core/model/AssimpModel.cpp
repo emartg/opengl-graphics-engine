@@ -11,10 +11,6 @@
 #include "../shader/Shader.h"
 #include "../texture/Texture.h"
 
-// Static Protected Attributes
-// ---------------------------
-GLuint AssimpModel::nAssimpModels{}; // initialize the number of Assimp models in the scene to 0
-
 // Constructors
 // ------------
 // Constructor that loads a model from a file
@@ -26,7 +22,6 @@ AssimpModel::AssimpModel(const std::string& name, const std::string& path,
 			albedo, position, rotation, scale, forward, meshForward)
 {
 	loadAssimpModel(path); // load the model from the specified path
-	nAssimpModels++;
 }
 
 // Private Methods

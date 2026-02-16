@@ -9,16 +9,13 @@
 
 #include "../texture/Texture.h"
 
-// Private Static Attributes
-// -------------------------
-GLuint Camera::nCameras{}; // initialize the number of cameras in the scene to 0
-
 // Constructors
 // ------------
 Camera::Camera(const std::string& name,
 			   const glm::vec3 position, const glm::vec3 up,
 			   const GLfloat yaw, const GLfloat pitch)
-	: Node(name, NodeType::CAMERA), // set the node type to CAMERA
+	: Node("Camera", NodeType::CAMERA, ALBEDO, POSITION, ROTATION, SCALE, FORWARD, FORWARD,
+		   GizmoType::NONE, false, false),
 	position{ position }, front{ FRONT }, worldUp{ up }, yaw{ yaw }, pitch{ pitch },
 	movementSpeed{ SPEED }, mouseSensitivity{ SENSITIVITY }, zoom{ ZOOM }
 {
@@ -30,8 +27,6 @@ Camera::Camera(const std::string& name,
 
 	// update the camera vectors based on the initial values
 	recalculateVectors();
-
-	nCameras++; // increment the number of cameras
 }
 
 Camera::Camera(const std::string& name,
@@ -39,9 +34,7 @@ Camera::Camera(const std::string& name,
 			   const GLfloat upX, const GLfloat upY, const GLfloat upZ,
 			   const GLfloat yaw, const GLfloat pitch)
 	: Camera(name, glm::vec3(posX, posY, posZ), glm::vec3(upX, upY, upZ), yaw, pitch)
-{
-	nCameras++; // increment the number of cameras
-}
+{}
 
 // Public Methods
 // --------------

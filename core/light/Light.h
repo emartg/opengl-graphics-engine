@@ -30,7 +30,7 @@ public:
 
 	// Virtual destructor
 	// ------------------
-	virtual ~Light() { nLights--; }
+	virtual ~Light() = default;
 
 	// Public Methods
 	// --------------
@@ -68,15 +68,7 @@ public:
 	// Syncronize gizmo's diffuse color with the light's diffuse color
 	void SyncGizmoColorFromLight();
 
-	// Static Public Functions
-	// -----------------------
-	static GLuint GetNLights() { return nLights; }
-
 protected:
-	// Static Protected Attributes
-	// ---------------------------
-	static GLuint nLights; // number of lights in the scene
-
 	// Protected Attributes
 	// --------------------
 	glm::vec3 ambient;
