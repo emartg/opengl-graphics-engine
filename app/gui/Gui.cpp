@@ -85,12 +85,11 @@ GUI::GUI()
 	initGUILayoutAttributes(); // initialize the display size-independent layout attributes
 	// initialize the positions and sizes of the GUI windows to default values
 	// (since they require the ImGui context to be created first to access the ImGui IO object)
-	m_nodeInformationWindowPosition, m_sceneGraphWindowPosition, m_propertiesWindowPosition,
+	m_sceneGraphWindowPosition, m_propertiesWindowPosition,
 		m_creationWindowPosition, m_debugWindowPosition = ImVec2{ 0.0f, 0.0f };
-	m_nodeInformationWindowSize, m_sceneGraphWindowSize, m_propertiesWindowSize, m_creationWindowSize,
+	m_sceneGraphWindowSize, m_propertiesWindowSize, m_creationWindowSize,
 		m_debugWindowSize = ImVec2{ 0.0f, 0.0f };
 	// initialize the flags for the windows to prevent focus on the first frame
-	m_nodeInformationWindowJustAppeared = true;
 	m_sceneGraphWindowJustAppeared = true;
 	m_propertiesWindowJustAppeared = true;
 	m_creationWindowJustAppeared = true;
@@ -152,9 +151,7 @@ void GUI::initGUILayoutAttributes()
 {
 	// set the private variables for the GUI layout
 	m_sceneGraphWindowRelativeWidth = 0.25f;
-	m_sceneGraphWindowRelativeHeight = 0.6f;
-	m_nodeInformationWindowRelativeWidth = 0.25f;
-	m_nodeInformationWindowRelativeHeight = 0.4f;
+	m_sceneGraphWindowRelativeHeight = 1.0f;
 	m_propertiesWindowRelativeWidth = 0.25f;
 	m_propertiesWindowRelativeHeight = 0.4f;
 	m_creationWindowRelativeWidth = 0.25f;
@@ -164,8 +161,6 @@ void GUI::initGUILayoutAttributes()
 
 	m_sceneGraphWindowXOffset = 0.0f;
 	m_sceneGraphWindowYOffset = 0.0f;
-	m_nodeInformationWindowXOffset = 0.0f;
-	m_nodeInformationWindowYOffset = 1.0f - m_nodeInformationWindowRelativeHeight;
 	m_propertiesWindowXOffset = 1.0f - m_propertiesWindowRelativeWidth;
 	m_propertiesWindowYOffset = 0.0f;
 	m_creationWindowXOffset = 1.0f - m_creationWindowRelativeWidth;
@@ -192,91 +187,77 @@ void GUI::configureGUIStyle()
 	m_boldFont = boldFont;
 
 	// soften the edges of the ImGui windows and frames
-	style.WindowRounding = 5.0f;
-	style.FrameRounding = 5.0f;
-	style.ScrollbarRounding = 5.0f;
-	style.GrabRounding = 5.0f;
+	style.WindowRounding = 4.0f;
+	style.FrameRounding = 3.0f;
+	style.ScrollbarRounding = 3.0f;
+	style.GrabRounding = 3.0f;
 
 	// set the padding for the ImGui style
-	style.WindowPadding = ImVec2(12.0f, 12.0f); // padding inside windows
-	style.FramePadding = ImVec2(4.0f, 2.0f); // padding inside frames
+	style.WindowPadding = ImVec2(12.0f, 12.0f); // padding between the window border and its content
+	style.FramePadding = ImVec2(6.0f, 4.0f); // padding between the frame border and its content
+	style.WindowBorderSize = 1.0f; // thickness of the window border
 
 	// set the ImGui color scheme to dark mode by default
 	ImGui::StyleColorsDark();
 	// change the color for all ImGui elements with an accent color to a purple hue,
 	// leaving the rest of the colors unchanged
 	ImVec4* colors = style.Colors;
-	colors[ImGuiCol_Text] = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
-	colors[ImGuiCol_TextDisabled] = ImVec4(0.50f, 0.50f, 0.50f, 1.00f);
-	colors[ImGuiCol_WindowBg] = ImVec4(0.06f, 0.06f, 0.06f, 0.94f);
-	colors[ImGuiCol_ChildBg] = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
-	colors[ImGuiCol_PopupBg] = ImVec4(0.10f, 0.08f, 0.15f, 0.94f);
-	colors[ImGuiCol_Border] = ImVec4(0.33f, 0.28f, 0.40f, 0.60f);
+	colors[ImGuiCol_Text] = ImVec4(0.18f, 0.20f, 0.24f, 1.00f);
+	colors[ImGuiCol_TextDisabled] = ImVec4(0.50f, 0.52f, 0.55f, 1.00f);
+	colors[ImGuiCol_WindowBg] = ImVec4(0.88f, 0.89f, 0.90f, 0.98f);
+	colors[ImGuiCol_ChildBg] = ImVec4(0.84f, 0.86f, 0.88f, 1.00f);
+	colors[ImGuiCol_PopupBg] = ImVec4(0.90f, 0.91f, 0.92f, 0.98f);
+	colors[ImGuiCol_Border] = ImVec4(0.65f, 0.68f, 0.72f, 0.65f);
 	colors[ImGuiCol_BorderShadow] = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
 
-	colors[ImGuiCol_FrameBg] = ImVec4(0.26f, 0.19f, 0.38f, 0.54f);
-	colors[ImGuiCol_FrameBgHovered] = ImVec4(0.36f, 0.29f, 0.58f, 0.40f);
-	colors[ImGuiCol_FrameBgActive] = ImVec4(0.36f, 0.29f, 0.58f, 0.67f);
+	colors[ImGuiCol_FrameBg] = ImVec4(0.80f, 0.82f, 0.85f, 1.00f);
+	colors[ImGuiCol_FrameBgHovered] = ImVec4(0.95f, 0.80f, 0.65f, 0.60f);
+	colors[ImGuiCol_FrameBgActive] = ImVec4(0.95f, 0.75f, 0.55f, 0.80f);
 
-	colors[ImGuiCol_TitleBg] = ImVec4(0.10f, 0.04f, 0.18f, 1.00f);
-	colors[ImGuiCol_TitleBgActive] = ImVec4(0.26f, 0.19f, 0.38f, 1.00f);
-	colors[ImGuiCol_TitleBgCollapsed] = ImVec4(0.08f, 0.00f, 0.14f, 0.51f);
+	colors[ImGuiCol_TitleBg] = ImVec4(0.78f, 0.80f, 0.83f, 1.00f);
+	colors[ImGuiCol_TitleBgActive] = ImVec4(0.95f, 0.60f, 0.25f, 1.00f);
+	colors[ImGuiCol_TitleBgCollapsed] = ImVec4(0.82f, 0.84f, 0.87f, 0.75f);
 
-	colors[ImGuiCol_MenuBarBg] = ImVec4(0.18f, 0.10f, 0.22f, 1.00f);
+	colors[ImGuiCol_MenuBarBg] = ImVec4(0.82f, 0.84f, 0.87f, 1.00f);
 
-	colors[ImGuiCol_ScrollbarBg] = ImVec4(0.18f, 0.10f, 0.22f, 0.60f);
-	colors[ImGuiCol_ScrollbarGrab] = ImVec4(0.31f, 0.21f, 0.41f, 1.00f);
-	colors[ImGuiCol_ScrollbarGrabHovered] = ImVec4(0.41f, 0.31f, 0.51f, 1.00f);
-	colors[ImGuiCol_ScrollbarGrabActive] = ImVec4(0.51f, 0.41f, 0.61f, 1.00f);
+	colors[ImGuiCol_ScrollbarBg] = ImVec4(0.82f, 0.84f, 0.87f, 1.00f);
+	colors[ImGuiCol_ScrollbarGrab] = ImVec4(0.90f, 0.58f, 0.30f, 0.80f);
+	colors[ImGuiCol_ScrollbarGrabHovered] = ImVec4(0.95f, 0.65f, 0.35f, 1.00f);
+	colors[ImGuiCol_ScrollbarGrabActive] = ImVec4(0.98f, 0.55f, 0.20f, 1.00f);
 
-	colors[ImGuiCol_CheckMark] = ImVec4(0.46f, 0.29f, 0.68f, 1.00f);
-	colors[ImGuiCol_SliderGrab] = ImVec4(0.44f, 0.32f, 0.78f, 1.00f);
-	colors[ImGuiCol_SliderGrabActive] = ImVec4(0.46f, 0.29f, 0.68f, 1.00f);
+	colors[ImGuiCol_CheckMark] = ImVec4(0.95f, 0.55f, 0.20f, 1.00f);
+	colors[ImGuiCol_SliderGrab] = ImVec4(0.92f, 0.55f, 0.22f, 1.00f);
+	colors[ImGuiCol_SliderGrabActive] = ImVec4(0.98f, 0.50f, 0.15f, 1.00f);
 
-	colors[ImGuiCol_Button] = ImVec4(0.56f, 0.39f, 0.78f, 0.60f);
-	colors[ImGuiCol_ButtonHovered] = ImVec4(0.66f, 0.49f, 0.88f, 1.00f);
-	colors[ImGuiCol_ButtonActive] = ImVec4(0.46f, 0.39f, 0.78f, 1.00f);
+	colors[ImGuiCol_Button] = ImVec4(0.95f, 0.58f, 0.25f, 1.00f);
+	colors[ImGuiCol_ButtonHovered] = ImVec4(0.98f, 0.68f, 0.38f, 1.00f);
+	colors[ImGuiCol_ButtonActive] = ImVec4(0.90f, 0.48f, 0.18f, 1.00f);
 
-	colors[ImGuiCol_Header] = ImVec4(0.36f, 0.29f, 0.58f, 0.31f);
-	colors[ImGuiCol_HeaderHovered] = ImVec4(0.36f, 0.29f, 0.58f, 0.80f);
-	colors[ImGuiCol_HeaderActive] = ImVec4(0.36f, 0.29f, 0.58f, 1.00f);
+	colors[ImGuiCol_Header] = ImVec4(0.95f, 0.78f, 0.60f, 0.55f);
+	colors[ImGuiCol_HeaderHovered] = ImVec4(0.95f, 0.70f, 0.48f, 0.80f);
+	colors[ImGuiCol_HeaderActive] = ImVec4(0.95f, 0.62f, 0.38f, 1.00f);
 
-	colors[ImGuiCol_Separator] = colors[ImGuiCol_Border];
-	colors[ImGuiCol_SeparatorHovered] = ImVec4(0.30f, 0.20f, 0.55f, 0.78f);
-	colors[ImGuiCol_SeparatorActive] = ImVec4(0.30f, 0.20f, 0.55f, 1.00f);
+	colors[ImGuiCol_Separator] = ImVec4(0.70f, 0.72f, 0.75f, 0.50f);
+	colors[ImGuiCol_SeparatorHovered] = ImVec4(0.95f, 0.60f, 0.30f, 0.78f);
+	colors[ImGuiCol_SeparatorActive] = ImVec4(0.95f, 0.55f, 0.20f, 1.00f);
 
-	colors[ImGuiCol_ResizeGrip] = ImVec4(0.36f, 0.29f, 0.58f, 0.20f);
-	colors[ImGuiCol_ResizeGripHovered] = ImVec4(0.36f, 0.29f, 0.58f, 0.67f);
-	colors[ImGuiCol_ResizeGripActive] = ImVec4(0.36f, 0.29f, 0.58f, 0.95f);
+	colors[ImGuiCol_ResizeGrip] = ImVec4(0.92f, 0.58f, 0.28f, 0.25f);
+	colors[ImGuiCol_ResizeGripHovered] = ImVec4(0.95f, 0.62f, 0.32f, 0.67f);
+	colors[ImGuiCol_ResizeGripActive] = ImVec4(0.98f, 0.55f, 0.22f, 0.95f);
 
-	colors[ImGuiCol_TabHovered] = colors[ImGuiCol_HeaderHovered];
-	colors[ImGuiCol_Tab] = ImLerp(colors[ImGuiCol_Header], colors[ImGuiCol_TitleBgActive], 0.80f);
-	colors[ImGuiCol_TabSelected] = ImLerp(
-		colors[ImGuiCol_HeaderActive], colors[ImGuiCol_TitleBgActive], 0.60f);
-	colors[ImGuiCol_TabSelectedOverline] = colors[ImGuiCol_HeaderActive];
-	colors[ImGuiCol_TabDimmed] = ImLerp(colors[ImGuiCol_Tab], colors[ImGuiCol_TitleBg], 0.80f);
-	colors[ImGuiCol_TabDimmedSelected] = ImLerp(
-		colors[ImGuiCol_TabSelected], colors[ImGuiCol_TitleBg], 0.40f);
-	colors[ImGuiCol_TabDimmedSelectedOverline] = ImVec4(0.50f, 0.50f, 0.50f, 0.00f);
+	colors[ImGuiCol_Tab] = ImVec4(0.78f, 0.80f, 0.83f, 1.00f);
+	colors[ImGuiCol_TabHovered] = ImVec4(0.95f, 0.70f, 0.45f, 1.00f);
+	colors[ImGuiCol_TabSelected] = ImVec4(0.95f, 0.58f, 0.25f, 1.00f);
+	colors[ImGuiCol_TabSelectedOverline] = ImVec4(0.98f, 0.50f, 0.15f, 1.00f);
+	colors[ImGuiCol_TabDimmed] = ImVec4(0.75f, 0.77f, 0.80f, 1.00f);
+	colors[ImGuiCol_TabDimmedSelected] = ImVec4(0.88f, 0.65f, 0.42f, 1.00f);
 
-	colors[ImGuiCol_PlotLines] = ImVec4(0.61f, 0.61f, 0.61f, 1.00f);
-	colors[ImGuiCol_PlotLinesHovered] = ImVec4(1.00f, 0.43f, 0.35f, 1.00f);
-	colors[ImGuiCol_PlotHistogram] = ImVec4(0.90f, 0.70f, 0.00f, 1.00f);
-	colors[ImGuiCol_PlotHistogramHovered] = ImVec4(1.00f, 0.60f, 0.00f, 1.00f);
-
-	colors[ImGuiCol_TableHeaderBg] = ImVec4(0.15f, 0.13f, 0.22f, 1.00f);
-	colors[ImGuiCol_TableBorderStrong] = ImVec4(0.21f, 0.21f, 0.25f, 1.00f);
-	colors[ImGuiCol_TableBorderLight] = ImVec4(0.13f, 0.13f, 0.15f, 1.00f);
-	colors[ImGuiCol_TableRowBg] = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
-	colors[ImGuiCol_TableRowBgAlt] = ImVec4(1.00f, 1.00f, 1.00f, 0.06f);
-
-	colors[ImGuiCol_TextLink] = colors[ImGuiCol_HeaderActive];
-	colors[ImGuiCol_TextSelectedBg] = ImVec4(0.36f, 0.29f, 0.58f, 0.35f);
-	colors[ImGuiCol_DragDropTarget] = ImVec4(1.00f, 1.00f, 0.00f, 0.90f);
-	colors[ImGuiCol_NavCursor] = ImVec4(0.36f, 0.29f, 0.58f, 1.00f);
+	colors[ImGuiCol_TextSelectedBg] = ImVec4(0.95f, 0.70f, 0.45f, 0.35f);
+	colors[ImGuiCol_DragDropTarget] = ImVec4(0.98f, 0.60f, 0.20f, 0.90f);
+	colors[ImGuiCol_NavCursor] = ImVec4(0.95f, 0.55f, 0.20f, 1.00f);
 	colors[ImGuiCol_NavWindowingHighlight] = ImVec4(1.00f, 1.00f, 1.00f, 0.70f);
 	colors[ImGuiCol_NavWindowingDimBg] = ImVec4(0.80f, 0.80f, 0.80f, 0.20f);
-	colors[ImGuiCol_ModalWindowDimBg] = ImVec4(0.80f, 0.80f, 0.80f, 0.35f);
+	colors[ImGuiCol_ModalWindowDimBg] = ImVec4(0.20f, 0.20f, 0.22f, 0.55f);
 }
 
 
@@ -299,17 +280,7 @@ void GUI::configureGUILayout()
 	// size (width and height) of the Scene Graph Window
 	m_sceneGraphWindowSize = ImVec2{
 		io.DisplaySize.x * m_sceneGraphWindowRelativeWidth - m_windowSizePadding.x, // width
-		io.DisplaySize.y * m_sceneGraphWindowRelativeHeight - m_windowSizePadding.y * 0.5f // height
-	};
-	// position of the Node Information Window - bottom left corner with padding
-	m_nodeInformationWindowPosition = ImVec2{
-		io.DisplaySize.x * m_nodeInformationWindowXOffset + m_windowPositionPadding.x, // x position
-		io.DisplaySize.y * m_nodeInformationWindowYOffset + m_windowPositionPadding.y // y position
-	};
-	// size (width and height) of the Node Information Window
-	m_nodeInformationWindowSize = ImVec2{
-		io.DisplaySize.x * m_nodeInformationWindowRelativeWidth - m_windowSizePadding.x, // width
-		io.DisplaySize.y * m_nodeInformationWindowRelativeHeight - m_windowSizePadding.y // height
+		io.DisplaySize.y * m_sceneGraphWindowRelativeHeight - m_windowSizePadding.y // height
 	};
 	// position of the Properties Window - top right corner with padding
 	m_propertiesWindowPosition = ImVec2{
@@ -348,7 +319,6 @@ void GUI::configureGUILayout()
 void GUI::drawGUIWindows()
 {
 	drawSceneGraphWindow();
-	drawNodeInformationWindow();
 	drawPropertiesWindow();
 	drawCreationWindow();
 	drawDebugWindow();
@@ -372,10 +342,6 @@ void GUI::resetGUILayout()
 	configureGUILayout();
 
 	// reset all window states (positions, sizes, collapsed states)
-	ImGui::SetWindowPos("NODE INFORMATION", m_nodeInformationWindowPosition);
-	ImGui::SetWindowSize("NODE INFORMATION", m_nodeInformationWindowSize);
-	ImGui::SetWindowCollapsed("NODE INFORMATION", false);
-
 	ImGui::SetWindowPos("SCENE GRAPH", m_sceneGraphWindowPosition);
 	ImGui::SetWindowSize("SCENE GRAPH", m_sceneGraphWindowSize);
 	ImGui::SetWindowCollapsed("SCENE GRAPH", false);
@@ -529,192 +495,6 @@ void GUI::drawSceneGraphWindow()
 		{ // if the window just appeared (first frame), prevent it from being focused
 			ImGui::SetWindowFocus(nullptr); // set focus to no window
 			m_sceneGraphWindowJustAppeared = false; // no longer the first frame
-		}
-	}
-}
-
-void GUI::drawNodeInformationWindow()
-{
-	// set initial size and position for the Node Information Window
-	ImGui::SetNextWindowSize(m_nodeInformationWindowSize, ImGuiCond_Appearing);
-	ImGui::SetNextWindowPos(m_nodeInformationWindowPosition, ImGuiCond_Appearing);
-	// set the Node Information Window to be expanded (i.e. not minimized)
-	ImGui::SetNextWindowCollapsed(false, ImGuiCond_Appearing);
-
-	{ // show a window that displays information about the selected node
-		// begin the Node Information window
-		ImGui::PushFont(m_boldFont);
-		ImGui::Begin("NODE INFORMATION", nullptr, ImGuiWindowFlags_NoFocusOnAppearing);
-		ImGui::PopFont();
-
-		// get the selection manager from the Core instance
-		auto& nodeManager = Core::GetInstance()->GetNodeManager();
-		auto& selectionManager = Core::GetInstance()->GetSelectionManager();
-
-		auto selected = selectionManager->GetSelectedNode(nodeManager.get());
-		if (!selected)
-		{ // if no node is selected, display a message prompting the user to select one
-			ImGui::TextWrapped("No node selected."
-							   "\nClick a node in the Scene Graph or viewport to inspect it.");
-		}
-		else
-		{ // if a node is selected, display its detailed information
-			// display the name and id of the selected node in bold font
-			ImGui::PushFont(m_boldFont);
-			ImGui::TextWrapped("%s", selected->GetName().c_str());
-			ImGui::Text("ID: %u", selected->GetId());
-			ImGui::PopFont();
-
-			ImGui::Separator(); // to separate the header from the details
-
-			// display type-specific information
-			if (selected->GetNodeType() == NodeType::CAMERA)
-			{ // if the selected node is a camera, display camera-specific information
-				auto camera = dynamic_cast<Camera*>(selected.get());
-				ImGui::Text("Type: Camera");
-				ImGui::Text("Position: (%.3f, %.3f, %.3f)",
-							camera->GetPosition().x,
-							camera->GetPosition().y,
-							camera->GetPosition().z);
-				ImGui::Text("Front: (%.3f, %.3f, %.3f)",
-							camera->GetFront().x,
-							camera->GetFront().y,
-							camera->GetFront().z);
-				ImGui::Text("Yaw: %.3f", camera->GetYaw());
-				ImGui::Text("Pitch: %.3f", camera->GetPitch());
-				ImGui::Text("Zoom: %.3f", camera->GetZoom());
-			}
-			else if (selected->GetNodeType() == NodeType::LIGHT)
-			{ // if the selected node is a light, display light-specific information
-				auto light = dynamic_cast<Light*>(selected.get());
-				ImGui::Text("Type: Light");
-
-				switch (light->GetLightType()) // display information based on the light type
-				{
-					case LightType::DIRECTIONAL_LIGHT:
-					{ // if the light is a directional light, display directional light-specific properties
-						auto dirLight = dynamic_cast<DirectionalLight*>(light);
-						ImGui::Text("Light Type: Directional");
-						ImGui::Text("Color: (%.3f, %.3f, %.3f)",
-									dirLight->GetDiffuse().x,
-									dirLight->GetDiffuse().y,
-									dirLight->GetDiffuse().z);
-						ImGui::Text("Position: (%.3f, %.3f, %.3f)",
-									dirLight->GetPosition().x,
-									dirLight->GetPosition().y,
-									dirLight->GetPosition().z);
-						ImGui::Text("Direction: (%.3f, %.3f, %.3f)",
-									dirLight->GetDirection().x,
-									dirLight->GetDirection().y,
-									dirLight->GetDirection().z);
-						break;
-					}
-					case LightType::POINT_LIGHT:
-					{ // if the light is a point light, display point light-specific properties
-						auto pointLight = dynamic_cast<PointLight*>(light);
-						ImGui::Text("Light Type: Point");
-						ImGui::Text("Color: (%.3f, %.3f, %.3f)",
-									pointLight->GetDiffuse().x,
-									pointLight->GetDiffuse().y,
-									pointLight->GetDiffuse().z);
-						ImGui::Text("Position: (%.3f, %.3f, %.3f)",
-									pointLight->GetPosition().x,
-									pointLight->GetPosition().y,
-									pointLight->GetPosition().z);
-						break;
-					}
-					case LightType::SPOTLIGHT:
-					{ // if the light is a spotlight, display spotlight-specific properties
-						auto spotlight = dynamic_cast<Spotlight*>(light);
-						ImGui::Text("Light Type: Spotlight");
-						ImGui::Text("Color: (%.3f, %.3f, %.3f)",
-									spotlight->GetDiffuse().x,
-									spotlight->GetDiffuse().y,
-									spotlight->GetDiffuse().z);
-						ImGui::Text("Position: (%.3f, %.3f, %.3f)",
-									spotlight->GetPosition().x,
-									spotlight->GetPosition().y,
-									spotlight->GetPosition().z);
-						ImGui::Text("Direction: (%.3f, %.3f, %.3f)",
-									spotlight->GetDirection().x,
-									spotlight->GetDirection().y,
-									spotlight->GetDirection().z);
-						ImGui::Text("Inner Cut-off: %.3f°",
-									glm::degrees(glm::acos(spotlight->GetInnerCutOff())));
-						ImGui::Text("Outer Cut-off: %.3f°",
-									glm::degrees(glm::acos(spotlight->GetOuterCutOff())));
-						break;
-					}
-					default: // unknown light type, display a generic message
-						ImGui::Text("Light Type: Unknown");
-						break;
-				}
-			}
-			else if (selected->GetNodeType() == NodeType::COMPOSITE_MODEL ||
-					 selected->GetNodeType() == NodeType::COMPOSITE_ASSIMP_MODEL ||
-					 selected->GetNodeType() == NodeType::COMPOSITE_SHAPE_MODEL)
-			{ // if the selected node is a composite model, display composite-specific information
-				ImGui::Text("Type: Composite Model (Group)");
-				ImGui::Text("Children: %zu", selected->GetChildren().size());
-				ImGui::Text("Position: (%.3f, %.3f, %.3f)",
-							selected->GetPosition().x,
-							selected->GetPosition().y,
-							selected->GetPosition().z);
-				ImGui::Text("Rotation: (%.3f, %.3f, %.3f)",
-							selected->GetRotationInEulerAngles().x,
-							selected->GetRotationInEulerAngles().y,
-							selected->GetRotationInEulerAngles().z);
-				ImGui::Text("Scale: (%.3f, %.3f, %.3f)",
-							selected->GetScale().x,
-							selected->GetScale().y,
-							selected->GetScale().z);
-			}
-			else if (selected->GetNodeType() == NodeType::ASSIMP_MODEL ||
-					 selected->GetNodeType() == NodeType::SHAPE_MODEL)
-			{ // if the selected node is a model, display model-specific information
-				if (selected->GetGizmoType() != GizmoType::NONE)
-				{ // if the model is a gizmo, display its gizmo type
-					ImGui::Text("Type: Gizmo");
-				}
-				else
-				{ // if the model is not a gizmo, display its type
-					if (selected->GetNodeType() == NodeType::ASSIMP_MODEL)
-						ImGui::Text("Type: Assimp Model");
-					else if (selected->GetNodeType() == NodeType::SHAPE_MODEL)
-						ImGui::Text("Type: Shape");
-					else
-						ImGui::Text("Type: Unknown");
-				}
-
-				if (selected->GetNodeType() == NodeType::SHAPE_MODEL)
-				{ // if the model is a shape, display its color
-					ImGui::Text("Color: (%.3f, %.3f, %.3f, %.3f)",
-								selected->GetAlbedo().x,
-								selected->GetAlbedo().y,
-								selected->GetAlbedo().z,
-								selected->GetAlbedo().w);
-				}
-				ImGui::Text("Position: (%.3f, %.3f, %.3f)",
-							selected->GetPosition().x,
-							selected->GetPosition().y,
-							selected->GetPosition().z);
-				ImGui::Text("Rotation: (%.3f, %.3f, %.3f)",
-							selected->GetRotationInEulerAngles().x,
-							selected->GetRotationInEulerAngles().y,
-							selected->GetRotationInEulerAngles().z);
-				ImGui::Text("Scale: (%.3f, %.3f, %.3f)",
-							selected->GetScale().x,
-							selected->GetScale().y,
-							selected->GetScale().z);
-			}
-		}
-
-		ImGui::End(); // end the Node Information window
-
-		if (m_nodeInformationWindowJustAppeared)
-		{ // if the window just appeared (first frame), prevent it from being focused
-			ImGui::SetWindowFocus(nullptr); // set focus to no window
-			m_nodeInformationWindowJustAppeared = false; // no longer the first frame
 		}
 	}
 }

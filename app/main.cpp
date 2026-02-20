@@ -266,7 +266,7 @@ void SetupInitialScene(Core* engine)
 		glm::vec3{ 0.6f } // scale (overridden)
 	);
 	auto greenPlane = std::make_shared<Shape>(
-		"Blue Plane", // placeholder name
+		"Green Plane", // placeholder name
 		planeVerticesVec, planeIndicesVec,
 		glm::vec4{ 0.3f, 0.9f, 0.3f, 0.5f }, // albedo (overridden - alpha below 1 for transparency)
 		glm::vec3{ 0.0f, 0.75f, 0.0f }, // position (overridden - local offset from parent)

@@ -67,7 +67,7 @@ private:
 	glm::vec3 m_newPosition, m_newRotation, m_newDirection, m_newScale;
 	float m_newInnerCutOff, m_newOuterCutOff;
 
-	// set of node ids that should be auto-opened in the scene graph window
+	// set of node ids that should be auto-opened in the Scene Graph window
 	std::unordered_set<std::uint32_t> m_sceneGraphAutoOpenIds;
 	// ids to actually force-open this frame (re-armed per selection change)
 	std::unordered_set<std::uint32_t> m_sceneGraphPendingOpenIds;
@@ -77,12 +77,10 @@ private:
 	// parameters for the GUI layout and windows
 	// relative widths and heights of the windows relative to the display size
 	float m_sceneGraphWindowRelativeWidth, m_sceneGraphWindowRelativeHeight;
-	float m_nodeInformationWindowRelativeWidth, m_nodeInformationWindowRelativeHeight;
 	float m_debugWindowRelativeWidth, m_debugWindowRelativeHeight;
 	float m_creationWindowRelativeWidth, m_creationWindowRelativeHeight;
 	float m_propertiesWindowRelativeWidth, m_propertiesWindowRelativeHeight;
 	// offsets the windows from the edges of the display
-	float m_nodeInformationWindowXOffset, m_nodeInformationWindowYOffset;
 	float m_sceneGraphWindowXOffset, m_sceneGraphWindowYOffset;
 	float m_debugWindowXOffset, m_debugWindowYOffset;
 	float m_propertiesWindowXOffset, m_propertiesWindowYOffset;
@@ -90,12 +88,12 @@ private:
 	// padding of the windows from the edges of the display
 	ImVec2 m_windowPositionPadding, m_windowSizePadding;
 	// positions and sizes of the windows in the display
-	ImVec2 m_nodeInformationWindowPosition, m_sceneGraphWindowPosition, m_debugWindowPosition,
+	ImVec2 m_sceneGraphWindowPosition, m_debugWindowPosition,
 		m_creationWindowPosition, m_propertiesWindowPosition;
-	ImVec2 m_nodeInformationWindowSize, m_sceneGraphWindowSize, m_debugWindowSize,
+	ImVec2 m_sceneGraphWindowSize, m_debugWindowSize,
 		m_creationWindowSize, m_propertiesWindowSize;
 	// flags for the windows to prevent focus on the first frame (indicating that the window just appeared)
-	bool m_nodeInformationWindowJustAppeared, m_sceneGraphWindowJustAppeared, m_debugWindowJustAppeared,
+	bool m_sceneGraphWindowJustAppeared, m_debugWindowJustAppeared,
 		m_creationWindowJustAppeared, m_propertiesWindowJustAppeared;
 
 	// style attributes for the GUI
@@ -148,8 +146,6 @@ private:
 
 	// Draws the Scene Graph Window with a hierarchical tree view of all nodes
 	void drawSceneGraphWindow();
-	// Draws the Node Node Information Window with details about the selected node
-	void drawNodeInformationWindow();
 	// Draws the Properties Window with controls for the objects in the scene
 	void drawPropertiesWindow();
 	// Draws the Creation Window with buttons to add new objects to the scene
