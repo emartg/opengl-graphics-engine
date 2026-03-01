@@ -160,6 +160,7 @@ std::shared_ptr<Mesh> AssimpModel::processMesh(aiMesh* mesh, const aiScene* scen
 		// load different types of textures and append them to the textures vector
 		// (these are the most common types, more can be added if needed)
 		append(aiTextureType_DIFFUSE, TextureType::DIFFUSE);
+		append(aiTextureType_BASE_COLOR, TextureType::DIFFUSE);
 		append(aiTextureType_SPECULAR, TextureType::SPECULAR);
 		append(aiTextureType_NORMALS, TextureType::NORMAL);
 		append(aiTextureType_HEIGHT, TextureType::HEIGHT);
@@ -171,7 +172,6 @@ std::shared_ptr<Mesh> AssimpModel::processMesh(aiMesh* mesh, const aiScene* scen
 		append(aiTextureType_DISPLACEMENT, TextureType::DISPLACEMENT);
 		append(aiTextureType_OPACITY, TextureType::OPACITY);
 		append(aiTextureType_REFLECTION, TextureType::REFLECTION);
-		append(aiTextureType_BASE_COLOR, TextureType::DIFFUSE);
 		// unknown texture type (fallback)
 		append(aiTextureType_UNKNOWN, TextureType::UNDEFINED);
 	}
@@ -187,12 +187,19 @@ std::vector<std::shared_ptr<Texture>> AssimpModel::loadMaterialTextures(aiMateri
 	// avoiding duplicates
 	std::vector<std::shared_ptr<Texture>> loadedTextures;
 
+	GLuint textureCount = mat->GetTextureCount(type);
+	std::cout << "[DEBUG::ASSIMPMODEL::loadMaterialTextures] Material has " << textureCount
+		<< " texture(s) of type " << Texture::TextureTypeToString(textureType) << std::endl;
+
 	// iterate over all textures of the specified type in the material
 	// and add them to the textures vector if they haven't been loaded before
-	for (GLuint i{}; i < mat->GetTextureCount(type); i++)
+	for (GLuint i{}; i < textureCount; i++)
 	{
 		aiString str;
 		mat->GetTexture(type, i, &str);
+
+		std::cout << "[DEBUG::ASSIMPMODEL::loadMaterialTextures] Raw texture path from Assimp: \""
+			<< str.C_Str() << "\"" << std::endl;
 
 		// check for embedded textures (those starting with '*'), which are not yet supported,
 		// hence why they are not loaded and a warning is issued
@@ -203,29 +210,82 @@ std::vector<std::shared_ptr<Texture>> AssimpModel::loadMaterialTextures(aiMateri
 			std::cerr << "[WARNING::ASSIMPMODEL::loadMaterialTextures] "
 				"Embedded textures not supported, skipping texture:\n"
 				<< pathCStr << " of type " << Texture::TextureTypeToString(textureType) << std::endl;
+			// TO DO: implement support for embedded textures in the future 
+			// (requires extracting the texture data from the Assimp scene and creating 
+			// a Texture object from it without loading from file)
 			continue;
 		}
 
 		std::string texturePath = directory + str.C_Str(); // construct the full path to the texture file
+		std::cout << "[DEBUG::ASSIMPMODEL::loadMaterialTextures] Full texture path: \"" << texturePath << "\""
+			<< std::endl;
 
-		// check if the texture was loaded before and if so, continue to the next iteration
-		GLboolean skip{ false };
-		for (GLuint j{}; j < loadedTextures.size(); j++)
+		// check if the texture file exists at the constructed path, and if not, try alternative paths
+		std::ifstream testFile(texturePath);
+		if (!testFile.good())
 		{
-			if (std::strcmp(loadedTextures[j]->GetPath().data(), texturePath.c_str()) == 0)
+			std::cerr << "[WARNING::ASSIMPMODEL] Texture file not found: " << texturePath << std::endl;
+
+			// texture might be just the filename without the directory, 
+			// so try to locate it in the model directory and common subdirectories
+			std::string filename = str.C_Str();
+			size_t lastSlash = filename.find_last_of("/\\"); // strip any directory from the filename
+			if (lastSlash != std::string::npos)
+				filename = filename.substr(lastSlash + 1);
+
+			// try multiple common subdirectories for textures within the model directory
+			std::vector<std::string> searchPaths = {
+				directory + filename,
+				directory + "Textures/" + filename,
+				directory + "textures/" + filename,
+				directory + "tex/" + filename,
+			};
+
+			// check each search path for the texture file and use the first one that exists
+			bool found = false;
+			for (const auto& searchPath : searchPaths)
 			{
-				// if the texture has already been loaded, add it to the textures vector
-				textures.push_back(loadedTextures[j]);
-				skip = true; // a texture with the same filepath already loaded, so no need to load it again
+				std::ifstream test(searchPath);
+				if (test.good())
+				{ // if the file exists at this search path, use it and break out of the loop
+					texturePath = searchPath;
+					found = true;
+					std::cout << "[DEBUG::ASSIMPMODEL] Found texture at: " << texturePath << std::endl;
+					break;
+				}
+			}
+
+			// if the texture file was not found in any of the search paths, 
+			// issue an error and skip loading this texture
+			if (!found)
+			{
+				std::cerr << "[ERROR::ASSIMPMODEL] Could not locate texture: " << filename << std::endl;
+				continue;
+			}
+		}
+
+		// check if the texture was loaded before by comparing the file paths 
+		// of the previously loaded textures with the current one, and if so, 
+		// skip loading and reuse the existing texture
+		bool skip = false;
+		for (const auto& cachedTexture : textures)
+		{
+			if (cachedTexture->GetPath() == texturePath)
+			{ // if a texture with the same file path was loaded before, reuse it and break out of the loop
+				loadedTextures.push_back(cachedTexture);
+				skip = true;
 				break;
 			}
 		}
 
-		// if the texture hasn't been loaded already, load it
+		// if the texture hasn't been loaded already, load it from file and add it to both 
+		// the textures vector (cache for the current mesh) and 
+		// the loaded textures vector (to be returned to the caller)
 		if (!skip)
 		{
 			auto texture = std::make_shared<Texture>(str.C_Str(), texturePath, textureType);
-			loadedTextures.push_back(texture); // add the texture to the loaded textures vector
+			textures.push_back(texture);
+			loadedTextures.push_back(texture);
 		}
 	}
 

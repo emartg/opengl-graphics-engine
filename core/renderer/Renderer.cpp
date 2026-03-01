@@ -666,6 +666,8 @@ void Renderer::RenderNode(const std::shared_ptr<Node>& node)
 				{
 					renderShader = m_assimpModelShader;
 					renderShader->Use();
+					// set the base opacity (alpha) of the model based on the node's albedo (RGBA)
+					renderShader->SetFloat("baseOpacity", node->GetAlbedo().a);
 				}
 				break;
 				// COMPOSITE_SHAPE_MODEL nodes have their own meshes, 

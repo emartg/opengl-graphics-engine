@@ -52,4 +52,10 @@ public:
 
 	// Convenience overload for shared_ptr usage
 	static std::string GenerateIdPrefixedName(const std::shared_ptr<Node>& node);
+
+	// Converts a filename to a clean display name:
+	// - Removes extension
+	// - Replaces underscores with spaces
+	// - Capitalizes the first letter of each word (title case)
+	static std::string ToCleanDisplayName(const std::string& filename);
 };

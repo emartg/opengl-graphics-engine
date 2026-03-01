@@ -50,10 +50,12 @@ struct Material
 {
 	sampler2D albedoMap;    // texture sampler for the albedo map (i.e. the diffuse map)
 	sampler2D metallicMap;  // texture sampler for the metallic map (i.e. the specular map)
+	sampler2D opacityMap;   // texture sampler for the opacity map (i.e. the alpha map)
 	float shininess;
 
 	int hasAlbedoMap; 	    // flag indicating whether an albedo map is used (0 or 1)
 	int hasMetallicMap;     // flag indicating whether a metallic map is used (0 or 1)
+	int hasOpacityMap;      // flag indicating whether an opacity map is used (0 or 1)
 };
 
 // fragment position, normal and texture coordinates in view space passed from the vertex shader
@@ -80,19 +82,13 @@ uniform Spotlight spotlights[MAX_N_SPOTLIGHTS];
 // material properties struct
 uniform Material material;
 
+// uniform for the model's base opacity (used if no opacity map is provided)
+uniform float baseOpacity;
+
 // Helper functions to fetch with fallback if no texture is used
-vec3 getAlbedoComponent()
-{
-	vec3 sampledColor = texture(material.albedoMap, TexCoords).rgb;
-	// fallback to white so lighting remains visible if no albedo map is used
-	return mix(vec3(1.0), sampledColor, float(material.hasAlbedoMap));
-}
-vec3 getMetallicComponent()
-{
-	vec3 sampledColor = texture(material.metallicMap, TexCoords).rgb;
-	// fallback to white so specular highlights remain visible if no metallic map is used
-	return mix(vec3(1.0), sampledColor, float(material.hasMetallicMap));
-}
+vec3 getAlbedoComponent();
+vec3 getMetallicComponent();
+float getOpacityComponent();
 
 // Calculates the color of a single directional light given the light properties (including the direction),
 // the normal, and the view direction (all in view space)
@@ -135,8 +131,59 @@ void main()
 		result  += computeSpotlightColor(spotlights[i], SpotlightPos[i], SpotlightDir[i], 
 										 normal, FragPos, viewDir);
 
-	// set the fragment color
-	FragColor   = vec4(result, 1.0);
+	// get final opacity either from the opacity map (if it exists) or from the base opacity uniform
+	float opacity = getOpacityComponent();
+
+	// discard nearly transparent fragments to improve performance and avoid blending issues
+	if (opacity < 0.1) discard;
+
+	// set the fragment color with the computed lighting result and the final opacity
+	FragColor   = vec4(result, opacity);
+}
+
+vec3 getAlbedoComponent()
+{
+	vec3 sampledColor = texture(material.albedoMap, TexCoords).rgb;
+	// fallback to white so lighting remains visible if no albedo map is used
+	return mix(vec3(1.0), sampledColor, float(material.hasAlbedoMap));
+}
+
+vec3 getMetallicComponent()
+{
+	vec3 sampledColor = texture(material.metallicMap, TexCoords).rgb;
+	// fallback to white so specular highlights remain visible if no metallic map is used
+	return mix(vec3(1.0), sampledColor, float(material.hasMetallicMap));
+}
+
+float getOpacityComponent()
+{
+	float opacity = baseOpacity; // default opacity from uniform
+
+	// if an opacity map is used, fetch the opacity from the red channel of the texture
+	// (convention for opacity maps is to store opacity in the red channel) 
+	// and combine it with the base opacity for overall control
+	if (material.hasOpacityMap == 1)
+	{
+		// sample the red channel of the opacity map to get the opacity value
+		opacity = texture(material.opacityMap, TexCoords).r;
+		// combine the sampled opacity with the base opacity to get the final opacity value for the fragment
+		// (common convention is to multiply the base opacity by the sampled opacity from the opacity map)
+		opacity *= baseOpacity;
+	}
+	// if no opacity map is used but an albedo map is used,
+	// the alpha channel of the albedo map can be used for opacity (if it exists in the texture);
+	// and in any case, the alpha channel is combined with the base opacity for overall control
+	else if (material.hasAlbedoMap == 1)
+	{
+		// sample the alpha channel of the albedo map
+		// (if the texture doesn't have an alpha channel, this returns 1.0)
+		float albedoAlpha = texture(material.albedoMap, TexCoords).a;
+		// combine the albedo alpha with the base opacity to get the final opacity value for the fragment
+		// (common convention is to multiply the base opacity by the sampled alpha from the albedo map)
+		opacity *= albedoAlpha;
+	}
+
+	return opacity;
 }
 
 vec3 computeDirectionalLightColor(DirectionalLight light, vec3 directionalLightDir, 

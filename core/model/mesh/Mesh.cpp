@@ -36,13 +36,15 @@ void Mesh::BindTextures(Shader& shader) const
 	// (for the current shader, set only the expected sampler uniforms once)
 	const GLuint albedoMapUnit{ 0 };
 	const GLuint metallicMapUnit{ 1 };
+	const GLuint opacityMapUnit{ 2 };
 
 	// fallback units in case the expected maps are not found
-	GLuint nextAvailableUnit{ 2 };
+	GLuint nextAvailableUnit{ 3 };
 
 	// indices of known texture types (to bind to fixed slots - initially -1 = not found)
 	GLint albedoIdx{ -1 };		// index of the albedo map in the textures vector
 	GLint metallicIdx{ -1 };	// index of the metallic map in the textures vector
+	GLint opacityIdx{ -1 };		// index of the opacity map in the textures vector
 
 	// tag-based selection of known texture types before relying on legacy filename-based hints
 	for (GLuint i{}; i < textures.size(); ++i)
@@ -53,6 +55,8 @@ void Mesh::BindTextures(Shader& shader) const
 			albedoIdx = static_cast<GLint>(i);
 		else if (metallicIdx < 0 && (type == TextureType::SPECULAR || type == TextureType::METALNESS))
 			metallicIdx = static_cast<GLint>(i);
+		else if (opacityIdx < 0 && type == TextureType::OPACITY)
+			opacityIdx = static_cast<GLint>(i);
 	}
 
 	// legacy filename-based hints if still unresolved (infer texture type from name)
@@ -61,19 +65,24 @@ void Mesh::BindTextures(Shader& shader) const
 		// skip already assigned textures
 		if (textures[i]->GetTextureType() != TextureType::UNDEFINED) continue;
 
-		const std::string n = textures[i]->GetName(); // retrieve texture name
+		const std::string name = textures[i]->GetName(); // retrieve texture name
 
 		// infer type from name substrings (if not already assigned)
-		if (albedoIdx < 0 && (n.find("albedo") != std::string::npos ||
-							  n.find("diffuse") != std::string::npos ||
-							  n.find("bcolor") != std::string::npos ||
-							  n.find("basecolor") != std::string::npos))
+		if (albedoIdx < 0 && (name.find("albedo") != std::string::npos ||
+							  name.find("diffuse") != std::string::npos ||
+							  name.find("basecolor") != std::string::npos ||
+							  name.find("bcolor") != std::string::npos))
 			albedoIdx = static_cast<GLint>(i);
-		else if (metallicIdx < 0 && (n.find("specular") != std::string::npos ||
-									 n.find("reflective") != std::string::npos ||
-									 n.find("metallic") != std::string::npos ||
-									 n.find("metal") != std::string::npos))
+		else if (metallicIdx < 0 && (name.find("specular") != std::string::npos ||
+									 name.find("reflective") != std::string::npos ||
+									 name.find("metal") != std::string::npos ||
+									 name.find("metallic") != std::string::npos))
 			metallicIdx = static_cast<GLint>(i);
+		else if (opacityIdx < 0 && (name.find("opacity") != std::string::npos ||
+									name.find("alpha") != std::string::npos ||
+									name.find("transparent") != std::string::npos ||
+									name.find("transparency") != std::string::npos))
+			opacityIdx = static_cast<GLint>(i);
 	}
 
 	// bind fixed slots first (if found)
@@ -81,12 +90,17 @@ void Mesh::BindTextures(Shader& shader) const
 		textures[albedoIdx]->Bind(albedoMapUnit);
 	if (metallicIdx >= 0) // if a metallic map was found, bind it to the expected unit
 		textures[metallicIdx]->Bind(metallicMapUnit);
+	if (opacityIdx >= 0) // if an opacity map was found, bind it to the expected unit
+		textures[opacityIdx]->Bind(opacityMapUnit);
 
 	// bind all remaining textures to subsequent units (always available for future shaders)
 	for (GLuint i = 0; i < textures.size(); ++i)
 	{
 		// if this texture is already bound to a fixed slot, skip it
-		if (static_cast<GLint>(i) == albedoIdx || static_cast<GLint>(i) == metallicIdx) continue;
+		if (static_cast<GLint>(i) == albedoIdx ||
+			static_cast<GLint>(i) == metallicIdx ||
+			static_cast<GLint>(i) == opacityIdx)
+			continue;
 		// otherwise, bind the texture to the next available unit
 		textures[i]->Bind(nextAvailableUnit++);
 	}
@@ -94,6 +108,7 @@ void Mesh::BindTextures(Shader& shader) const
 	// communicate presence of known maps to the shader (per-mesh, which is more performant)
 	shader.SetInt("material.hasAlbedoMap", albedoIdx >= 0 ? 1 : 0);
 	shader.SetInt("material.hasMetallicMap", metallicIdx >= 0 ? 1 : 0);
+	shader.SetInt("material.hasOpacityMap", opacityIdx >= 0 ? 1 : 0);
 
 	glActiveTexture(GL_TEXTURE0); // set the active texture unit back to 0 once all textures are bound
 }

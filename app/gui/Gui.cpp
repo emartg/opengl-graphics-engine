@@ -658,7 +658,7 @@ void GUI::drawCreationWindow()
 			ImGuiFileDialog::Instance()->OpenDialog(
 				"ChooseFileDlgKey", // unique key for the file dialog
 				"Choose 3D Model File", // title of the file dialog
-				".obj, .fbx, .dae, .gltf, .glb, .stl, .ply, .3ds, .max", // supported file extensions
+				".obj, .fbx, .dae, .gltf, .glb, .stl, .ply, .3ds, .max, .blend", // supported file extensions
 				fileDialogConfig // file dialog configuration
 			);
 		}
@@ -1422,15 +1422,30 @@ void GUI::drawModelControls(Node* model)
 	// use PushID to create a unique ID for each model
 	ImGui::PushID(model->GetName().c_str());
 
-	// only if the model is a shape, display the color picker
+	glm::vec4 albedo = model->GetAlbedo(); // get the albedo color of the model (with alpha channel)
+
+	// for shape models, show the full RGBA color picker, including alpha channel for transparency control
 	if (model->GetNodeType() == NodeType::SHAPE_MODEL)
 	{
-		// get the color of the model (with alpha channel)
-		glm::vec4 color = model->GetAlbedo();
 		// create a color picker for the model's color
-		if (drawColorControl("Albedo", color))
+		if (drawColorControl("Albedo", albedo))
 		{ // if the color control is used
-			model->SetAlbedo(color); // set the new color of the model
+			model->SetAlbedo(albedo); // set the new color of the model
+		}
+	}
+	// for Assimp models, show only a slider for the alpha component to allow for 
+	// transparency/opacity control without affecting the original material colors
+	else if (model->GetNodeType() == NodeType::ASSIMP_MODEL)
+	{
+		ImGui::Text("Opacity"); // label for the alpha slider
+		ImGui::SameLine(); // keep the slider on the same line as the label
+		// make the slider take the full width of the window
+		ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+		// create a slider for the alpha component of the model's color
+		if (ImGui::SliderFloat("##Opacity", &albedo.a, 0.0f, 1.0f,
+							   "%.2f", ImGuiSliderFlags_AlwaysClamp))
+		{ // if the slider is used, set the new color with original RGB and new alpha
+			model->SetAlbedo(albedo); // set the new color of the model
 		}
 	}
 
@@ -1862,13 +1877,15 @@ void GUI::drawImportModelPopup()
 			// normalize slashes to forward slashes for cross-platform texture loading
 			std::replace(filePathName.begin(), filePathName.end(), '\\', '/');
 
-			// create a new model with the file name as a placeholder name and the selected file path
-			auto assimpModel = std::make_shared<AssimpModel>(fileName, filePathName);
+			// convert the filename to a clean display name:
+			// remove the file extension, replace underscores and hyphens with spaces, 
+			// and capitalize the first letter of each word (title case)
+			std::string fileDisplayName = StringUtils::ToCleanDisplayName(fileName);
 
-			// remove the extension from the file name for the model's name
-			std::string assimpModelName = fileName.substr(0, fileName.find_last_of('.'));
-			// uppercase the first letter of the model's name
-			assimpModelName[0] = std::toupper(assimpModelName[0]);
+			// create a new model with the clean display name and the file path, 
+			// which will be loaded by AssimpModel's constructor
+			auto assimpModel = std::make_shared<AssimpModel>(fileDisplayName, filePathName);
+
 			// convert the model's ID to string and set it as part of the model's name
 			assimpModel->SetName(StringUtils::GenerateIdPrefixedName(assimpModel));
 

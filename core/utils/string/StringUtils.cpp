@@ -78,3 +78,36 @@ std::string StringUtils::GenerateIdPrefixedName(const std::shared_ptr<Node>& nod
 	if (!node) return {}; // return empty string if node is null
 	return GenerateIdPrefixedName(*node); // call the reference overload
 }
+
+std::string StringUtils::ToCleanDisplayName(const std::string& filename)
+{
+	// remove the file extension
+	std::string name = GetFilenameWithoutExtension(filename);
+
+	// replace underscores and hyphens with spaces (common separators in filenames) to improve readability
+	std::replace(name.begin(), name.end(), '_', ' ');
+	std::replace(name.begin(), name.end(), '-', ' ');
+
+	// capitalize first letter of each word and convert the rest to lowercase,
+	// using a flag to determine when to capitalize the next character,
+	// thus ensuring a title case format even if the input is in an inconsistent case format
+	bool capitalizeNext = true;
+	for (char& c : name)
+	{
+		if (std::isspace(static_cast<unsigned char>(c)))
+		{ // if the character is a space, set the flag to capitalize the next character
+			capitalizeNext = true;
+		}
+		else if (capitalizeNext)
+		{ // if the flag is set, capitalize the character and reset the flag
+			c = static_cast<char>(std::toupper(static_cast<unsigned char>(c)));
+			capitalizeNext = false;
+		}
+		else
+		{ // otherwise, convert the character to lowercase
+			c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+		}
+	}
+
+	return name;
+}

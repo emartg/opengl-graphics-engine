@@ -293,56 +293,38 @@ void SetupInitialScene(Core* engine)
 	rootGroup->AddChild(shapesGroup);
 
 	// create an Assimp model and add it as a child of the root group
-	std::string assimpPath = "resources/models/gltf/teapot/teapot.gltf";
-	if (std::filesystem::exists(assimpPath))
+	std::string teapotModelPath = "resources/models/gltf/teapot/teapot.gltf";
+	if (std::filesystem::exists(teapotModelPath))
 	{ // check if the file exists before loading it
-		auto assimpModel = std::make_shared<AssimpModel>(
+		auto teapotModel = std::make_shared<AssimpModel>(
 			"Teapot", // placeholder name
-			assimpPath, // model file path
-			glm::vec4{ 1.0f }, // albedo (overridden - unused if model has textures)
+			teapotModelPath, // model file path
+			glm::vec4{ 1.0f, 1.0f, 1.0f, 0.5f }, // albedo (overridden - alpha below 1 for transparency)
 			glm::vec3{ 0.0f, 0.0f, 3.0f }, // position (overridden - offset from root)
 			glm::quat(glm::vec3{ 0.0f }), // rotation (default)
 			glm::vec3{ 0.25f } // scale (overridden)
 		);
 
 		// remove the path and the extension from the file path for the model's name
-		std::string assimpModelName = assimpPath.substr(
-			assimpPath.find_last_of("/\\") + 1,
-			assimpPath.find_last_of('.') - assimpPath.find_last_of("/\\") - 1
+		std::string teapotModelName = teapotModelPath.substr(
+			teapotModelPath.find_last_of("/\\") + 1,
+			teapotModelPath.find_last_of('.') - teapotModelPath.find_last_of("/\\") - 1
 		);
 		// uppercase the first letter of the model's name
-		assimpModelName[0] = std::toupper(assimpModelName[0]);
+		teapotModelName[0] = std::toupper(teapotModelName[0]);
 		// convert the model's ID to string and set it as part of the model's name
-		assimpModel->SetName(StringUtils::GenerateIdPrefixedName(assimpModel));
-
-		// create a marker shape to indicate the origin of the Assimp model of which it is a child
-		// (demonstrates mixed hierarchy)
-		auto markerShape = std::make_shared<Shape>(
-			"Teapot Origin Marker", // placeholder name
-			cubeVerticesVec, cubeIndicesVec,
-			assimpModel->GetAlbedo(), // albedo (overridden - same as parent)
-			glm::vec3{ 0.5f, 0.0f, 0.5f }, // position (overridden - local offset from parent)
-			glm::quat(glm::vec3{ 0.0f }), // rotation (default)
-			glm::vec3{ 0.1f } // scale (overridden)
-		);
-
-		// convert the marker shape's ID to string and set it as part of the shape's name
-		markerShape->SetName(StringUtils::GenerateIdPrefixedName(markerShape));
-
-		// attach marker shape under Assimp model
-		assimpModel->AddChild(markerShape);
+		teapotModel->SetName(StringUtils::GenerateIdPrefixedName(teapotModel));
 
 		// attach Assimp model under the root group
-		rootGroup->AddChild(assimpModel);
+		rootGroup->AddChild(teapotModel);
 
 		// register child nodes for selection/picking (renderer skips them via parent check)
-		nodeManager->AddNode(assimpModel);
-		nodeManager->AddNode(markerShape);
+		nodeManager->AddNode(teapotModel);
 	}
 	else
 	{ // if the file does not exist, print an error message
-		std::cerr << "[WARNING::main::SetupInitialScene] Assimp model not found: " << assimpPath
-			<< std::endl;
+		std::cerr << "[WARNING::main::SetupInitialScene] Assimp model not found: "
+			<< teapotModelPath << std::endl;
 	}
 
 	// register all nodes (including children) so they exist as nodes
