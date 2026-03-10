@@ -24,11 +24,11 @@ class Model : public Node
 public:
 	// Constructors
 	// ------------
-	Model(const std::string& name, const NodeType type = NodeType::COMPOSITE_MODEL,
+	Model(const std::string& name, const Node_Type type = Node_Type::COMPOSITE_MODEL,
 		  const glm::vec4 albedo = ALBEDO, const glm::vec3 position = POSITION,
 		  const glm::quat rotation = ROTATION, const glm::vec3 scale = SCALE,
-		  const glm::vec3 forward = FORWARD, const glm::vec3 meshForward = FORWARD,
-		  const GizmoType gizmoType = GizmoType::NONE);
+		  const glm::vec3 forward = FORWARD, const glm::vec3 mesh_forward = FORWARD,
+		  const Gizmo_Type gizmo_type = Gizmo_Type::NONE);
 
 	// Virtual destructor
 	// ------------------
@@ -37,17 +37,17 @@ public:
 	// Public Functions
 	// ----------------
 	// Loads the model and its resources, including its children if the model is composite
-	void Load() override { for (const auto& child : children) if (child) child->Load(); }
+	void load() override { for (const auto& child : children) if (child) child->load(); }
 
 	// Deallocates all the resources of the model, including its children if the model is composite
-	void DeallocateResources() override
+	void deallocate_resources() override
 	{
-		for (const auto& child : children) if (child) child->DeallocateResources();
+		for (const auto& child : children) if (child) child->deallocate_resources();
 	}
 
 	// Draws only its own meshes
-	void Draw() const override;
+	void draw() const override;
 	// Draws only its own meshes with the specified shader (binds the textures before drawing)
-	void Draw(const Shader& shader) const override;
+	void draw(const Shader& shader) const override;
 
 };

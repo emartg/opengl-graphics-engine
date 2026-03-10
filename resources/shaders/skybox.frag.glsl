@@ -1,12 +1,12 @@
 #version 420 core
 out vec4 FragColor;
 
-in vec3 TexCoords;
+in vec3 v_tex_coords;
 
-uniform samplerCube skybox;
+uniform samplerCube u_skybox;
 
 void main()
 {    
-	vec3 colorRGB = texture(skybox, TexCoords).rgb;
-	FragColor = vec4(colorRGB, 1.0); // force alpha to 1.0 to prevent transparency issues
+	vec3 albedo_rgb = texture(u_skybox, v_tex_coords).rgb;
+	FragColor		= vec4(albedo_rgb, 1.0); // force alpha to 1.0 to prevent transparency issues
 }

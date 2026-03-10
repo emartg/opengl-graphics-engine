@@ -12,39 +12,39 @@
 // ------------
 Light::Light(const std::string& name,
 			 const glm::vec3 ambient, const glm::vec3 diffuse, const glm::vec3 specular,
-			 const std::shared_ptr<Node> gizmo, const LightType lightType)
-	: Node(name, NodeType::LIGHT, ALBEDO, POSITION, ROTATION, SCALE, FORWARD, FORWARD,
-		   GizmoType::NONE, false, false),
+			 const std::shared_ptr<Node> gizmo, const Light_Type light_type)
+	: Node(name, Node_Type::LIGHT, ALBEDO, POSITION, ROTATION, SCALE, FORWARD, FORWARD,
+		   Gizmo_Type::NONE, false, false),
 	ambient{ ambient }, diffuse{ diffuse }, specular{ specular },
-	lightType{ lightType }
+	light_type{ light_type }
 {}
 
 // Public Methods
 // --------------
-void Light::Draw() const
+void Light::draw() const
 {
-	auto gizmo = GetGizmo(); // get the gizmo representing the light
-	if (gizmo) gizmo->Draw(); // draw the gizmo if it exists
+	auto gizmo = get_gizmo(); // get the gizmo representing the light
+	if (gizmo) gizmo->draw(); // draw the gizmo if it exists
 }
 
-void Light::Draw(const Shader& shader) const
+void Light::draw(const Shader& shader) const
 {
-	auto gizmo = GetGizmo(); // get the gizmo representing the light
-	if (gizmo) gizmo->Draw(shader); // draw the gizmo with the specified shader if it exists
+	auto gizmo = get_gizmo(); // get the gizmo representing the light
+	if (gizmo) gizmo->draw(shader); // draw the gizmo with the specified shader if it exists
 }
 
-std::shared_ptr<Node> Light::GetGizmo() const
+std::shared_ptr<Node> Light::get_gizmo() const
 {
 	// return the first child node thta has a non-NONE gizmo type (i.e., the gizmo representing the light)
 	for (auto& child : children)
-		if (child && child->GetGizmoType() != GizmoType::NONE)
+		if (child && child->get_gizmo_type() != Gizmo_Type::NONE)
 			return child;
 	// otherwise, return nullptr
 	return nullptr;
 }
 
-void Light::SyncGizmoColorFromLight()
+void Light::sync_gizmo_color_from_light()
 {
-	auto gizmo = GetGizmo(); // get the gizmo representing the light
-	if (gizmo) gizmo->SetAlbedo(glm::vec4(diffuse, 1.0f)); // set gizmo's albedo to the light's diffuse color
+	auto gizmo = get_gizmo(); // get the gizmo representing the light
+	if (gizmo) gizmo->set_albedo(glm::vec4(diffuse, 1.0f)); // set gizmo's albedo to the light's diffuse color
 }

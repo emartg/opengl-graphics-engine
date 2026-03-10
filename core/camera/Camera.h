@@ -31,8 +31,8 @@ public:
 		   const GLfloat yaw = YAW, const GLfloat pitch = PITCH);
 	// Constructor with scalar values
 	Camera(const std::string& name,
-		   const GLfloat posX, const GLfloat posY, const GLfloat posZ,
-		   const GLfloat upX, const GLfloat upY, const GLfloat upZ,
+		   const GLfloat pos_x, const GLfloat pos_y, const GLfloat pos_z,
+		   const GLfloat up_x, const GLfloat up_y, const GLfloat up_z,
 		   const GLfloat yaw = YAW, const GLfloat pitch = PITCH);
 
 	// Destructor
@@ -42,51 +42,51 @@ public:
 	// Public Methods
 	// --------------
 	// Loads the camera
-	void Load() override {}
+	void load() override {}
 
 	// Deallocates all the resources of the camera
-	void DeallocateResources() override {}
+	void deallocate_resources() override {}
 
 	// Does not draw anything by default, as a camera has no visual representation
-	virtual void Draw() const override {}
+	virtual void draw() const override {}
 	// Does not draw anything by default, as a camera has no visual representation
-	virtual void Draw(const Shader& shader) const override {}
+	virtual void draw(const Shader& shader) const override {}
 
 	// Getters
-	glm::vec3 GetPosition() const { return position; }
-	glm::vec3 GetFront() const { return front; }
-	glm::vec3 GetUp() const { return up; }
-	glm::vec3 GetRight() const { return right; }
-	glm::vec3 GetWorldUp() const { return worldUp; }
-	GLfloat GetYaw() const { return yaw; }
-	GLfloat GetPitch() const { return pitch; }
-	GLfloat GetMovementSpeed() const { return movementSpeed; }
-	GLfloat GetMouseSensitivity() const { return mouseSensitivity; }
-	GLfloat GetZoom() const { return zoom; }
+	glm::vec3 get_position() const { return position; }
+	glm::vec3 get_front() const { return front; }
+	glm::vec3 get_up() const { return up; }
+	glm::vec3 get_right() const { return right; }
+	glm::vec3 get_world_up() const { return world_up; }
+	GLfloat get_yaw() const { return yaw; }
+	GLfloat get_pitch() const { return pitch; }
+	GLfloat get_movement_speed() const { return movement_speed; }
+	GLfloat get_mouse_sensitivity() const { return mouse_sensitivity; }
+	GLfloat get_zoom() const { return zoom; }
 
 	// Setters
-	void SetYaw(GLfloat yaw) { this->yaw = yaw; }
-	void SetPitch(GLfloat pitch) { this->pitch = pitch; }
+	void set_yaw(GLfloat yaw) { this->yaw = yaw; }
+	void set_pitch(GLfloat pitch) { this->pitch = pitch; }
 
 	// Returns the view matrix calculated using Euler Angles and the LookAt Matrix
-	glm::mat4 GetViewMatrix() const;
+	glm::mat4 get_view_matrix() const;
 
 	// Processes input received from any keyboard-like input system.
-	// Accepts input parameter in the form of camera defined ENUM (to abstract it from windowing systems)
-	void ProcessKeyboard(Camera_Movement direction, GLfloat deltaTime);
+	// Accepts input parameter in the form of defined enum class (to abstract it from windowing systems)
+	void process_keyboard(Camera_Movement direction, GLfloat delta_time);
 	// Processes input received from a left-click drag event.
 	// Expects the offset values in both the x and y directions and the sensitivity of the mouse movement.
 	// This method is intended to be used for camera translation
-	void ProcessMouseTranslation(GLfloat xoffset, GLfloat yoffset, GLfloat sensitivity = 0.1f);
+	void process_mouse_translation(GLfloat xoffset, GLfloat yoffset, GLfloat sensitivity = 0.1f);
 	// Processes input received from a mouse right-click drag event.
 	// Expects the offset values in both the x and y directions, the sensitivity of the mouse movement, 
 	// and whether the user wants to constrain the pitch. 
 	// This method is intended to be used for camera rotation
-	void ProcessMouseRotation(GLfloat xoffset, GLfloat yoffset, GLfloat sensitivity = 0.1f,
-							  GLboolean constrainPitch = true);
+	void process_mouse_rotation(GLfloat xoffset, GLfloat yoffset, GLfloat sensitivity = 0.1f,
+								GLboolean constrain_pitch = true);
 	// Processes input received from a mouse scroll-wheel event.
 	// Expects the offset value in the y direction and the sensitivity of the scroll
-	void ProcessMouseScroll(GLfloat yoffset, GLfloat sensitivity = 1.0f);
+	void process_mouse_scroll(GLfloat yoffset, GLfloat sensitivity = 1.0f);
 
 	// Resets the camera to its default values
 	void Reset();
@@ -99,22 +99,22 @@ private:
 	glm::vec3 front;
 	glm::vec3 up;
 	glm::vec3 right;
-	glm::vec3 worldUp;
+	glm::vec3 world_up;
 
 	// euler angles
 	GLfloat yaw;
 	GLfloat pitch;
 
 	// camera options
-	GLfloat movementSpeed;
-	GLfloat mouseSensitivity;
+	GLfloat movement_speed;
+	GLfloat mouse_sensitivity;
 	GLfloat zoom;
 
 	// initial values for camera reset
-	glm::vec3 initialPosition;
-	glm::vec3 initialUp;
-	GLfloat initialYaw;
-	GLfloat initialPitch;
+	glm::vec3 initial_position;
+	glm::vec3 initial_up;
+	GLfloat initial_yaw;
+	GLfloat initial_pitch;
 
 	// Private Static Attributes
 	// -------------------------
@@ -131,6 +131,6 @@ private:
 	// Private Methods
 	// ---------------
 	// Recalculates the front, right and up vectors from the camera's (updated) Euler Angles
-	void recalculateVectors();
+	void recalculate_vectors();
 
 };

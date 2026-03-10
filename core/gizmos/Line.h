@@ -19,28 +19,28 @@ class Line
 public:
 	// Contructors
 	// -----------
-	Line(const std::vector<GLfloat>& vertices = { triangleFanPlaneDirectionLineVec });
+	Line(const std::vector<GLfloat>& vertices = { triangle_fan_plane_direction_line_vector });
 
 	// Public Methods
 	// --------------
-	// Renders the line
-	void Draw() const;
-	// Updates the vertices of the line
-	void UpdateVertices(const std::vector<GLfloat>& vertices);
-
 	// Deallocates all the resources of the line
-	void DeallocateResources();
+	void deallocate_resources();
+
+	// Renders the line
+	void draw() const;
+	// Updates the vertices of the line
+	void update_vertices(const std::vector<GLfloat>& vertices);
 
 private:
 	// Private Attributes
 	// ------------------
 	std::vector<GLfloat> vertices;
 
-	GLuint VAO, VBO;
+	GLuint vao, vbo;
 
 	// Private Methods
 	// ---------------
 	// Initializes the buffer objects/arrays
-	void setupLine(const std::vector<GLfloat>& vertices);
+	void setup_line(const std::vector<GLfloat>& vertices);
 
 };

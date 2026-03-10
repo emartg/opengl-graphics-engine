@@ -1,37 +1,37 @@
 /*
-* GLFWRenderer.cpp
+* GLFW_Renderer.cpp
 * Implements an inferited class of the Renderer interface using GLFW,
 * a library for creating windows and handling input.
 */
 
-#include "GLFWRenderer.h"
+#include "GLFW_Renderer.h"
 
 #include "../gui/Gui.h"
 
 #include "../core/Core.h"
 #include "../core/renderer/Renderer.h"
-#include "../core/managers/SelectionManager.h"
-#include "../core/managers/InputManager.h"
+#include "../core/managers/Selection_Manager.h"
+#include "../core/managers/Input_Manager.h"
 
-GLFWRenderer::GLFWRenderer() : window{ nullptr }, gui{ nullptr } {}
+GLFW_Renderer::GLFW_Renderer() : window{ nullptr }, gui{ nullptr } {}
 
-GLFWRenderer::~GLFWRenderer()
+GLFW_Renderer::~GLFW_Renderer()
 {
 	if (window)
 	{
-		std::cout << "[INFO::GLFWRENDERER::~GLFWRenderer] Shutting down GLFW..." << std::endl;
+		std::cout << "[INFO::GLFWRENDERER::~GLFW_Renderer] Shutting down GLFW..." << std::endl;
 		glfwDestroyWindow(window);
 		window = nullptr;
 	}
 	glfwTerminate();
-	std::cout << "[INFO::GLFWRENDERER::~GLFWRenderer] GLFW shut down successfully" << std::endl;
+	std::cout << "[INFO::GLFWRENDERER::~GLFW_Renderer] GLFW shut down successfully" << std::endl;
 }
 
-bool GLFWRenderer::Init() const
+bool GLFW_Renderer::init() const
 {
 	if (glfwInit() == GLFW_FALSE)
 	{
-		std::cerr << "[ERROR::GLFWRENDERER::InitGUI] Failed to initialize GLFW" << std::endl;
+		std::cerr << "[ERROR::GLFWRENDERER::init_gui] Failed to initialize GLFW" << std::endl;
 		return false;
 	}
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
@@ -42,52 +42,52 @@ bool GLFWRenderer::Init() const
 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
 
-	std::cout << "[SUCCESS::GLFWRENDERER::InitGUI] GLFW initialized successfully" << std::endl;
+	std::cout << "[SUCCESS::GLFWRENDERER::init_gui] GLFW initialized successfully" << std::endl;
 	return true;
 }
 
-void GLFWRenderer::CreateWindow(int width, int height, const char* title)
+void GLFW_Renderer::create_window(int width, int height, const char* title)
 {
 	window = glfwCreateWindow(width, height, title, nullptr, nullptr);
 	if (!window)
 	{
-		std::cerr << "[ERROR::GLFWRENDERER::CreateWindow] Failed to create GLFW window" << std::endl;
+		std::cerr << "[ERROR::GLFWRENDERER::create_window] Failed to create GLFW window" << std::endl;
 		glfwTerminate();
 	}
 	glfwMakeContextCurrent(window);
 }
 
-void GLFWRenderer::ConfigureWindow() const
+void GLFW_Renderer::configure_window() const
 {
-	glfwSetWindowUserPointer(window, const_cast<GLFWRenderer*>(this));
+	glfwSetWindowUserPointer(window, const_cast<GLFW_Renderer*>(this));
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 }
 
-void GLFWRenderer::PollIOEvents() const { glfwPollEvents(); }
+void GLFW_Renderer::poll_io_events() const { glfwPollEvents(); }
 
-void GLFWRenderer::SwapBuffers() const { glfwSwapBuffers(window); }
+void GLFW_Renderer::swap_buffers() const { glfwSwapBuffers(window); }
 
-bool GLFWRenderer::ShouldClose() const { return glfwWindowShouldClose(window); }
+bool GLFW_Renderer::should_close() const { return glfwWindowShouldClose(window); }
 
-float GLFWRenderer::GetTime() const { return glfwGetTime(); }
+float GLFW_Renderer::get_time() const { return glfwGetTime(); }
 
-const char* GLFWRenderer::GetProcAddress() const
+const char* GLFW_Renderer::get_proc_address() const
 {
 	return reinterpret_cast<const char*>(glfwGetProcAddress);
 }
 
-void GLFWRenderer::SetCallbackFunctions() const
+void GLFW_Renderer::set_callback_functions() const
 {
-	glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
-	glfwSetCursorPosCallback(window, cursorPosCallback);
-	glfwSetScrollCallback(window, scrollCallback);
-	glfwSetKeyCallback(window, keyCallback);
-	glfwSetMouseButtonCallback(window, mouseButtonCallback);
+	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+	glfwSetCursorPosCallback(window, cursor_pos_callback);
+	glfwSetScrollCallback(window, scroll_callback);
+	glfwSetKeyCallback(window, key_callback);
+	glfwSetMouseButtonCallback(window, mouse_button_callback);
 }
 
-void GLFWRenderer::SetWindowShouldClose() const { glfwSetWindowShouldClose(window, true); }
+void GLFW_Renderer::set_window_should_close() const { glfwSetWindowShouldClose(window, true); }
 
-void GLFWRenderer::WaitForEvents() const
+void GLFW_Renderer::wait_for_events() const
 {
 	ImGuiIO& io = ImGui::GetIO();
 
@@ -95,53 +95,53 @@ void GLFWRenderer::WaitForEvents() const
 	// - mouse buttons pressed or held down (left, right, middle)
 	// - any key pressed (e.g. when typing in a text field or using keyboard shortcuts)
 	// - any ImGui widget active (e.g. sliders, buttons, text fields, etc.)
-	bool mouseButtonDown = io.MouseDown[0] || io.MouseDown[1] || io.MouseDown[2];
-	bool keyPressed = std::any_of(io.KeysData, io.KeysData + ImGuiKey_NamedKey_COUNT,
-								  [](const ImGuiKeyData& k) { return k.Down; });
-	bool widgetActive = ImGui::IsAnyItemActive();
+	bool mouse_button_down = io.MouseDown[0] || io.MouseDown[1] || io.MouseDown[2];
+	bool key_pressed = std::any_of(io.KeysData, io.KeysData + ImGuiKey_NamedKey_COUNT,
+								   [](const ImGuiKeyData& k) { return k.Down; });
+	bool widget_active = ImGui::IsAnyItemActive();
 	// determine if the user is interacting based on the above conditions
-	const bool interacting = mouseButtonDown || keyPressed || widgetActive;
+	const bool interacting = mouse_button_down || key_pressed || widget_active;
 
 	// define timeout for event waiting when interacting
-	constexpr float eventWaitTimeout = 1.0f / 60.0f; // ~60 Hz
+	constexpr float event_wait_timeout = 1.0f / 60.0f; // ~60 Hz
 
 	if (interacting) // while interacting, wake at ~60 Hz to maintain responsiveness
-		glfwWaitEventsTimeout(eventWaitTimeout);
+		glfwWaitEventsTimeout(event_wait_timeout);
 	else // when idle, fully block until the next OS event (e.g., passive mouse motion)
 		glfwWaitEvents();
 }
 
-void GLFWRenderer::InitGUI()
+void GLFW_Renderer::init_gui()
 {
 	gui = new GUI();
-	gui->InitGUI(window, "#version 420");
+	gui->init_gui(window, "#version 420");
 }
 
-void GLFWRenderer::BuildGUI() const { gui->BuildGUI(); }
+void GLFW_Renderer::build_gui() const { gui->build_gui(); }
 
-void GLFWRenderer::RenderGUI() const { gui->RenderGUI(); }
+void GLFW_Renderer::render_gui() const { gui->render_gui(); }
 
-void GLFWRenderer::ShutdownGUI()
+void GLFW_Renderer::shutdown_gui()
 {
 	if (gui)
 	{ // check if the GUI instance is not null before shutting it down
-		std::cout << "[INFO::GLFWRENDERER::ShutdownGUI] Shutting down GUI..." << std::endl;
+		std::cout << "[INFO::GLFWRENDERER::shutdown_gui] Shutting down GUI..." << std::endl;
 		// clean up the GUI resources and shutdown the GUI
-		gui->ShutdownGUI();
+		gui->shutdown_gui();
 		delete gui; // delete the GUI instance
 		gui = nullptr; // set the GUI pointer to nullptr to avoid dangling pointer
 	}
 
-	std::cout << "[INFO::GLFWRENDERER::ShutdownGUI] GUI shut down successfully" << std::endl;
+	std::cout << "[INFO::GLFWRENDERER::shutdown_gui] GUI shut down successfully" << std::endl;
 }
 
-void GLFWRenderer::framebufferSizeCallback(GLFWwindow* window, int width, int height)
+void GLFW_Renderer::framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
 	// set the viewport to the new framebuffer size
-	Core::GetInstance()->FramebufferSizeCallback(width, height);
+	Core::get_instance()->framebuffer_size_callback(width, height);
 }
 
-void GLFWRenderer::cursorPosCallback(GLFWwindow* window, double xpos, double ypos)
+void GLFW_Renderer::cursor_pos_callback(GLFWwindow* window, double xpos, double ypos)
 {
 	std::string button;
 	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_MIDDLE) == GLFW_PRESS)
@@ -151,32 +151,32 @@ void GLFWRenderer::cursorPosCallback(GLFWwindow* window, double xpos, double ypo
 	else
 		button = ""; // no button pressed
 
-	// delegate the cursor position callback to the InputManager
-	Core::GetInstance()->GetInputManager()->CursorPosCallback(xpos, ypos, button);
+	// delegate the cursor position callback to the Input_Manager
+	Core::get_instance()->get_input_manager()->cursor_pos_callback(xpos, ypos, button);
 }
 
-void GLFWRenderer::scrollCallback(GLFWwindow* window, double xoffset, double yoffset)
+void GLFW_Renderer::scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
-	// delegate the scroll callback to the InputManager
-	Core::GetInstance()->GetInputManager()->ScrollCallback(xoffset, yoffset);
+	// delegate the scroll callback to the Input_Manager
+	Core::get_instance()->get_input_manager()->scroll_callback(xoffset, yoffset);
 }
 
-void GLFWRenderer::keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
+void GLFW_Renderer::key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
-	// delegate the key callback to the InputManager
+	// delegate the key callback to the Input_Manager
 	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
-		Core::GetInstance()->GetInputManager()->KeyCallback("ESC_PRESSED");
+		Core::get_instance()->get_input_manager()->key_callback("ESC_PRESSED");
 	else if (key == GLFW_KEY_DELETE && action == GLFW_PRESS)
-		Core::GetInstance()->GetInputManager()->KeyCallback("DEL_PRESSED");
+		Core::get_instance()->get_input_manager()->key_callback("DEL_PRESSED");
 	else if (action == GLFW_PRESS)
 	{
 		// convert the key code to a string representation
 		std::string keyStr(1, static_cast<char>(key));
-		Core::GetInstance()->GetInputManager()->KeyCallback(keyStr + "_PRESSED");
+		Core::get_instance()->get_input_manager()->key_callback(keyStr + "_PRESSED");
 	}
 }
 
-void GLFWRenderer::mouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
+void GLFW_Renderer::mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 {
 	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
 	{ // if the left mouse button is pressed, perform object picking
@@ -190,14 +190,15 @@ void GLFWRenderer::mouseButtonCallback(GLFWwindow* window, int button, int actio
 		glfwGetCursorPos(window, &xpos, &ypos);
 
 		// use the actual default framebuffer size for correct Y-inversion and HiDPI support
-		// - Y-flip: OpenGL's origin is at the bottom-left corner, while windowing systems have it at the top-left
+		// - Y-flip: OpenGL's origin is at the bottom-left corner, 
+		//   while windowing systems have it at the top-left
 		// - HiDPI: the window size in screen coordinates may differ from the framebuffer size in pixels 
 		//   on high-DPI displays
-		int fbWidth, fbHeight;
-		glfwGetFramebufferSize(window, &fbWidth, &fbHeight);
+		int fb_width, fb_height;
+		glfwGetFramebufferSize(window, &fb_width, &fb_height);
 
-		// queue a pick request in the SelectionManager
-		auto core = Core::GetInstance();
-		core->GetSelectionManager()->QueuePick(xpos, ypos, fbWidth, fbHeight);
+		// queue a pick request in the selection manager
+		auto core = Core::get_instance();
+		core->get_selection_manager()->queue_pick(xpos, ypos, fb_width, fb_height);
 	}
 }

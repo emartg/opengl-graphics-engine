@@ -26,14 +26,14 @@
 // Forward declaration of classes to avoid cyclic includes and allow virtual interfaces and pointers
 class Node;
 class Light;
-class DirectionalLight;
-class PointLight;
+class Directional_Light;
+class Point_Light;
 class Spotlight;
 class Random;
 
 // Forward declaration of enum class to avoid cyclic includes
-enum class NodeType;
-enum class LightType;
+enum class Node_Type;
+enum class Light_Type;
 
 class GUI
 {
@@ -49,60 +49,60 @@ public:
 	// Public Methods
 	// --------------
 	// Initializes the GUI with the given GLFW window and GLSL version
-	void InitGUI(GLFWwindow* window, const char* glslVersion);
+	void init_gui(GLFWwindow* window, const char* glsl_version);
 	// Builds the GUI by starting a new ImGui frame and setting up the layout
-	void BuildGUI();
+	void build_gui();
 	// Renders the GUI by drawing the ImGui windows and handling input events
-	void RenderGUI();
+	void render_gui();
 	// Shuts down the GUI and cleans up resources
-	void ShutdownGUI() const;
+	void shutdown_gui() const;
 
 private:
 	// Private Attributes
 	// ------------------
-	std::unique_ptr<Random> m_randomizer; // random generator to get random colors, positions, etc.
+	std::unique_ptr<Random> randomizer; // random generator to get random colors, positions, etc.
 
 	// attributes for the new objects to be created
-	glm::vec4 m_newAlbedo;
-	glm::vec3 m_newPosition, m_newRotation, m_newDirection, m_newScale;
-	float m_newInnerCutOff, m_newOuterCutOff;
+	glm::vec4 new_albedo;
+	glm::vec3 new_position, new_rotation, new_direction, new_scale;
+	float new_inner_cutoff, new_outer_cutoff;
 
 	// set of node ids that should be auto-opened in the Scene Graph window
-	std::unordered_set<std::uint32_t> m_sceneGraphAutoOpenIds;
+	std::unordered_set<std::uint32_t> scene_graph_auto_open_ids;
 	// ids to actually force-open this frame (re-armed per selection change)
-	std::unordered_set<std::uint32_t> m_sceneGraphPendingOpenIds;
+	std::unordered_set<std::uint32_t> scene_graph_pending_open_ids;
 	// last selected id used to refresh the auto-open ids set (allows manual collapsing)
-	std::uint32_t m_lastAutoOpenSelectedId{ 0 };
+	std::uint32_t last_auto_open_selected_id{ 0 };
 
 	// parameters for the GUI layout and windows
 	// relative widths and heights of the windows relative to the display size
-	float m_sceneGraphWindowRelativeWidth, m_sceneGraphWindowRelativeHeight;
-	float m_debugWindowRelativeWidth, m_debugWindowRelativeHeight;
-	float m_creationWindowRelativeWidth, m_creationWindowRelativeHeight;
-	float m_propertiesWindowRelativeWidth, m_propertiesWindowRelativeHeight;
+	float scene_graph_window_relative_width, scene_graph_window_relative_height;
+	float creation_window_relative_width, creation_window_relative_height;
+	float properties_window_relative_width, properties_window_relative_height;
+	float debug_window_relative_width, debug_window_relative_height;
 	// offsets the windows from the edges of the display
-	float m_sceneGraphWindowXOffset, m_sceneGraphWindowYOffset;
-	float m_debugWindowXOffset, m_debugWindowYOffset;
-	float m_propertiesWindowXOffset, m_propertiesWindowYOffset;
-	float m_creationWindowXOffset, m_creationWindowYOffset;
+	float scene_graph_window_x_offset, scene_graph_window_y_offset;
+	float properties_window_x_offset, properties_window_y_offset;
+	float creation_window_x_offset, creation_window_y_offset;
+	float debug_window_x_offset, debug_window_y_offset;
 	// padding of the windows from the edges of the display
-	ImVec2 m_windowPositionPadding, m_windowSizePadding;
+	ImVec2 window_position_padding, window_size_padding;
 	// positions and sizes of the windows in the display
-	ImVec2 m_sceneGraphWindowPosition, m_debugWindowPosition,
-		m_creationWindowPosition, m_propertiesWindowPosition;
-	ImVec2 m_sceneGraphWindowSize, m_debugWindowSize,
-		m_creationWindowSize, m_propertiesWindowSize;
+	ImVec2 scene_graph_window_position, properties_window_position,
+		creation_window_position, debug_window_position;
+	ImVec2 scene_graph_window_size, properties_window_size,
+		creation_window_size, debug_window_size;
 	// flags for the windows to prevent focus on the first frame (indicating that the window just appeared)
-	bool m_sceneGraphWindowJustAppeared, m_debugWindowJustAppeared,
-		m_creationWindowJustAppeared, m_propertiesWindowJustAppeared;
+	bool scene_graph_window_just_appeared, properties_window_just_appeared,
+		creation_window_just_appeared, debug_window_just_appeared;
 
 	// style attributes for the GUI
-	ImFont* m_mediumFont; // medium font for the GUI (default font)
-	ImFont* m_boldFont; // bold font for the GUI
+	ImFont* medium_font; // medium font for the GUI (default font)
+	ImFont* bold_font; // bold font for the GUI
 
 	// Private Static Attributes
 	// -------------------------
-	static bool s_proportionalScaling; // flag for enabling/disabling proportional scaling
+	static bool proportional_scaling; // flag for enabling/disabling proportional scaling
 
 	// default values for ImGui widgets
 	static constexpr float INPUT_FIELD_WIDTH{ 70.0f }, INPUT_FIELD_HEIGHT{ 20.0f };
@@ -128,91 +128,93 @@ private:
 	// Private Methods
 	// ---------------
 	// Initializes the GUI layout attributes that do not depend on the display size
-	void initGUILayoutAttributes();
+	void init_gui_layout_attributes();
 
 	// Configures the ImGui style (fonts, colors, etc.)
-	void configureGUIStyle();
+	void configure_gui_style();
 
 	// Starts a new ImGui frame and configures the ImGui style
-	void beginGUIFrame() const;
+	void begin_gui_frame() const;
 	// Sets the GUI layout attributes based on the current display size
-	void configureGUILayout();
+	void configure_gui_layout();
 	// Draws the GUI windows
-	void drawGUIWindows();
+	void draw_gui_windows();
 	// Handles input events for ImGui
-	void handleImGuiInput() const;
+	void handle_gui_input() const;
 	// Resets all GUI windows to their default layout for the current display size
-	void resetGUILayout();
+	void reset_gui_layout();
 
 	// Draws the Scene Graph Window with a hierarchical tree view of all nodes
-	void drawSceneGraphWindow();
+	void draw_scene_graph_window();
 	// Draws the Properties Window with controls for the objects in the scene
-	void drawPropertiesWindow();
+	void draw_properties_window();
 	// Draws the Creation Window with buttons to add new objects to the scene
-	void drawCreationWindow();
+	void draw_creation_window();
 	// Draws the Debug Window with debug information and scene and GUI controls
-	void drawDebugWindow();
+	void draw_debug_window();
 
 	// Recursively draws a node and its children in the scene graph tree
-	void drawNodeTreeRecursive(const std::shared_ptr<Node>& node);
+	void draw_tree_node_recursive(const std::shared_ptr<Node>& node);
 	// Handles node selection logic (single selection only)
-	void handleNodeSelection(std::uint32_t nodeId);
+	void handle_node_selection(std::uint32_t node_id);
 	// Updates the set of node ids that should be auto-opened in the scene graph window
-	void updateSceneGraphAutoOpenSet();
+	void update_scene_graph_auto_open_set();
 
 	// Draws controls for a light. Depending on the type of light, 
 	// it will call dynamically cast to the appropriate light type and draw the corresponding controls
-	void drawLightControls(Light* light);
+	void draw_light_controls(Light* light);
 	// Draws controls for a directional light
-	void drawDirectionalLightControls(DirectionalLight* directionalLight);
+	void draw_directional_light_controls(Directional_Light* directional_light);
 	// Draws controls for a point light
-	void drawPointLightControls(PointLight* pointLight);
+	void draw_point_light_controls(Point_Light* point_light);
 	// Draws controls for a spotlight
-	void drawSpotlightControls(Spotlight* spotlight);
+	void draw_spotlight_controls(Spotlight* spotlight);
 	// Draws controls for a model
-	void drawModelControls(Node* model);
-
-	// Draws a remove button for an node and adds its Id to the vector of nodes marked for removal
-	void drawRemoveNodeButton(Node* node, std::vector<std::uint32_t>& nodesToRemoveIds,
-							  const std::string& label = "Remove",
-							  float buttonWidth = BUTTON_WIDTH, float buttonHeight = BUTTON_HEIGHT);
+	void draw_model_controls(Node* model);
 
 	// Draws a pop-up modal window to create a new directional light
-	void drawCreateDirectionalLightPopup();
+	void draw_create_directional_light_popup();
 	// Draws a pop-up modal window to create a new point light
-	void drawCreatePointLightPopup();
+	void draw_create_point_light_popup();
 	// Draws a pop-up modal window to create a new spotlight
-	void drawCreateSpotlightPopup();
+	void draw_create_spotlight_popup();
 	// Draws a pop-up modal window to create a new plane shape
-	void drawCreatePlaneShapePopup();
+	void draw_create_plane_shape_popup();
 	// Draws a pop-up modal window to create a new cube shape
-	void drawCreateCubeShapePopup();
+	void draw_create_cube_shape_popup();
 	// Draws a pop-up modal window to import a model from a file
-	void drawImportModelPopup();
+	void draw_import_model_popup();
 	// Draws a pop-up modal window to import a skybox from a folder (6 textures)
-	void drawImportSkyboxPopup();
+	void draw_import_skybox_popup();
 
 	// Creates a color picker with sliders for RGB components
 	// and returns true if the color was changed
-	bool drawColorControl(const std::string& label, glm::vec3& color, bool showLabel = true,
-						  float colorPickerWidth = ImGui::GetContentRegionAvail().x);
+	bool draw_color_control(const std::string& label, glm::vec3& color, bool show_label = true,
+							float color_picker_width = ImGui::GetContentRegionAvail().x);
 	// Creates a color picker with sliders for RGBA components
 	// and returns true if the color was changed
-	bool drawColorControl(const std::string& label, glm::vec4& color, bool showLabel = true,
-						  float colorPickerWidth = ImGui::GetContentRegionAvail().x);
+	bool draw_color_control(const std::string& label, glm::vec4& color, bool show_label = true,
+							float color_picker_width = ImGui::GetContentRegionAvail().x);
 	// Creates a 3-component vector control with input fields and buttons
 	// and returns true if any of the components were changed
-	bool drawVec3Control(const std::string& label, glm::vec3& values, bool scaleControls,
-						 float minInputFieldValue, float maxInputFieldValue,
-						 float inputFieldWidth = INPUT_FIELD_WIDTH,
-						 float speed = 0.1f, float resetValue = 0.0f,
-						 float resetButtonWidth = BUTTON_WIDTH, float resetButtonHeight = BUTTON_HEIGHT);
+	bool draw_vec3_control(const std::string& label, glm::vec3& values, bool scale_controls,
+						   float min_input_field_value, float max_input_field_value,
+						   float input_field_width = INPUT_FIELD_WIDTH,
+						   float speed = 0.1f, float reset_value = 0.0f,
+						   float reset_button_width = BUTTON_WIDTH,
+						   float reset_button_height = BUTTON_HEIGHT);
 	// Draws a float control with an input field and arrow buttons
 	// and returns true if the value was changed
-	bool drawFloatControl(const std::string& label, float& value,
-						  float minInputFieldValue, float maxInputFieldValue,
-						  float inputFieldWidth = INPUT_FIELD_WIDTH,
-						  float speed = 0.1f, float resetValue = 0.0f,
-						  float resetButtonWidth = BUTTON_WIDTH, float resetButtonHeight = BUTTON_HEIGHT);
+	bool draw_float_control(const std::string& label, float& value,
+							float min_input_field_value, float max_input_field_value,
+							float input_field_width = INPUT_FIELD_WIDTH,
+							float speed = 0.1f, float resetValue = 0.0f,
+							float reset_button_width = BUTTON_WIDTH,
+							float reset_button_height = BUTTON_HEIGHT);
+
+	// Draws a remove button for an node and adds its id to the vector of nodes marked for removal
+	void draw_remove_node_button(Node* node, std::vector<std::uint32_t>& nodes_to_remove_ids,
+								 const std::string& label = "Remove",
+								 float button_width = BUTTON_WIDTH, float button_height = BUTTON_HEIGHT);
 
 };

@@ -12,30 +12,30 @@
 
 // Constructors
 // ------------
-Model::Model(const std::string& name, const NodeType type,
+Model::Model(const std::string& name, const Node_Type type,
 			 const glm::vec4 albedo, const glm::vec3 position,
 			 const glm::quat rotation, const glm::vec3 scale,
-			 const glm::vec3 forward, const glm::vec3 meshForward,
-			 const GizmoType gizmoType)
-	: Node(name, type, albedo, position, rotation, scale, forward, meshForward, gizmoType)
+			 const glm::vec3 forward, const glm::vec3 mesh_forward,
+			 const Gizmo_Type gizmo_type)
+	: Node(name, type, albedo, position, rotation, scale, forward, mesh_forward, gizmo_type)
 {}
 
 // Public Methods
 // --------------
-void Model::Draw() const
+void Model::draw() const
 {
 	for (const auto& mesh : meshes)
-		if (mesh) { mesh->Draw(); }
+		if (mesh) { mesh->draw(); }
 }
 
-void Model::Draw(const Shader& shader) const
+void Model::draw(const Shader& shader) const
 {
 	for (const auto& mesh : meshes)
 	{
 		if (mesh)
 		{
-			mesh->BindTextures(const_cast<Shader&>(shader)); // bind the textures
-			mesh->Draw();
+			mesh->bind_textures(const_cast<Shader&>(shader)); // bind the textures
+			mesh->draw();
 		}
 	}
 }

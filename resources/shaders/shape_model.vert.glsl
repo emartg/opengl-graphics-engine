@@ -4,62 +4,62 @@ layout(location = 1) in vec3 aNormal;
 layout(location = 2) in vec2 aTexCoords;
 
 // maximum number of lights in the scene (same as in the fragment shader)
-#define MAX_N_DIR_LIGHTS 3
-#define MAX_N_POINT_LIGHTS 3
-#define MAX_N_SPOTLIGHTS 3
+#define MAX_DIR_LIGHTS_COUNT	3
+#define MAX_POINT_LIGHTS_COUNT	3
+#define MAX_SPOTLIGHTS_COUNT	3
 
-// fragment position, normal and texture coordinates in view space to be passed to the fragment shader
-out vec3 FragPos;
-out vec3 Normal;
-out vec2 TexCoords;
+// fragment position, normal and texture coordinates in u_view space to be passed to the fragment shader
+out vec3 v_frag_pos;
+out vec3 v_normal;
+out vec2 v_tex_coords;
 
-// statically sized arrays of light attributes in view space to be passed to the fragment shader
-out vec3 DirectionalLightDir[MAX_N_DIR_LIGHTS];
-out vec3 PointLightPos[MAX_N_POINT_LIGHTS];
-out vec3 SpotlightPos[MAX_N_SPOTLIGHTS];
-out vec3 SpotlightDir[MAX_N_SPOTLIGHTS];
+// statically sized arrays of light attributes in u_view space to be passed to the fragment shader
+out vec3 v_directional_light_dir[MAX_DIR_LIGHTS_COUNT];
+out vec3 v_point_light_pos[MAX_POINT_LIGHTS_COUNT];
+out vec3 v_spotlight_pos[MAX_SPOTLIGHTS_COUNT];
+out vec3 v_spotlight_dir[MAX_SPOTLIGHTS_COUNT];
 
 // transformation matrices
-uniform mat4 model;
-uniform mat4 view;
-uniform mat4 projection;
+uniform mat4 u_projection;
+uniform mat4 u_view;
+uniform mat4 u_model;
 
 // number of lights currently in the scene
-uniform int nDirectionalLights;
-uniform int nPointLights;
-uniform int nSpotlights;
+uniform int u_directional_light_count;
+uniform int u_point_light_count;
+uniform int u_spotlight_count;
 
 // statically sized arrays of light attributes in world space
-uniform vec3 directionalLightDir[MAX_N_DIR_LIGHTS];	
-uniform vec3 pointLightPos[MAX_N_POINT_LIGHTS];
-uniform vec3 spotlightPos[MAX_N_SPOTLIGHTS];
-uniform vec3 spotlightDir[MAX_N_SPOTLIGHTS];
+uniform vec3 u_directional_light_dir[MAX_DIR_LIGHTS_COUNT];	
+uniform vec3 u_point_light_pos[MAX_POINT_LIGHTS_COUNT];
+uniform vec3 u_spotlight_pos[MAX_SPOTLIGHTS_COUNT];
+uniform vec3 u_spotlight_dir[MAX_SPOTLIGHTS_COUNT];
 
 void main()
 {
-	// loop through all directional lights and transform their attributes from world space to view space
-	for (int i = 0; i < nDirectionalLights; i++)
+	// loop through all directional lights and transform their attributes from world space to u_view space
+	for (int i = 0; i < u_directional_light_count; i++)
 	{
-		DirectionalLightDir[i] = vec3(view * vec4(directionalLightDir[i], 0.0));
+		v_directional_light_dir[i] = vec3(u_view * vec4(u_directional_light_dir[i], 0.0));
 	}
 
-	// loop through all point lights and transform their attributes from world space to view space
-	for (int i = 0; i < nPointLights; i++)
+	// loop through all point lights and transform their attributes from world space to u_view space
+	for (int i = 0; i < u_point_light_count; i++)
 	{
-		PointLightPos[i] = vec3(view * vec4(pointLightPos[i], 1.0));
+		v_point_light_pos[i] = vec3(u_view * vec4(u_point_light_pos[i], 1.0));
 	}
 
-	// loop through all spotlights and transform their attributes from world space to view space
-	for (int i = 0; i < nSpotlights; i++)
+	// loop through all spotlights and transform their attributes from world space to u_view space
+	for (int i = 0; i < u_spotlight_count; i++)
 	{
-		SpotlightPos[i] = vec3(view * vec4(spotlightPos[i], 1.0));
+		v_spotlight_pos[i] = vec3(u_view * vec4(u_spotlight_pos[i], 1.0));
 		// direction is a 3 component vector, so we don't need to translate it (w = 0.0)
-		SpotlightDir[i] = vec3(view * vec4(spotlightDir[i], 0.0));
+		v_spotlight_dir[i] = vec3(u_view * vec4(u_spotlight_dir[i], 0.0));
 	}
 
-	FragPos = vec3(view * model * vec4(aPos, 1.0));
-	Normal = mat3(transpose(inverse(view * model))) * aNormal;  
-	TexCoords = aTexCoords;
+	v_frag_pos		= vec3(u_view * u_model * vec4(aPos, 1.0));
+	v_normal		= mat3(transpose(inverse(u_view * u_model))) * aNormal;  
+	v_tex_coords	= aTexCoords;
 
-	gl_Position = projection * view * model * vec4(aPos, 1.0);
+	gl_Position		= u_projection * u_view * u_model * vec4(aPos, 1.0);
 }

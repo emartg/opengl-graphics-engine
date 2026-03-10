@@ -1,6 +1,6 @@
 /*
-* AssimpModel.h
-* This file defines the AssimpModel class (a derived class of Model),
+* Assimp_Model.h
+* This file defines the Assimp_Model class (a derived class of Model),
 * which is used to load and draw 3D models from files using the Assimp library.
 */
 
@@ -22,22 +22,22 @@ class Mesh;
 class Texture;
 
 // Forward declaration of enum to avoid cyclic includes
-enum class TextureType;
+enum class Texture_Type;
 
-class AssimpModel : public Model
+class Assimp_Model : public Model
 {
 public:
 	// Constructors
 	// ------------
 	// Constructor that loads a model from a file
-	AssimpModel(const std::string& name, std::string const& path,
-				const glm::vec4 albedo = ALBEDO, const glm::vec3 position = POSITION,
-				const glm::quat rotation = ROTATION, const glm::vec3 scale = SCALE,
-				const glm::vec3 forward = FORWARD, const glm::vec3 meshForward = FORWARD);
+	Assimp_Model(const std::string& name, std::string const& path,
+				 const glm::vec4 albedo = ALBEDO, const glm::vec3 position = POSITION,
+				 const glm::quat rotation = ROTATION, const glm::vec3 scale = SCALE,
+				 const glm::vec3 forward = FORWARD, const glm::vec3 mesh_forward = FORWARD);
 
 	// Destructor
 	// ----------
-	~AssimpModel() = default;
+	~Assimp_Model() = default;
 
 private:
 	// Private Attributes
@@ -48,20 +48,20 @@ private:
 	// ---------------
 	// Loads a model with supported Assimp extensions from file and stores the resulting meshes 
 	// in the meshes vector
-	void loadAssimpModel(std::string const& path);
+	void load_assimp_model(std::string const& path);
 
 	// Processes a node in a recursive fashion. Processes each individual mesh located at the node 
 	// and repeats this process on its children nodes (if any)
-	void processNode(aiNode* node, const aiScene* scene);
+	void process_node(aiNode* node, const aiScene* scene);
 
 	// Processes a mesh and returns a shared pointer to the resulting Mesh object
-	std::shared_ptr<Mesh> processMesh(aiMesh* mesh, const aiScene* scene);
+	std::shared_ptr<Mesh> process_mesh(aiMesh* mesh, const aiScene* scene);
 
 	// Loads the material textures of a mesh
-	std::vector<std::shared_ptr<Texture>> loadMaterialTextures(aiMaterial* mat, aiTextureType type,
-															   TextureType textureType);
+	std::vector<std::shared_ptr<Texture>> load_material_textures(aiMaterial* mat, aiTextureType type,
+																 Texture_Type texture_type);
 
 	// Calculates the bounding box of the model based on the vertices of the meshes
-	void calculateBoundingBox();
+	void calculate_bounding_box();
 
 };

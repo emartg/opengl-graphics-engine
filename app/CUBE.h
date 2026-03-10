@@ -5,7 +5,7 @@
 * Vertices are replicated for each face, so that each face can have
 * different normals and texture coordinates.
 * The vertex data is separated into position, normal, and texture coordinate data, but there is also
-* an array and a vector with the interleaved vertex data to test the Shape constructors that take
+* an array and a vector with the interleaved vertex data to test the Shape_Model constructors that take
 * interleaved vertex data directly.
 */
 
@@ -16,10 +16,10 @@
 #include <glad/glad.h> // holds all OpenGL type declarations
 
 // Number of vertices and indices in the cube
-const GLuint nCubeVertices = 24, nCubeIndices = 36;
+const GLuint cube_vertex_count = 24, cube_index_count = 36;
 
 // Cube vertex position data
-const GLfloat cubePositionsArr[] = {
+const GLfloat cube_positions_array[] = {
 	// front
 	-1.0f,	-1.0f,	1.0f,
 	 1.0f,	-1.0f,  1.0f,
@@ -53,7 +53,7 @@ const GLfloat cubePositionsArr[] = {
 };
 
 // Cube normal data
-const GLfloat cubeNormalsArr[] = {
+const GLfloat cube_normals_array[] = {
 	// front
 	0.0f,	0.0f,	1.0f,
 	0.0f,	0.0f,	1.0f,
@@ -87,7 +87,7 @@ const GLfloat cubeNormalsArr[] = {
 };
 
 // Cube texture coordinate data
-const GLfloat cubeTexCoordsArr[] = {
+const GLfloat cube_tex_coords_array[] = {
 	// front
 	0.0f,	0.0f,
 	1.0f,	0.0f,
@@ -122,7 +122,7 @@ const GLfloat cubeTexCoordsArr[] = {
 
 // Cube index data
 // Winding order is counter-clockwise (CCW) when viewed from outside
-const GLuint cubeIndicesArr[] = {
+const GLuint cube_indices_array[] = {
 	// front (face toward +Z)
 	0, 1, 2,  // bottom-left, bottom-right, top-right (CCW)
 	0, 2, 3,  // bottom-left, top-right, top-left (CCW)
@@ -149,7 +149,7 @@ const GLuint cubeIndicesArr[] = {
 };
 
 // Interleaved cube vertex data (position, normal, texture coordinates)
-const GLfloat cubeVerticesArr[] = {
+const GLfloat cube_vertices_array[] = {
 	// position				 // normal				// texture coordinates
 	// front
 	-1.0f,	-1.0f,	1.0f,		0.0f,	0.0f,	1.0f,		0.0f,	0.0f,
@@ -184,18 +184,18 @@ const GLfloat cubeVerticesArr[] = {
 };
 
 // Cube data in vector form
-const std::vector<GLfloat> cubePositionsVec{
-	std::begin(cubePositionsArr), std::end(cubePositionsArr)
+const std::vector<GLfloat> cube_positions_vector{
+	std::begin(cube_positions_array), std::end(cube_positions_array)
 };
-const std::vector<GLfloat> cubeNormalsVec{
-	std::begin(cubeNormalsArr), std::end(cubeNormalsArr)
+const std::vector<GLfloat> cube_normals_vector{
+	std::begin(cube_normals_array), std::end(cube_normals_array)
 };
-const std::vector<GLfloat> cubeTexCoordsVec{
-	std::begin(cubeTexCoordsArr), std::end(cubeTexCoordsArr)
+const std::vector<GLfloat> cube_tex_coords_vector{
+	std::begin(cube_tex_coords_array), std::end(cube_tex_coords_array)
 };
-const std::vector<GLuint> cubeIndicesVec{
-	std::begin(cubeIndicesArr), std::end(cubeIndicesArr)
+const std::vector<GLuint> cube_indices_vector{
+	std::begin(cube_indices_array), std::end(cube_indices_array)
 };
-const std::vector<GLfloat> cubeVerticesVec{
-	std::begin(cubeVerticesArr), std::end(cubeVerticesArr)
+const std::vector<GLfloat> cube_vertices_vector{
+	std::begin(cube_vertices_array), std::end(cube_vertices_array)
 };

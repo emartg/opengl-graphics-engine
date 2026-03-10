@@ -23,10 +23,10 @@
 // Forward declaration of classes to avoid cyclic includes and allow virtual interfaces and pointers
 class Camera;
 class Renderer;
-class NodeManager;
-class InputManager;
-class SceneManager;
-class SelectionManager;
+class Node_Manager;
+class Input_Manager;
+class Scene_Manager;
+class Selection_Manager;
 
 class Core
 {
@@ -41,25 +41,25 @@ private:
 
 	// Private Static Instance
 	// -----------------------
-	static Core* m_instance; // instance of the Core class (Singleton)
+	static Core* instance; // instance of the Core class (Singleton)
 
 	// Private Attributes
 	// ------------------
-	Renderer* m_renderer;
+	Renderer* renderer;
 
 	// manager instances
-	std::shared_ptr<NodeManager> m_nodeManager;
-	std::shared_ptr<InputManager> m_inputManager;
-	std::shared_ptr<SceneManager> m_sceneManager;
-	std::shared_ptr<SelectionManager> m_selectionManager;
+	std::shared_ptr<Node_Manager> node_manager;
+	std::shared_ptr<Input_Manager> input_manager;
+	std::shared_ptr<Scene_Manager> scene_manager;
+	std::shared_ptr<Selection_Manager> selection_manager;
 
 	// screen settings
-	GLuint m_screenWidth{ 1600 }, m_screenHeight{ 1000 }; // default screen width and height
+	GLuint screen_width{ 1600 }, screen_height{ 1000 }; // default screen width and height
 
 	// Private Static Methods
 	// ----------------------
 	// Destroys the instance of the Core class (Singleton)
-	static void destroyInstance();
+	static void destroy_instance();
 
 public:
 	// Constructors
@@ -73,50 +73,50 @@ public:
 	// Public Static Methods
 	// ---------------------
 	// Returns the instance of the Core class (Singleton)
-	static Core* GetInstance();
+	static Core* get_instance();
 
 	// Public Methods
 	// --------------
 	// Getters
-	Renderer* GetRenderer() const { return m_renderer; }
+	Renderer* get_renderer() const { return renderer; }
 
-	const std::shared_ptr<NodeManager>& GetNodeManager() const { return m_nodeManager; }
-	const std::shared_ptr<InputManager>& GetInputManager() const { return m_inputManager; }
-	const std::shared_ptr<SceneManager>& GetSceneManager() const { return m_sceneManager; }
-	const std::shared_ptr<SelectionManager>& GetSelectionManager() const { return m_selectionManager; }
+	const std::shared_ptr<Node_Manager>& get_node_manager() const { return node_manager; }
+	const std::shared_ptr<Input_Manager>& get_input_manager() const { return input_manager; }
+	const std::shared_ptr<Scene_Manager>& get_scene_manager() const { return scene_manager; }
+	const std::shared_ptr<Selection_Manager>& get_selection_manager() const { return selection_manager; }
 
-	const GLuint& GetScreenWidth() const { return m_screenWidth; }
-	const GLuint& GetScreenHeight() const { return m_screenHeight; }
+	const GLuint& get_screen_width() const { return screen_width; }
+	const GLuint& get_screen_height() const { return screen_height; }
 
 	// Setters
-	void SetRenderer(Renderer* renderer) { m_renderer = renderer; }
+	void set_renderer(Renderer* renderer) { this->renderer = renderer; }
 
-	void SetScreenWidth(GLuint width) { m_screenWidth = width; }
-	void SetScreenHeight(GLuint height) { m_screenHeight = height; }
+	void set_screen_width(GLuint width) { screen_width = width; }
+	void set_screen_height(GLuint height) { screen_height = height; }
 
 	// Initializes the core engine (OpenGL, window, GUI, etc.)
-	bool Init() const;
+	bool init() const;
 	// Runs the main loop of the engine until the renderer signals that the window should close
-	void Run();
+	void run();
 	// Frees resources in the correct order and shuts down the engine, destroying the Core instance
-	void Shutdown();
+	void shutdown();
 
 	// Creates the shader programs, and delegates the shader compilation and program linking to the renderer.
 	// Returns true if compilation and linking were successful, false otherwise
-	bool CompileShaders(const std::vector<std::string>& shaderNames,
-						const std::vector<std::string>& vertexShaderPaths,
-						const std::vector<std::string>& fragmentShaderPaths);
-	bool CompileShaders(const std::vector<std::string>& shaderNames,
-						const std::vector<std::string>& vertexShaderPaths,
-						const std::vector<std::string>& geometryShaderPaths,
-						const std::vector<std::string>& fragmentShaderPaths);
+	bool compile_shaders(const std::vector<std::string>& shader_names,
+						 const std::vector<std::string>& vertex_shader_paths,
+						 const std::vector<std::string>& fragment_shader_paths);
+	bool compile_shaders(const std::vector<std::string>& shader_names,
+						 const std::vector<std::string>& vertex_shader_paths,
+						 const std::vector<std::string>& geometry_shader_paths,
+						 const std::vector<std::string>& fragment_shader_paths);
 
 	// Loads the textures and adds them to the engine
-	void LoadTextures(const std::vector<std::string>& textureNames,
-					  const std::vector<std::string>& texturePaths,
-					  const std::vector<std::string>& textureTypes);
+	void load_textures(const std::vector<std::string>& texture_names,
+					   const std::vector<std::string>& texture_paths,
+					   const std::vector<std::string>& texture_types);
 
 	// Callback functions
-	void FramebufferSizeCallback(GLint width, GLint height);
+	void framebuffer_size_callback(GLint width, GLint height);
 
 };

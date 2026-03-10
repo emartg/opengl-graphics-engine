@@ -15,50 +15,50 @@
 
 // Static Private Attributes
 // -------------------------
-std::uint32_t Node::nodesCount{}; // initialize the total number of nodes created to 0
+std::uint32_t Node::node_count{}; // initialize the total number of nodes created to 0
 
 // Public Methods
 // --------------
-const glm::vec3 Node::GetRotationInEulerAngles() const
+const glm::vec3 Node::get_rotation_in_euler_angles() const
 {
 	// convert the quaternion rotation to Euler angles in radians, then to degrees
 	return glm::degrees(glm::eulerAngles(this->rotation));
 }
-const glm::vec3 Node::GetForward() const
+const glm::vec3 Node::get_forward() const
 {
 	// return the forward vector in world space, normalized
-	return glm::normalize(this->rotation * meshForward);
+	return glm::normalize(this->rotation * mesh_forward);
 }
 
-void Node::SetRotation(const glm::quat& rotation)
+void Node::set_rotation(const glm::quat& rotation)
 {
 	// normalize to ensure a valid rotation quaternion
 	this->rotation = glm::normalize(rotation);
 	// update forward vector based on the new rotation
-	this->forward = glm::normalize(this->rotation * meshForward);
+	this->forward = glm::normalize(this->rotation * mesh_forward);
 }
-void Node::SetRotationInEulerAngles(const glm::vec3 eulerAnglesDegrees)
+void Node::set_rotation_in_euler_angles(const glm::vec3 euler_angles_degrees)
 {
 	// convert degrees to radians for glm::quat constructor
-	glm::vec3 eulerAnglesRadians = glm::radians(eulerAnglesDegrees);
+	glm::vec3 euler_angles_radians = glm::radians(euler_angles_degrees);
 	// create quaternion from Euler angles
-	glm::quat newRotation = glm::quat(eulerAnglesRadians);
-	// use the SetRotation method to set the new rotation as a quaternion
-	SetRotation(newRotation);
+	glm::quat new_rotation = glm::quat(euler_angles_radians);
+	// use the set_rotation method to set the new rotation as a quaternion
+	set_rotation(new_rotation);
 }
-void Node::SetForward(const glm::vec3& worldForward)
+void Node::set_forward(const glm::vec3& world_forward)
 {
-	// ensure the worldForward vector is normalized
-	glm::vec3 normWorldForward = glm::normalize(worldForward);
-	// rotate the meshForward vector to align with the worldForward vector
-	glm::quat rotationQuat = glm::rotation(meshForward, normWorldForward);
+	// ensure the world_forward vector is normalized
+	glm::vec3 normalized_world_forward = glm::normalize(world_forward);
+	// rotate the mesh_forward vector to align with the world_forward vector
+	glm::quat rotation_quat = glm::rotation(mesh_forward, normalized_world_forward);
 	// normalize the rotation quaternion to ensure a valid rotation quaternion
-	this->rotation = glm::normalize(rotationQuat);
+	this->rotation = glm::normalize(rotation_quat);
 	// update the forward vector based on the new rotation
-	this->forward = normWorldForward;
+	this->forward = normalized_world_forward;
 }
 
-glm::mat4 Node::GetModelMatrix() const
+glm::mat4 Node::get_model_matrix() const
 {
 	glm::mat4 model = glm::mat4{ 1.0f };
 	model = glm::translate(model, position); // apply translation
@@ -66,41 +66,41 @@ glm::mat4 Node::GetModelMatrix() const
 	model = glm::scale(model, scale); // apply scaling
 	return model;
 }
-glm::mat4 Node::GetWorldModelMatrix() const
+glm::mat4 Node::get_world_model_matrix() const
 {
-	glm::mat4 localModelMatrix = GetModelMatrix(); // get local model matrix
-	auto parentPtr = parent.lock(); // get shared pointer to parent node (if any)
+	glm::mat4 local_model_matrix = get_model_matrix(); // get local model matrix
+	auto parent_ptr = parent.lock(); // get shared pointer to parent node (if any)
 	// if there is a parent, multiply its world model matrix with the local model matrix to get
 	// the world model matrix of this node, otherwise return the local model matrix
-	return parentPtr ? parentPtr->GetWorldModelMatrix() * localModelMatrix : localModelMatrix;
+	return parent_ptr ? parent_ptr->get_world_model_matrix() * local_model_matrix : local_model_matrix;
 }
-glm::mat4 Node::GetTranslationMatrix() const
+glm::mat4 Node::get_translation_matrix() const
 {
-	glm::mat4 translationMatrix = glm::mat4{ 1.0f };
-	translationMatrix = glm::translate(translationMatrix, position);
-	return translationMatrix;
+	glm::mat4 translation_matrix = glm::mat4{ 1.0f };
+	translation_matrix = glm::translate(translation_matrix, position);
+	return translation_matrix;
 }
-glm::mat4 Node::GetRotationMatrix() const
+glm::mat4 Node::get_rotation_matrix() const
 {
-	glm::mat4 rotationMatrix = glm::mat4{ 1.0f };
-	rotationMatrix *= glm::mat4_cast(rotation);
-	return rotationMatrix;
+	glm::mat4 rotation_matrix = glm::mat4{ 1.0f };
+	rotation_matrix *= glm::mat4_cast(rotation);
+	return rotation_matrix;
 }
-glm::mat4 Node::GetScaleMatrix() const
+glm::mat4 Node::get_scale_matrix() const
 {
-	glm::mat4 scaleMatrix = glm::mat4{ 1.0f };
-	scaleMatrix = glm::scale(scaleMatrix, scale);
-	return scaleMatrix;
+	glm::mat4 scale_matrix = glm::mat4{ 1.0f };
+	scale_matrix = glm::scale(scale_matrix, scale);
+	return scale_matrix;
 }
 
-const glm::vec3 Node::GetWorldPosition() const
+const glm::vec3 Node::get_world_position() const
 {
 	// get the world model matrix and extract the translation component
-	glm::mat4 worldModelMatrix = GetWorldModelMatrix();
-	return glm::vec3(worldModelMatrix[3]); // return the translation part
+	glm::mat4 world_model_matrix = get_world_model_matrix();
+	return glm::vec3(world_model_matrix[3]); // return the translation part
 }
 
-void Node::AddChild(const std::shared_ptr<Node>& child)
+void Node::add_child(const std::shared_ptr<Node>& child)
 {
 	if (!child) return; // check for null pointer
 	// avoid re-parenting to self
@@ -110,24 +110,24 @@ void Node::AddChild(const std::shared_ptr<Node>& child)
 
 	children.push_back(child); // add the child to the children vector
 	// use shared_from_this to get a shared_ptr to 'this' object
-	child->SetParent(shared_from_this()); // set this node as the parent of the child
+	child->set_parent(shared_from_this()); // set this node as the parent of the child
 }
-void Node::RemoveChild(const std::shared_ptr<Node>& child)
+void Node::remove_child(const std::shared_ptr<Node>& child)
 {
 	if (!child) return; // check for null pointer
 
 	// remove the child from the children vector
 	children.erase(std::remove(children.begin(), children.end(), child), children.end());
-	child->SetParent(nullptr); // reset the parent of the child to nullptr
+	child->set_parent(nullptr); // reset the parent of the child to nullptr
 }
-std::shared_ptr<Node> Node::GetRootNode() const
+std::shared_ptr<Node> Node::get_root_node() const
 {
 	// start from this node, using const_cast to call shared_from_this (which is non-const)
-	auto currentModel = const_cast<Node*>(this)->shared_from_this();
+	auto current_node = const_cast<Node*>(this)->shared_from_this();
 
 	// traverse up the parent chain until reaching the top-level ancestor (no parent)
-	while (currentModel && currentModel->GetParent())
-		currentModel = currentModel->GetParent(); // move up to the next parent
+	while (current_node && current_node->get_parent())
+		current_node = current_node->get_parent(); // move up to the next parent
 
-	return currentModel; // return the top-level ancestor or this if no parent
+	return current_node; // return the top-level ancestor or this if no parent
 }

@@ -16,27 +16,27 @@
 
 #include "SKYBOX.h" // skybox vertex data
 #include "SCREEN_QUAD.h" // screen-quad vertex data
-#include "RenderPass.h"
+#include "Render_Pass.h"
 #include "../Core.h"
 #include "../Node.h"
 #include "../gizmos/Line.h"
 #include "../camera/Camera.h"
 #include "../light/Light.h"
-#include "../light/DirectionalLight.h"
-#include "../light/PointLight.h"
+#include "../light/Directional_Light.h"
+#include "../light/Point_Light.h"
 #include "../light/Spotlight.h"
 #include "../model/Model.h"
 #include "../shader/Shader.h"
 #include "../texture/Texture.h"
-#include "../managers/NodeManager.h"
-#include "../managers/SceneManager.h"
-#include "../managers/SelectionManager.h"
+#include "../managers/Node_Manager.h"
+#include "../managers/Scene_Manager.h"
+#include "../managers/Selection_Manager.h"
 
 // Constructor
 // -----------
 Renderer::Renderer()
-	: m_mainRenderPass{ new RenderPass() },
-	m_deltaTime{ 0.0f }, m_lastFrameTime{ 0.0f }
+	: main_render_pass{ new Render_Pass() },
+	delta_time{ 0.0f }, last_frame_time{ 0.0f }
 {}
 
 // Destructor
@@ -44,38 +44,38 @@ Renderer::Renderer()
 Renderer::~Renderer()
 {
 	// deallocate the main render pass and nullify the pointer to avoid dangling pointer issues
-	if (m_mainRenderPass)
+	if (main_render_pass)
 	{
-		delete m_mainRenderPass;
-		m_mainRenderPass = nullptr;
+		delete main_render_pass;
+		main_render_pass = nullptr;
 	}
 
 	// delete screen-quad GL objects if created
-	if (m_screenQuadEBO) glDeleteBuffers(1, &m_screenQuadEBO);
-	if (m_screenQuadVBO) glDeleteBuffers(1, &m_screenQuadVBO);
-	if (m_screenQuadVAO) glDeleteVertexArrays(1, &m_screenQuadVAO);
+	if (screen_quad_ebo) glDeleteBuffers(1, &screen_quad_ebo);
+	if (screen_quad_vbo) glDeleteBuffers(1, &screen_quad_vbo);
+	if (screen_quad_vao) glDeleteVertexArrays(1, &screen_quad_vao);
 
 	// delete skybox GL objects if created
-	if (m_skyboxEBO) glDeleteBuffers(1, &m_skyboxEBO);
-	if (m_skyboxVBO) glDeleteBuffers(1, &m_skyboxVBO);
-	if (m_skyboxVAO) glDeleteVertexArrays(1, &m_skyboxVAO);
+	if (skybox_ebo) glDeleteBuffers(1, &skybox_ebo);
+	if (skybox_vbo) glDeleteBuffers(1, &skybox_vbo);
+	if (skybox_vao) glDeleteVertexArrays(1, &skybox_vao);
 
 	// clean up dynamic environment map FBOs, RBOs, and cubemap textures
-	for (auto [id, entry] : m_dynamicEnvMaps)
+	for (auto [id, entry] : dynamic_env_maps)
 	{
 		if (entry.fbo) glDeleteFramebuffers(1, &entry.fbo);
 		if (entry.rbo) glDeleteRenderbuffers(1, &entry.rbo);
-		if (entry.cubemapTexId) glDeleteTextures(1, &entry.cubemapTexId);
-		if (entry.prevCubemapTexId) glDeleteTextures(1, &entry.prevCubemapTexId);
+		if (entry.cubemap_tex_id) glDeleteTextures(1, &entry.cubemap_tex_id);
+		if (entry.prev_cubemap_tex_id) glDeleteTextures(1, &entry.prev_cubemap_tex_id);
 	}
-	m_dynamicEnvMaps.clear();
+	dynamic_env_maps.clear();
 
 	std::cout << "[RENDERER::~Renderer] Renderer destructor called" << std::endl;
 }
 
 // Public Methods
 // --------------
-void Renderer::ConfigOpenGL() const
+void Renderer::config_opengl() const
 {
 	// depth buffer configuration:
 	// 1. Enable the depth test
@@ -110,30 +110,30 @@ void Renderer::ConfigOpenGL() const
 	glBlendEquation(GL_FUNC_ADD); // standard blend equation (default)
 }
 
-void Renderer::ClearBuffers(BufferType bufferType) const
+void Renderer::clear_buffers(Buffer_Type buffer_type) const
 {
 	GLbitfield mask = 0;
-	switch (bufferType)
+	switch (buffer_type)
 	{
-		case BufferType::COLOR:
+		case Buffer_Type::COLOR:
 			mask |= GL_COLOR_BUFFER_BIT;
 			break;
-		case BufferType::DEPTH:
+		case Buffer_Type::DEPTH:
 			mask |= GL_DEPTH_BUFFER_BIT;
 			break;
-		case BufferType::STENCIL:
+		case Buffer_Type::STENCIL:
 			mask |= GL_STENCIL_BUFFER_BIT;
 			break;
-		case BufferType::COLOR_DEPTH:
+		case Buffer_Type::COLOR_DEPTH:
 			mask |= GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT;
 			break;
-		case BufferType::COLOR_STENCIL:
+		case Buffer_Type::COLOR_STENCIL:
 			mask |= GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT;
 			break;
-		case BufferType::DEPTH_STENCIL:
+		case Buffer_Type::DEPTH_STENCIL:
 			mask |= GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT;
 			break;
-		case BufferType::ALL:
+		case Buffer_Type::ALL:
 		default:
 			mask |= GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT;
 			break;
@@ -141,17 +141,17 @@ void Renderer::ClearBuffers(BufferType bufferType) const
 	glClear(mask); // clear the specified buffers
 }
 
-void Renderer::SetViewport(int width, int height) const
+void Renderer::set_viewport(int width, int height) const
 {
 	glViewport(0, 0, width, height);
 }
 
-void Renderer::SetClearColor(float r, float g, float b, float a) const
+void Renderer::set_clear_color(float r, float g, float b, float a) const
 {
 	glClearColor(r, g, b, a); // alpha is optional, default is 1.0f
 }
 
-bool Renderer::SetShaderByName(const std::string& name, const std::shared_ptr<Shader>& shader)
+bool Renderer::set_shader_by_name(const std::string& name, const std::shared_ptr<Shader>& shader)
 {
 	if (!shader)
 	{ // if the shader is null, print an error message and return false
@@ -162,370 +162,373 @@ bool Renderer::SetShaderByName(const std::string& name, const std::shared_ptr<Sh
 	// check if the shader name matches any of the known shaders, and if so,
 	// assign the shader to the corresponding member variable
 	if (strcmp(name.c_str(), "Shape Model Shader") == 0)
-		m_shapeModelShader = shader;
+		shape_model_shader = shader;
 	else if (strcmp(name.c_str(), "Assimp Model Shader") == 0)
-		m_assimpModelShader = shader;
+		assimp_model_shader = shader;
 	else if (strcmp(name.c_str(), "Single Albedo Shader") == 0)
-		m_singleAlbedoShader = shader;
-	else if (strcmp(name.c_str(), "Screen Shader") == 0)
-		m_screenShader = shader;
+		single_albedo_shader = shader;
+	else if (strcmp(name.c_str(), "Screen Quad Shader") == 0)
+		screen_quad_shader = shader;
 	else if (strcmp(name.c_str(), "Picking Shader") == 0)
-		m_pickingShader = shader;
+		picking_shader = shader;
 	else if (strcmp(name.c_str(), "Skybox Shader") == 0)
-		m_skyboxShader = shader;
+		skybox_shader = shader;
 	else if (strcmp(name.c_str(), "Equirectangular to Cubemap Shader") == 0)
-		m_equirectangularToCubemapShader = shader;
+		equirect_to_cubemap_shader = shader;
 	else if (strcmp(name.c_str(), "Reflective Shader") == 0)
-		m_reflectiveShader = shader;
+		reflective_shader = shader;
 	else if (strcmp(name.c_str(), "Refractive Shader") == 0)
-		m_refractiveShader = shader;
+		refractive_shader = shader;
 	else
 	{ // if the shader name is unknown, print an error message and return false
-		std::cerr << "[ERROR::RENDERER::SetShader] Unknown shader name: " << name << std::endl;
+		std::cerr << "[ERROR::RENDERER::SetShader] Unknown shader name provided: '"
+			<< name << "' " << std::endl;
 		return false;
 	}
 
 	// if the shader was set successfully, print a success message and return true
-	std::cout << "[SUCCESS::RENDERER::SetShader] Shader set successfully: " << name << std::endl;
+	std::cout << "[SUCCESS::RENDERER::SetShader] Shader with name '"
+		<< name << "' set successfully" << std::endl;
 	return true;
 }
 
-void Renderer::FrameStartConfig()
+void Renderer::frame_start_config()
 {
-	PollIOEvents(); // poll IO events (keyboard, mouse, etc.)
+	poll_io_events(); // poll IO events (keyboard, mouse, etc.)
 
-	BuildGUI(); // set up the GUI for the frame
+	build_gui(); // set up the GUI for the frame
 
 	// update time attributes
-	GLfloat currentFrame = static_cast<GLfloat>(GetTime());
-	m_deltaTime = currentFrame - m_lastFrameTime;
-	m_lastFrameTime = currentFrame;
+	GLfloat current_frame = static_cast<GLfloat>(get_time());
+	delta_time = current_frame - last_frame_time;
+	last_frame_time = current_frame;
 
-	EnsureOffscreenRenderPass(); // ensure offscreen target matches current window size
+	ensure_offscren_render_pass(); // ensure offscreen target matches current window size
 
-	auto core = Core::GetInstance();
-	auto& sceneManager = core->GetSceneManager();
-	auto& camera = sceneManager->GetCamera();
+	auto core = Core::get_instance();
+	auto& scene_manager = core->get_scene_manager();
+	auto& camera = scene_manager->get_camera();
 
 	// perform all pre-render passes (cubemap generation, dynamic reflections, etc.)
 	// before binding the main render pass and setting up the main camera
 
 	// ensure the skybox is a valid cubemap texture early (needed for environment mapping)
 	// and update per-object dynamic environment maps (if any)
-	if (sceneManager->GetSkybox()) ConvertHDRToCubemapIfNeeded();
-	UpdateDynamicEnvMaps();
+	if (scene_manager->get_skybox()) convert_hdr_to_cubemap_if_needed();
+	update_dynamic_env_maps();
 
 	// process pending picking request before main scene rendering
-	core->GetSelectionManager()->ProcessPendingPick(camera.get(), core->GetNodeManager().get());
+	core->get_selection_manager()->process_pending_pick(camera.get(), core->get_node_manager().get());
 
 	// bind offscreen FBO and clear it
-	m_mainRenderPass->Bind();
-	SetClearColor(0.1f, 0.1f, 0.1f);
-	ClearBuffers(BufferType::ALL);
+	main_render_pass->bind();
+	set_clear_color(0.1f, 0.1f, 0.1f);
+	clear_buffers(Buffer_Type::ALL);
 }
 
-void Renderer::RenderScene()
+void Renderer::render_scene()
 {
-	auto core = Core::GetInstance(); // get the core instance
+	auto core = Core::get_instance(); // get the core instance
 	if (!core) // ensure the core instance is valid before proceeding
 	{ // if the core instance is null, print an error message and return
-		std::cerr << "[ERROR::RENDERER::RenderScene] Core instance is null" << std::endl;
+		std::cerr << "[ERROR::RENDERER::render_scene] Core instance is null" << std::endl;
 		return;
 	}
 
 	// get the node manager, scene manager, and camera from the core instance
-	auto& nodeManager = core->GetNodeManager();
-	auto& sceneManager = core->GetSceneManager();
-	auto& camera = sceneManager->GetCamera();
+	auto& node_manager = core->get_node_manager();
+	auto& scene_manager = core->get_scene_manager();
+	auto& camera = scene_manager->get_camera();
 
 	// ensure camera and shaders are valid before proceeding
-	if (!camera || !m_shapeModelShader || !m_assimpModelShader || !m_singleAlbedoShader
-		|| !m_screenShader || !m_pickingShader || !m_skyboxShader || !m_equirectangularToCubemapShader
-		|| !m_reflectiveShader || !m_refractiveShader)
+	if (!camera || !shape_model_shader || !assimp_model_shader || !single_albedo_shader
+		|| !screen_quad_shader || !picking_shader || !skybox_shader || !equirect_to_cubemap_shader
+		|| !reflective_shader || !refractive_shader)
 	{ // if any of them are null, print an error message and return
-		std::cerr << "[ERROR::RENDERER::RenderScene] Camera or shaders aren't set up correctly" << std::endl;
+		std::cerr << "[ERROR::RENDERER::render_scene] Camera or shaders aren't set up correctly"
+			<< std::endl;
 		return;
 	}
 
 	// compute view and projection transformations
 	glm::mat4 projection = glm::perspective(
-		glm::radians(camera->GetZoom()),
-		static_cast<GLfloat>(core->GetScreenWidth()) / static_cast<GLfloat>(core->GetScreenHeight()),
+		glm::radians(camera->get_zoom()),
+		static_cast<GLfloat>(core->get_screen_width()) / static_cast<GLfloat>(core->get_screen_height()),
 		0.1f, 100.0f);
-	glm::mat4 view = camera->GetViewMatrix();
+	glm::mat4 view = camera->get_view_matrix();
 
 	// transpose of the upper-left 3x3 submatrix of the view matrix, used for environment mapping
 	// (i.e., the inverse matrix of the rotation part of the view matrix)
-	glm::mat3 invViewRot = glm::transpose(glm::mat3(view));
+	glm::mat3 inv_view_rot = glm::transpose(glm::mat3(view));
 
 	// set the view and projection matrices for each shader program
-	auto& shaders = nodeManager->GetNodes(NodeType::SHADER);
+	auto& shaders = node_manager->get_nodes(Node_Type::SHADER);
 	for (const auto& node : shaders)
 	{
 		// dynamically cast the node to a Shader object
 		auto shader = std::dynamic_pointer_cast<Shader>(node);
 
-		shader->Use();
-		shader->SetMat4("view", view);
-		shader->SetMat4("projection", projection);
+		shader->use();
+		shader->set_mat4("u_view", view);
+		shader->set_mat4("u_projection", projection);
 	}
 
 	// set constant material uniforms
-	m_shapeModelShader->Use();
-	m_shapeModelShader->SetFloat("material.shininess", 32.0f); // shininess factor for the material
-	m_assimpModelShader->Use();
-	m_assimpModelShader->SetInt("material.albedoMap", 0);		// set albedo map to texture unit 0
-	m_assimpModelShader->SetInt("material.metallicMap", 1);		// set metallic map to texture unit 1
-	m_assimpModelShader->SetFloat("material.shininess", 32.0f); // set shininess factor for the material
+	shape_model_shader->use();
+	shape_model_shader->set_float("u_material.shininess", 32.0f); // shininess factor for the material
+	assimp_model_shader->use();
+	assimp_model_shader->set_int("u_material.albedo_map", 0);		// set albedo map to texture unit 0
+	assimp_model_shader->set_int("u_material.metallic_map", 1);	// set metallic map to texture unit 1
+	assimp_model_shader->set_float("u_material.shininess", 32.0f); // set shininess factor for the material
 
 	// set constant uniforms for the reflective and refractive shaders
-	m_reflectiveShader->Use();
-	m_reflectiveShader->SetMat3("invViewRot", invViewRot); // set inverse view rotation matrix
-	m_reflectiveShader->SetInt("skybox", 0); // set skybox texture unit to 0
-	m_refractiveShader->Use();
-	m_refractiveShader->SetMat3("invViewRot", invViewRot); // set inverse view rotation matrix
-	m_refractiveShader->SetFloat("ratio", 1.00f / 1.52f); // air to glass refraction index ratio
-	m_refractiveShader->SetInt("skybox", 0); // set skybox texture unit to 0
+	reflective_shader->use();
+	reflective_shader->set_mat3("u_inv_view_rot", inv_view_rot); // set inverse view rotation matrix
+	reflective_shader->set_int("u_skybox", 0); // set skybox texture unit to 0
+	refractive_shader->use();
+	refractive_shader->set_mat3("u_inv_view_rot", inv_view_rot); // set inverse view rotation matrix
+	refractive_shader->set_float("u_ratio", 1.00f / 1.52f); // air to glass refraction index ratio
+	refractive_shader->set_int("u_skybox", 0); // set skybox texture unit to 0
 
 	// set light uniforms
-	auto& lights = nodeManager->GetNodes(NodeType::LIGHT);
-	GLint pointLightIdx{}, spotlightIdx{}, directionalLightIdx{};
+	auto& lights = node_manager->get_nodes(Node_Type::LIGHT);
+	GLint point_light_idx{}, spotlight_idx{}, directional_light_idx{};
 	std::for_each(lights.begin(), lights.end(),
 				  [&](const std::shared_ptr<Node>& node)
 	{
 		// dynamically cast the node to a Light object
 		auto light = dynamic_cast<Light*>(node.get());
 
-		switch (light->GetLightType()) // switch based on the light type
+		switch (light->get_light_type()) // switch based on the light type
 		{
-			case LightType::DIRECTIONAL_LIGHT:
+			case Light_Type::DIRECTIONAL_LIGHT:
 			{
-				// dynamically cast the light to a DirectionalLight object
-				auto directionalLight = dynamic_cast<DirectionalLight*>(light);
+				// dynamically cast the light to a Directional_Light object
+				auto directional_light = dynamic_cast<Directional_Light*>(light);
 
 				// prefix for fragment shader uniforms
-				std::string prefix = "directionalLights[" + std::to_string(directionalLightIdx) + "].";
+				std::string prefix = "u_directional_lights[" + std::to_string(directional_light_idx) + "].";
 
 				// activate the shape model shader program
-				m_shapeModelShader->Use();
+				shape_model_shader->use();
 				// vertex shader uniforms
-				m_shapeModelShader->SetVec3(
-					"directionalLightDir[" + std::to_string(directionalLightIdx) + "]",
-					directionalLight->GetDirection()
+				shape_model_shader->set_vec3(
+					"u_directional_light_dir[" + std::to_string(directional_light_idx) + "]",
+					directional_light->get_direction()
 				);
 				// fragment shader uniforms
-				m_shapeModelShader->SetVec3(prefix + "ambient", directionalLight->GetAmbient());
-				m_shapeModelShader->SetVec3(prefix + "diffuse", directionalLight->GetDiffuse());
-				m_shapeModelShader->SetVec3(prefix + "specular", directionalLight->GetSpecular());
+				shape_model_shader->set_vec3(prefix + "ambient", directional_light->get_ambient());
+				shape_model_shader->set_vec3(prefix + "diffuse", directional_light->get_diffuse());
+				shape_model_shader->set_vec3(prefix + "specular", directional_light->get_specular());
 
 				// activate the assimp model shader program
-				m_assimpModelShader->Use();
+				assimp_model_shader->use();
 				// vertex shader uniforms
-				m_assimpModelShader->SetVec3(
-					"directionalLightDir[" + std::to_string(directionalLightIdx) + "]",
-					directionalLight->GetDirection()
+				assimp_model_shader->set_vec3(
+					"u_directional_light_dir[" + std::to_string(directional_light_idx) + "]",
+					directional_light->get_direction()
 				);
 				// fragment shader uniforms
-				m_assimpModelShader->SetVec3(prefix + "ambient", directionalLight->GetAmbient());
-				m_assimpModelShader->SetVec3(prefix + "diffuse", directionalLight->GetDiffuse());
-				m_assimpModelShader->SetVec3(prefix + "specular", directionalLight->GetSpecular());
+				assimp_model_shader->set_vec3(prefix + "ambient", directional_light->get_ambient());
+				assimp_model_shader->set_vec3(prefix + "diffuse", directional_light->get_diffuse());
+				assimp_model_shader->set_vec3(prefix + "specular", directional_light->get_specular());
 
-				directionalLightIdx++; // increment the directional light index for the next iteration
+				directional_light_idx++; // increment the directional light index for the next iteration
 			}
 			break;
-			case LightType::POINT_LIGHT:
+			case Light_Type::POINT_LIGHT:
 			{
-				// dynamically cast the light to a PointLight object
-				auto pointLight = dynamic_cast<PointLight*>(light);
+				// dynamically cast the light to a Point_Light object
+				auto point_light = dynamic_cast<Point_Light*>(light);
 
 				// prefix for fragment shader uniforms
-				std::string prefix = "pointLights[" + std::to_string(pointLightIdx) + "].";
+				std::string prefix = "u_point_lights[" + std::to_string(point_light_idx) + "].";
 
 				// activate the shape model shader program
-				m_shapeModelShader->Use();
+				shape_model_shader->use();
 				// vertex shader uniforms
-				m_shapeModelShader->SetVec3(
-					"pointLightPos[" + std::to_string(pointLightIdx) + "]",
-					pointLight->GetPosition()
+				shape_model_shader->set_vec3(
+					"u_point_light_pos[" + std::to_string(point_light_idx) + "]",
+					point_light->get_position()
 				);
 				// fragment shader uniforms
-				m_shapeModelShader->SetVec3(prefix + "ambient", pointLight->GetAmbient());
-				m_shapeModelShader->SetVec3(prefix + "diffuse", pointLight->GetDiffuse());
-				m_shapeModelShader->SetVec3(prefix + "specular", pointLight->GetSpecular());
-				m_shapeModelShader->SetFloat(prefix + "constant", pointLight->GetConstant());
-				m_shapeModelShader->SetFloat(prefix + "linear", pointLight->GetLinear());
-				m_shapeModelShader->SetFloat(prefix + "quadratic", pointLight->GetQuadratic());
+				shape_model_shader->set_vec3(prefix + "ambient", point_light->get_ambient());
+				shape_model_shader->set_vec3(prefix + "diffuse", point_light->get_diffuse());
+				shape_model_shader->set_vec3(prefix + "specular", point_light->get_specular());
+				shape_model_shader->set_float(prefix + "constant", point_light->get_constant());
+				shape_model_shader->set_float(prefix + "linear", point_light->get_linear());
+				shape_model_shader->set_float(prefix + "quadratic", point_light->get_quadratic());
 
 				// activate the assimp model shader program
-				m_assimpModelShader->Use();
+				assimp_model_shader->use();
 				// vertex shader uniforms
-				m_assimpModelShader->SetVec3(
-					"pointLightPos[" + std::to_string(pointLightIdx) + "]",
-					pointLight->GetPosition()
+				assimp_model_shader->set_vec3(
+					"u_point_light_pos[" + std::to_string(point_light_idx) + "]",
+					point_light->get_position()
 				);
 				// fragment shader uniforms
-				m_assimpModelShader->SetVec3(prefix + "ambient", pointLight->GetAmbient());
-				m_assimpModelShader->SetVec3(prefix + "diffuse", pointLight->GetDiffuse());
-				m_assimpModelShader->SetVec3(prefix + "specular", pointLight->GetSpecular());
-				m_assimpModelShader->SetFloat(prefix + "constant", pointLight->GetConstant());
-				m_assimpModelShader->SetFloat(prefix + "linear", pointLight->GetLinear());
-				m_assimpModelShader->SetFloat(prefix + "quadratic", pointLight->GetQuadratic());
+				assimp_model_shader->set_vec3(prefix + "ambient", point_light->get_ambient());
+				assimp_model_shader->set_vec3(prefix + "diffuse", point_light->get_diffuse());
+				assimp_model_shader->set_vec3(prefix + "specular", point_light->get_specular());
+				assimp_model_shader->set_float(prefix + "constant", point_light->get_constant());
+				assimp_model_shader->set_float(prefix + "linear", point_light->get_linear());
+				assimp_model_shader->set_float(prefix + "quadratic", point_light->get_quadratic());
 
-				pointLightIdx++; // increment the point light index for the next iteration
+				point_light_idx++; // increment the point light index for the next iteration
 			}
 			break;
-			case LightType::SPOTLIGHT:
+			case Light_Type::SPOTLIGHT:
 			{
 				// dynamically cast the light to a Spotlight object
 				auto spotlight = dynamic_cast<Spotlight*>(light);
 
 				// prefix for fragment shader uniforms
-				std::string prefix = "spotlights[" + std::to_string(spotlightIdx) + "].";
+				std::string prefix = "u_spotlights[" + std::to_string(spotlight_idx) + "].";
 
 				// activate the shape model shader program
-				m_shapeModelShader->Use();
+				shape_model_shader->use();
 				// vertex shader uniforms
-				m_shapeModelShader->SetVec3(
-					"spotlightPos[" + std::to_string(spotlightIdx) + "]",
-					spotlight->GetPosition()
+				shape_model_shader->set_vec3(
+					"u_spotlight_pos[" + std::to_string(spotlight_idx) + "]",
+					spotlight->get_position()
 				);
-				m_shapeModelShader->SetVec3(
-					"spotlightDir[" + std::to_string(spotlightIdx) + "]",
-					spotlight->GetDirection()
+				shape_model_shader->set_vec3(
+					"u_spotlight_dir[" + std::to_string(spotlight_idx) + "]",
+					spotlight->get_direction()
 				);
 				// fragment shader uniforms
-				m_shapeModelShader->SetVec3(prefix + "ambient", spotlight->GetAmbient());
-				m_shapeModelShader->SetVec3(prefix + "diffuse", spotlight->GetDiffuse());
-				m_shapeModelShader->SetVec3(prefix + "specular", spotlight->GetSpecular());
-				m_shapeModelShader->SetFloat(prefix + "constant", spotlight->GetConstant());
-				m_shapeModelShader->SetFloat(prefix + "linear", spotlight->GetLinear());
-				m_shapeModelShader->SetFloat(prefix + "quadratic", spotlight->GetQuadratic());
-				m_shapeModelShader->SetFloat(prefix + "innerCutOff", spotlight->GetInnerCutOff());
-				m_shapeModelShader->SetFloat(prefix + "outerCutOff", spotlight->GetOuterCutOff());
+				shape_model_shader->set_vec3(prefix + "ambient", spotlight->get_ambient());
+				shape_model_shader->set_vec3(prefix + "diffuse", spotlight->get_diffuse());
+				shape_model_shader->set_vec3(prefix + "specular", spotlight->get_specular());
+				shape_model_shader->set_float(prefix + "constant", spotlight->get_constant());
+				shape_model_shader->set_float(prefix + "linear", spotlight->get_linear());
+				shape_model_shader->set_float(prefix + "quadratic", spotlight->get_quadratic());
+				shape_model_shader->set_float(prefix + "inner_cutoff", spotlight->get_inner_cutoff());
+				shape_model_shader->set_float(prefix + "outer_cutoff", spotlight->get_outer_cutoff());
 
 				// activate the assimp model shader program
-				m_assimpModelShader->Use();
+				assimp_model_shader->use();
 				// vertex shader uniforms
-				m_assimpModelShader->SetVec3(prefix + "ambient", spotlight->GetAmbient());
-				m_assimpModelShader->SetVec3(
-					"spotlightPos[" + std::to_string(spotlightIdx) + "]",
-					spotlight->GetPosition()
+				assimp_model_shader->set_vec3(prefix + "ambient", spotlight->get_ambient());
+				assimp_model_shader->set_vec3(
+					"u_spotlight_pos[" + std::to_string(spotlight_idx) + "]",
+					spotlight->get_position()
 				);
-				m_assimpModelShader->SetVec3(
-					"spotlightDir[" + std::to_string(spotlightIdx) + "]",
-					spotlight->GetDirection()
+				assimp_model_shader->set_vec3(
+					"u_spotlight_dir[" + std::to_string(spotlight_idx) + "]",
+					spotlight->get_direction()
 				);
 				// fragment shader uniforms
-				m_assimpModelShader->SetVec3(prefix + "diffuse", spotlight->GetDiffuse());
-				m_assimpModelShader->SetVec3(prefix + "specular", spotlight->GetSpecular());
-				m_assimpModelShader->SetFloat(prefix + "constant", spotlight->GetConstant());
-				m_assimpModelShader->SetFloat(prefix + "linear", spotlight->GetLinear());
-				m_assimpModelShader->SetFloat(prefix + "quadratic", spotlight->GetQuadratic());
-				m_assimpModelShader->SetFloat(prefix + "innerCutOff", spotlight->GetInnerCutOff());
-				m_assimpModelShader->SetFloat(prefix + "outerCutOff", spotlight->GetOuterCutOff());
+				assimp_model_shader->set_vec3(prefix + "diffuse", spotlight->get_diffuse());
+				assimp_model_shader->set_vec3(prefix + "specular", spotlight->get_specular());
+				assimp_model_shader->set_float(prefix + "constant", spotlight->get_constant());
+				assimp_model_shader->set_float(prefix + "linear", spotlight->get_linear());
+				assimp_model_shader->set_float(prefix + "quadratic", spotlight->get_quadratic());
+				assimp_model_shader->set_float(prefix + "inner_cutoff", spotlight->get_inner_cutoff());
+				assimp_model_shader->set_float(prefix + "outer_cutoff", spotlight->get_outer_cutoff());
 
-				spotlightIdx++; // increment the spotlight index for the next iteration
+				spotlight_idx++; // increment the spotlight index for the next iteration
 			}
 			break;
-			case LightType::UNDEFINED:
+			case Light_Type::UNDEFINED:
 				// if the light type is undefined, print a message and return
-				std::cerr << "[ERROR::RENDERER::RenderScene] Light type is undefined for light: "
-					<< light->GetName() << std::endl;
+				std::cerr << "[ERROR::RENDERER::render_scene] Light type is undefined for light: "
+					<< light->get_name() << std::endl;
 				return;
 			default:
 				// if the light type is unknown, print an error message and return
-				std::cerr << "[ERROR::RENDERER::RenderScene] Unknown light type for light: "
-					<< light->GetName() << std::endl;
+				std::cerr << "[ERROR::RENDERER::render_scene] Unknown light type for light: "
+					<< light->get_name() << std::endl;
 				return;
 
 		}
 	});
-	m_shapeModelShader->Use();
-	m_shapeModelShader->SetInt("nDirectionalLights", directionalLightIdx);
-	m_shapeModelShader->SetInt("nPointLights", pointLightIdx);
-	m_shapeModelShader->SetInt("nSpotlights", spotlightIdx);
-	m_assimpModelShader->Use();
-	m_assimpModelShader->SetInt("nDirectionalLights", directionalLightIdx);
-	m_assimpModelShader->SetInt("nPointLights", pointLightIdx);
-	m_assimpModelShader->SetInt("nSpotlights", spotlightIdx);
+	shape_model_shader->use();
+	shape_model_shader->set_int("u_directional_light_count", directional_light_idx);
+	shape_model_shader->set_int("u_point_light_count", point_light_idx);
+	shape_model_shader->set_int("u_spotlight_count", spotlight_idx);
+	assimp_model_shader->use();
+	assimp_model_shader->set_int("u_directional_light_count", directional_light_idx);
+	assimp_model_shader->set_int("u_point_light_count", point_light_idx);
+	assimp_model_shader->set_int("u_spotlight_count", spotlight_idx);
 
 	// flatten scene graph into a single list of drawable nodes
-	std::vector<std::shared_ptr<Node>> drawableNodes;
-	auto& allNodes = nodeManager->GetNodes(NodeType::MODEL);
+	std::vector<std::shared_ptr<Node>> drawable_nodes;
+	auto& all_nodes = node_manager->get_nodes(Node_Type::MODEL);
 
 	// define a recursive lambda function to traverse the scene graph and collect drawable nodes,
 	// which are nodes that are visible and not pure containers (i.e., they have geometry to render)
-	std::function<void(const std::shared_ptr<Node>&)> collectDrawableNodes
+	std::function<void(const std::shared_ptr<Node>&)> collect_drawable_nodes
 		= [&](const std::shared_ptr<Node>& node)
 	{
 		if (!node) return; // if the node is null, return
-		if (!node->IsVisible()) return; // skip invisible nodes
+		if (!node->get_is_visible()) return; // skip invisible nodes
 
 		// if the node is not a pure container, add it to the list of drawables
-		if (node->GetNodeType() != NodeType::COMPOSITE_MODEL)
-			drawableNodes.push_back(node);
+		if (node->get_type() != Node_Type::COMPOSITE_MODEL)
+			drawable_nodes.push_back(node);
 
 		// recursively collect drawable nodes from the children of the current node
-		for (const auto& child : node->GetChildren())
-			collectDrawableNodes(child);
+		for (const auto& child : node->get_children())
+			collect_drawable_nodes(child);
 	};
 
 	// start collecting drawable nodes from all root nodes in the scene graph
-	for (const auto& node : allNodes)
+	for (const auto& node : all_nodes)
 	{
-		if (node && !node->GetParent())
-			collectDrawableNodes(node);
+		if (node && !node->get_parent())
+			collect_drawable_nodes(node);
 	}
 
 	// separate all drawable nodes into opaque and transparent lists for correct rendering order
-	std::vector<std::shared_ptr<Node>> opaqueNodes, transparentNodes;
-	opaqueNodes.reserve(drawableNodes.size());
-	transparentNodes.reserve(drawableNodes.size());
-	for (const auto& node : drawableNodes)
+	std::vector<std::shared_ptr<Node>> opaque_nodes, transparent_nodes;
+	opaque_nodes.reserve(drawable_nodes.size());
+	transparent_nodes.reserve(drawable_nodes.size());
+	for (const auto& node : drawable_nodes)
 	{
-		if (node->GetAlbedo().a < 1.0f) // if the node has alpha less than 1, consider it transparent
-			transparentNodes.push_back(node);
+		if (node->get_albedo().a < 1.0f) // if the node has alpha less than 1, consider it transparent
+			transparent_nodes.push_back(node);
 		else // otherwise, consider it opaque
-			opaqueNodes.push_back(node);
+			opaque_nodes.push_back(node);
 	}
 
 	// sort transparent nodes back-to-front based on their distance to the camera for correct blending
-	const auto& cameraPos = camera->GetPosition();
-	std::sort(transparentNodes.begin(), transparentNodes.end(),
+	const auto& camera_pos = camera->get_position();
+	std::sort(transparent_nodes.begin(), transparent_nodes.end(),
 			  [&](const std::shared_ptr<Node>& a, const std::shared_ptr<Node>& b)
 	{
 		// compute the distance from the camera to each node using their world positions
-		float distA = glm::length(cameraPos - a->GetWorldPosition());
-		float distB = glm::length(cameraPos - b->GetWorldPosition());
-		return distA > distB; // sort in descending order (back-to-front)
+		float dist_a = glm::length(camera_pos - a->get_world_position());
+		float dist_b = glm::length(camera_pos - b->get_world_position());
+		return dist_a > dist_b; // sort in descending order (back-to-front)
 	});
 
 	// opaque pass: render all opaque geometry first to ensure correct depth testing and early z-culling
-	for (const auto& node : opaqueNodes) RenderNode(node);
+	for (const auto& node : opaque_nodes) render_node(node);
 
 	// skybox pass: render the skybox after opaque geometry, but before transparent geometry rendering
 	// (this ensures the skybox is rendered behind all opaque geometry, but does not interfere with
 	// transparent geometry rendering, which may require depth sorting and blending with the skybox)
-	auto& skyboxTexture = sceneManager->GetSkybox();
-	if (skyboxTexture)
+	auto& skybox_texture = scene_manager->get_skybox();
+	if (skybox_texture)
 	{ // if a skybox texture is set, proceed to render the skybox
 		// perform (or retry) HDR to cubemap conversion if needed
-		ConvertHDRToCubemapIfNeeded();
+		convert_hdr_to_cubemap_if_needed();
 
-		skyboxTexture = sceneManager->GetSkybox(); // refresh pointer (conversion replaces the texture)
+		skybox_texture = scene_manager->get_skybox(); // refresh pointer (conversion replaces the texture)
 
 		// render the skybox only if the texture is a cubemap now
-		if (skyboxTexture && skyboxTexture->GetTextureType() == TextureType::CUBEMAP)
+		if (skybox_texture && skybox_texture->get_texture_type() == Texture_Type::CUBEMAP)
 		{ // if the skybox texture is now a cubemap, render the skybox
-			if (!m_skyboxVAO) InitSkyboxCube(); // initialize the skybox cube if not done yet
-			RenderSkyboxCube(skyboxTexture, view, projection);
+			if (!skybox_vao) init_skybox_cube(); // initialize the skybox cube if not done yet
+			render_skybox_cube(skybox_texture, view, projection);
 		}
-		else if (skyboxTexture && skyboxTexture->GetTextureType() == TextureType::HDR_EQUIRECTANGULAR)
+		else if (skybox_texture && skybox_texture->get_texture_type() == Texture_Type::HDR_EQUIRECTANGULAR)
 		{ // if the skybox is still HDR, print a warning message but continue rendering
 			// only warn occasionally (avoid spamming every frame)
-			static uint32_t warnCounter = 0;
-			if ((warnCounter++ % 240) == 0)
-				std::cerr << "[WARNING::RENDERER::RenderScene] "
+			static uint32_t warn_counter = 0;
+			if ((warn_counter++ % 240) == 0)
+				std::cerr << "[WARNING::RENDERER::render_scene] "
 				"Skybox still HDR (conversion pending)" << std::endl;
 		}
 	}
@@ -535,7 +538,7 @@ void Renderer::RenderScene()
 	// against the opaque geometry and skybox (but not against other transparent nodes, 
 	// which is why they are sorted back-to-front)
 	glDepthMask(GL_FALSE); // disable depth writing for transparent pass to allow blending with background
-	for (const auto& node : transparentNodes) RenderNode(node);
+	for (const auto& node : transparent_nodes) render_node(node);
 	glDepthMask(GL_TRUE); // re-enable depth writing after transparent pass
 
 	// disable face culling for light gizmos to ensure they are always visible
@@ -552,38 +555,38 @@ void Renderer::RenderScene()
 		if (!light) continue; // if the cast fails, skip to the next node
 
 		// set up the single albedo shader for rendering light gizmos
-		m_singleAlbedoShader->Use();
-		m_singleAlbedoShader->SetMat4("projection", projection);
-		m_singleAlbedoShader->SetMat4("view", view);
+		single_albedo_shader->use();
+		single_albedo_shader->set_mat4("u_projection", projection);
+		single_albedo_shader->set_mat4("u_view", view);
 
-		auto gizmo = light->GetGizmo();
+		auto gizmo = light->get_gizmo();
 		if (gizmo)
 		{
-			if (!gizmo->IsVisible()) continue; // skip invisible gizmos
+			if (!gizmo->get_is_visible()) continue; // skip invisible gizmos
 
 			// set the model matrix and albedo color for the light gizmo
-			m_singleAlbedoShader->SetMat4("model", gizmo->GetModelMatrix());
+			single_albedo_shader->set_mat4("u_model", gizmo->get_model_matrix());
 			// use light's diffuse color for the gizmo (to match light color)
-			m_singleAlbedoShader->SetVec3("albedo", light->GetDiffuse());
+			single_albedo_shader->set_vec3("u_albedo", light->get_diffuse());
 
-			gizmo->Draw(); // draw the light gizmo
+			gizmo->draw(); // draw the light gizmo
 
 			// for directional lights, also render the direction line as part of the gizmo
-			if (light->GetLightType() == LightType::DIRECTIONAL_LIGHT)
+			if (light->get_light_type() == Light_Type::DIRECTIONAL_LIGHT)
 			{
-				auto directionalLight = std::dynamic_pointer_cast<DirectionalLight>(light);
-				if (directionalLight)
+				auto directional_light = std::dynamic_pointer_cast<Directional_Light>(light);
+				if (directional_light)
 				{
-					auto& directionLine = directionalLight->GetGizmoDirectionLine();
-					if (directionLine)
+					auto& direction_line = directional_light->get_gizmo_direction_line();
+					if (direction_line)
 					{
 						// set the model matrix and albedo color for the direction line
 						// identity matrix for the line (as it does not need any further transformation)
-						m_singleAlbedoShader->SetMat4("model", glm::mat4(1.0f));
+						single_albedo_shader->set_mat4("u_model", glm::mat4(1.0f));
 						// use light's diffuse color for the direction line (to match light color)
-						m_singleAlbedoShader->SetVec3("albedo", directionalLight->GetDiffuse());
+						single_albedo_shader->set_vec3("u_albedo", directional_light->get_diffuse());
 
-						directionLine->Draw(); // draw the directional light direction line
+						direction_line->draw(); // draw the directional light direction line
 					}
 				}
 			}
@@ -598,92 +601,92 @@ void Renderer::RenderScene()
 	glEnable(GL_CULL_FACE);
 
 	// after the scene is rendered offscreen, composite to the default framebuffer
-	CompositeToScreen();
+	composite_to_screen();
 }
 
-void Renderer::FrameEndConfig() const { SwapBuffers(); }
+void Renderer::frame_end_config() const { swap_buffers(); }
 
-void Renderer::RegisterModelForDynamicEnvMapCapture(std::uint32_t modelId, GLuint resolution)
+void Renderer::register_model_for_dynamic_env_map_capture(std::uint32_t model_id, GLuint resolution)
 {
-	auto& entry = m_dynamicEnvMaps[modelId]; // get or create the dynamic env map entry
+	auto& entry = dynamic_env_maps[model_id]; // get or create the dynamic env map entry
 	entry.resolution = resolution; // set the resolution for the dynamic env map
-	entry.hasPrevCubemap = false; // initially, there is no valid previous cubemap
+	entry.has_prev_cubemap = false; // initially, there is no valid previous cubemap
 
-	std::cout << "[INFO::RENDERER::RegisterModelForDynamicEnvMapCapture] "
-		"Registered dynamic environment map for model id " << modelId
+	std::cout << "[INFO::RENDERER::register_model_for_dynamic_env_map_capture] "
+		"Registered dynamic environment map for model id " << model_id
 		<< " with resolution " << resolution << std::endl;
 }
 
-void Renderer::UnregisterModelForDynamicEnvMapCapture(std::uint32_t modelId)
+void Renderer::unregister_model_for_dynamic_env_map_capture(std::uint32_t model_id)
 {
-	auto it = m_dynamicEnvMaps.find(modelId); // find the dynamic env map entry by model id
-	if (it == m_dynamicEnvMaps.end()) return; // if not found, return
+	auto it = dynamic_env_maps.find(model_id); // find the dynamic env map entry by model id
+	if (it == dynamic_env_maps.end()) return; // if not found, return
 
 	auto& entry = it->second; // get the dynamic env map entry
-	entry.hasPrevCubemap = false; // explicitly mark previous cubemap as invalid before deletion
+	entry.has_prev_cubemap = false; // explicitly mark previous cubemap as invalid before deletion
 	// delete the FBO, RBO, and cubemap texture associated with the dynamic env map entry if they exist
 	if (entry.fbo) glDeleteFramebuffers(1, &entry.fbo);
 	if (entry.rbo) glDeleteRenderbuffers(1, &entry.rbo);
-	if (entry.cubemapTexId) glDeleteTextures(1, &entry.cubemapTexId);
-	m_dynamicEnvMaps.erase(it); // remove the entry from the map
+	if (entry.cubemap_tex_id) glDeleteTextures(1, &entry.cubemap_tex_id);
+	dynamic_env_maps.erase(it); // remove the entry from the map
 
-	std::cout << "[INFO::RENDERER::UnregisterModelForDynamicEnvMapCapture] "
-		"Unregistered dynamic environment map for model id " << modelId << std::endl;
+	std::cout << "[INFO::RENDERER::unregister_model_for_dynamic_env_map_capture] "
+		"Unregistered dynamic environment map for model id " << model_id << std::endl;
 }
 
 // Protected Methods
 // -----------------
-void Renderer::RenderNode(const std::shared_ptr<Node>& node)
+void Renderer::render_node(const std::shared_ptr<Node>& node)
 {
 	if (!node)
 	{ // if the node is null, print an error message and return
-		std::cerr << "[ERROR::RENDERER::RenderNode] Node is null" << std::endl;
+		std::cerr << "[ERROR::RENDERER::render_node] Node is null" << std::endl;
 		return;
 	}
 
-	if (!node->IsVisible()) return; // if the node is not visible, skip rendering
+	if (!node->get_is_visible()) return; // if the node is not visible, skip rendering
 
 	// auxiliary shared pointer to the shader program used for rendering the node and its children (if any)
-	std::shared_ptr<Shader> renderShader;
+	std::shared_ptr<Shader> render_shader;
 
 	// switch based on the gizmo type to:
 	// - set the current shader program accordingly for rendering
 	// - set the appropiate properties for the node for rendering
 	// - set the polygon mode (fill or line) for rendering
-	switch (node->GetGizmoType())
+	switch (node->get_gizmo_type())
 	{
-		case GizmoType::NONE: // if the node is not a gizmo
+		case Gizmo_Type::NONE: // if the node is not a gizmo
 		{
-			switch (node->GetNodeType()) // use the appropriate shader based on the node type
+			switch (node->get_type()) // use the appropriate shader based on the node type
 			{
 				// for container-only nodes (COMPOSITE_MODEL), we don't need to set a shader 
 				// as they don't have their own meshes to render
 
 				// COMPOSITE_ASSIMP_MODEL nodes have their own meshes, 
 				// so they are handled as regular ASSIMP_MODEL nodes here
-				case NodeType::COMPOSITE_ASSIMP_MODEL:
-				case NodeType::ASSIMP_MODEL:
+				case Node_Type::COMPOSITE_ASSIMP_MODEL:
+				case Node_Type::ASSIMP_MODEL:
 				{
-					renderShader = m_assimpModelShader;
-					renderShader->Use();
+					render_shader = assimp_model_shader;
+					render_shader->use();
 					// set the base opacity (alpha) of the model based on the node's albedo (RGBA)
-					renderShader->SetFloat("baseOpacity", node->GetAlbedo().a);
+					render_shader->set_float("u_material.base_opacity", node->get_albedo().a);
 				}
 				break;
 				// COMPOSITE_SHAPE_MODEL nodes have their own meshes, 
 				// so they are handled as regular SHAPE_MODEL nodes here
-				case NodeType::COMPOSITE_SHAPE_MODEL:
-				case NodeType::SHAPE_MODEL:
+				case Node_Type::COMPOSITE_SHAPE_MODEL:
+				case Node_Type::SHAPE_MODEL:
 				{
-					renderShader = m_shapeModelShader;
-					renderShader->Use();
+					render_shader = shape_model_shader;
+					render_shader->use();
 					// set the color of the shape based on the node's albedo (RGBA)
-					renderShader->SetVec4("material.albedo", node->GetAlbedo());
+					render_shader->set_vec4("u_material.albedo", node->get_albedo());
 				}
 				break;
 				default:
 					// if the node type is unknown, print an error message and return
-					std::cerr << "[ERROR::RENDERER::RenderNode] Unknown node type for " << node->GetName()
+					std::cerr << "[ERROR::RENDERER::render_node] Unknown node type for " << node->get_name()
 						<< std::endl;
 					return;
 			}
@@ -695,101 +698,101 @@ void Renderer::RenderNode(const std::shared_ptr<Node>& node)
 		break;
 		// gizmos for light sources (DIRECTIONAL_LIGHT, POINT_LIGHT, SPOTLIGHT) 
 		// are all rendered with the single albedo shader and in wireframe mode
-		case GizmoType::DIRECTIONAL_LIGHT:
-		case GizmoType::POINT_LIGHT:
-		case GizmoType::SPOTLIGHT:
+		case Gizmo_Type::DIRECTIONAL_LIGHT:
+		case Gizmo_Type::POINT_LIGHT:
+		case Gizmo_Type::SPOTLIGHT:
 		{
-			renderShader = m_singleAlbedoShader;
-			renderShader->Use();
+			render_shader = single_albedo_shader;
+			render_shader->use();
 			// set the color of the gizmo shape based on the node's albedo
-			renderShader->SetVec3("albedo", node->GetAlbedo());
+			render_shader->set_vec3("u_albedo", node->get_albedo());
 
 			// set the polygon mode to line for light gizmos
 			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 		}
 		break;
 		default: // if the gizmo type is unknown, print an error message and return
-			std::cerr << "[ERROR::RENDERER::RenderNode] Unknown gizmo type for node: " << node->GetName()
+			std::cerr << "[ERROR::RENDERER::render_node] Unknown gizmo type for node: " << node->get_name()
 				<< std::endl;
 			return;
 	}
 
-	if (renderShader)
+	if (render_shader)
 	{ // if the node has a valid shader to render with, finish setting up the shader and render the node
 		// handle two-sided nodes by disabling face culling temporarily if needed
-		const GLboolean cullWasEnabled = glIsEnabled(GL_CULL_FACE);
-		const bool needDisableCulling = node->IsTwoSided();
-		if (needDisableCulling && cullWasEnabled) glDisable(GL_CULL_FACE);
+		const GLboolean cull_was_enabled = glIsEnabled(GL_CULL_FACE);
+		const bool need_disable_culling = node->get_is_two_sided();
+		if (need_disable_culling && cull_was_enabled) glDisable(GL_CULL_FACE);
 
 		// set the node matrix for the current node (hierarchical world transformation)
-		renderShader->SetMat4("model", node->GetWorldModelMatrix());
+		render_shader->set_mat4("u_model", node->get_world_model_matrix());
 
-		// draw the node using its Draw method, passing the current shader program
-		node->Draw(*renderShader);
+		// draw the node using its draw method, passing the current shader program
+		node->draw(*render_shader);
 
 		// re-enable face culling if it was previously enabled
-		if (needDisableCulling && cullWasEnabled) glEnable(GL_CULL_FACE);
+		if (need_disable_culling && cull_was_enabled) glEnable(GL_CULL_FACE);
 	}
 }
 
-void Renderer::EnsureOffscreenRenderPass()
+void Renderer::ensure_offscren_render_pass()
 {
 	// get the core instance and screen dimensions
-	auto core = Core::GetInstance();
-	const int width = core->GetScreenWidth();
-	const int height = core->GetScreenHeight();
+	auto core = Core::get_instance();
+	const int width = core->get_screen_width();
+	const int height = core->get_screen_height();
 
 	if (width <= 0 || height <= 0) return; // ensure valid dimensions
 
 	// if the dimensions have changed or the FBO is not created yet, 
 	// recreate the offscreen render pass with the new dimensions
-	if (width != m_offscreenWidth || height != m_offscreenHeight || m_mainRenderPass->GetFboId() == 0)
+	if (width != offscreen_width || height != offscreen_height || main_render_pass->get_fbo_id() == 0)
 	{
 		// reset the specification and set new values
-		RenderPassSpecification spec{};
-		spec.Width = width;
-		spec.Height = height;
-		spec.ColorAttachmentCount = 1;
-		spec.HasDepthAttachment = true;
-		spec.HasStencilAttachment = true;
+		Render_Pass_Specification spec{};
+		spec.width = width;
+		spec.height = height;
+		spec.color_attachment_count = 1;
+		spec.has_depth_attachment = true;
+		spec.has_stencil_attachment = true;
 		// enable depth texture as it is needed later for depth-aware outline composite
 		// (to sample the selected object's depth in the main scene)
-		spec.DepthAsTexture = true;
+		spec.depth_as_texture = true;
 
 		// create the main render pass with the new specification and dimensions
-		m_mainRenderPass->Create(spec);
-		m_offscreenWidth = width;
-		m_offscreenHeight = height;
+		main_render_pass->create(spec);
+		offscreen_width = width;
+		offscreen_height = height;
 
 		// print a message indicating the offscreen render pass has been recreated
-		std::cout << "[INFO::RENDERER::EnsureOffscreenRenderPass] "
+		std::cout << "[INFO::RENDERER::ensure_offscren_render_pass] "
 			"\nOffscreen render pass recreated with updated dimensions:\n"
-			<< m_mainRenderPass->GetSpecificationStr() << std::endl;
+			<< main_render_pass->get_specification_str() << std::endl;
 	}
 
-	InitScreenQuad(); // initialize the screen quad if it hasn't been initialized yet
+	init_screen_quad(); // initialize the screen quad if it hasn't been initialized yet
 }
 
-void Renderer::InitScreenQuad()
+void Renderer::init_screen_quad()
 {
-	if (m_screenQuadVAO) return; // if the screen quad VAO is already initialized, return
+	if (screen_quad_vao) return; // if the screen quad VAO is already initialized, return
 
 	// create the screen quad VAO, VBO, and EBO
-	glGenVertexArrays(1, &m_screenQuadVAO);
-	glGenBuffers(1, &m_screenQuadVBO);
-	glGenBuffers(1, &m_screenQuadEBO);
+	glGenVertexArrays(1, &screen_quad_vao);
+	glGenBuffers(1, &screen_quad_vbo);
+	glGenBuffers(1, &screen_quad_ebo);
 
-	glBindVertexArray(m_screenQuadVAO); // bind the VAO to set up the vertex attributes
+	glBindVertexArray(screen_quad_vao); // bind the VAO to set up the vertex attributes
 
 	// bind the VBO and EBO, and send the screen quad vertex and index data to the GPU
-	glBindBuffer(GL_ARRAY_BUFFER, m_screenQuadVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, screen_quad_vbo);
 	glBufferData(GL_ARRAY_BUFFER,
-				 static_cast<GLsizeiptr>(screenQuadVerticesVec.size() * sizeof(GLfloat)),
-				 screenQuadVerticesVec.data(), GL_STATIC_DRAW);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_screenQuadEBO);
+				 static_cast<GLsizeiptr>(screen_quad_vertices_vector.size() * sizeof(GLfloat)),
+				 screen_quad_vertices_vector.data(), GL_STATIC_DRAW);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, screen_quad_ebo);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER,
-				 static_cast<GLsizeiptr>(screenQuadIndicesVec.size() * sizeof(GLuint)),
-				 screenQuadIndicesVec.data(), GL_STATIC_DRAW);
+				 static_cast<GLsizeiptr>(screen_quad_indices_vector.size() * sizeof(GLuint)),
+				 screen_quad_indices_vector.data(), GL_STATIC_DRAW);
 
 	// set the vertex attribute pointers for the screen quad
 	// compute a local stride for the vertex attributes (5 floats per vertex: 3 pos, 2 tex coords)
@@ -804,34 +807,34 @@ void Renderer::InitScreenQuad()
 	glBindVertexArray(0); // unbind the VAO to avoid accidental modifications
 }
 
-void Renderer::CompositeToScreen()
+void Renderer::composite_to_screen()
 {
 	// get the core instance and screen dimensions
-	auto core = Core::GetInstance();
-	const GLuint width = core->GetScreenWidth();
-	const GLuint height = core->GetScreenHeight();
+	auto core = Core::get_instance();
+	const GLuint width = core->get_screen_width();
+	const GLuint height = core->get_screen_height();
 
 	// get the selection manager from the core instance
-	auto selectionManager = core->GetSelectionManager();
+	auto selection_manager = core->get_selection_manager();
 
 	// depending on the debug mode and whether there is a selection,
 	// render the outline mask or the picking visualization
-	if (m_screenDebugParams.debugMode <= 1 && selectionManager->GetSelectedNodeId() != 0)
+	if (screen_debug_params.debug_mode <= 1 && selection_manager->get_selected_node_id() != 0)
 	{
-		// if debug mode is either Normal mode (1) or Inverted Colors mode (3), and there is a selection,
+		// if debug mode is either normal mode (1) or Inverted Colors mode (3), and there is a selection,
 		// render the outline mask
-		auto camera = core->GetSceneManager()->GetCamera();
-		selectionManager->RenderOutlineMask(camera.get(), core->GetNodeManager().get());
+		auto camera = core->get_scene_manager()->get_camera();
+		selection_manager->render_outline_mask(camera.get(), core->get_node_manager().get());
 	}
-	else if (m_screenDebugParams.debugMode == 2)
+	else if (screen_debug_params.debug_mode == 2)
 	{
 		// if debug mode is the Picking Colors mode (2), render picking visualization
-		auto camera = core->GetSceneManager()->GetCamera();
-		selectionManager->RenderPickingVisualization(camera.get(), core->GetNodeManager().get());
+		auto camera = core->get_scene_manager()->get_camera();
+		selection_manager->render_picking_visualization(camera.get(), core->get_node_manager().get());
 	}
 
 	// unbind offscreen target, effectively switching back to the default framebuffer
-	m_mainRenderPass->Unbind();
+	main_render_pass->unbind();
 
 	// draw the offscreen color texture to the back buffer via a screen quad
 	glViewport(0, 0, width, height); // set the viewport to the screen dimensions
@@ -839,110 +842,110 @@ void Renderer::CompositeToScreen()
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); // ensure we are in fill mode for the screen quad
 
 	// clear the default framebuffer color (keep depth and stencil buffers intact)
-	ClearBuffers(BufferType::COLOR);
+	clear_buffers(Buffer_Type::COLOR);
 
-	if (!m_screenShader)
+	if (!screen_quad_shader)
 	{ // if the screen shader is not set, print an error message and return
-		std::cerr << "[ERROR::RENDERER::CompositeToScreen] Screen Shader not set" << std::endl;
+		std::cerr << "[ERROR::RENDERER::composite_to_screen] Screen Quad Shader not set" << std::endl;
 		return;
 	}
 
 	// use the screen shader and set the texture to be rendered
-	m_screenShader->Use();
+	screen_quad_shader->use();
 	// set the screen texture uniform to texture unit 0
-	m_screenShader->SetInt("screenTexture", 0);
+	screen_quad_shader->set_int("u_screen_texture", 0);
 	// set screen debug parameters as uniforms in the screen fragment shader
-	std::string prefix = "screenDebugParams."; // prefix for the screen debug parameters
-	m_screenShader->SetInt(prefix + "debugMode", m_screenDebugParams.debugMode);
-	m_screenShader->SetVec3(prefix + "solidColor", m_screenDebugParams.solidColor);
-	m_screenShader->SetInt(prefix + "gridLineCount", m_screenDebugParams.gridLineCount);
-	m_screenShader->SetFloat(prefix + "gridLineThickness", m_screenDebugParams.gridLineThickness);
-	m_screenShader->SetVec3(prefix + "gridBgColor", m_screenDebugParams.gridBgColor);
-	m_screenShader->SetVec3(prefix + "gridLineColor", m_screenDebugParams.gridLineColor);
+	std::string prefix = "u_screen_debug_params."; // prefix for the screen debug parameters
+	screen_quad_shader->set_int(prefix + "debug_mode", screen_debug_params.debug_mode);
+	screen_quad_shader->set_vec3(prefix + "solid_color", screen_debug_params.solid_color);
+	screen_quad_shader->set_int(prefix + "grid_line_count", screen_debug_params.grid_line_count);
+	screen_quad_shader->set_float(prefix + "grid_line_thickness", screen_debug_params.grid_line_thickness);
+	screen_quad_shader->set_vec3(prefix + "grid_bg_color", screen_debug_params.grid_bg_color);
+	screen_quad_shader->set_vec3(prefix + "grid_line_color", screen_debug_params.grid_line_color);
 	// set the screen dimensions as a uniform in the screen fragment shader
-	m_screenShader->SetVec2("screenSize", glm::vec2(width, height));
+	screen_quad_shader->set_vec2("u_screen_size", glm::vec2(width, height));
 
 	// bind the offscreen render pass texture to texture unit 0 and set it as the active texture
 	glActiveTexture(GL_TEXTURE0);
 
 	// if debug mode is Picking Colors mode (2), depending on whether the picking texture is available,
 	// bind the picking texture or the main color texture; otherwise, bind the main color texture
-	if (m_screenDebugParams.debugMode == 2)
+	if (screen_debug_params.debug_mode == 2)
 	{
-		if (selectionManager->GetPickingTextureId() != 0)
+		if (selection_manager->get_picking_texture_id() != 0)
 		{ // if the picking texture is available, bind it and set nearest filtering
-			glBindTexture(GL_TEXTURE_2D, selectionManager->GetPickingTextureId());
-			// use nearest filtering to avoid interpolating encoded IDs
+			glBindTexture(GL_TEXTURE_2D, selection_manager->get_picking_texture_id());
+			// use nearest filtering to avoid interpolating encoded ids
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		}
 		else
 		{ // if the picking texture is not available, print a warning and bind the main color texture instead
-			std::cerr << "[WARNING::RENDERER::CompositeToScreen] Picking texture not available, "
+			std::cerr << "[WARNING::RENDERER::composite_to_screen] Picking texture not available, "
 				"binding main render pass color texture instead" << std::endl;
-			glBindTexture(GL_TEXTURE_2D, m_mainRenderPass->GetTextureId(0));
+			glBindTexture(GL_TEXTURE_2D, main_render_pass->get_texture_id(0));
 		}
 	}
 	else
 	{ // otherwise, bind the main render pass color texture
-		glBindTexture(GL_TEXTURE_2D, m_mainRenderPass->GetTextureId(0));
+		glBindTexture(GL_TEXTURE_2D, main_render_pass->get_texture_id(0));
 	}
 
 	// local variables for outline parameters
 	// there is only and outline if there is a selected node and the outline mask texture is available
-	const bool hasOutline =
-		selectionManager->GetSelectedNodeId() != 0 && selectionManager->GetOutlineMaskTextureId() != 0;
-	glm::vec3 outlineColor{ 0.0f };
-	GLuint outlineThickness = 0;
+	const bool has_outline =
+		selection_manager->get_selected_node_id() != 0 && selection_manager->get_outline_mask_texture_id() != 0;
+	glm::vec3 outline_color{ 0.0f };
+	GLuint outline_thickness = 0;
 
-	auto& params = selectionManager->GetOutlineParams(); // get the outline parameters
-	if (m_screenDebugParams.debugMode <= 1 && hasOutline)
+	auto& params = selection_manager->get_outline_params(); // get the outline parameters
+	if (screen_debug_params.debug_mode <= 1 && has_outline)
 	{
-		// if debug mode is either Normal mode (1) or Inverted Colors mode (2)
+		// if debug mode is either v_normal mode (1) or Inverted Colors mode (2)
 		// and there is a selection, use the outline parameters from the selection manager
-		outlineColor = params.color;
-		outlineThickness = params.thickness;
+		outline_color = params.color;
+		outline_thickness = params.thickness;
 	}
 
 	// set outline parameters as uniforms in the screen fragment shader
-	m_screenShader->SetInt("hasOutline", hasOutline);
-	m_screenShader->SetVec3("outlineColor", outlineColor);
-	m_screenShader->SetInt("outlineThickness", outlineThickness);
+	screen_quad_shader->set_int("u_has_outline", has_outline);
+	screen_quad_shader->set_vec3("u_outline_color", outline_color);
+	screen_quad_shader->set_int("u_outline_thickness", outline_thickness);
 
 	// bind depth textures if available for depth-aware outline rendering and set related uniforms
-	GLuint sceneDepthTex = m_mainRenderPass->GetDepthTextureId(); // retrieve the scene depth texture
+	GLuint scene_depth_tex = main_render_pass->get_depth_texture_id(); // retrieve the scene depth texture
 	// for the outline depth texture, reuse selection manager's outline pass depth (valid if mask rendered)
-	GLuint outlineDepthTex = 0;
-	if (hasOutline)
+	GLuint outline_depth_tex = 0;
+	if (has_outline)
 	{ // if there is an outline to render, get the outline depth texture
-		outlineDepthTex = selectionManager->GetOutlineDepthTextureId();
+		outline_depth_tex = selection_manager->get_outline_depth_texture_id();
 	}
 
 	// inform the shader if depth textures are available and set a small bias to avoid z-fighting
 	// (need at least the scene depth texture for depth-aware outline rendering, 
 	// outline depth is tested within the shader if available)
-	const bool depth = sceneDepthTex != 0;
-	m_screenShader->SetInt("hasDepthTextures", depth ? 1 : 0);
-	m_screenShader->SetFloat("outlineDepthBias", 0.0005f);
+	const bool depth = scene_depth_tex != 0;
+	screen_quad_shader->set_int("u_has_depth_textures", depth ? 1 : 0);
+	screen_quad_shader->set_float("u_outline_depth_bias", 0.0005f);
 
 	// bind depth textures to texture units 2 and 3 (only if available)
 	glActiveTexture(GL_TEXTURE2);
-	m_screenShader->SetInt("sceneDepthTexture", 2);
-	glBindTexture(GL_TEXTURE_2D, sceneDepthTex);
+	screen_quad_shader->set_int("u_scene_depth_texture", 2);
+	glBindTexture(GL_TEXTURE_2D, scene_depth_tex);
 	glActiveTexture(GL_TEXTURE3);
-	m_screenShader->SetInt("outlineDepthTexture", 3);
-	glBindTexture(GL_TEXTURE_2D, outlineDepthTex);
+	screen_quad_shader->set_int("u_outline_depth_texture", 3);
+	glBindTexture(GL_TEXTURE_2D, outline_depth_tex);
 
 	// bind the outline mask texture to texture unit 1 and set it as the active texture
 	glActiveTexture(GL_TEXTURE1);
-	m_screenShader->SetInt("outlineMaskTexture", 1);
-	if (hasOutline) // if there is an outline to render, bind the outline mask texture
-		glBindTexture(GL_TEXTURE_2D, selectionManager->GetOutlineMaskTextureId());
+	screen_quad_shader->set_int("u_outline_mask_texture", 1);
+	if (has_outline) // if there is an outline to render, bind the outline mask texture
+		glBindTexture(GL_TEXTURE_2D, selection_manager->get_outline_mask_texture_id());
 	else // otherwise, bind texture 0 to avoid undefined behavior in the shader
 		glBindTexture(GL_TEXTURE_2D, 0);
 
 	// bind the screen quad VAO and draw the screen quad
-	glBindVertexArray(m_screenQuadVAO);
+	glBindVertexArray(screen_quad_vao);
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
 	glBindVertexArray(0);
 
@@ -952,21 +955,21 @@ void Renderer::CompositeToScreen()
 	glEnable(GL_DEPTH_TEST); // re-enable the depth test for subsequent rendering
 }
 
-void Renderer::InitSkyboxCube()
+void Renderer::init_skybox_cube()
 {
 	// create skybox VAO, VBO, and EBO
-	glGenVertexArrays(1, &m_skyboxVAO);
-	glGenBuffers(1, &m_skyboxVBO);
-	glGenBuffers(1, &m_skyboxEBO);
+	glGenVertexArrays(1, &skybox_vao);
+	glGenBuffers(1, &skybox_vbo);
+	glGenBuffers(1, &skybox_ebo);
 
 	// bind and set skybox VAO, VBO, and EBO
-	glBindVertexArray(m_skyboxVAO);
-	glBindBuffer(GL_ARRAY_BUFFER, m_skyboxVBO);
-	glBufferData(GL_ARRAY_BUFFER, skyboxPositionsVec.size() * sizeof(GLfloat),
-				 skyboxPositionsVec.data(), GL_STATIC_DRAW);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_skyboxEBO);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, skyboxIndicesVec.size() * sizeof(GLuint),
-				 skyboxIndicesVec.data(), GL_STATIC_DRAW);
+	glBindVertexArray(skybox_vao);
+	glBindBuffer(GL_ARRAY_BUFFER, skybox_vbo);
+	glBufferData(GL_ARRAY_BUFFER, skybox_positions_vector.size() * sizeof(GLfloat),
+				 skybox_positions_vector.data(), GL_STATIC_DRAW);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, skybox_ebo);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, skybox_indices_vector.size() * sizeof(GLuint),
+				 skybox_indices_vector.data(), GL_STATIC_DRAW);
 
 	// set the vertex attribute pointers
 	glEnableVertexAttribArray(0);
@@ -975,8 +978,8 @@ void Renderer::InitSkyboxCube()
 	glBindVertexArray(0); // unbind the VAO after setting it up
 }
 
-void Renderer::RenderSkyboxCube(std::shared_ptr<Texture> skyboxTexture,
-								glm::mat4& view, glm::mat4& projection)
+void Renderer::render_skybox_cube(std::shared_ptr<Texture> skybox_texture,
+								  glm::mat4& view, glm::mat4& projection)
 {
 	// disable depth writing for the skybox to prevent it from overwriting
 	// the depth values of the scene's objects (skybox is rendered at the farthest depth),
@@ -990,23 +993,23 @@ void Renderer::RenderSkyboxCube(std::shared_ptr<Texture> skyboxTexture,
 	glDisable(GL_CULL_FACE);
 
 	// set view and projection matrices for the skybox shader
-	m_skyboxShader->Use();
+	skybox_shader->use();
 	// for the skybox, remove the translation from the view matrix, since the skybox 
 	// should always be centered and appear infinitely far away, 
 	// so we cast the mat4 to a mat3 and back to a mat4 to remove the translation component. 
 	// This way, the skybox will not move when the camera moves
 	// and will only rotate based on the camera's orientation
-	glm::mat4 viewNoTranslation = glm::mat4(glm::mat3(view)); // remove translation with a mat3 cast
-	m_skyboxShader->SetMat4("view", viewNoTranslation);
-	m_skyboxShader->SetMat4("projection", projection);
+	glm::mat4 view_no_translation = glm::mat4(glm::mat3(view)); // remove translation with a mat3 cast
+	skybox_shader->set_mat4("u_view", view_no_translation);
+	skybox_shader->set_mat4("u_projection", projection);
 	// explicitly set the skybox texture unit to 0 to prevent reliance on defaults or previous bindings
-	m_skyboxShader->SetInt("skybox", 0);
+	skybox_shader->set_int("u_skybox", 0);
 
 	// bind the VAO for the skybox and bind the cubemap texture, then render the skybox
-	glBindVertexArray(m_skyboxVAO);
+	glBindVertexArray(skybox_vao);
 	glActiveTexture(GL_TEXTURE0); // ensure the correct texture unit is active before binding (0)
-	glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxTexture->GetTextureId());
-	glDrawElements(GL_TRIANGLES, nSkyboxIndices, GL_UNSIGNED_INT, 0);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, skybox_texture->get_texture_id());
+	glDrawElements(GL_TRIANGLES, skybox_index_count, GL_UNSIGNED_INT, 0);
 
 	// reset depth function and re-enable depth writing after rendering the skybox
 	glDepthFunc(GL_LESS); glDepthMask(GL_TRUE);
@@ -1017,52 +1020,52 @@ void Renderer::RenderSkyboxCube(std::shared_ptr<Texture> skyboxTexture,
 	glBindVertexArray(0); // unbind the VAO after rendering
 }
 
-void Renderer::ConvertHDRToCubemapIfNeeded()
+void Renderer::convert_hdr_to_cubemap_if_needed()
 {
 	// get the core instance, the scene manager, and the current skybox and check if it exists
-	auto core = Core::GetInstance();
-	auto& sceneManager = core->GetSceneManager();
-	auto& skybox = sceneManager->GetSkybox();
+	auto core = Core::get_instance();
+	auto& scene_manager = core->get_scene_manager();
+	auto& skybox = scene_manager->get_skybox();
 	if (!skybox) return; // if no skybox is set, return
 
 	// in case the skybox is not HDR, there is nothing to convert, so return
-	if (skybox->GetTextureType() != TextureType::HDR_EQUIRECTANGULAR) return;
+	if (skybox->get_texture_type() != Texture_Type::HDR_EQUIRECTANGULAR) return;
 
-	if (m_hdrSourceTexId != skybox->GetTextureId())
+	if (hdr_source_tex_id != skybox->get_texture_id())
 	{ // if the HDR source texture has changed, reset the converted flag
-		m_hdrSourceTexId = skybox->GetTextureId();
-		m_hdrToCubemapConverted = false;
+		hdr_source_tex_id = skybox->get_texture_id();
+		hdr_to_cubemap_converted = false;
 	}
 	// only convert if not converted yet, otherwise return
-	if (m_hdrToCubemapConverted) return;
+	if (hdr_to_cubemap_converted) return;
 
-	if (!m_equirectangularToCubemapShader)
+	if (!equirect_to_cubemap_shader)
 	{ // if the equirectangular to cubemap shader is not set, print an error message and return
-		std::cerr << "[ERROR::RENDERER::ConvertHDRToCubemapIfNeeded] "
+		std::cerr << "[ERROR::RENDERER::convert_hdr_to_cubemap_if_needed] "
 			"Equirectangular to Cubemap Shader not set" << std::endl;
 		return;
 	}
 
 	// create HDR to cubemap FBO and RBO if not created yet
 	// (they are capture FBO and RBOs because they are used to capture the six faces of the cubemap)
-	if (!m_hdrToCubemapFBO)
+	if (!hdr_to_cubemap_fbo)
 	{ // if the capture FBO and RBO are not created yet, create them
-		glGenFramebuffers(1, &m_hdrToCubemapFBO);
-		glGenRenderbuffers(1, &m_hdrToCubemapRBO);
+		glGenFramebuffers(1, &hdr_to_cubemap_fbo);
+		glGenRenderbuffers(1, &hdr_to_cubemap_rbo);
 	}
 
 	// save currently bound FBO (main offscreen pass) so it can be restored later
-	GLint prevFBO{};
-	glGetIntegerv(GL_FRAMEBUFFER_BINDING, &prevFBO); // get currently bound FBO
+	GLint prev_fbo{};
+	glGetIntegerv(GL_FRAMEBUFFER_BINDING, &prev_fbo); // get currently bound FBO
 
 	// set the capture resolution to 4096x4096 (sufficient for good quality skyboxes)
-	const GLuint captureSize{ 4096 };
+	const GLuint capture_size{ 4096 };
 
 	// bind capture FBO and (re)configure depth RBO for the capture dimensions
-	glBindFramebuffer(GL_FRAMEBUFFER, m_hdrToCubemapFBO);
-	glBindRenderbuffer(GL_RENDERBUFFER, m_hdrToCubemapRBO);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, captureSize, captureSize);
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, m_hdrToCubemapRBO);
+	glBindFramebuffer(GL_FRAMEBUFFER, hdr_to_cubemap_fbo);
+	glBindRenderbuffer(GL_RENDERBUFFER, hdr_to_cubemap_rbo);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, capture_size, capture_size);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, hdr_to_cubemap_rbo);
 
 	// explicitely select color attachment 0 for rendering (avoids issues on some drivers and platforms)
 	glDrawBuffer(GL_COLOR_ATTACHMENT0);
@@ -1070,17 +1073,17 @@ void Renderer::ConvertHDRToCubemapIfNeeded()
 	// validate capture FBO completeness
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{ // if the capture FBO is not complete, print an error message, restore previous FBO, and return
-		std::cerr << "[ERROR::RENDERER::ConvertHDRToCubemapIfNeeded] Capture FBO incomplete" << std::endl;
-		glBindFramebuffer(GL_FRAMEBUFFER, prevFBO);
+		std::cerr << "[ERROR::RENDERER::convert_hdr_to_cubemap_if_needed] Capture FBO incomplete" << std::endl;
+		glBindFramebuffer(GL_FRAMEBUFFER, prev_fbo);
 		return;
 	}
 
 	// create empty cubemap texture to render to and attach to FBO (RGB16F for HDR)
-	GLuint envCubemap;
-	glGenTextures(1, &envCubemap);
-	glBindTexture(GL_TEXTURE_CUBE_MAP, envCubemap);
+	GLuint env_cubemap;
+	glGenTextures(1, &env_cubemap);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, env_cubemap);
 	for (unsigned int i{}; i < 6; ++i) // allocate space for the 6 faces of the cubemap
-		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB16F, captureSize, captureSize, 0,
+		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB16F, capture_size, capture_size, 0,
 					 GL_RGB, GL_FLOAT, nullptr);
 	// set the cubemap texture parameters
 	// set wrapping to clamp to edge to prevent seams
@@ -1093,8 +1096,8 @@ void Renderer::ConvertHDRToCubemapIfNeeded()
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 	// view/projection matrices for capturing data onto the 6 cubemap face directions
-	glm::mat4 captureProj = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
-	glm::mat4 captureViews[] =
+	glm::mat4 capture_proj = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
+	glm::mat4 capture_views[] =
 	{ // 6 view matrices for the 6 faces of the cubemap (right, left, top, bottom, front, back)
 		glm::lookAt(glm::vec3(0.0f), glm::vec3(1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),		// +X
 		glm::lookAt(glm::vec3(0.0f), glm::vec3(-1.0f, 0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),		// -X
@@ -1104,82 +1107,83 @@ void Renderer::ConvertHDRToCubemapIfNeeded()
 		glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f,  0.0f, -1.0f), glm::vec3(0.0f, -1.0f,  0.0f))		// -Z
 	};
 
-	if (!m_skyboxVAO) InitSkyboxCube(); // initialize the skybox cube if not done yet
+	if (!skybox_vao) init_skybox_cube(); // initialize the skybox cube if not done yet
 
 	// activate the equirectangular to cubemap shader and set uniforms for conversion
-	m_equirectangularToCubemapShader->Use();
-	m_equirectangularToCubemapShader->SetInt("equirectMap", 0);
-	m_equirectangularToCubemapShader->SetMat4("projection", captureProj);
+	equirect_to_cubemap_shader->use();
+	equirect_to_cubemap_shader->set_int("u_equirect_map", 0);
+	equirect_to_cubemap_shader->set_mat4("u_projection", capture_proj);
 
 	// bind the HDR equirectangular map to texture unit 0 for the shader to sample from
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, skybox->GetTextureId());
+	glBindTexture(GL_TEXTURE_2D, skybox->get_texture_id());
 
 	// save current viewport so it can be restored later
-	GLint prevViewport[4];
-	glGetIntegerv(GL_VIEWPORT, prevViewport);
-	glViewport(0, 0, captureSize, captureSize); // set viewport to the capture dimensions
+	GLint prev_viewport[4];
+	glGetIntegerv(GL_VIEWPORT, prev_viewport);
+	glViewport(0, 0, capture_size, capture_size); // set viewport to the capture dimensions
 
 	// render to each face of the cubemap by attaching it to the FBO and rendering the scene
 	for (unsigned int i = 0; i < 6; ++i)
 	{ // for each of the 6 faces of the cubemap, render the scene using the capture view
-		m_equirectangularToCubemapShader->SetMat4("view", captureViews[i]);
+		equirect_to_cubemap_shader->set_mat4("u_view", capture_views[i]);
 		// attach the face of the cubemap texture to the correponding FBO color attachment
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-							   GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, envCubemap, 0);
+							   GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, env_cubemap, 0);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // clear the necessary buffers
-		glBindVertexArray(m_skyboxVAO); // bind the skybox VAO
-		glDrawElements(GL_TRIANGLES, nSkyboxIndices, GL_UNSIGNED_INT, 0); // render the skybox cube
+		glBindVertexArray(skybox_vao); // bind the skybox VAO
+		glDrawElements(GL_TRIANGLES, skybox_index_count, GL_UNSIGNED_INT, 0); // render the skybox cube
 	}
 
 	// generate mipmaps for the cubemap texture to enable trilinear filtering
-	glBindTexture(GL_TEXTURE_CUBE_MAP, envCubemap);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, env_cubemap);
 	glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
 
 	// restore previous FBO
-	glBindFramebuffer(GL_FRAMEBUFFER, prevFBO);
+	glBindFramebuffer(GL_FRAMEBUFFER, prev_fbo);
 	// restore original viewport
-	glViewport(prevViewport[0], prevViewport[1], prevViewport[2], prevViewport[3]);
+	glViewport(prev_viewport[0], prev_viewport[1], prev_viewport[2], prev_viewport[3]);
 
 	// replace skybox with new cubemap texture
-	GLuint oldHDR = skybox->GetTextureId(); // store old HDR texture id for deletion after replacement
-	sceneManager->SetSkybox(std::make_shared<Texture>("Skybox Cubemap From HDR",
-													  envCubemap, TextureType::CUBEMAP));
+	GLuint old_hdr = skybox->get_texture_id(); // store old HDR texture id for deletion after replacement
+	scene_manager->set_skybox(std::make_shared<Texture>("Skybox Cubemap From HDR",
+														env_cubemap, Texture_Type::CUBEMAP));
 	// delete old HDR texture as it is no longer needed
-	glDeleteTextures(1, &oldHDR);
-	m_hdrToCubemapConverted = true; // mark as converted to avoid redundant conversions
+	glDeleteTextures(1, &old_hdr);
+	hdr_to_cubemap_converted = true; // mark as converted to avoid redundant conversions
 
-	std::cout << "[SUCCESS::RENDERER::ConvertHDRToCubemapIfNeeded] Converted HDR (src texId = "
-		<< m_hdrSourceTexId << ") to cubemap (texId = " << envCubemap << ")" << std::endl;
+	std::cout << "[SUCCESS::RENDERER::convert_hdr_to_cubemap_if_needed] Converted HDR (src texId = "
+		<< hdr_source_tex_id << ") to cubemap (texId = " << env_cubemap << ")" << std::endl;
 
 	// reset source id so a new HDR selection triggers fresh conversion logic properly
-	m_hdrSourceTexId = envCubemap; // the active skybox is now the cubemap
+	hdr_source_tex_id = env_cubemap; // the active skybox is now the cubemap
 }
 
-void Renderer::UpdateDynamicEnvMaps()
+void Renderer::update_dynamic_env_maps()
 {
 	// if already capturing or no dynamic env maps, return
-	if (m_isCapturingDynamicEnvMap || m_dynamicEnvMaps.empty()) return;
+	if (is_capturing_dynamic_env_map || dynamic_env_maps.empty()) return;
 
-	auto core = Core::GetInstance(); // get the core instance
-	auto& NodeManager = core->GetNodeManager(); // get the node manager
-	auto& models = NodeManager->GetNodes(NodeType::MODEL); // get the models from the node manager
+	auto core = Core::get_instance(); // get the core instance
+	auto& node_manager = core->get_node_manager(); // get the node manager
+	auto& models = node_manager->get_nodes(Node_Type::MODEL); // get the models from the node manager
 	if (models.empty()) return; // if no models, return
 
 	// ensure a skybox cubemap exists for the dynamic env map captures
-	auto& skyboxTexture = core->GetSceneManager()->GetSkybox();
-	if (skyboxTexture) ConvertHDRToCubemapIfNeeded();
+	auto& skybox_texture = core->get_scene_manager()->get_skybox();
+	if (skybox_texture) convert_hdr_to_cubemap_if_needed();
 
 	// flip buffers at the start of the update
-	// (this makes last frame's "write" buffer -cubemapTexId- this frame's "read" buffer -prevCubemapTexId-)
-	for (auto& [id, entry] : m_dynamicEnvMaps)
+	// (this makes last frame's "write" buffer -cubemap_tex_id- 
+	// this frame's "read" buffer -prev_cubemap_tex_id-)
+	for (auto& [id, entry] : dynamic_env_maps)
 	{
-		std::swap(entry.cubemapTexId, entry.prevCubemapTexId);
-		entry.hasPrevCubemap = true; // mark that a valid "previous" cubemap now exists for reading
+		std::swap(entry.cubemap_tex_id, entry.prev_cubemap_tex_id);
+		entry.has_prev_cubemap = true; // mark that a valid "previous" cubemap now exists for reading
 	}
 
 	// set capturing flag to prevent re-entrance
-	m_isCapturingDynamicEnvMap = true;
+	is_capturing_dynamic_env_map = true;
 
 	// iterate over the models and capture dynamic env maps for those registered
 	for (const auto& node : models)
@@ -1187,31 +1191,31 @@ void Renderer::UpdateDynamicEnvMaps()
 		// dynamically cast the node to a Model object
 		auto model = dynamic_cast<Node*>(node.get());
 		// if the cast fails or the model has a gizmo, skip to next model
-		if (!model || model->GetGizmoType() != GizmoType::NONE) continue;
+		if (!model || model->get_gizmo_type() != Gizmo_Type::NONE) continue;
 
 		// check if the model has a registered dynamic env map
-		auto it = m_dynamicEnvMaps.find(model->GetId());
-		if (it == m_dynamicEnvMaps.end()) continue; // if not found, skip to next model
+		auto it = dynamic_env_maps.find(model->get_id());
+		if (it == dynamic_env_maps.end()) continue; // if not found, skip to next model
 
 		auto& entry = it->second; // get the dynamic env map entry
 		// dynamically cast the model to a shared pointer for passing to the capture function
-		auto modelPtr = std::dynamic_pointer_cast<Node>(node);
-		// capture the dynamic environment map for the model into the "write" buffer (cubemapTexId)
-		CaptureDynamicEnvMapForModel(modelPtr, entry);
+		auto model_ptr = std::dynamic_pointer_cast<Node>(node);
+		// capture the dynamic environment map for the model into the "write" buffer (cubemap_tex_id)
+		capture_dynamic_env_map_for_model(model_ptr, entry);
 	}
 
-	m_isCapturingDynamicEnvMap = false; // reset capturing flag after processing all models
+	is_capturing_dynamic_env_map = false; // reset capturing flag after processing all models
 }
 
-void Renderer::CaptureDynamicEnvMapForModel(const std::shared_ptr<Node>& model,
-											DynamicEnvMapEntry& entry)
+void Renderer::capture_dynamic_env_map_for_model(const std::shared_ptr<Node>& model,
+												 Dynamic_Env_Map_Entry& entry)
 {
 	// lazy initialization of cubemap texture, FBO, and RBO for the dynamic env map entry
 	if (!entry.initialized)
 	{
 		// current cubemap texture initialization and configuration
-		glGenTextures(1, &entry.cubemapTexId);
-		glBindTexture(GL_TEXTURE_CUBE_MAP, entry.cubemapTexId);
+		glGenTextures(1, &entry.cubemap_tex_id);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, entry.cubemap_tex_id);
 		for (unsigned int i = 0; i < 6; ++i)
 			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB16F,
 						 entry.resolution, entry.resolution, 0, GL_RGB, GL_FLOAT, nullptr);
@@ -1222,8 +1226,8 @@ void Renderer::CaptureDynamicEnvMapForModel(const std::shared_ptr<Node>& model,
 		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 		// previous cubemap texture initialization and configuration (for temporal effects)
-		glGenTextures(1, &entry.prevCubemapTexId);
-		glBindTexture(GL_TEXTURE_CUBE_MAP, entry.prevCubemapTexId);
+		glGenTextures(1, &entry.prev_cubemap_tex_id);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, entry.prev_cubemap_tex_id);
 		for (unsigned int i = 0; i < 6; ++i)
 			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB16F,
 						 entry.resolution, entry.resolution, 0, GL_RGB, GL_FLOAT, nullptr);
@@ -1238,12 +1242,12 @@ void Renderer::CaptureDynamicEnvMapForModel(const std::shared_ptr<Node>& model,
 		glGenRenderbuffers(1, &entry.rbo);
 
 		entry.initialized = true; // mark the entry as initialized
-		entry.hasPrevCubemap = false; // no previous cubemap yet (no data captured)
+		entry.has_prev_cubemap = false; // no previous cubemap yet (no data captured)
 	}
 
-	GLint prevFBO{}, prevViewport[4];
-	glGetIntegerv(GL_FRAMEBUFFER_BINDING, &prevFBO); // save currently bound FBO
-	glGetIntegerv(GL_VIEWPORT, prevViewport); // save current viewport
+	GLint prev_fbo{}, prev_viewport[4];
+	glGetIntegerv(GL_FRAMEBUFFER_BINDING, &prev_fbo); // save currently bound FBO
+	glGetIntegerv(GL_VIEWPORT, prev_viewport); // save current viewport
 
 	glBindFramebuffer(GL_FRAMEBUFFER, entry.fbo); // bind the dynamic env map FBO
 	glBindRenderbuffer(GL_RENDERBUFFER, entry.rbo); // bind the RBO
@@ -1254,16 +1258,16 @@ void Renderer::CaptureDynamicEnvMapForModel(const std::shared_ptr<Node>& model,
 	glDrawBuffer(GL_COLOR_ATTACHMENT0); // select color attachment 0 for rendering
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{ // validate FBO completeness, if incomplete, print error, restore FBO, and return
-		std::cerr << "[ERROR::RENDERER::CaptureDynamicEnvMapForModel] "
-			"Dynamic Env Map FBO incomplete for model id " << model->GetId() << std::endl;
-		glBindFramebuffer(GL_FRAMEBUFFER, prevFBO); // restore previous FBO
+		std::cerr << "[ERROR::RENDERER::capture_dynamic_env_map_for_model] "
+			"Dynamic Env Map FBO incomplete for model id " << model->get_id() << std::endl;
+		glBindFramebuffer(GL_FRAMEBUFFER, prev_fbo); // restore previous FBO
 		return;
 	}
 
 	// set up capture projection and views for the 6 cubemap faces
-	glm::mat4 captureProj = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
-	const glm::vec3 pos = model->GetPosition(); // get the model's position for the capture
-	glm::mat4 captureViews[] =
+	glm::mat4 capture_proj = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
+	const glm::vec3 pos = model->get_position(); // get the model's position for the capture
+	glm::mat4 capture_views[] =
 	{ // 6 view matrices for the 6 faces of the cubemap (right, left, top, bottom, front, back)
 		glm::lookAt(pos, pos + glm::vec3(1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),	// +X
 		glm::lookAt(pos, pos + glm::vec3(-1.0f, 0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),	// -X
@@ -1280,156 +1284,156 @@ void Renderer::CaptureDynamicEnvMapForModel(const std::shared_ptr<Node>& model,
 	{
 		// attach the face of the cubemap texture to the FBO color attachment
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-							   GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, entry.cubemapTexId, 0);
+							   GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, entry.cubemap_tex_id, 0);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // clear necessary buffers
 
 		// render the scene for the current capture view, excluding the model itself
-		RenderSceneForEnvMapCapture(captureViews[i], captureProj, model);
+		render_scene_for_env_map_capture(capture_views[i], capture_proj, model);
 	}
 
 	// generate mipmaps for the cubemap texture to enable trilinear filtering
-	glBindTexture(GL_TEXTURE_CUBE_MAP, entry.cubemapTexId);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, entry.cubemap_tex_id);
 	glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
 
 	// restore previous FBO and viewport
-	glBindFramebuffer(GL_FRAMEBUFFER, prevFBO);
-	glViewport(prevViewport[0], prevViewport[1], prevViewport[2], prevViewport[3]);
+	glBindFramebuffer(GL_FRAMEBUFFER, prev_fbo);
+	glViewport(prev_viewport[0], prev_viewport[1], prev_viewport[2], prev_viewport[3]);
 }
 
-void Renderer::RenderSceneForEnvMapCapture(const glm::mat4& captureView, const glm::mat4& captureProj,
-										   const std::shared_ptr<Node>& excludeModel)
+void Renderer::render_scene_for_env_map_capture(const glm::mat4& capture_views, const glm::mat4& capture_proj,
+												const std::shared_ptr<Node>& exclude_model)
 {
-	auto core = Core::GetInstance(); // get the core instance
-	auto& nodeManager = core->GetNodeManager(); // get the node manager
-	auto& sceneManager = core->GetSceneManager(); // get the scene manager
+	auto core = Core::get_instance(); // get the core instance
+	auto& node_manager = core->get_node_manager(); // get the node manager
+	auto& scene_manager = core->get_scene_manager(); // get the scene manager
 
 	// pre-compute uniforms common to all shaders used for env map capture
-	GLfloat refractionIndexRatio = 1.00f / 1.52f; // air to glass refraction index ratio
-	glm::mat3 invViewRot = glm::transpose(glm::mat3(captureView)); // inverse of rotation part of view matrix
+	GLfloat refraction_index_ratio = 1.00f / 1.52f; // air to glass refraction index ratio
+	glm::mat3 inv_view_rot = glm::transpose(glm::mat3(capture_views)); // inverse of rotation part of view matrix
 
 	// set parameters on shaders that are used for the env map capture
-	m_shapeModelShader->Use();
-	m_shapeModelShader->SetMat4("view", captureView);
-	m_shapeModelShader->SetMat4("projection", captureProj);
-	m_shapeModelShader->SetFloat("material.shininess", 32.0f);
+	shape_model_shader->use();
+	shape_model_shader->set_mat4("u_view", capture_views);
+	shape_model_shader->set_mat4("u_projection", capture_proj);
+	shape_model_shader->set_float("u_material.shininess", 32.0f);
 
-	m_assimpModelShader->Use();
-	m_assimpModelShader->SetMat4("view", captureView);
-	m_assimpModelShader->SetMat4("projection", captureProj);
-	m_assimpModelShader->SetFloat("material.shininess", 32.0f);
+	assimp_model_shader->use();
+	assimp_model_shader->set_mat4("u_view", capture_views);
+	assimp_model_shader->set_mat4("u_projection", capture_proj);
+	assimp_model_shader->set_float("u_material.shininess", 32.0f);
 
-	m_reflectiveShader->Use();
-	m_reflectiveShader->SetMat4("view", captureView);
-	m_reflectiveShader->SetMat4("projection", captureProj);
-	m_reflectiveShader->SetMat3("invViewRot", invViewRot);
-	m_reflectiveShader->SetInt("skybox", 0);
+	reflective_shader->use();
+	reflective_shader->set_mat4("u_view", capture_views);
+	reflective_shader->set_mat4("u_projection", capture_proj);
+	reflective_shader->set_mat3("u_inv_view_rot", inv_view_rot);
+	reflective_shader->set_int("u_skybox", 0);
 
-	m_refractiveShader->Use();
-	m_refractiveShader->SetMat4("view", captureView);
-	m_refractiveShader->SetMat4("projection", captureProj);
-	m_refractiveShader->SetFloat("ratio", refractionIndexRatio);
-	m_refractiveShader->SetMat3("invViewRot", invViewRot);
-	m_refractiveShader->SetInt("skybox", 0);
+	refractive_shader->use();
+	refractive_shader->set_mat4("u_view", capture_views);
+	refractive_shader->set_mat4("u_projection", capture_proj);
+	refractive_shader->set_float("u_ratio", refraction_index_ratio);
+	refractive_shader->set_mat3("u_inv_view_rot", inv_view_rot);
+	refractive_shader->set_int("u_skybox", 0);
 
 	// set light uniforms
-	auto& lights = nodeManager->GetNodes(NodeType::LIGHT); // get lights from the node manager
-	GLint pointLightIdx{}, spotlightIdx{}, directionalLightIdx{}; // light type indices
+	auto& lights = node_manager->get_nodes(Node_Type::LIGHT); // get lights from the node manager
+	GLint point_light_idx{}, spotlight_idx{}, directional_light_idx{}; // light type indices
 	for (const auto& node : lights)
 	{ // iterate over the lights and set their parameters in the shaders
 		// dynamically cast the node to a Light object
 		auto light = dynamic_cast<Light*>(node.get());
 
-		switch (light->GetLightType()) // set light parameters based on light type
+		switch (light->get_light_type()) // set light parameters based on light type
 		{
-			case LightType::DIRECTIONAL_LIGHT:
+			case Light_Type::DIRECTIONAL_LIGHT:
 			{
-				auto dl = dynamic_cast<DirectionalLight*>(light);
-				std::string prefix = "directionalLights[" + std::to_string(directionalLightIdx) + "].";
-				m_shapeModelShader->Use();
-				m_shapeModelShader->SetVec3(
-					"directionalLightDir[" + std::to_string(directionalLightIdx) + "]",
-					dl->GetDirection()
+				auto dl = dynamic_cast<Directional_Light*>(light);
+				std::string prefix = "u_directional_lights[" + std::to_string(directional_light_idx) + "].";
+				shape_model_shader->use();
+				shape_model_shader->set_vec3(
+					"u_directional_light_dir[" + std::to_string(directional_light_idx) + "]",
+					dl->get_direction()
 				);
-				m_shapeModelShader->SetVec3(prefix + "ambient", dl->GetAmbient());
-				m_shapeModelShader->SetVec3(prefix + "diffuse", dl->GetDiffuse());
-				m_shapeModelShader->SetVec3(prefix + "specular", dl->GetSpecular());
-				m_assimpModelShader->Use();
-				m_assimpModelShader->SetVec3(
-					"directionalLightDir[" + std::to_string(directionalLightIdx) + "]",
-					dl->GetDirection()
+				shape_model_shader->set_vec3(prefix + "ambient", dl->get_ambient());
+				shape_model_shader->set_vec3(prefix + "diffuse", dl->get_diffuse());
+				shape_model_shader->set_vec3(prefix + "specular", dl->get_specular());
+				assimp_model_shader->use();
+				assimp_model_shader->set_vec3(
+					"u_directional_light_dir[" + std::to_string(directional_light_idx) + "]",
+					dl->get_direction()
 				);
-				m_assimpModelShader->SetVec3(prefix + "ambient", dl->GetAmbient());
-				m_assimpModelShader->SetVec3(prefix + "diffuse", dl->GetDiffuse());
-				m_assimpModelShader->SetVec3(prefix + "specular", dl->GetSpecular());
-				directionalLightIdx++;
+				assimp_model_shader->set_vec3(prefix + "ambient", dl->get_ambient());
+				assimp_model_shader->set_vec3(prefix + "diffuse", dl->get_diffuse());
+				assimp_model_shader->set_vec3(prefix + "specular", dl->get_specular());
+				directional_light_idx++;
 			}
 			break;
-			case LightType::POINT_LIGHT:
+			case Light_Type::POINT_LIGHT:
 			{
-				auto pl = dynamic_cast<PointLight*>(light);
-				std::string prefix = "pointLights[" + std::to_string(pointLightIdx) + "].";
-				m_shapeModelShader->Use();
-				m_shapeModelShader->SetVec3(
-					"pointLightPos[" + std::to_string(pointLightIdx) + "]",
-					pl->GetPosition()
+				auto pl = dynamic_cast<Point_Light*>(light);
+				std::string prefix = "u_point_lights[" + std::to_string(point_light_idx) + "].";
+				shape_model_shader->use();
+				shape_model_shader->set_vec3(
+					"u_point_light_pos[" + std::to_string(point_light_idx) + "]",
+					pl->get_position()
 				);
-				m_shapeModelShader->SetVec3(prefix + "ambient", pl->GetAmbient());
-				m_shapeModelShader->SetVec3(prefix + "diffuse", pl->GetDiffuse());
-				m_shapeModelShader->SetVec3(prefix + "specular", pl->GetSpecular());
-				m_shapeModelShader->SetFloat(prefix + "constant", pl->GetConstant());
-				m_shapeModelShader->SetFloat(prefix + "linear", pl->GetLinear());
-				m_shapeModelShader->SetFloat(prefix + "quadratic", pl->GetQuadratic());
-				m_assimpModelShader->Use();
-				m_assimpModelShader->SetVec3(
-					"pointLightPos[" + std::to_string(pointLightIdx) + "]",
-					pl->GetPosition()
+				shape_model_shader->set_vec3(prefix + "ambient", pl->get_ambient());
+				shape_model_shader->set_vec3(prefix + "diffuse", pl->get_diffuse());
+				shape_model_shader->set_vec3(prefix + "specular", pl->get_specular());
+				shape_model_shader->set_float(prefix + "constant", pl->get_constant());
+				shape_model_shader->set_float(prefix + "linear", pl->get_linear());
+				shape_model_shader->set_float(prefix + "quadratic", pl->get_quadratic());
+				assimp_model_shader->use();
+				assimp_model_shader->set_vec3(
+					"u_point_light_pos[" + std::to_string(point_light_idx) + "]",
+					pl->get_position()
 				);
-				m_assimpModelShader->SetVec3(prefix + "ambient", pl->GetAmbient());
-				m_assimpModelShader->SetVec3(prefix + "diffuse", pl->GetDiffuse());
-				m_assimpModelShader->SetVec3(prefix + "specular", pl->GetSpecular());
-				m_assimpModelShader->SetFloat(prefix + "constant", pl->GetConstant());
-				m_assimpModelShader->SetFloat(prefix + "linear", pl->GetLinear());
-				m_assimpModelShader->SetFloat(prefix + "quadratic", pl->GetQuadratic());
-				pointLightIdx++;
+				assimp_model_shader->set_vec3(prefix + "ambient", pl->get_ambient());
+				assimp_model_shader->set_vec3(prefix + "diffuse", pl->get_diffuse());
+				assimp_model_shader->set_vec3(prefix + "specular", pl->get_specular());
+				assimp_model_shader->set_float(prefix + "constant", pl->get_constant());
+				assimp_model_shader->set_float(prefix + "linear", pl->get_linear());
+				assimp_model_shader->set_float(prefix + "quadratic", pl->get_quadratic());
+				point_light_idx++;
 			}
 			break;
-			case LightType::SPOTLIGHT:
+			case Light_Type::SPOTLIGHT:
 			{
 				auto sl = dynamic_cast<Spotlight*>(light);
-				std::string prefix = "spotlights[" + std::to_string(spotlightIdx) + "].";
-				m_shapeModelShader->Use();
-				m_shapeModelShader->SetVec3(
-					"spotlightPos[" + std::to_string(spotlightIdx) + "]",
-					sl->GetPosition()
+				std::string prefix = "u_spotlights[" + std::to_string(spotlight_idx) + "].";
+				shape_model_shader->use();
+				shape_model_shader->set_vec3(
+					"u_spotlight_pos[" + std::to_string(spotlight_idx) + "]",
+					sl->get_position()
 				);
-				m_shapeModelShader->SetVec3(
-					"spotlightDir[" + std::to_string(spotlightIdx) + "]", sl->GetDirection()
+				shape_model_shader->set_vec3(
+					"u_spotlight_dir[" + std::to_string(spotlight_idx) + "]", sl->get_direction()
 				);
-				m_shapeModelShader->SetVec3(prefix + "ambient", sl->GetAmbient());
-				m_shapeModelShader->SetVec3(prefix + "diffuse", sl->GetDiffuse());
-				m_shapeModelShader->SetVec3(prefix + "specular", sl->GetSpecular());
-				m_shapeModelShader->SetFloat(prefix + "constant", sl->GetConstant());
-				m_shapeModelShader->SetFloat(prefix + "linear", sl->GetLinear());
-				m_shapeModelShader->SetFloat(prefix + "quadratic", sl->GetQuadratic());
-				m_shapeModelShader->SetFloat(prefix + "innerCutOff", sl->GetInnerCutOff());
-				m_shapeModelShader->SetFloat(prefix + "outerCutOff", sl->GetOuterCutOff());
-				m_assimpModelShader->Use();
-				m_assimpModelShader->SetVec3(
-					"spotlightPos[" + std::to_string(spotlightIdx) + "]",
-					sl->GetPosition()
+				shape_model_shader->set_vec3(prefix + "ambient", sl->get_ambient());
+				shape_model_shader->set_vec3(prefix + "diffuse", sl->get_diffuse());
+				shape_model_shader->set_vec3(prefix + "specular", sl->get_specular());
+				shape_model_shader->set_float(prefix + "constant", sl->get_constant());
+				shape_model_shader->set_float(prefix + "linear", sl->get_linear());
+				shape_model_shader->set_float(prefix + "quadratic", sl->get_quadratic());
+				shape_model_shader->set_float(prefix + "inner_cutoff", sl->get_inner_cutoff());
+				shape_model_shader->set_float(prefix + "outer_cutoff", sl->get_outer_cutoff());
+				assimp_model_shader->use();
+				assimp_model_shader->set_vec3(
+					"u_spotlight_pos[" + std::to_string(spotlight_idx) + "]",
+					sl->get_position()
 				);
-				m_assimpModelShader->SetVec3(
-					"spotlightDir[" + std::to_string(spotlightIdx) + "]", sl->GetDirection()
+				assimp_model_shader->set_vec3(
+					"u_spotlight_dir[" + std::to_string(spotlight_idx) + "]", sl->get_direction()
 				);
-				m_assimpModelShader->SetVec3(prefix + "ambient", sl->GetAmbient());
-				m_assimpModelShader->SetVec3(prefix + "diffuse", sl->GetDiffuse());
-				m_assimpModelShader->SetVec3(prefix + "specular", sl->GetSpecular());
-				m_assimpModelShader->SetFloat(prefix + "constant", sl->GetConstant());
-				m_assimpModelShader->SetFloat(prefix + "linear", sl->GetLinear());
-				m_assimpModelShader->SetFloat(prefix + "quadratic", sl->GetQuadratic());
-				m_assimpModelShader->SetFloat(prefix + "innerCutOff", sl->GetInnerCutOff());
-				m_assimpModelShader->SetFloat(prefix + "outerCutOff", sl->GetOuterCutOff());
-				spotlightIdx++;
+				assimp_model_shader->set_vec3(prefix + "ambient", sl->get_ambient());
+				assimp_model_shader->set_vec3(prefix + "diffuse", sl->get_diffuse());
+				assimp_model_shader->set_vec3(prefix + "specular", sl->get_specular());
+				assimp_model_shader->set_float(prefix + "constant", sl->get_constant());
+				assimp_model_shader->set_float(prefix + "linear", sl->get_linear());
+				assimp_model_shader->set_float(prefix + "quadratic", sl->get_quadratic());
+				assimp_model_shader->set_float(prefix + "inner_cutoff", sl->get_inner_cutoff());
+				assimp_model_shader->set_float(prefix + "outer_cutoff", sl->get_outer_cutoff());
+				spotlight_idx++;
 			}
 			break;
 			default:
@@ -1437,132 +1441,132 @@ void Renderer::RenderSceneForEnvMapCapture(const glm::mat4& captureView, const g
 		}
 	}
 	// set the number of lights of each type in the shader
-	m_shapeModelShader->Use();
-	m_shapeModelShader->SetInt("nDirectionalLights", directionalLightIdx);
-	m_shapeModelShader->SetInt("nPointLights", pointLightIdx);
-	m_shapeModelShader->SetInt("nSpotlights", spotlightIdx);
-	m_assimpModelShader->Use();
-	m_assimpModelShader->SetInt("nDirectionalLights", directionalLightIdx);
-	m_assimpModelShader->SetInt("nPointLights", pointLightIdx);
-	m_assimpModelShader->SetInt("nSpotlights", spotlightIdx);
+	shape_model_shader->use();
+	shape_model_shader->set_int("u_directional_light_count", directional_light_idx);
+	shape_model_shader->set_int("u_point_light_count", point_light_idx);
+	shape_model_shader->set_int("u_spotlight_count", spotlight_idx);
+	assimp_model_shader->use();
+	assimp_model_shader->set_int("u_directional_light_count", directional_light_idx);
+	assimp_model_shader->set_int("u_point_light_count", point_light_idx);
+	assimp_model_shader->set_int("u_spotlight_count", spotlight_idx);
 
 	// render all models in the scene except the excluded model
-	auto& models = nodeManager->GetNodes(NodeType::MODEL); // get models from the node manager
+	auto& models = node_manager->get_nodes(Node_Type::MODEL); // get models from the node manager
 	for (const auto& node : models)
 	{ // iterate over the models and render them
 		// dynamically cast the node to a Model Component object
 		auto model = dynamic_cast<Node*>(node.get());
 
 		// skip excluded model (the one for which we are capturing the env map) and gizmos early
-		if (excludeModel && model == excludeModel.get()) continue;
-		if (model->GetGizmoType() != GizmoType::NONE) continue;
+		if (exclude_model && model == exclude_model.get()) continue;
+		if (model->get_gizmo_type() != Gizmo_Type::NONE) continue;
 
 		// render the model for enviroment map capture, using recursive rendering for composite models
-		if (model->IsComposite())
+		if (model->is_composite())
 		{ // if the model is composite, render all its child models recursively in a depth-first traversal
-			std::vector<std::shared_ptr<Node>> stack{ model->GetChildren() };
+			std::vector<std::shared_ptr<Node>> stack{ model->get_children() };
 			while (!stack.empty())
 			{ // process models in the stack until empty
-				auto& currentModel = stack.back(); // get the model at the top of the stack
+				auto& current_model = stack.back(); // get the model at the top of the stack
 				stack.pop_back(); // remove the model from the stack
 
 				// if the current model is null, excluded, or a gizmo, skip it
-				if (!currentModel) continue;
-				if (excludeModel && currentModel == excludeModel) continue;
-				if (currentModel->GetGizmoType() != GizmoType::NONE) continue;
+				if (!current_model) continue;
+				if (exclude_model && current_model == exclude_model) continue;
+				if (current_model->get_gizmo_type() != Gizmo_Type::NONE) continue;
 
-				if (currentModel->IsComposite())
+				if (current_model->is_composite())
 				{ // if the current model is composite, add its children to the stack for further processing
-					auto children = currentModel->GetChildren();
+					auto children = current_model->get_children();
 					stack.insert(stack.end(), children.begin(), children.end());
 				}
 
 				// leaf model rendering based on the model type (child models)
-				std::shared_ptr<Shader> renderShader;
+				std::shared_ptr<Shader> render_shader;
 
-				switch (currentModel->GetNodeType())// use the appropriate shader based on the model type
+				switch (current_model->get_type())// use the appropriate shader based on the model type
 				{
-					case NodeType::COMPOSITE_MODEL: // basic composite models do not have their own meshes
+					case Node_Type::COMPOSITE_MODEL: // basic composite models do not have their own meshes
 					{
 						// assign a default shader for composite models without meshes
-						renderShader = m_singleAlbedoShader;
-						renderShader->Use(); // activate the current shader program
+						render_shader = single_albedo_shader;
+						render_shader->use(); // activate the current shader program
 
 						// set a default albedo color (e.g., gray) for composite models without meshes
-						renderShader->SetVec3("albedo", glm::vec3(0.25f, 0.25f, 0.25f));
+						render_shader->set_vec3("u_albedo", glm::vec3(0.25f, 0.25f, 0.25f));
 					}
 					break;
-					case NodeType::COMPOSITE_ASSIMP_MODEL: // composite Assimp models have their own meshes
-					case NodeType::ASSIMP_MODEL:
+					case Node_Type::COMPOSITE_ASSIMP_MODEL: // composite Assimp models have their own meshes
+					case Node_Type::ASSIMP_MODEL:
 					{
-						renderShader = m_assimpModelShader; // use the Assimp model shader
-						renderShader->Use(); // activate the current shader program
+						render_shader = assimp_model_shader; // use the Assimp model shader
+						render_shader->use(); // activate the current shader program
 					}
 					break;
-					case NodeType::COMPOSITE_SHAPE_MODEL: // composite shape models have their own meshes
-					case NodeType::SHAPE_MODEL:
+					case Node_Type::COMPOSITE_SHAPE_MODEL: // composite shape models have their own meshes
+					case Node_Type::SHAPE_MODEL:
 					{
-						renderShader = m_shapeModelShader; // use the shape model shader
-						renderShader->Use(); // activate the current shader program
+						render_shader = shape_model_shader; // use the shape model shader
+						render_shader->use(); // activate the current shader program
 						// set the color of the shape based on the model's albedo (RGBA)
-						renderShader->SetVec4("material.albedo", currentModel->GetAlbedo());
+						render_shader->set_vec4("u_material.albedo", current_model->get_albedo());
 					}
 					break;
 					default:
 						// if the model type is unknown, print an error message and return
-						std::cerr << "[ERROR::RENDERER::RenderSceneForEnvMapCapture] "
-							"Unknown model type for " << currentModel->GetName() << std::endl;
+						std::cerr << "[ERROR::RENDERER::render_scene_for_env_map_capture] "
+							"Unknown model type for " << current_model->get_name() << std::endl;
 						return;
 
 						// set the polygon mode to fill for regular models
 						glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 				}
 
-				if (renderShader)
+				if (render_shader)
 				{ // if a valid shader is set, proceed with rendering
 					// set the model matrix uniform (hierarchical world transformation)
-					renderShader->SetMat4("model", currentModel->GetWorldModelMatrix());
+					render_shader->set_mat4("u_model", current_model->get_world_model_matrix());
 					// render the current node
-					currentModel->Draw(*renderShader);
+					current_model->draw(*render_shader);
 					// children rendering is handled via the stack, so no recursive call here
 				}
 			}
 		}
 		else
 		{ // leaf model rendering based on the model type (non-composite models)
-			std::shared_ptr<Shader> renderShader;
-			switch (model->GetNodeType())// use the appropriate shader based on the model type
+			std::shared_ptr<Shader> render_shader;
+			switch (model->get_type())// use the appropriate shader based on the model type
 			{
-				case NodeType::COMPOSITE_MODEL: // basic composite models do not have their own meshes
+				case Node_Type::COMPOSITE_MODEL: // basic composite models do not have their own meshes
 				{
 					// assign a default shader for composite models without meshes
-					renderShader = m_singleAlbedoShader;
-					renderShader->Use(); // activate the current shader program
+					render_shader = single_albedo_shader;
+					render_shader->use(); // activate the current shader program
 
 					// set a default albedo color (e.g., gray) for composite models without meshes
-					renderShader->SetVec3("albedo", glm::vec3(0.25f, 0.25f, 0.25f));
+					render_shader->set_vec3("u_albedo", glm::vec3(0.25f, 0.25f, 0.25f));
 				}
 				break;
-				case NodeType::COMPOSITE_ASSIMP_MODEL: // composite Assimp models have their own meshes
-				case NodeType::ASSIMP_MODEL:
+				case Node_Type::COMPOSITE_ASSIMP_MODEL: // composite Assimp models have their own meshes
+				case Node_Type::ASSIMP_MODEL:
 				{
-					renderShader = m_assimpModelShader; // use the Assimp model shader
-					renderShader->Use(); // activate the current shader program
+					render_shader = assimp_model_shader; // use the Assimp model shader
+					render_shader->use(); // activate the current shader program
 				}
 				break;
-				case NodeType::COMPOSITE_SHAPE_MODEL: // composite shape models have their own meshes
-				case NodeType::SHAPE_MODEL:
+				case Node_Type::COMPOSITE_SHAPE_MODEL: // composite shape models have their own meshes
+				case Node_Type::SHAPE_MODEL:
 				{
-					renderShader = m_shapeModelShader; // use the shape model shader
-					renderShader->Use(); // activate the current shader program
+					render_shader = shape_model_shader; // use the shape model shader
+					render_shader->use(); // activate the current shader program
 					// set the color of the shape based on the model's albedo (RGBA)
-					renderShader->SetVec4("material.albedo", model->GetAlbedo());
+					render_shader->set_vec4("u_material.albedo", model->get_albedo());
 				}
 				break;
 				default:
 					// if the model type is unknown, print an error message and return
-					std::cerr << "[ERROR::RENDERER::RenderSceneForEnvMapCapture] "
-						"Unknown model type for " << model->GetName() << std::endl;
+					std::cerr << "[ERROR::RENDERER::render_scene_for_env_map_capture] "
+						"Unknown model type for " << model->get_name() << std::endl;
 					return;
 			}
 
@@ -1570,20 +1574,20 @@ void Renderer::RenderSceneForEnvMapCapture(const glm::mat4& captureView, const g
 			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
 			// set the model matrix for the model (hierarchical world transformation)
-			renderShader->SetMat4("model", model->GetWorldModelMatrix());
+			render_shader->set_mat4("u_model", model->get_world_model_matrix());
 			// render the current model
-			model->Draw(*renderShader);
+			model->draw(*render_shader);
 		}
 	}
 
 	// render the skybox as background if available
-	auto& skyboxTexture = sceneManager->GetSkybox();
-	if (skyboxTexture && skyboxTexture->GetTextureType() == TextureType::CUBEMAP)
+	auto& skybox_texture = scene_manager->get_skybox();
+	if (skybox_texture && skybox_texture->get_texture_type() == Texture_Type::CUBEMAP)
 	{ // only render if skybox is a cubemap
-		if (!m_skyboxVAO) InitSkyboxCube(); // initialize skybox cube if not done yet
+		if (!skybox_vao) init_skybox_cube(); // initialize skybox cube if not done yet
 		// render the skybox cube using the skybox shader and the provided view and projection matrices
 		// (const_cast is used here to match the function signature)
-		RenderSkyboxCube(skyboxTexture, const_cast<glm::mat4&>(captureView),
-						 const_cast<glm::mat4&>(captureProj));
+		render_skybox_cube(skybox_texture, const_cast<glm::mat4&>(capture_views),
+						   const_cast<glm::mat4&>(capture_proj));
 	}
 }

@@ -20,7 +20,7 @@
 class Shader;
 
 // Enumeration class for different texture types
-enum class TextureType
+enum class Texture_Type
 {
 	UNDEFINED = 0,
 	DIFFUSE,
@@ -46,16 +46,16 @@ public:
 	// Constructors
 	// ------------
 	// Constructor for a 2D texture from a file path (supports different TextureTypes)
-	Texture(const std::string& name, const std::string& path, const TextureType type);
+	Texture(const std::string& name, const std::string& path, const Texture_Type type);
 
 	// Internal constructor from an existing GL texture id (used after HDR to cubemap conversion)
-	Texture(const std::string& name, GLuint existingId, TextureType type);
+	Texture(const std::string& name, GLuint existing_id, Texture_Type type);
 
 	// Contructor for a cubemap texture from a single equirectangular HDR environment map,
-	// that will later be converted to a cubemap (uses the internal constructor with existingId).
-	// asHDR should be true to indicate the file is an HDR image, otherwise 
+	// that will later be converted to a cubemap (uses the internal constructor with existing_id).
+	// as_hdr should be true to indicate the file is an HDR image, otherwise 
 	// the file will be loaded as a standard 2D texture
-	Texture(const std::string& name, const std::string& hdrPath, const bool asHDR);
+	Texture(const std::string& name, const std::string& hdr_path, const bool as_hdr);
 
 	// Constructor for a cubemap texture from 6 individual 2D face file paths
 	Texture(const std::string& name, const std::vector<std::string>& faces);
@@ -71,50 +71,50 @@ public:
 	// Public Methods
 	// --------------
 	// Loads the texture
-	void Load() override {}
+	void load() override {}
 
 	// Deallocates all the resources of the texture
-	void DeallocateResources() override { glDeleteTextures(1, &textureId); }
+	void deallocate_resources() override { glDeleteTextures(1, &texture_id); }
 
 	// Does not draw anything by default, as a texture has no visual representation
-	virtual void Draw() const override {}
+	virtual void draw() const override {}
 	// Does not draw anything by default, as a texture has no visual representation
-	virtual void Draw(const Shader& shader) const override {}
+	virtual void draw(const Shader& shader) const override {}
 
 	// Getters
-	GLuint GetTextureId() const { return textureId; }
-	const std::string& GetPath() const { return path; }
-	const std::vector<std::string>& GetCubemapFacePaths() const { return cubemapFacePaths; }
-	const TextureType& GetTextureType() const { return textureType; }
+	GLuint get_texture_id() const { return texture_id; }
+	const std::string& get_texture_path() const { return path; }
+	const std::vector<std::string>& get_cubemap_face_paths() const { return cubemap_face_paths; }
+	const Texture_Type& get_texture_type() const { return texture_type; }
 
 	// Setters
-	void SetTextureType(const TextureType type) { textureType = type; }
+	void set_texture_type(const Texture_Type type) { texture_type = type; }
 
-	// Loads a texture from a file and returns the texture ID
-	GLuint LoadTextureFromFile(const GLchar* path);
+	// Loads a texture from a file and returns the texture id
+	GLuint load_texture_from_file(const GLchar* path);
 
-	// Loads an HDR texture from a file and returns the texture ID
-	GLuint LoadHDRTextureFromFile(const GLchar* path);
+	// Loads an HDR texture from a file and returns the texture id
+	GLuint load_hdr_texture_from_file(const GLchar* path);
 
 	// Loads a cubemap texture from 6 individual texture faces
-	GLuint LoadCubemapFromFiles(const std::vector<std::string>& faces);
+	GLuint load_cubemap_from_files(const std::vector<std::string>& faces);
 
 	// Activates the corresponding texture unit and binds the texture to it
 	// (handles both 2D textures and cubemaps)
-	void Bind(GLuint unit) const;
+	void bind(GLuint unit) const;
 
 	// Static Public Methods
 	// ---------------------
 	// Texture type to string conversion
-	static std::string TextureTypeToString(const TextureType type);
+	static std::string texture_type_to_string(const Texture_Type type);
 
 private:
 	// Private Attributes
 	// ------------------
-	GLuint textureId;
-	TextureType textureType;
+	GLuint texture_id;
+	Texture_Type texture_type;
 	std::string path; // path of the texture to compare with other textures
-	std::vector<std::string> cubemapFacePaths; // paths of the 6 faces if this is a cubemap
+	std::vector<std::string> cubemap_face_paths; // paths of the 6 faces if this is a cubemap
 
 	// Friend Classes
 	// --------------

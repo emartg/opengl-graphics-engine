@@ -1,88 +1,88 @@
 /*
-* StringUtils.cpp
-* This file implements the StringUtils class, which provides static utility methods
+* String_Utils.cpp
+* This file implements the String_Utils class, which provides static utility methods
 * whose functionality revolves around string manipulation and formatting.
 */
 
-#include "StringUtils.h"
+#include "String_Utils.h"
 
 #include "../../Node.h"
 
 // Public Static Methods
 // ---------------------
-std::string StringUtils::ToUppercase(const std::string& inputString)
+std::string String_Utils::to_uppercase(const std::string& input_string)
 {
-	std::string result = inputString;
+	std::string result = input_string;
 	std::transform(result.begin(), result.end(), result.begin(),
 				   [](unsigned char c) { return static_cast<char>(std::toupper(c)); });
 	return result;
 }
 
-std::string StringUtils::ToUppercaseFromCopy(std::string inputString)
+std::string String_Utils::to_uppercase_from_copy(std::string input_string)
 {
-	return ToUppercase(inputString);
+	return to_uppercase(input_string);
 }
 
-std::string StringUtils::ToLowercase(const std::string& inputString)
+std::string String_Utils::to_lowercase(const std::string& input_string)
 {
-	std::string result = inputString;
+	std::string result = input_string;
 	std::transform(result.begin(), result.end(), result.begin(),
 				   [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
 	return result;
 }
 
-std::string StringUtils::ToLowercaseFromCopy(std::string inputString)
+std::string String_Utils::to_lowercase_from_copy(std::string input_string)
 {
-	return ToLowercase(inputString);
+	return to_lowercase(input_string);
 }
 
-std::string StringUtils::GetFileExtension(const std::string& filename)
+std::string String_Utils::get_file_extension(const std::string& filename)
 {
-	std::filesystem::path filePath(filename);
-	return filePath.extension().string();
+	std::filesystem::path system_filepath(filename);
+	return system_filepath.extension().string();
 }
 
-std::string StringUtils::GetFilenameWithExtension(const std::string& filepath)
+std::string String_Utils::get_filename_with_extension(const std::string& filepath)
 {
-	std::filesystem::path filePath(filepath);
-	return filePath.filename().string();
+	std::filesystem::path system_filepath(filepath);
+	return system_filepath.filename().string();
 }
 
-std::string StringUtils::GetFilenameWithoutExtension(const std::string& filepath)
+std::string String_Utils::get_filename_without_extension(const std::string& filepath)
 {
-	std::filesystem::path filePath(filepath);
-	return filePath.stem().string();
+	std::filesystem::path system_filepath(filepath);
+	return system_filepath.stem().string();
 }
 
-std::string StringUtils::GetFilenameWithoutExtensionOrPath(const std::string& filepath)
+std::string String_Utils::get_filename_without_extension_or_path(const std::string& filepath)
 {
-	std::filesystem::path filePath(filepath);
-	return filePath.stem().filename().string();
+	std::filesystem::path system_filepath(filepath);
+	return system_filepath.stem().filename().string();
 }
 
-std::string StringUtils::GetDirectoryPath(const std::string& filepath)
+std::string String_Utils::get_directory_path(const std::string& filepath)
 {
-	std::filesystem::path filePath(filepath);
-	return filePath.parent_path().string();
+	std::filesystem::path system_filepath(filepath);
+	return system_filepath.parent_path().string();
 }
 
-std::string StringUtils::GenerateIdPrefixedName(Node& node)
+std::string String_Utils::generate_id_prefixed_name(Node& node)
 {
 	std::ostringstream oss; // create an output string stream
-	oss << "{id: " << node.GetId() << "} " << node.GetName(); // format the string with id and name
+	oss << "{id: " << node.get_id() << "} " << node.get_name(); // format the string with id and name
 	return oss.str(); // return the generated string from the output string stream
 }
 
-std::string StringUtils::GenerateIdPrefixedName(const std::shared_ptr<Node>& node)
+std::string String_Utils::generate_id_prefixed_name(const std::shared_ptr<Node>& node)
 {
 	if (!node) return {}; // return empty string if node is null
-	return GenerateIdPrefixedName(*node); // call the reference overload
+	return generate_id_prefixed_name(*node); // call the reference overload
 }
 
-std::string StringUtils::ToCleanDisplayName(const std::string& filename)
+std::string String_Utils::to_clean_display_name(const std::string& filename)
 {
 	// remove the file extension
-	std::string name = GetFilenameWithoutExtension(filename);
+	std::string name = get_filename_without_extension(filename);
 
 	// replace underscores and hyphens with spaces (common separators in filenames) to improve readability
 	std::replace(name.begin(), name.end(), '_', ' ');
@@ -91,17 +91,17 @@ std::string StringUtils::ToCleanDisplayName(const std::string& filename)
 	// capitalize first letter of each word and convert the rest to lowercase,
 	// using a flag to determine when to capitalize the next character,
 	// thus ensuring a title case format even if the input is in an inconsistent case format
-	bool capitalizeNext = true;
+	bool capitalize_next = true;
 	for (char& c : name)
 	{
 		if (std::isspace(static_cast<unsigned char>(c)))
 		{ // if the character is a space, set the flag to capitalize the next character
-			capitalizeNext = true;
+			capitalize_next = true;
 		}
-		else if (capitalizeNext)
+		else if (capitalize_next)
 		{ // if the flag is set, capitalize the character and reset the flag
 			c = static_cast<char>(std::toupper(static_cast<unsigned char>(c)));
-			capitalizeNext = false;
+			capitalize_next = false;
 		}
 		else
 		{ // otherwise, convert the character to lowercase

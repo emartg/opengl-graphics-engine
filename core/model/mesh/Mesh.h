@@ -21,9 +21,9 @@ class Texture;
 // Struct that defines a single vertex of the mesh
 struct Vertex
 {
-	glm::vec3 Position;
-	glm::vec3 Normal;
-	glm::vec2 TexCoords;
+	glm::vec3 position;
+	glm::vec3 normal;
+	glm::vec2 tex_coords;
 };
 
 class Mesh
@@ -36,17 +36,17 @@ public:
 
 	// Public Methods
 	// --------------
+	// Deletes all the buffer objects/arrays
+	void deallocate_resources();
+
 	// Renders the mesh
-	void Draw() const;
+	void draw() const;
 
 	// Binds the textures of the mesh
-	void BindTextures(Shader& shader) const;
-
-	// Deletes all the buffer objects/arrays
-	void DeallocateResources();
+	void bind_textures(Shader& shader) const;
 
 	// Getters
-	std::vector<Vertex> GetVertices() const { return vertices; }
+	std::vector<Vertex> get_vertices() const { return vertices; }
 
 private:
 	// Private Attributes
@@ -54,11 +54,11 @@ private:
 	std::vector<Vertex> vertices;
 	std::vector<GLuint> indices;
 	std::vector<std::shared_ptr<Texture>> textures;
-	GLuint VAO, VBO, EBO;
+	GLuint vao, vbo, ebo;
 
 	// Private Methods
 	// ---------------
 	// Initializes all the buffer objects/arrays
-	void setupMesh();
+	void setup_mesh();
 
 };

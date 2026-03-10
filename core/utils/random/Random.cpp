@@ -8,12 +8,12 @@
 
 // Private Methods
 // ---------------
-const float Random::GenerateRandomFloat(float minValue, float maxValue) const
+const float Random::generate_random_float(float min_value, float max_value) const
 {
-	return minValue + static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * (maxValue - minValue);
+	return min_value + static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * (max_value - min_value);
 }
 
-const glm::vec4 Random::GenerateRandomColor() const
+const glm::vec4 Random::generate_random_color() const
 {
 	glm::vec4 newColor{ (rand() % 100) / 100.0f,
 						(rand() % 100) / 100.0f,
@@ -23,19 +23,21 @@ const glm::vec4 Random::GenerateRandomColor() const
 	return newColor;
 }
 
-const glm::vec3 Random::GenerateRandomPosition(glm::vec3 target,
-											   float minDistanceFromTarget,
-											   float maxDistanceFromTarget) const
+const glm::vec3 Random::generate_random_position(glm::vec3 target,
+												 float min_distance_from_target,
+												 float max_distance_from_target) const
 {
-	glm::vec3 newPos{ target.x + (rand() % 100) / 100.0f * (maxDistanceFromTarget - minDistanceFromTarget),
-					  target.y + (rand() % 100) / 100.0f * (maxDistanceFromTarget - minDistanceFromTarget),
-					  target.z + (rand() % 100) / 100.0f * (maxDistanceFromTarget - minDistanceFromTarget)
+	glm::vec3 new_position
+	{
+		target.x + (rand() % 100) / 100.0f * (max_distance_from_target - min_distance_from_target),
+		target.y + (rand() % 100) / 100.0f * (max_distance_from_target - min_distance_from_target),
+		target.z + (rand() % 100) / 100.0f * (max_distance_from_target - min_distance_from_target)
 	};
 
-	return newPos;
+	return new_position;
 }
 
-const glm::quat Random::GenerateRandomRotation() const
+const glm::quat Random::generate_random_rotation() const
 {
 	// generate random spherical coordinates (angles theta and phi in radians)
 	float theta = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * glm::pi<float>() * 2.0f;
@@ -49,7 +51,7 @@ const glm::quat Random::GenerateRandomRotation() const
 	return glm::quat(glm::vec3(x, y, z)); // create quaternion from vector of Cartesian coordinates
 }
 
-const glm::quat Random::GenerateRandomRotation(float minAngle, float maxAngle) const
+const glm::quat Random::generate_random_rotation(float min_angle, float max_angle) const
 {
 	// generate random spherical coordinates (angles theta and phi in radians)
 	float theta = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * glm::pi<float>() * 2.0f;
@@ -58,25 +60,26 @@ const glm::quat Random::GenerateRandomRotation(float minAngle, float maxAngle) c
 	float x = sin(phi) * cos(theta);
 	float y = sin(phi) * sin(theta);
 	float z = cos(phi);
-	glm::vec3 randomAxis = glm::normalize(glm::vec3(x, y, z)); // normalize the vector to get a random axis
+	glm::vec3 random_axis = glm::normalize(glm::vec3(x, y, z)); // normalize the vector to get a random axis
 
-	// generate a random angle between minAngle and maxAngle
-	float angle = minAngle
-		+ static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * (maxAngle - minAngle);
+	// generate a random angle between min_angle and max_angle
+	float angle = min_angle
+		+ static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * (max_angle - min_angle);
 
-	return glm::angleAxis(glm::radians(angle), randomAxis); // create quaternion from axis and angle
+	return glm::angleAxis(glm::radians(angle), random_axis); // create quaternion from axis and angle
 }
 
-const glm::quat Random::GenerateRandomRotation(float minAngle, float maxAngle, glm::vec3 axis) const
+const glm::quat Random::generate_random_rotation(float min_angle, float max_angle, glm::vec3 axis) const
 {
-	// generate a random angle between minAngle and maxAngle
-	float angle = minAngle
-		+ static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * (maxAngle - minAngle);
+	// generate a random angle between min_angle and max_angle
+	float angle = min_angle
+		+ static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * (max_angle - min_angle);
 
-	return glm::angleAxis(glm::radians(angle), glm::normalize(axis)); // create quaternion from axis and angle
+	// create quaternion from axis and angle
+	return glm::angleAxis(glm::radians(angle), glm::normalize(axis));
 }
 
-const glm::vec3 Random::GenerateRandomDirection() const
+const glm::vec3 Random::generate_random_direction() const
 {
 	// generate random spherical coordinates (angles theta and phi in radians)
 	float theta = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * glm::pi<float>() * 2.0f;

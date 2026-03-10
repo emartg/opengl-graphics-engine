@@ -1,80 +1,80 @@
 /*
-* SelectionManager.cpp
-* Implements SelectionManager for single-object selection via color picking.
+* Selection_Manager.cpp
+* Implements Selection_Manager for single-object selection via color picking.
 */
 
-#include "SelectionManager.h"
+#include "Selection_Manager.h"
 
-#include "NodeManager.h"
+#include "Node_Manager.h"
 #include "../Core.h"
 #include "../Node.h"
 #include "../shader/Shader.h"
 #include "../camera/Camera.h"
 #include "../light/Light.h"
-#include "../light/DirectionalLight.h"
-#include "../light/PointLight.h"
+#include "../light/Directional_Light.h"
+#include "../light/Point_Light.h"
 #include "../light/Spotlight.h"
 #include "../renderer/Renderer.h"
 
 // Constructor
 // -----------
-SelectionManager::SelectionManager() : m_width{ 0 }, m_height{ 0 }, m_selectedNodeId{ 0 } {}
+Selection_Manager::Selection_Manager() : width{ 0 }, height{ 0 }, selected_node_id{ 0 } {}
 
 // Destructor
 // ----------
-SelectionManager::~SelectionManager()
+Selection_Manager::~Selection_Manager()
 {
 	// deallocate resources for each render pass
-	m_pickingPass.DeallocateResources();
-	m_outlinePass.DeallocateResources();
+	picking_pass.deallocate_resources();
+	outline_pass.deallocate_resources();
 }
 
 // Public Methods
 // --------------
-void SelectionManager::QueuePick(GLdouble mouseX, GLdouble mouseY,
-								 GLsizei windowWidth, GLsizei windowHeight)
+void Selection_Manager::queue_pick(GLdouble mouse_x, GLdouble mouse_y,
+								   GLsizei window_width, GLsizei window_height)
 {
 	// convert from windowing API's top-left to OpenGL bottom-left coordinates
-	GLint oglY = static_cast<GLint>(windowHeight - 1 - mouseY);
+	GLint ogl_y = static_cast<GLint>(window_height - 1 - mouse_y);
 	// store pending pick (i.e., do not process immediately, wait for frame start)
-	m_pendingPick = glm::ivec2(static_cast<GLint>(mouseX), oglY);
+	pending_pick = glm::ivec2(static_cast<GLint>(mouse_x), ogl_y);
 }
 
-void SelectionManager::ProcessPendingPick(const Camera* camera, NodeManager* nodeManager)
+void Selection_Manager::process_pending_pick(const Camera* camera, Node_Manager* node_manager)
 {
 	// if there is no pending pick, no camera, or no node manager, return
-	if (!m_pendingPick.has_value() || !camera || !nodeManager) return;
-	if (!m_pickingShader)
+	if (!pending_pick.has_value() || !camera || !node_manager) return;
+	if (!picking_shader)
 	{ // if no picking shader is set, print a warning and return
-		std::cerr << "[WARNING::SELECTIONMANAGER::ProcessPendingPick] Picking shader not set" << std::endl;
+		std::cerr << "[WARNING::SELECTIONMANAGER::process_pending_pick] Picking shader not set" << std::endl;
 		return;
 	}
-	if (m_width == 0 || m_height == 0) return; // if the window is zero-sized, return
+	if (width == 0 || height == 0) return; // if the window is zero-sized, return
 
-	// ensure FBO exists (just in case Resize was not called yet)
-	if (m_pickingPass.GetFboId() == 0)
-		ensurePickingPass();
+	// ensure FBO exists (just in case resize was not called yet)
+	if (picking_pass.get_fbo_id() == 0)
+		ensure_picking_pass();
 
 	// previous selection state (for change detection and logging)
-	std::uint32_t previousSelectedId = m_selectedNodeId;
-	std::shared_ptr<Node> previousNode;
-	std::string previousSelectedName;
-	if (previousSelectedId != 0)
+	std::uint32_t previous_selected_id = selected_node_id;
+	std::shared_ptr<Node> previous_node;
+	std::string previous_selected_name;
+	if (previous_selected_id != 0)
 	{ // if there was a previous selection, get its name for logging
-		previousNode = findNodeById(nodeManager, previousSelectedId);
-		if (previousNode) // if the node still exists, get its name
-			previousSelectedName = previousNode->GetName();
+		previous_node = find_node_by_id(node_manager, previous_selected_id);
+		if (previous_node) // if the node still exists, get its name
+			previous_selected_name = previous_node->get_name();
 	}
 	// check if previous selection was outline-eligible, i.e. a real model (not a gizmo)
-	bool previousOutlineEligible = isOutlineEligible(previousNode);
+	bool previous_outline_eligible = is_outline_eligible(previous_node);
 
-	m_pickingPass.Bind(); // bind picking FBO
-	// ensure sRGB transform does not corrupt ID encoding (if enabled elsewhere)
-	GLboolean sRGBWasEnabled = glIsEnabled(GL_FRAMEBUFFER_SRGB);
-	if (sRGBWasEnabled) glDisable(GL_FRAMEBUFFER_SRGB);
+	picking_pass.bind(); // bind picking FBO
+	// ensure sRGB transform does not corrupt id encoding (if enabled elsewhere)
+	GLboolean s_rgb_was_enabled = glIsEnabled(GL_FRAMEBUFFER_SRGB);
+	if (s_rgb_was_enabled) glDisable(GL_FRAMEBUFFER_SRGB);
 	// disable culling to avoid missing backfacing geometry during picking
-	GLboolean cullWasEnabled = glIsEnabled(GL_CULL_FACE);
-	if (cullWasEnabled) glDisable(GL_CULL_FACE);
+	GLboolean cull_was_enabled = glIsEnabled(GL_CULL_FACE);
+	if (cull_was_enabled) glDisable(GL_CULL_FACE);
 	// enable depth testing for correct occlusion during picking
 	glEnable(GL_DEPTH_TEST);
 	// clear color and depth buffers
@@ -83,173 +83,173 @@ void SelectionManager::ProcessPendingPick(const Camera* camera, NodeManager* nod
 
 	// compute view and projection matrices from the camera
 	glm::mat4 projection = glm::perspective(
-		glm::radians(camera->GetZoom()),
-		static_cast<float>(m_width) / static_cast<float>(m_height),
+		glm::radians(camera->get_zoom()),
+		static_cast<float>(width) / static_cast<float>(height),
 		0.1f, 100.0f);
-	glm::mat4 view = camera->GetViewMatrix();
+	glm::mat4 view = camera->get_view_matrix();
 
 	// render every model once; encode each node's own id (no root promotion)
-	auto& modelNodes = nodeManager->GetNodes(NodeType::MODEL);
+	auto& model_nodes = node_manager->get_nodes(Node_Type::MODEL);
 
-	m_pickingShader->Use();
-	m_pickingShader->SetMat4("view", view);
-	m_pickingShader->SetMat4("projection", projection);
+	picking_shader->use();
+	picking_shader->set_mat4("u_view", view);
+	picking_shader->set_mat4("u_projection", projection);
 
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); // ensure solid fill for picking
 
 	std::unordered_set<std::uint32_t> visited; // track processed root models to avoid duplicates
-	for (const auto& node : modelNodes)
+	for (const auto& node : model_nodes)
 	{ // iterate through all models in the scene
 		// dynamically cast the node to a Model object
-		auto modelNode = std::dynamic_pointer_cast<Node>(node);
-		if (!modelNode) continue; // skip if not a model
-		if (visited.count(modelNode->GetId())) continue; // skip if already visited
+		auto model_node = std::dynamic_pointer_cast<Node>(node);
+		if (!model_node) continue; // skip if not a model
+		if (visited.count(model_node->get_id())) continue; // skip if already visited
 
 		// draw this node and all its descendants with their own ids
-		std::vector<std::shared_ptr<Node>> stack{ modelNode };
+		std::vector<std::shared_ptr<Node>> stack{ model_node };
 		while (!stack.empty())
 		{ // perform DFS to process all child models in the hierarchy
 			auto& current = stack.back();
 			stack.pop_back();
 			if (!current) continue; // skip null nodes
-			if (!current->IsVisible()) continue; // skip invisible nodes
+			if (!current->get_is_visible()) continue; // skip invisible nodes
 
-			visited.insert(current->GetId()); // mark this node as visited
+			visited.insert(current->get_id()); // mark this node as visited
 
 			// set model matrix and encoded id uniform, then draw the model
-			m_pickingShader->SetMat4("model", current->GetWorldModelMatrix());
-			m_pickingShader->SetInt("encodedId", static_cast<GLint>(current->GetId()));
-			current->Draw(*m_pickingShader);
+			picking_shader->set_mat4("u_model", current->get_world_model_matrix());
+			picking_shader->set_int("u_encoded_id", static_cast<GLint>(current->get_id()));
+			current->draw(*picking_shader);
 
 			// push child models onto the stack for processing
-			for (const auto& child : current->GetChildren()) stack.push_back(child);
+			for (const auto& child : current->get_children()) stack.push_back(child);
 		}
 	}
 
 	// read the pixel that is currently under the mouse cursor
-	GLint px = (*m_pendingPick).x;
-	GLint py = (*m_pendingPick).y;
-	std::uint32_t pickedId = readPixelId(px, py);
+	GLint px = (*pending_pick).x;
+	GLint py = (*pending_pick).y;
+	std::uint32_t picked_id = read_pixel_id(px, py);
 
-	m_pickingPass.Unbind(); // unbind FBO after rendering
-	if (cullWasEnabled) glEnable(GL_CULL_FACE); // restore culling state if needed
-	if (sRGBWasEnabled) glEnable(GL_FRAMEBUFFER_SRGB); // restore sRGB state if needed
-	m_pendingPick.reset(); // clear pending pick
+	picking_pass.unbind(); // unbind FBO after rendering
+	if (cull_was_enabled) glEnable(GL_CULL_FACE); // restore culling state if needed
+	if (s_rgb_was_enabled) glEnable(GL_FRAMEBUFFER_SRGB); // restore sRGB state if needed
+	pending_pick.reset(); // clear pending pick
 
 	// get current time for cycle-up logic
-	double currentTime = static_cast<double>(Core::GetInstance()->GetRenderer()->GetTime());
+	double current_time = static_cast<double>(Core::get_instance()->get_renderer()->get_time());
 
 	// a picked id of 0 means no selection, 
 	// i.e. the user clicked on empty space or there was no previous selection
-	if (pickedId == 0)
+	if (picked_id == 0)
 	{ // if no object was picked, log deselection (if any) and clear selection if needed
-		if (previousSelectedId != 0)
+		if (previous_selected_id != 0)
 		{ // if there was a previous selection, log its deselection
-			std::cout << "[INFO::SELECTIONMANAGER::ProcessPendingPick] Deselected node "
-				<< previousSelectedName << " (ID " << previousSelectedId << ")" << std::endl;
+			std::cout << "[INFO::SELECTIONMANAGER::process_pending_pick] Deselected node '"
+				<< previous_selected_name << "' (id " << previous_selected_id << ")" << std::endl;
 		}
-		ClearSelection(); // ensures stale outline mask cannot persist
+		clear_selection(); // ensures stale outline mask cannot persist
 		return;
 	}
 
 	// if the user clicked on an object, find the corresponding node by id
-	auto pickedNode = findNodeById(nodeManager, pickedId);
-	if (!pickedNode)
+	auto picked_node = find_node_by_id(node_manager, picked_id);
+	if (!picked_node)
 	{ // if no node with that id exists, print a warning and clear selection (also clears outline mask)
-		std::cout << "[WARNING::SELECTIONMANAGER::ProcessPendingPick] No node with textureId "
-			<< pickedId << std::endl;
-		ClearSelection(); // ensures stale outline mask cannot persist
+		std::cout << "[WARNING::SELECTIONMANAGER::process_pending_pick] No node with texture_id "
+			<< picked_id << std::endl;
+		clear_selection(); // ensures stale outline mask cannot persist
 		return;
 	}
 
-	NodeType pickedNodeType = pickedNode->GetNodeType();
+	Node_Type picked_node_type = picked_node->get_type();
 	// if a gizmo model was picked, resolve it to its owning light and bypass cycle-up
-	if ((pickedNodeType == NodeType::COMPOSITE_MODEL ||
-		 pickedNodeType == NodeType::COMPOSITE_ASSIMP_MODEL ||
-		 pickedNodeType == NodeType::COMPOSITE_SHAPE_MODEL ||
-		 pickedNodeType == NodeType::ASSIMP_MODEL ||
-		 pickedNodeType == NodeType::SHAPE_MODEL) // any model type
-		&& (std::dynamic_pointer_cast<Node>(pickedNode)->GetGizmoType() != GizmoType::NONE))
+	if ((picked_node_type == Node_Type::COMPOSITE_MODEL ||
+		 picked_node_type == Node_Type::COMPOSITE_ASSIMP_MODEL ||
+		 picked_node_type == Node_Type::COMPOSITE_SHAPE_MODEL ||
+		 picked_node_type == Node_Type::ASSIMP_MODEL ||
+		 picked_node_type == Node_Type::SHAPE_MODEL) // any model type
+		&& (std::dynamic_pointer_cast<Node>(picked_node)->get_gizmo_type() != Gizmo_Type::NONE))
 	{
-		if (auto resolved = resolveGizmoToLight(nodeManager, pickedNode))
-			pickedNode = resolved; // switch to the owning light node
+		if (auto resolved = resolve_gizmo_to_light(node_manager, picked_node))
+			picked_node = resolved; // switch to the owning light node
 		// reset cycle state when a gizmo is selected
-		m_lastPickedId = 0;
-		m_lastPickTime = 0.0;
+		last_picked_id = 0;
+		last_pick_time = 0.0;
 	}
 	// cycle-up selection for models (non-gizmos)
-	else if (pickedNodeType == NodeType::COMPOSITE_MODEL ||
-			 pickedNodeType == NodeType::COMPOSITE_ASSIMP_MODEL ||
-			 pickedNodeType == NodeType::COMPOSITE_SHAPE_MODEL ||
-			 pickedNodeType == NodeType::ASSIMP_MODEL ||
-			 pickedNodeType == NodeType::SHAPE_MODEL) // any model type
+	else if (picked_node_type == Node_Type::COMPOSITE_MODEL ||
+			 picked_node_type == Node_Type::COMPOSITE_ASSIMP_MODEL ||
+			 picked_node_type == Node_Type::COMPOSITE_SHAPE_MODEL ||
+			 picked_node_type == Node_Type::ASSIMP_MODEL ||
+			 picked_node_type == Node_Type::SHAPE_MODEL) // any model type
 	{ // if the picked node is a model, check for cycle-up conditions
-		auto modelComp = std::dynamic_pointer_cast<Node>(pickedNode);
-		bool sameAsLast = (m_lastPickedId == modelComp->GetId());
-		bool withinThreshold = (currentTime - m_lastPickTime) <= CYCLE_TIME_THRESHOLD;
+		auto model_comp = std::dynamic_pointer_cast<Node>(picked_node);
+		bool same_as_last = (last_picked_id == model_comp->get_id());
+		bool within_threshold = (current_time - last_pick_time) <= CYCLE_TIME_THRESHOLD;
 
-		if (sameAsLast && withinThreshold)
+		if (same_as_last && within_threshold)
 		{ // if picking the same model within the threshold, climb to parent if any
-			if (auto parent = modelComp->GetParent())
+			if (auto parent = model_comp->get_parent())
 			{ // if there is a parent, switch selection to it
-				pickedNode = parent;
+				picked_node = parent;
 				// update cycle state to the new parent to allow further climbing
-				m_lastPickedId = parent->GetId();
-				m_lastPickTime = currentTime;
+				last_picked_id = parent->get_id();
+				last_pick_time = current_time;
 			}
 		}
 		else
 		{ // if picking a different model or outside the threshold, reset cycle state to the current node
-			m_lastPickedId = modelComp->GetId();
-			m_lastPickTime = currentTime;
+			last_picked_id = model_comp->get_id();
+			last_pick_time = current_time;
 		}
 	}
 	else
 	{
 		// reset cycle state if not a model
-		m_lastPickedId = 0;
-		m_lastPickTime = 0.0;
+		last_picked_id = 0;
+		last_pick_time = 0.0;
 	}
 
 	// check if the newly picked node is outline-eligible, i.e. a real model (not a gizmo)
-	bool newOutlineEligible = isOutlineEligible(pickedNode);
+	bool new_outline_eligible = is_outline_eligible(picked_node);
 
 	// update only if changed
-	if (pickedNode->GetId() != previousSelectedId)
+	if (picked_node->get_id() != previous_selected_id)
 	{ // if the selection changed, update the selected node id, clear outline if needed, and log the change
-		m_selectedNodeId = pickedNode->GetId();
+		selected_node_id = picked_node->get_id();
 
 		// clear outline mask when switching from an outline-eligible node to a non-eligible one
-		if (previousOutlineEligible && !newOutlineEligible)
-			clearOutlineMask();
+		if (previous_outline_eligible && !new_outline_eligible)
+			clear_outline_mask();
 
-		if (previousSelectedId != 0)
+		if (previous_selected_id != 0)
 		{ // if switching from another selection, print implicit deselection as well
-			std::cout << "[INFO::SELECTIONMANAGER::ProcessPendingPick] Deselected node "
-				<< previousSelectedName << " (ID " << previousSelectedId << ")" << std::endl;
+			std::cout << "[INFO::SELECTIONMANAGER::process_pending_pick] Deselected node '"
+				<< previous_selected_name << "' (id " << previous_selected_id << ")" << std::endl;
 		}
 		// print info about the new selection
-		std::cout << "[INFO::SELECTIONMANAGER::ProcessPendingPick] Selected node "
-			<< pickedNode->GetName() << " (ID " << m_selectedNodeId << ")" << std::endl;
+		std::cout << "[INFO::SELECTIONMANAGER::process_pending_pick] Selected node '"
+			<< picked_node->get_name() << "' (id " << selected_node_id << ")" << std::endl;
 	}
 	// clicking same selected node leads to no logging or state change
 }
 
-void SelectionManager::RenderPickingVisualization(const Camera* camera, NodeManager* nodeManager)
+void Selection_Manager::render_picking_visualization(const Camera* camera, Node_Manager* node_manager)
 {
 	// if shader, camera, or node manager are missing, return
-	if (!camera || !m_pickingShader || !nodeManager) return;
-	if (m_width == 0 || m_height == 0) return; // if the window is zero-sized, return
-	if (m_pickingPass.GetFboId() == 0) // ensure FBO exists
-		ensurePickingPass();
+	if (!camera || !picking_shader || !node_manager) return;
+	if (width == 0 || height == 0) return; // if the window is zero-sized, return
+	if (picking_pass.get_fbo_id() == 0) // ensure FBO exists
+		ensure_picking_pass();
 
-	m_pickingPass.Bind(); // bind picking FBO
-	// disable sRGB transform to avoid corrupting ID encoding (if enabled elsewhere)
-	GLboolean sRGBWasEnabled = glIsEnabled(GL_FRAMEBUFFER_SRGB);
-	if (sRGBWasEnabled) glDisable(GL_FRAMEBUFFER_SRGB);
+	picking_pass.bind(); // bind picking FBO
+	// disable sRGB transform to avoid corrupting id encoding (if enabled elsewhere)
+	GLboolean s_rgb_was_enabled = glIsEnabled(GL_FRAMEBUFFER_SRGB);
+	if (s_rgb_was_enabled) glDisable(GL_FRAMEBUFFER_SRGB);
 	// disable culling to avoid missing backfacing geometry during picking
-	GLboolean cullWasEnabled = glIsEnabled(GL_CULL_FACE);
-	if (cullWasEnabled) glDisable(GL_CULL_FACE);
+	GLboolean cull_was_enabled = glIsEnabled(GL_CULL_FACE);
+	if (cull_was_enabled) glDisable(GL_CULL_FACE);
 	// enable depth testing for correct occlusion during picking
 	glEnable(GL_DEPTH_TEST);
 	// clear color and depth buffers
@@ -258,227 +258,227 @@ void SelectionManager::RenderPickingVisualization(const Camera* camera, NodeMana
 
 	// compute view and projection matrices from the camera
 	glm::mat4 projection = glm::perspective(
-		glm::radians(camera->GetZoom()),
-		static_cast<float>(m_width) / static_cast<float>(m_height),
+		glm::radians(camera->get_zoom()),
+		static_cast<float>(width) / static_cast<float>(height),
 		0.1f, 100.0f);
-	glm::mat4 view = camera->GetViewMatrix();
+	glm::mat4 view = camera->get_view_matrix();
 
 	// render all selectable models (including gizmos - lights themselves are not drawn; their gizmos are)
-	auto& modelNodes = nodeManager->GetNodes(NodeType::MODEL);
-	m_pickingShader->Use();
-	m_pickingShader->SetMat4("view", view);
-	m_pickingShader->SetMat4("projection", projection);
+	auto& model_nodes = node_manager->get_nodes(Node_Type::MODEL);
+	picking_shader->use();
+	picking_shader->set_mat4("u_view", view);
+	picking_shader->set_mat4("u_projection", projection);
 
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); // ensure solid fill for picking
 
 	std::unordered_set<std::uint32_t> visited; // track processed models to avoid duplicates
-	for (const auto& node : modelNodes)
+	for (const auto& node : model_nodes)
 	{ // iterate through all models in the scene
 		// dynamically cast the node to a Model object
-		auto modelNode = std::dynamic_pointer_cast<Node>(node);
-		if (!modelNode) continue; // skip if not a model
-		if (visited.count(node->GetId())) continue; // skip if already visited
+		auto model_node = std::dynamic_pointer_cast<Node>(node);
+		if (!model_node) continue; // skip if not a model
+		if (visited.count(node->get_id())) continue; // skip if already visited
 
 		// DFS to draw this node and all its descendants with their own ids
-		std::vector<std::shared_ptr<Node>> stack{ modelNode };
+		std::vector<std::shared_ptr<Node>> stack{ model_node };
 		while (!stack.empty())
 		{ // perform DFS to process all child models in the hierarchy
 			auto& current = stack.back();
 			stack.pop_back();
 			if (!current) continue; // skip null nodes
-			if (!current->IsVisible()) continue; // skip invisible nodes
+			if (!current->get_is_visible()) continue; // skip invisible nodes
 
-			visited.insert(current->GetId()); // mark this node as visited
+			visited.insert(current->get_id()); // mark this node as visited
 
 			// set model matrix and encoded id uniform, then draw the model
-			m_pickingShader->SetMat4("model", current->GetWorldModelMatrix());
-			m_pickingShader->SetInt("encodedId", static_cast<GLint>(current->GetId()));
-			current->Draw(*m_pickingShader);
+			picking_shader->set_mat4("u_model", current->get_world_model_matrix());
+			picking_shader->set_int("u_encoded_id", static_cast<GLint>(current->get_id()));
+			current->draw(*picking_shader);
 
 			// push child models onto the stack for processing
-			for (const auto& child : current->GetChildren()) stack.push_back(child);
+			for (const auto& child : current->get_children()) stack.push_back(child);
 		}
 	}
 
-	m_pickingPass.Unbind(); // unbind FBO after rendering
-	if (cullWasEnabled) glEnable(GL_CULL_FACE); // restore culling state if needed
-	if (sRGBWasEnabled) glEnable(GL_FRAMEBUFFER_SRGB); // restore sRGB state if needed
+	picking_pass.unbind(); // unbind FBO after rendering
+	if (cull_was_enabled) glEnable(GL_CULL_FACE); // restore culling state if needed
+	if (s_rgb_was_enabled) glEnable(GL_FRAMEBUFFER_SRGB); // restore sRGB state if needed
 }
 
-std::shared_ptr<Node> SelectionManager::GetSelectedNode(NodeManager* nodeManager) const
+std::shared_ptr<Node> Selection_Manager::get_selected_node(Node_Manager* node_manager) const
 {
-	if (m_selectedNodeId == 0) return nullptr; // no selection, return null
+	if (selected_node_id == 0) return nullptr; // no selection, return null
 	// find and return the selected node by id (may be null if id is invalid)
-	return findNodeById(nodeManager, m_selectedNodeId);
+	return find_node_by_id(node_manager, selected_node_id);
 }
 
-void SelectionManager::ClearSelection()
+void Selection_Manager::clear_selection()
 {
 	// if there was a selection, clear it
-	if (m_selectedNodeId != 0) m_selectedNodeId = 0;
-	clearOutlineMask(); // explicit mask clear to prevent stale outline persistence
+	if (selected_node_id != 0) selected_node_id = 0;
+	clear_outline_mask(); // explicit mask clear to prevent stale outline persistence
 }
 
-void SelectionManager::DeleteSelected(NodeManager* nodeManager)
+void Selection_Manager::delete_selected(Node_Manager* node_manager)
 {
-	if (m_selectedNodeId == 0) return; // no selection, nothing to delete
+	if (selected_node_id == 0) return; // no selection, nothing to delete
 
 	// find the selected node by id and check validity, if invalid clear selection and return
-	auto node = findNodeById(nodeManager, m_selectedNodeId);
-	if (!node) { ClearSelection(); return; }
+	auto node = find_node_by_id(node_manager, selected_node_id);
+	if (!node) { clear_selection(); return; }
 
-	if (node->GetNodeType() == NodeType::CAMERA)
+	if (node->get_type() == Node_Type::CAMERA)
 	{ // prevent deletion of cameras for now
-		std::cout << "[INFO::SELECTIONMANAGER::DeleteSelected] Cameras cannot be deleted for now "
-			"(ID " << m_selectedNodeId << ")" << std::endl;
+		std::cout << "[INFO::SELECTIONMANAGER::delete_selected] Cameras cannot be deleted for now "
+			"(id " << selected_node_id << ")" << std::endl;
 		return;
 	}
 
 	// if deleting an outlined model, clear outline before removal (avoid one-frame ghost)
-	bool wasOutlineEligible = isOutlineEligible(node);
+	bool wasOutlineEligible = is_outline_eligible(node);
 	if (wasOutlineEligible)
-		clearOutlineMask();
+		clear_outline_mask();
 
 	// remove the selected node itself, print info, and clear selection
-	nodeManager->RemoveNodeById(node->GetId()); // use the node manager to remove the node
-	std::cout << "[INFO::SELECTIONMANAGER::DeleteSelected] Selection (ID " << m_selectedNodeId << ") deleted"
+	node_manager->remove_node_by_id(node->get_id()); // use the node manager to remove the node
+	std::cout << "[INFO::SELECTIONMANAGER::delete_selected] Selection (id " << selected_node_id << ") deleted"
 		<< std::endl;
-	m_selectedNodeId = 0; // clear selection after deletion (0 means none)
+	selected_node_id = 0; // clear selection after deletion (0 means none)
 }
 
-void SelectionManager::Resize(GLuint width, GLuint height)
+void Selection_Manager::resize(GLuint width, GLuint height)
 {
 	// if the window size is zero, return
 	if (width == 0 || height == 0) return;
 
-	bool sizeChanged = width != m_width || height != m_height; // flag for size change
+	bool size_changed = this->width != width || this->height != height; // flag for size change
 
 	// if the window size is unchanged and the FBOs are already created, return
-	if (!sizeChanged && m_pickingPass.GetFboId() != 0 && m_outlinePass.GetFboId() != 0)
+	if (!size_changed && picking_pass.get_fbo_id() != 0 && outline_pass.get_fbo_id() != 0)
 		return;
 
 	// update internal width and height
-	m_width = width;
-	m_height = height;
+	this->width = width;
+	this->height = height;
 
 	// recreate the picking pass with an updated specification and print info
 	{
-		RenderPassSpecification spec{};
-		spec.Width = m_width;
-		spec.Height = m_height;
-		spec.ColorAttachmentCount = 1;		// single channel for id encoding
-		spec.HasDepthAttachment = true;		// need depth for correct occlusion
-		spec.HasStencilAttachment = false;	// not needed for picking pass
+		Render_Pass_Specification spec{};
+		spec.width = width;
+		spec.height = height;
+		spec.color_attachment_count = 1;		// single channel for id encoding
+		spec.has_depth_attachment = true;		// need depth for correct occlusion
+		spec.has_stencil_attachment = false;	// not needed for picking pass
 		// enable depth texture as it is needed later for depth-aware outline composite
 		// (to sample the selected object's depth in the main scene)
-		spec.DepthAsTexture = true;
+		spec.depth_as_texture = true;
 
-		m_pickingPass.Create(spec);			// create or recreate the picking pass
+		picking_pass.create(spec);			// create or recreate the picking pass
 
 		// prevent inaccurate id sampling when reading back by using GL_NEAREST filtering
-		if (GLuint texId = m_pickingPass.GetTextureId(0); texId != 0)
+		if (GLuint texId = picking_pass.get_texture_id(0); texId != 0)
 		{
-			glBindTexture(GL_TEXTURE_2D, m_pickingPass.GetTextureId(0));
+			glBindTexture(GL_TEXTURE_2D, picking_pass.get_texture_id(0));
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 			glBindTexture(GL_TEXTURE_2D, 0);
 		}
 
-		std::cout << "[INFO::SELECTIONMANAGER::Resize] Picking pass resized to "
-			<< m_width << "x" << m_height << std::endl;
+		std::cout << "[INFO::SELECTIONMANAGER::resize] Picking pass resized to "
+			<< width << "x" << height << std::endl;
 	}
 
 	// recreate the outline pass with an updated specification and print info
 	{
-		RenderPassSpecification spec{};
-		spec.Width = m_width;
-		spec.Height = m_height;
-		spec.ColorAttachmentCount = 1;		// single channel for mask
-		spec.HasDepthAttachment = true;		// need depth for correct occlusion
-		spec.HasStencilAttachment = false;	// not needed for outline pass
+		Render_Pass_Specification spec{};
+		spec.width = width;
+		spec.height = height;
+		spec.color_attachment_count = 1;		// single channel for mask
+		spec.has_depth_attachment = true;		// need depth for correct occlusion
+		spec.has_stencil_attachment = false;	// not needed for outline pass
 		// enable depth texture as it is needed later for depth-aware outline composite
 		// (to sample the selected object's depth in the main scene)
-		spec.DepthAsTexture = true;
+		spec.depth_as_texture = true;
 
-		m_outlinePass.Create(spec);			// create or recreate the outline pass
+		outline_pass.create(spec);			// create or recreate the outline pass
 
 		// prevent edge shifts and bleeding by using GL_NEAREST filtering
-		if (GLuint texId = m_outlinePass.GetTextureId(0); texId != 0)
+		if (GLuint texId = outline_pass.get_texture_id(0); texId != 0)
 		{
-			glBindTexture(GL_TEXTURE_2D, m_outlinePass.GetTextureId(0));
+			glBindTexture(GL_TEXTURE_2D, outline_pass.get_texture_id(0));
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 			glBindTexture(GL_TEXTURE_2D, 0);
 		}
 
-		std::cout << "[INFO::SELECTIONMANAGER::Resize] Outline pass resized to "
-			<< m_width << "x" << m_height << std::endl;
+		std::cout << "[INFO::SELECTIONMANAGER::resize] Outline pass resized to "
+			<< width << "x" << height << std::endl;
 	}
 }
 
-GLuint SelectionManager::GetPickingTextureId() const
+GLuint Selection_Manager::get_picking_texture_id() const
 {
 	// if the picking FBO is not created, return 0
-	if (m_pickingPass.GetFboId() == 0) return 0;
+	if (picking_pass.get_fbo_id() == 0) return 0;
 	// otherwise, return the texture id of the first color attachment (0 if invalid index)
-	return m_pickingPass.GetTextureId(0);
+	return picking_pass.get_texture_id(0);
 }
 
-void SelectionManager::RenderOutlineMask(const Camera* camera, NodeManager* nodeManager)
+void Selection_Manager::render_outline_mask(const Camera* camera, Node_Manager* node_manager)
 {
-	if (m_selectedNodeId == 0) return; // no selection, nothing to outline, return
-	if (!camera || !nodeManager) return; // if no camera or node manager, return
-	if (m_width == 0 || m_height == 0) return; // if the window is zero-sized, return
+	if (selected_node_id == 0) return; // no selection, nothing to outline, return
+	if (!camera || !node_manager) return; // if no camera or node manager, return
+	if (width == 0 || height == 0) return; // if the window is zero-sized, return
 
 	// find the selected node; if it vanished, clear mask (avoid ghost) and return
-	auto selected = findNodeById(nodeManager, m_selectedNodeId);
+	auto selected = find_node_by_id(node_manager, selected_node_id);
 	if (!selected)
 	{ // if the selected node no longer exists, clear mask (if any) and return
-		clearOutlineMask();
+		clear_outline_mask();
 		return;
 	}
 
-	if (selected->GetNodeType() == NodeType::LIGHT)
+	if (selected->get_type() == Node_Type::LIGHT)
 	{ // if the selected node is a light with a missing or invisible gizmo, no outline should be rendered
 		// dynamically cast the node to a Light object
 		auto light = static_cast<Light*>(selected.get());
-		auto gizmo = light->GetGizmo(); // may be null if no gizmo exists
-		if (!gizmo || !gizmo->IsVisible())
+		auto gizmo = light->get_gizmo(); // may be null if no gizmo exists
+		if (!gizmo || !gizmo->get_is_visible())
 		{ // if no gizmo or invisible, clear mask and return
-			clearOutlineMask();
+			clear_outline_mask();
 			return;
 		}
 	}
 
-	if (!isOutlineEligible(selected))
+	if (!is_outline_eligible(selected))
 	{ // if current selection is not outline eligible (light / gizmo), clear mask (if any) and return
-		clearOutlineMask();
+		clear_outline_mask();
 		return;
 	}
 
 	// ensure FBO exists
-	if (m_outlinePass.GetFboId() == 0) ensureOutlinePass();
+	if (outline_pass.get_fbo_id() == 0) ensure_outline_pass();
 
 	// reuse picking shader for geometry submission with encodedId = 1 (mask)
-	if (!m_pickingShader)
+	if (!picking_shader)
 	{ // if no picking shader is set, print a warning and return
-		std::cerr << "[WARNING::SELECTIONMANAGER::RenderOutlineMask] Picking shader not set;\n"
+		std::cerr << "[WARNING::SELECTIONMANAGER::render_outline_mask] Picking shader not set;\n"
 			"cannot build outline mask" << std::endl;
 		return;
 	}
 
 	// before binding, preserve sRGB state and store previous clear color and viewport
 	// to avoid introducing rendering artifacts downstream
-	GLboolean sRGBWasEnabled = glIsEnabled(GL_FRAMEBUFFER_SRGB);
-	if (sRGBWasEnabled) glDisable(GL_FRAMEBUFFER_SRGB);
+	GLboolean s_rgb_was_enabled = glIsEnabled(GL_FRAMEBUFFER_SRGB);
+	if (s_rgb_was_enabled) glDisable(GL_FRAMEBUFFER_SRGB);
 	GLfloat prevClearColor[4]; glGetFloatv(GL_COLOR_CLEAR_VALUE, prevClearColor);
 	GLint prevViewport[4]; glGetIntegerv(GL_VIEWPORT, prevViewport);
 
 	// bind outline FBO, set state, and clear buffers
-	m_outlinePass.Bind();
+	outline_pass.bind();
 	// disable culling to avoid missing backfacing geometry during outline mask rendering
-	GLboolean cullWasEnabled = glIsEnabled(GL_CULL_FACE);
-	if (cullWasEnabled) glDisable(GL_CULL_FACE);
+	GLboolean cull_was_enabled = glIsEnabled(GL_CULL_FACE);
+	if (cull_was_enabled) glDisable(GL_CULL_FACE);
 	// enable depth testing for correct occlusion
 	glEnable(GL_DEPTH_TEST);
 	// clear color and depth buffers
@@ -487,34 +487,34 @@ void SelectionManager::RenderOutlineMask(const Camera* camera, NodeManager* node
 
 	// determine geometry to render for outline mask (light -> gizmo model, model -> itself)
 	std::shared_ptr<Node> model;
-	if (selected->GetNodeType() == NodeType::LIGHT)
+	if (selected->get_type() == Node_Type::LIGHT)
 	{ // if the selected node is a light, get its gizmo model
 		// dynamically cast the node to a Light object
 		auto light = static_cast<Light*>(selected.get());
-		model = light->GetGizmo(); // may be null if no gizmo exists
+		model = light->get_gizmo(); // may be null if no gizmo exists
 	}
-	else if (selected->GetNodeType() == NodeType::COMPOSITE_MODEL ||
-			 selected->GetNodeType() == NodeType::COMPOSITE_ASSIMP_MODEL ||
-			 selected->GetNodeType() == NodeType::COMPOSITE_SHAPE_MODEL ||
-			 selected->GetNodeType() == NodeType::ASSIMP_MODEL ||
-			 selected->GetNodeType() == NodeType::SHAPE_MODEL) // any model type
+	else if (selected->get_type() == Node_Type::COMPOSITE_MODEL ||
+			 selected->get_type() == Node_Type::COMPOSITE_ASSIMP_MODEL ||
+			 selected->get_type() == Node_Type::COMPOSITE_SHAPE_MODEL ||
+			 selected->get_type() == Node_Type::ASSIMP_MODEL ||
+			 selected->get_type() == Node_Type::SHAPE_MODEL) // any model type
 	{ // if the selected node is a model, use it directly
 		model = std::dynamic_pointer_cast<Node>(selected);
 	}
 
-	if (!model) { clearOutlineMask(); return; } // no model to outline, clear mask and return
+	if (!model) { clear_outline_mask(); return; } // no model to outline, clear mask and return
 
 	// compute view and projection matrices from the camera
 	glm::mat4 projection = glm::perspective(
-		glm::radians(camera->GetZoom()),
-		static_cast<float>(m_width) / static_cast<float>(m_height),
+		glm::radians(camera->get_zoom()),
+		static_cast<float>(width) / static_cast<float>(height),
 		0.1f, 100.0f);
-	glm::mat4 view = camera->GetViewMatrix();
+	glm::mat4 view = camera->get_view_matrix();
 
 	// render entire hierarchy of the selected root model with a constant mask value of 1
-	m_pickingShader->Use();
-	m_pickingShader->SetMat4("view", view);
-	m_pickingShader->SetMat4("projection", projection);
+	picking_shader->use();
+	picking_shader->set_mat4("u_view", view);
+	picking_shader->set_mat4("u_projection", projection);
 
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); // ensure solid fill for outline mask
 
@@ -528,51 +528,51 @@ void SelectionManager::RenderOutlineMask(const Camera* camera, NodeManager* node
 		if (!current) continue; // skip null nodes
 
 		// set model matrix and encoded id uniform, then draw the model
-		m_pickingShader->SetMat4("model", current->GetWorldModelMatrix());
-		m_pickingShader->SetInt("encodedId", 1); // constant mask value of 1 for outline
-		current->Draw(*m_pickingShader);
+		picking_shader->set_mat4("u_model", current->get_world_model_matrix());
+		picking_shader->set_int("u_encoded_id", 1); // constant mask value of 1 for outline
+		current->draw(*picking_shader);
 
 		// push child models onto the stack for processing
-		for (auto& child : current->GetChildren()) stack.push_back(child);
+		for (auto& child : current->get_children()) stack.push_back(child);
 	}
 
-	m_outlinePass.Unbind(); // unbind FBO after rendering
+	outline_pass.unbind(); // unbind FBO after rendering
 
 	// after unbinding, restore prior GL state, i.e. sRGB, clear color, and viewport
-	if (cullWasEnabled) glEnable(GL_CULL_FACE); // restore culling state if needed
-	if (sRGBWasEnabled) glEnable(GL_FRAMEBUFFER_SRGB);
+	if (cull_was_enabled) glEnable(GL_CULL_FACE); // restore culling state if needed
+	if (s_rgb_was_enabled) glEnable(GL_FRAMEBUFFER_SRGB);
 	glClearColor(prevClearColor[0], prevClearColor[1], prevClearColor[2], prevClearColor[3]);
 	glViewport(prevViewport[0], prevViewport[1], prevViewport[2], prevViewport[3]);
 }
 
-GLuint SelectionManager::GetOutlineMaskTextureId() const
+GLuint Selection_Manager::get_outline_mask_texture_id() const
 {
-	if (m_outlinePass.GetFboId() == 0) return 0; // if the outline FBO is not created, return 0
-	return m_outlinePass.GetTextureId(0); // otherwise, return the texture id of the first color attachment
+	if (outline_pass.get_fbo_id() == 0) return 0; // if the outline FBO is not created, return 0
+	return outline_pass.get_texture_id(0); // otherwise, return the texture id of the first color attachment
 }
 
 // Private Methods
 // ---------------
-void SelectionManager::ensurePickingPass()
+void Selection_Manager::ensure_picking_pass()
 {
 	// if the picking FBO is already created and valid, return
-	if (m_pickingPass.GetFboId() != 0) return;
+	if (picking_pass.get_fbo_id() != 0) return;
 
 	// create the picking FBO with the current window size among other specs and print info
-	RenderPassSpecification spec{};
-	spec.Width = m_width;
-	spec.Height = m_height;
-	spec.ColorAttachmentCount = 1;
-	spec.HasDepthAttachment = true;
-	spec.HasStencilAttachment = false; // not needed for picking pass
+	Render_Pass_Specification spec{};
+	spec.width = width;
+	spec.height = height;
+	spec.color_attachment_count = 1;
+	spec.has_depth_attachment = true;
+	spec.has_stencil_attachment = false; // not needed for picking pass
 	// enable depth texture as it is needed later for depth-aware outline composite
 	// (to sample the selected object's depth in the main scene)
-	spec.DepthAsTexture = true;
+	spec.depth_as_texture = true;
 
-	m_pickingPass.Create(spec); // create or recreate the picking pass
+	picking_pass.create(spec); // create or recreate the picking pass
 
 	// prevent inaccurate id sampling when reading back by using GL_NEAREST filtering
-	if (GLuint texId = m_pickingPass.GetTextureId(0); texId != 0)
+	if (GLuint texId = picking_pass.get_texture_id(0); texId != 0)
 	{
 		glBindTexture(GL_TEXTURE_2D, texId);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -580,30 +580,30 @@ void SelectionManager::ensurePickingPass()
 		glBindTexture(GL_TEXTURE_2D, 0);
 	}
 
-	std::cout << "[INFO::SELECTIONMANAGER::ensurePickingPass] Picking pass created with dimensions ("
-		<< m_width << "x" << m_height << ")" << std::endl;
+	std::cout << "[INFO::SELECTIONMANAGER::ensure_picking_pass] Picking pass created with dimensions ("
+		<< width << "x" << height << ")" << std::endl;
 }
 
-void SelectionManager::ensureOutlinePass()
+void Selection_Manager::ensure_outline_pass()
 {
 	// if the outline FBO is already created and valid, return
-	if (m_outlinePass.GetFboId() != 0) return;
+	if (outline_pass.get_fbo_id() != 0) return;
 
 	// create the outline FBO with the current window size among other specs and print info
-	RenderPassSpecification spec{};
-	spec.Width = m_width;
-	spec.Height = m_height;
-	spec.ColorAttachmentCount = 1;
-	spec.HasDepthAttachment = true;
-	spec.HasStencilAttachment = false;
+	Render_Pass_Specification spec{};
+	spec.width = width;
+	spec.height = height;
+	spec.color_attachment_count = 1;
+	spec.has_depth_attachment = true;
+	spec.has_stencil_attachment = false;
 	// enable depth texture as it is needed later for depth-aware outline composite
 	// (to sample the selected object's depth in the main scene)
-	spec.DepthAsTexture = true;
+	spec.depth_as_texture = true;
 
-	m_outlinePass.Create(spec); // create or recreate the outline pass
+	outline_pass.create(spec); // create or recreate the outline pass
 
 	// prevent edge shifts and bleeding by using GL_NEAREST filtering
-	if (GLuint texId = m_outlinePass.GetTextureId(0); texId != 0)
+	if (GLuint texId = outline_pass.get_texture_id(0); texId != 0)
 	{
 		glBindTexture(GL_TEXTURE_2D, texId);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -611,71 +611,71 @@ void SelectionManager::ensureOutlinePass()
 		glBindTexture(GL_TEXTURE_2D, 0);
 	}
 
-	std::cout << "[INFO::SELECTIONMANAGER::ensureOutlinePass] Outline pass created with dimensions ("
-		<< m_width << "x" << m_height << ")" << std::endl;
+	std::cout << "[INFO::SELECTIONMANAGER::ensure_outline_pass] Outline pass created with dimensions ("
+		<< width << "x" << height << ")" << std::endl;
 }
 
-void SelectionManager::clearOutlineMask()
+void Selection_Manager::clear_outline_mask()
 {
 	// if the outline FBO does not exist yet there is nothing to clear, return
-	if (m_outlinePass.GetFboId() == 0) return;
+	if (outline_pass.get_fbo_id() == 0) return;
 
 	// preserve depth test enable state to avoid introducing rendering artifacts downstream
 	GLboolean depthWasEnabled = glIsEnabled(GL_DEPTH_TEST);
 
 	// before binding, preserve sRGB state and store previous clear color and viewport
 	// to avoid introducing rendering artifacts downstream
-	GLboolean sRGBWasEnabled = glIsEnabled(GL_FRAMEBUFFER_SRGB);
-	if (sRGBWasEnabled) glDisable(GL_FRAMEBUFFER_SRGB);
+	GLboolean s_rgb_was_enabled = glIsEnabled(GL_FRAMEBUFFER_SRGB);
+	if (s_rgb_was_enabled) glDisable(GL_FRAMEBUFFER_SRGB);
 	GLfloat prevClearColor[4]; glGetFloatv(GL_COLOR_CLEAR_VALUE, prevClearColor);
 	GLint prevViewport[4]; glGetIntegerv(GL_VIEWPORT, prevViewport);
 
 	// bind outline FBO, disable depth testing for full clear, and clear color and depth buffers
-	m_outlinePass.Bind();
+	outline_pass.bind();
 	glDisable(GL_DEPTH_TEST); // not needed for a full clear
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f); // fully transparent/black mask (no outline)
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	m_outlinePass.Unbind();
+	outline_pass.unbind();
 
 	// restore prior depth state
 	if (depthWasEnabled) glEnable(GL_DEPTH_TEST); else glDisable(GL_DEPTH_TEST);
 
 	// after unbinding, restore prior GL state, i.e. sRGB, clear color, and viewport
-	if (sRGBWasEnabled) glEnable(GL_FRAMEBUFFER_SRGB);
+	if (s_rgb_was_enabled) glEnable(GL_FRAMEBUFFER_SRGB);
 	glClearColor(prevClearColor[0], prevClearColor[1], prevClearColor[2], prevClearColor[3]);
 	glViewport(prevViewport[0], prevViewport[1], prevViewport[2], prevViewport[3]);
 }
 
-bool SelectionManager::isOutlineEligible(const std::shared_ptr<Node>& node) const
+bool Selection_Manager::is_outline_eligible(const std::shared_ptr<Node>& node) const
 {
 	if (!node) return false; // null node is not outline-eligible
 
 	// check node type for outline eligibility
-	if (node->GetNodeType() == NodeType::COMPOSITE_ASSIMP_MODEL ||
-		node->GetNodeType() == NodeType::COMPOSITE_SHAPE_MODEL ||
-		node->GetNodeType() == NodeType::COMPOSITE_MODEL ||
-		node->GetNodeType() == NodeType::ASSIMP_MODEL ||
-		node->GetNodeType() == NodeType::SHAPE_MODEL) // any model type
+	if (node->get_type() == Node_Type::COMPOSITE_ASSIMP_MODEL ||
+		node->get_type() == Node_Type::COMPOSITE_SHAPE_MODEL ||
+		node->get_type() == Node_Type::COMPOSITE_MODEL ||
+		node->get_type() == Node_Type::ASSIMP_MODEL ||
+		node->get_type() == Node_Type::SHAPE_MODEL) // any model type
 	{ // outline any non-gizmo model
 		auto model = dynamic_cast<Node*>(node.get());
 		if (!model) return false;
 		// outline any non-gizmo model
-		return model->GetGizmoType() == GizmoType::NONE;
+		return model->get_gizmo_type() == Gizmo_Type::NONE;
 	}
-	else if (node->GetNodeType() == NodeType::LIGHT)
+	else if (node->get_type() == Node_Type::LIGHT)
 	{ // outline lights only via their gizmo if present
 		auto light = static_cast<Light*>(node.get());
 		// outline via gizmo geometry if present
-		return light && light->GetGizmo() != nullptr;
+		return light && light->get_gizmo() != nullptr;
 	}
 
 	return false; // other node types are not outline-eligible
 }
 
-std::uint32_t SelectionManager::readPixelId(GLint x, GLint y) const
+std::uint32_t Selection_Manager::read_pixel_id(GLint x, GLint y) const
 {
 	// if the coordinates are out of bounds, return 0 (no selection)
-	if (x < 0 || y < 0 || x >= static_cast<GLint>(m_width) || y >= static_cast<GLint>(m_height))
+	if (x < 0 || y < 0 || x >= static_cast<GLint>(width) || y >= static_cast<GLint>(height))
 		return 0;
 
 	// read the pixel at (x, y) from the picking FBO's color attachment
@@ -689,39 +689,39 @@ std::uint32_t SelectionManager::readPixelId(GLint x, GLint y) const
 	return id; // return the decoded id from RGB
 }
 
-std::shared_ptr<Node> SelectionManager::findNodeById(NodeManager* nodeManager, std::uint32_t id) const
+std::shared_ptr<Node> Selection_Manager::find_node_by_id(Node_Manager* node_manager, std::uint32_t id) const
 {
-	for (auto type : { NodeType::CAMERA, NodeType::LIGHT, NodeType::MODEL })
+	for (auto type : { Node_Type::CAMERA, Node_Type::LIGHT, Node_Type::MODEL })
 	{ // iterate over node types to search (models and lights)
 		// search all nodes of the current type for a matching id
-		for (const auto& node : nodeManager->GetNodes(type))
-			if (node && node->GetId() == id) // if found, return the node
+		for (const auto& node : node_manager->get_nodes(type))
+			if (node && node->get_id() == id) // if found, return the node
 				return node;
 	}
 	return nullptr; // if not found, return null
 }
 
-std::shared_ptr<Node> SelectionManager::resolveGizmoToLight(NodeManager* nodeManager,
-															const std::shared_ptr<Node>& gizmoModel) const
+std::shared_ptr<Node> Selection_Manager::resolve_gizmo_to_light(Node_Manager* node_manager,
+																const std::shared_ptr<Node>& gizmoModel) const
 {
 	if (!gizmoModel)
 	{
-		std::cerr << "[WARNING::SELECTIONMANAGER::resolveGizmoToLight] Invalid gizmo model provided"
+		std::cerr << "[WARNING::SELECTIONMANAGER::resolve_gizmo_to_light] Invalid gizmo model provided"
 			<< std::endl;
 		return nullptr;
 	}
 
 	// return the parent of the gizmo model, which should be the owning light
-	auto parent = gizmoModel->GetParent();
-	if (parent && parent->GetNodeType() == NodeType::LIGHT)
+	auto parent = gizmoModel->get_parent();
+	if (parent && parent->get_type() == Node_Type::LIGHT)
 	{
-		std::cout << "[INFO::SELECTIONMANAGER::resolveGizmoToLight] Resolved gizmo model ID "
-			<< gizmoModel->GetId() << " to owning parent light ID " << parent->GetId() << std::endl;
+		std::cout << "[INFO::SELECTIONMANAGER::resolve_gizmo_to_light] Resolved gizmo model id "
+			<< gizmoModel->get_id() << " to owning parent light id " << parent->get_id() << std::endl;
 		return parent;
 	}
 
 	// if no valid parent light found, print a warning and return null
-	std::cerr << "[WARNING::SELECTIONMANAGER::resolveGizmoToLight] Could not resolve gizmo model ID "
-		<< gizmoModel->GetId() << " to an owning parent light" << std::endl;
+	std::cerr << "[WARNING::SELECTIONMANAGER::resolve_gizmo_to_light] Could not resolve gizmo model id "
+		<< gizmoModel->get_id() << " to an owning parent light" << std::endl;
 	return nullptr;
 }

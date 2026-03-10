@@ -24,7 +24,7 @@ class Mesh;
 class Texture;
 
 // Enumeration class for different node types (components of the scene graph)
-enum class NodeType
+enum class Node_Type
 {
 	UNDEFINED = 0,
 	CAMERA,
@@ -36,7 +36,7 @@ enum class NodeType
 
 // Enumeration class that allows to disriminate between different types of gizmos 
 // and also indicate if the model is not a gizmo without a boolean flag
-enum class GizmoType { NONE = 0, DIRECTIONAL_LIGHT, POINT_LIGHT, SPOTLIGHT };
+enum class Gizmo_Type { NONE = 0, DIRECTIONAL_LIGHT, POINT_LIGHT, SPOTLIGHT };
 
 // public std::enable_shared_from_this to allow shared pointers to 'this' object
 class Node : public std::enable_shared_from_this<Node>
@@ -50,17 +50,17 @@ public:
 	// The id is based on a static counter that increments each time a new node is created.
 	// It is pre-incremented to ensure the first node has id 1, not 0 (since 0 is reserved
 	// as a sentinel value for undefined nodes, e.g., when no nodes are selected)
-	Node(const std::string& name, const NodeType type = NodeType::UNDEFINED,
+	Node(const std::string& name, const Node_Type type = Node_Type::UNDEFINED,
 		 const glm::vec4 albedo = ALBEDO, const glm::vec3 position = POSITION,
 		 const glm::quat rotation = ROTATION, const glm::vec3 scale = SCALE,
-		 const glm::vec3 forward = FORWARD, const glm::vec3 meshForward = FORWARD,
-		 const GizmoType gizmoType = GizmoType::NONE,
-		 bool isDraggable = true, bool canBeParent = true)
-		: id{ ++nodesCount }, name{ name }, type{ type },
+		 const glm::vec3 forward = FORWARD, const glm::vec3 mesh_forward = FORWARD,
+		 const Gizmo_Type gizmo_type = Gizmo_Type::NONE,
+		 bool is_draggable = true, bool can_be_parent = true)
+		: id{ ++node_count }, name{ name }, type{ type },
 		albedo{ albedo }, position{ position }, rotation{ rotation },
-		scale{ scale }, forward{ forward }, meshForward{ meshForward },
-		gizmoType{ gizmoType }, isVisible{ true },
-		m_isDraggable{ isDraggable }, m_canBeParent{ canBeParent },
+		scale{ scale }, forward{ forward }, mesh_forward{ mesh_forward },
+		gizmo_type{ gizmo_type }, is_visible{ true },
+		is_draggable{ is_draggable }, can_be_parent{ can_be_parent },
 		children{} // initialize children vector as empty
 	{}
 
@@ -71,92 +71,90 @@ public:
 	// Public Functions
 	// ----------------
 	// Loads the node and its resources, including its children if the node is composite
-	virtual void Load() { for (const auto& child : children) if (child) child->Load(); }
+	virtual void load() { for (const auto& child : children) if (child) child->load(); }
 
 	// Deallocates all the resources of the node, including its children if the node is composite
-	virtual void DeallocateResources()
+	virtual void deallocate_resources()
 	{
-		for (const auto& child : children) if (child) child->DeallocateResources();
+		for (const auto& child : children) if (child) child->deallocate_resources();
 	}
 
 	// Draws the node if it is a mesh-bearing node, including its children if the node is composite
-	virtual void Draw() const = 0;
+	virtual void draw() const = 0;
 	// Draws the node if it is a mesh-bearing node, including its children if the node is composite,
 	// using the specified shader (binds the textures before drawing)
-	virtual void Draw(const Shader& shader) const = 0;
+	virtual void draw(const Shader& shader) const = 0;
 
 	// Getters and Setters
-	std::uint32_t GetId() const { return id; }
-	const std::string& GetName() const { return name; }
-	const NodeType& GetNodeType() const { return type; }
+	std::uint32_t get_id() const { return id; }
+	const std::string& get_name() const { return name; }
+	const Node_Type& get_type() const { return type; }
 
-	void SetId(std::uint32_t id) { this->id = id; }
-	void SetName(const std::string& name) { this->name = name; }
-	void SetNodeType(const NodeType& type) { this->type = type; }
+	void set_id(std::uint32_t id) { this->id = id; }
+	void set_name(const std::string& name) { this->name = name; }
+	void set_type(const Node_Type& type) { this->type = type; }
 
-	const glm::vec4& GetAlbedo() const { return albedo; }
-	const glm::vec3& GetPosition() const { return position; }
-	const glm::quat& GetRotation() const { return rotation; }
-	const glm::vec3 GetRotationInEulerAngles() const; // returns the rotation as Euler angles in degrees
-	const glm::vec3& GetScale() const { return scale; }
-	const glm::vec3 GetForward() const; // returns the forward vector in world space and normalized
-	const glm::vec3& GetMeshForward() const { return meshForward; }
-	const GizmoType& GetGizmoType() const { return gizmoType; }
-	bool IsVisible() const { return isVisible; }
-	bool IsTwoSided() const { return isTwoSided; }
-	bool IsDraggable() const { return m_isDraggable; }
-	bool CanBeParent() const { return m_canBeParent; }
+	const glm::vec4& get_albedo() const { return albedo; }
+	const glm::vec3& get_position() const { return position; }
+	const glm::quat& get_rotation() const { return rotation; }
+	const glm::vec3 get_rotation_in_euler_angles() const; // returns the rotation as Euler angles in degrees
+	const glm::vec3& get_scale() const { return scale; }
+	const glm::vec3 get_forward() const; // returns the forward vector in world space and normalized
+	const glm::vec3& get_mesh_forward() const { return mesh_forward; }
+	const Gizmo_Type& get_gizmo_type() const { return gizmo_type; }
+	bool get_is_visible() const { return is_visible; }
+	bool get_is_two_sided() const { return is_two_sided; }
+	bool get_is_draggable() const { return is_draggable; }
+	bool get_can_be_parent() const { return can_be_parent; }
 
-	void SetAlbedo(const glm::vec4& albedo) { this->albedo = albedo; }
-	void SetPosition(const glm::vec3& position) { this->position = position; }
-	void SetRotation(const glm::quat& rotation); // sets the rotation and updates the fwd vector accordingly
-	void SetRotationInEulerAngles(const glm::vec3 eulerAnglesDegrees); // from Euler angles in degrees
-	void SetScale(const glm::vec3& scale) { this->scale = scale; }
-	void SetForward(const glm::vec3& worldForward); // aligns node's fwd vector to the given world fwd vector
-	void SetMeshForward(const glm::vec3& meshForward) { this->meshForward = meshForward; }
-	void SetGizmoType(GizmoType gizmoType) { this->gizmoType = gizmoType; }
-	void SetVisible(bool isVisible) { this->isVisible = isVisible; }
-	void SetTwoSided(bool twoSided) { isTwoSided = twoSided; }
-	void SetDraggable(bool isDraggable) { m_isDraggable = isDraggable; }
-	void SetCanBeParent(bool canBeParent) { m_canBeParent = canBeParent; }
+	void set_albedo(const glm::vec4& albedo) { this->albedo = albedo; }
+	void set_position(const glm::vec3& position) { this->position = position; }
+	void set_rotation(const glm::quat& rotation); // sets the rotation and updates the fwd vtr accordingly
+	void set_rotation_in_euler_angles(const glm::vec3 euler_angles_degrees); // from Euler angles in degrees
+	void set_scale(const glm::vec3& scale) { this->scale = scale; }
+	void set_forward(const glm::vec3& world_forward); // aligns node's fwd vtr to the given world fwd vtr
+	void set_mesh_forward(const glm::vec3& mesh_forward) { this->mesh_forward = mesh_forward; }
+	void set_gizmo_type(Gizmo_Type gizmo_type) { this->gizmo_type = gizmo_type; }
+	void set_is_visible(bool is_visible) { this->is_visible = is_visible; }
+	void set_is_two_sided(bool is_two_sided) { is_two_sided = is_two_sided; }
+	void set_is_draggable(bool is_draggable) { is_draggable = is_draggable; }
+	void set_can_be_parent(bool can_be_parent) { can_be_parent = can_be_parent; }
 
 	// Gets the world position of the node, taking into account the hierarchical transformations
-	const glm::vec3 GetWorldPosition() const;
+	const glm::vec3 get_world_position() const;
 
 	// Gets the model matrix, the hierarchical world model matrix, or any of its components separately
-	glm::mat4 GetModelMatrix() const;
-	glm::mat4 GetWorldModelMatrix() const;
-	glm::mat4 GetTranslationMatrix() const;
-	glm::mat4 GetRotationMatrix() const;
-	glm::mat4 GetScaleMatrix() const;
+	glm::mat4 get_model_matrix() const;
+	glm::mat4 get_world_model_matrix() const;
+	glm::mat4 get_translation_matrix() const;
+	glm::mat4 get_rotation_matrix() const;
+	glm::mat4 get_scale_matrix() const;
 
 	// Gets the size of the node's bounding box
-	glm::vec3 GetBoundingBoxSize() const { return m_boundingBoxMax - m_boundingBoxMin; }
+	glm::vec3 get_bounding_box_size() const { return bounding_box_max - bounding_box_min; }
 
 	// Getter and setter for the parent node (weak pointer to avoid circular references)
-	virtual std::shared_ptr<Node> GetParent() const { return parent.lock(); }
-	virtual void SetParent(const std::shared_ptr<Node>& parent) { this->parent = parent; }
+	virtual std::shared_ptr<Node> get_parent() const { return parent.lock(); }
+	virtual void set_parent(const std::shared_ptr<Node>& parent) { this->parent = parent; }
 
 	// Child management functions to avoid exposing any concrete implementation to the client code
-	virtual void AddChild(const std::shared_ptr<Node>& child);
-	virtual void RemoveChild(const std::shared_ptr<Node>& child);
+	virtual void add_child(const std::shared_ptr<Node>& child);
+	virtual void remove_child(const std::shared_ptr<Node>& child);
 	// Getter for all children of the node (would be empty if it is a leaf)
-	virtual std::vector<std::shared_ptr<Node>> GetChildren() const { return children; }
+	virtual std::vector<std::shared_ptr<Node>> get_children() const { return children; }
 	// Returns a boolean indicating if the model has children (i.e, does not imply whether it is composite)
-	virtual bool IsComposite() const { return !children.empty(); }
+	virtual bool is_composite() const { return !children.empty(); }
 	// Returns the top-level ancestor of the node in the scene graph or this if it has no parent
-	virtual std::shared_ptr<Node> GetRootNode() const;
+	virtual std::shared_ptr<Node> get_root_node() const;
 
 	// Static Public Functions
 	// -----------------------
-	static std::uint32_t GetNodesCount() { return nodesCount; }
-	static std::uint32_t GetNNodes() { return nNodes; }
+	static std::uint32_t get_node_count() { return node_count; }
 
 private:
 	// Static Private Attributes
 	// ---------------------------
-	static std::uint32_t nodesCount; // total number of nodes created
-	static std::uint32_t nNodes; // number of nodes in the scene (leaf and composite)
+	static std::uint32_t node_count; // total number of nodes created
 
 protected:
 	// Protected Attributes
@@ -164,7 +162,7 @@ protected:
 	// fundamental node attributes
 	std::uint32_t id; // unique identifier for the node in the scene
 	std::string name;
-	NodeType type; // type of node (e.g., CAMERA, COMPOSITE_MODEL, SHADER, etc.)
+	Node_Type type; // type of node (e.g., CAMERA, COMPOSITE_MODEL, SHADER, etc.)
 
 	// content attributes (for mesh-bearing nodes, empty for pure composite nodes)
 	std::vector<std::shared_ptr<Mesh>> meshes; // meshes of the node itself (if any)
@@ -176,26 +174,26 @@ protected:
 	glm::quat rotation; // rotation of the node in local space
 	glm::vec3 scale; // scale of the node in local space
 	glm::vec3 forward; // forward vector of the node in world space
-	glm::vec3 meshForward; // original forward vector of the mesh
+	glm::vec3 mesh_forward; // original forward vector of the mesh
 
 	// appearance attributes
 	glm::vec4 albedo; // albedo color of the node
 
 	// state attributes
-	bool isVisible; // visibility of the node in the scene
-	bool isTwoSided{ false }; // whether the node is two-sided (for culling)
+	bool is_visible; // visibility of the node in the scene
+	bool is_two_sided{ false }; // whether the node is two-sided (for culling)
 
 	// hierarchy attributes
 	std::weak_ptr<Node> parent; // weak pointer to the parent node
 	std::vector<std::shared_ptr<Node>> children; // vector of shared pointers to the children nodes
 
 	// metadata attributes
-	GizmoType gizmoType; // type of gizmo, if any
-	glm::vec3 m_boundingBoxMin{}, m_boundingBoxMax{}; // bounding box of the node
+	Gizmo_Type gizmo_type; // type of gizmo, if any
+	glm::vec3 bounding_box_min{}, bounding_box_max{}; // bounding box of the node
 
 	// behavioral flags
-	bool m_isDraggable; // whether the node can be dragged in the scene graph
-	bool m_canBeParent; // whether the node can be a parent to other nodes
+	bool is_draggable; // whether the node can be dragged in the scene graph
+	bool can_be_parent; // whether the node can be a parent to other nodes
 
 	// Static Protected Attributes
 	// ---------------------------
