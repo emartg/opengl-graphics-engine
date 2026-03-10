@@ -18,7 +18,7 @@
 
 #include "CUBE.h"
 #include "PLANE.h"
-#include "renderer/GLFWRenderer.h"
+#include "renderer/GLFW_Renderer.h"
 
 #include "../core/Core.h"
 #include "../core/Node.h"

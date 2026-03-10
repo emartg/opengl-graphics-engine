@@ -5,7 +5,7 @@
 * index and texture data (if added).
 */
 
-#include "Shape.h"
+#include "Shape_Model.h"
 
 // Constructors
 // ------------
