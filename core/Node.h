@@ -62,7 +62,8 @@ public:
 		gizmo_type{ gizmo_type }, is_visible{ true },
 		is_draggable{ is_draggable }, can_be_parent{ can_be_parent },
 		children{} // initialize children vector as empty
-	{}
+	{
+	}
 
 	// Virtual destructor
 	// ------------------
@@ -116,9 +117,9 @@ public:
 	void set_mesh_forward(const glm::vec3& mesh_forward) { this->mesh_forward = mesh_forward; }
 	void set_gizmo_type(Gizmo_Type gizmo_type) { this->gizmo_type = gizmo_type; }
 	void set_is_visible(bool is_visible) { this->is_visible = is_visible; }
-	void set_is_two_sided(bool is_two_sided) { is_two_sided = is_two_sided; }
-	void set_is_draggable(bool is_draggable) { is_draggable = is_draggable; }
-	void set_can_be_parent(bool can_be_parent) { can_be_parent = can_be_parent; }
+	void set_is_two_sided(bool is_two_sided) { this->is_two_sided = is_two_sided; }
+	void set_is_draggable(bool is_draggable) { this->is_draggable = is_draggable; }
+	void set_can_be_parent(bool can_be_parent) { this->can_be_parent = can_be_parent; }
 
 	// Gets the world position of the node, taking into account the hierarchical transformations
 	const glm::vec3 get_world_position() const;
