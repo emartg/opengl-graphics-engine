@@ -34,17 +34,23 @@
 #include "../core/managers/Node_Manager.h"
 #include "../core/utils/string/String_Utils.h"
 
+// Initializes the Core engine, sets up the renderer, and compiles the shaders for the initial scene.
+// Returns true if initialization and shader compilation were successful, false otherwise (with error messages)
+bool initialize_core_and_shaders(Core* engine);
+
+// Sets up an example scene with a camera, lights, a shape, an Assimp model, and a skybox
+void setup_example_scene(Core* engine);
+
+// Sets up a test scene (alternative to setup_example_scene) with certain elements to test 
+// specific functionalities of the engine
+void setup_test_scene_reflective(Core* engine);
+
 // Defines hardcoded shader names and paths for the initial scene in a tuple
 std::tuple<
 	std::vector<std::string>,
 	std::vector<std::string>,
 	std::vector<std::string>,
 	std::vector<std::string>> define_shaders_info();
-// Sets up the initial scene with a camera, lights, a shape, an Assimp model, and a skybox
-void setup_initial_scene(Core* engine);
-// Sets up a simple test scene (alternative to setup_initial_scene) with basic elements to test a
-// specific functionality of the engine that is currently being developed
-void setup_initial_test_scene(Core* engine);
 
 int main(int argc, char** argv)
 {
@@ -52,6 +58,25 @@ int main(int argc, char** argv)
 
 	Core* engine = Core::get_instance(); // retrieve the singleton instance of the Core class
 
+	if (!initialize_core_and_shaders(engine))
+	{ // if initialization or shader compilation failed, exit with an error code
+		return -1;
+	}
+
+	setup_example_scene(engine); // set up the example scene
+	//setup_test_scene_reflective(engine); // set up a test scene to test reflective materials
+
+	engine->run(); // run the main loop of the engine, which will render the scene and handle events
+
+	engine->shutdown(); // clean up resources in the correct order and shut down the engine
+
+	std::cout << "[SUCCESS::main] Application finished successfully" << std::endl;
+
+	return 0;
+}
+
+bool initialize_core_and_shaders(Core* engine)
+{
 	// create a GLFW_Renderer instance and set it as the renderer for the engine
 	Renderer* renderer = new GLFW_Renderer();
 	engine->set_renderer(renderer);
@@ -69,7 +94,7 @@ int main(int argc, char** argv)
 		// wait until the user presses a key before exiting
 		std::cout << "[INFO::main] Enter any key and press Enter to exit" << std::endl;
 		std::cin.get();
-		return -1; // exit the program with an error code
+		return false; // indicate that the program should exit with an error code
 	}
 
 	// get the shader names and paths for the initial scene
@@ -88,76 +113,13 @@ int main(int argc, char** argv)
 		// wait until the user presses a key before exiting
 		std::cout << "[INFO::main] Enter any key and press Enter to exit" << std::endl;
 		std::cin.get();
-		return -1; // exit the program with an error code
+		return false; // indicate that the program should exit with an error code
 	}
 
-	setup_initial_scene(engine); // set up the initial scene with a camera, lights, and a model
-
-	engine->run(); // run the main loop of the engine, which will render the scene and handle events
-
-	engine->shutdown(); // clean up resources in the correct order and shut down the engine
-
-	std::cout << "[SUCCESS::main] Application finished successfully" << std::endl;
-
-	return 0;
+	return true; // indicate that the initialization and shader compilation were successful
 }
 
-std::tuple<std::vector<std::string>,
-	std::vector<std::string>,
-	std::vector<std::string>,
-	std::vector<std::string>> define_shaders_info()
-{
-	std::vector<std::string> shader_names = {
-		"Shape Model Shader",
-		"Assimp Model Shader",
-		"Single Albedo Shader",
-		"Screen Quad Shader",
-		"Picking Shader",
-		"Skybox Shader",
-		"Equirectangular to Cubemap Shader",
-		"Reflective Shader",
-		"Refractive Shader"
-	};
-
-	std::string shaders_dir = "resources/shaders/";
-
-	std::vector<std::string> vertex_shader_paths = {
-		shaders_dir + "shape_model.vert.glsl",
-		shaders_dir + "assimp_model.vert.glsl",
-		shaders_dir + "single_albedo.vert.glsl",
-		shaders_dir + "screen_quad.vert.glsl",
-		shaders_dir + "picking.vert.glsl",
-		shaders_dir + "skybox.vert.glsl",
-		shaders_dir + "equirectangular_to_cubemap.vert.glsl",
-		shaders_dir + "reflective.vert.glsl",
-		shaders_dir + "refractive.vert.glsl"
-	};
-	std::vector<std::string> geometry_shader_paths = {
-		"", // no custom geometry shader for the shape model shader
-		"", // no custom geometry shader for the assimp model shader
-		""  // no custom geometry shader for the single albedo shader
-		"", // no custom geometry shader for the screen shader
-		"", // no custom geometry shader for the picking shader
-		"", // no custom geometry shader for the skybox shader
-		"", // no custom geometry shader for the equirectangular to cubemap shader
-		"", // no custom geometry shader for the reflective shader
-		""  // no custom geometry shader for the refractive shader
-	};
-	std::vector<std::string> fragment_shader_paths = {
-		shaders_dir + "shape_model.frag.glsl",
-		shaders_dir + "assimp_model.frag.glsl",
-		shaders_dir + "single_albedo.frag.glsl",
-		shaders_dir + "screen_quad.frag.glsl",
-		shaders_dir + "picking.frag.glsl",
-		shaders_dir + "skybox.frag.glsl",
-		shaders_dir + "equirectangular_to_cubemap.frag.glsl",
-		shaders_dir + "reflective.frag.glsl",
-		shaders_dir + "refractive.frag.glsl"
-	};
-	return { shader_names, vertex_shader_paths, geometry_shader_paths, fragment_shader_paths };
-}
-
-void setup_initial_scene(Core* engine)
+void setup_example_scene(Core* engine)
 {
 	// retrieve the node manager and scene manager from the engine
 	auto& node_manager = engine->get_node_manager();
@@ -182,13 +144,13 @@ void setup_initial_scene(Core* engine)
 		glm::vec3{ 2.4f, 8.0f, -3.0f }, // position (overridden)
 		glm::vec3{ -0.2f, -0.8, 0.5f } // direction (overridden)
 	);
-
 	// convert the light's id to string and set it as part of the light's name
 	directional_light->set_name(String_Utils::generate_id_prefixed_name(directional_light));
 
 	// create the gizmo child (the light has been fully constructed and placed in a shared_ptr)
 	directional_light->create_gizmo();
-	// register the gizmo child for selection/picking before moving the light
+	// add the gizmo child to the node manager 
+	// before moving the light (renderer skips it via parent check)
 	auto directional_light_gizmo = directional_light->get_gizmo();
 	if (directional_light_gizmo) node_manager->add_node(std::move(directional_light_gizmo));
 	node_manager->add_node(std::move(directional_light));
@@ -206,7 +168,8 @@ void setup_initial_scene(Core* engine)
 
 	// create the gizmo child (the light has been fully constructed and placed in a shared_ptr)
 	point_light->create_gizmo();
-	// register the gizmo child for selection/picking before moving the light
+	// add the gizmo child to the node manager 
+	// before moving the light (renderer skips it via parent check)
 	auto point_light_gizmo = point_light->get_gizmo();
 	if (point_light_gizmo) node_manager->add_node(std::move(point_light_gizmo));
 	node_manager->add_node(std::move(point_light));
@@ -227,7 +190,8 @@ void setup_initial_scene(Core* engine)
 
 	// create the gizmo child (the light has been fully constructed and placed in a shared_ptr)
 	spotlight->create_gizmo();
-	// register the gizmo child for selection/picking before moving the light
+	// add the gizmo child to the node manager 
+	// before moving the light (renderer skips it via parent check)
 	auto spotlight_gizmo = spotlight->get_gizmo();
 	if (spotlight_gizmo) node_manager->add_node(std::move(spotlight_gizmo));
 	node_manager->add_node(std::move(spotlight));
@@ -293,19 +257,18 @@ void setup_initial_scene(Core* engine)
 	// attach the shapes group under the root group
 	root_group->add_child(shapes_group);
 
-	// create an Assimp model and add it as a child of the root group
+	// create an Assimp model as a child of the root group and add it to the node manager
 	std::string model_file_path = "resources/models/gltf/teapot/teapot.gltf";
 	if (std::filesystem::exists(model_file_path))
 	{ // check if the file exists before loading it
 		auto model = std::make_shared<Assimp_Model>(
 			"Teapot",
 			model_file_path, // model file path
-			glm::vec4{ 1.0f, 1.0f, 1.0f, 0.5f }, // albedo (overridden - alpha below 1 for transparency)
+			glm::vec4{ 0.8, 0.8f, 0.8f, 0.5f }, // albedo (overriden)
 			glm::vec3{ 0.0f, 0.0f, 3.0f }, // position (overridden - offset from root)
 			glm::quat(glm::vec3{ 0.0f }), // rotation (default)
 			glm::vec3{ 0.25f } // scale (overridden)
 		);
-
 		// remove the path and the extension from the file path for the model's name
 		std::string model_name = model_file_path.substr(
 			model_file_path.find_last_of("/\\") + 1,
@@ -315,20 +278,19 @@ void setup_initial_scene(Core* engine)
 		model_name[0] = std::toupper(model_name[0]);
 		// convert the model's id to string and set it as part of the model's name
 		model->set_name(String_Utils::generate_id_prefixed_name(model));
-
 		// attach Assimp model under the root group
 		root_group->add_child(model);
-
-		// register child nodes for selection/picking (renderer skips them via parent check)
+		// add the Assimp model to the node manager
 		node_manager->add_node(model);
 	}
 	else
 	{ // if the file does not exist, print an error message
-		std::cerr << "[WARNING::main::setup_initial_scene] Assimp model not found: "
+		std::cerr << "[WARNING::main::setup_example_scene] Assimp model not found: "
 			<< model_file_path << std::endl;
 	}
 
-	// register all nodes (including children) so they exist as nodes
+	// add all unregistered selectable nodes in the hierarchy 
+	// to the node manager to register them for selection/picking
 	node_manager->add_node(root_group);
 	node_manager->add_node(shapes_group);
 	node_manager->add_node(red_cube);
@@ -343,16 +305,16 @@ void setup_initial_scene(Core* engine)
 	}
 	else
 	{ // if the file does not exist, print an error message
-		std::cerr << "[ERROR::main::setup_initial_scene] Skybox file not found: " << skybox_file_path
+		std::cerr << "[ERROR::main::setup_example_scene] Skybox file not found: " << skybox_file_path
 			<< std::endl;
 	}
 
-	// print a success message indicating the initial scene setup is complete
-	std::cout << "[SUCCESS::main::setup_initial_scene] Initial scene setup completed successfully"
+	// print a success message indicating the example scene setup is complete
+	std::cout << "[SUCCESS::main::setup_example_scene] Example scene setup completed successfully"
 		<< std::endl;
 }
 
-void setup_initial_test_scene(Core* engine)
+void setup_test_scene_reflective(Core* engine)
 {
 	// retrieve the node manager and scene manager from the engine
 	auto& node_manager = engine->get_node_manager();
@@ -363,4 +325,167 @@ void setup_initial_test_scene(Core* engine)
 
 	// convert the camera's id to string and set it as part of the camera's name
 	camera->set_name(String_Utils::generate_id_prefixed_name(camera));
+
+	// set the camera as the active camera in the scene manager and add it to the node manager
+	scene_manager->set_camera(camera);
+	node_manager->add_node(std::move(camera));
+
+	// create a directional light and add it along with its gizmo to the node manager
+	auto directional_light = std::make_shared<Directional_Light>(
+		"Directional Light",
+		glm::vec3{ 0.1f }, // ambient color (default)
+		glm::vec4{ 1.0f, 1.0f, 0.7f, 1.0f }, // diffuse color (overridden)
+		glm::vec3{ 1.0f }, // specular color (override required although it is the default)
+		glm::vec3{ 2.4f, 8.0f, -3.0f }, // position (overridden)
+		glm::vec3{ -0.2f, -0.8, 0.5f } // direction (overridden)
+	);
+	// convert the light's id to string and set it as part of the light's name
+	directional_light->set_name(String_Utils::generate_id_prefixed_name(directional_light));
+
+	// create the gizmo child (the light has been fully constructed and placed in a shared_ptr)
+	directional_light->create_gizmo();
+	// add the gizmo child to the node manager 
+	// before moving the light (renderer skips it via parent check)
+	auto directional_light_gizmo = directional_light->get_gizmo();
+	if (directional_light_gizmo) node_manager->add_node(std::move(directional_light_gizmo));
+	node_manager->add_node(std::move(directional_light));
+
+	// create a point light and add it along with its gizmo to the node manager
+	auto point_light = std::make_shared<Point_Light>(
+		"Point Light",
+		glm::vec3{ 0.1f }, // ambient color (default)
+		glm::vec4{ 0.3f, 0.9f, 1.0f, 1.0f }, // diffuse color (overridden)
+		glm::vec3{ 1.0f }, // specular color (same as default)
+		glm::vec3{ -0.6f, 3.2f, 3.2f } // position (overridden)
+	);
+	// convert the light's id to string and set it as part of the light's name
+	point_light->set_name(String_Utils::generate_id_prefixed_name(point_light));
+
+	// create the gizmo child (the light has been fully constructed and placed in a shared_ptr)
+	point_light->create_gizmo();
+	// add the gizmo child to the node manager 
+	// before moving the light (renderer skips it via parent check)
+	auto point_light_gizmo = point_light->get_gizmo();
+	if (point_light_gizmo) node_manager->add_node(std::move(point_light_gizmo));
+	node_manager->add_node(std::move(point_light));
+
+	// create a reflective plane model, register it for dynamic environment map capture, 
+	// and add it to the node manager
+	auto reflective_plane = std::make_shared<Shape_Model>(
+		"Reflective Plane",
+		plane_vertices_vector, plane_indices_vector,
+		glm::vec4{ 1.0f }, // albedo (overridden - white to ensure full reflection)
+		glm::vec3{ 0.0f, -0.5f, 0.0f }, // position (overridden)
+		glm::quat(glm::radians(glm::vec3{ 0.0f, 45.0f, 0.0f })), // rotation (overridden)
+		glm::vec3{ 5.8f } // scale (overridden)
+	);
+	// set the plane to be two-sided for reflection
+	reflective_plane->set_is_two_sided(true);
+	// convert the plane's id to string and set it as part of the plane's name
+	reflective_plane->set_name(String_Utils::generate_id_prefixed_name(reflective_plane));
+	// register the reflective plane for dynamic environment map capture in the renderer 
+	// with a specified resolution (e.g., 512x512)
+	engine->get_renderer()->register_model_for_dynamic_env_map_capture(reflective_plane->get_id(), 521);
+	// add the reflective plane to the node manager
+	node_manager->add_node(reflective_plane);
+
+	// create an Assimp model and add it to the node manager
+	std::string model_file_path = "resources/models/obj/teapot/teapot.obj";
+	if (std::filesystem::exists(model_file_path))
+	{ // if the file exists, create the model and add it to the node manager
+		auto model = std::make_shared<Assimp_Model>(
+			"Teapot",
+			model_file_path, // model file path
+			glm::vec4{ 0.8f, 0.8f, 0.8f, 1.0f }, // albedo (default)
+			glm::vec3{ -3.25f, 0.95f, -3.25f }, // position (overridden)
+			glm::quat(glm::radians(glm::vec3{ 0.0f, 85.0f, 0.0f })), // rotation (overridden)
+			glm::vec3{ 0.2f } // scale (overridden)
+		);
+		// remove the path and the extension from the file path for the model's name
+		std::string model_name = model_file_path.substr(
+			model_file_path.find_last_of("/\\") + 1,
+			model_file_path.find_last_of('.') - model_file_path.find_last_of("/\\") - 1
+		);
+		// uppercase the first letter of the model's name
+		model_name[0] = std::toupper(model_name[0]);
+		// convert the model's id to string and set it as part of the model's name
+		model->set_name(String_Utils::generate_id_prefixed_name(model));
+		// add the model to the node manager
+		node_manager->add_node(model);
+	}
+	else
+	{ // if the file does not exist, print an error message
+		std::cerr << "[WARNING::main::setup_test_scene_reflective] Assimp model not found: "
+			<< model_file_path << std::endl;
+	}
+
+	// create a skybox and set it in the scene manager
+	std::string skybox_file_path = "resources/textures/skyboxes/hdr/canary_wharf_4k.hdr";
+	if (std::filesystem::exists(skybox_file_path))
+	{ // check if the file exists before loading it
+		scene_manager->load_skybox(skybox_file_path);
+	}
+	else
+	{ // if the file does not exist, print an error message
+		std::cerr << "[ERROR::main::setup_test_scene_reflective] Skybox file not found: "
+			<< skybox_file_path << std::endl;
+	}
+
+	// print a success message indicating the test scene setup is complete
+	std::cout << "[SUCCESS::main::setup_test_scene_reflective] Test scene setup complete" << std::endl;
+}
+
+std::tuple<std::vector<std::string>,
+	std::vector<std::string>,
+	std::vector<std::string>,
+	std::vector<std::string>> define_shaders_info()
+{
+	std::vector<std::string> shader_names = {
+		"Shape Model Shader",
+		"Assimp Model Shader",
+		"Single Albedo Shader",
+		"Screen Quad Shader",
+		"Picking Shader",
+		"Skybox Shader",
+		"Equirectangular to Cubemap Shader",
+		"Reflective Shader",
+		"Refractive Shader"
+	};
+
+	std::string shaders_dir = "resources/shaders/";
+
+	std::vector<std::string> vertex_shader_paths = {
+		shaders_dir + "shape_model.vert.glsl",
+		shaders_dir + "assimp_model.vert.glsl",
+		shaders_dir + "single_albedo.vert.glsl",
+		shaders_dir + "screen_quad.vert.glsl",
+		shaders_dir + "picking.vert.glsl",
+		shaders_dir + "skybox.vert.glsl",
+		shaders_dir + "equirectangular_to_cubemap.vert.glsl",
+		shaders_dir + "reflective.vert.glsl",
+		shaders_dir + "refractive.vert.glsl"
+	};
+	std::vector<std::string> geometry_shader_paths = {
+		"", // no custom geometry shader for the shape model shader
+		"", // no custom geometry shader for the assimp model shader
+		""  // no custom geometry shader for the single albedo shader
+		"", // no custom geometry shader for the screen shader
+		"", // no custom geometry shader for the picking shader
+		"", // no custom geometry shader for the skybox shader
+		"", // no custom geometry shader for the equirectangular to cubemap shader
+		"", // no custom geometry shader for the reflective shader
+		""  // no custom geometry shader for the refractive shader
+	};
+	std::vector<std::string> fragment_shader_paths = {
+		shaders_dir + "shape_model.frag.glsl",
+		shaders_dir + "assimp_model.frag.glsl",
+		shaders_dir + "single_albedo.frag.glsl",
+		shaders_dir + "screen_quad.frag.glsl",
+		shaders_dir + "picking.frag.glsl",
+		shaders_dir + "skybox.frag.glsl",
+		shaders_dir + "equirectangular_to_cubemap.frag.glsl",
+		shaders_dir + "reflective.frag.glsl",
+		shaders_dir + "refractive.frag.glsl"
+	};
+	return { shader_names, vertex_shader_paths, geometry_shader_paths, fragment_shader_paths };
 }
