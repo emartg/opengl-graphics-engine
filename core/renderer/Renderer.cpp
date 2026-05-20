@@ -37,7 +37,8 @@
 Renderer::Renderer()
 	: main_render_pass{ new Render_Pass() },
 	delta_time{ 0.0f }, last_frame_time{ 0.0f }
-{}
+{
+}
 
 // Destructor
 // ----------

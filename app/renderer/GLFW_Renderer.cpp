@@ -55,6 +55,9 @@ void GLFW_Renderer::create_window(int width, int height, const char* title)
 		glfwTerminate();
 	}
 	glfwMakeContextCurrent(window);
+
+	// enable vsync to synchronize the frame rate with the monitor's refresh rate and reduce screen tearing
+	glfwSwapInterval(1);
 }
 
 void GLFW_Renderer::configure_window() const
