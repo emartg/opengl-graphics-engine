@@ -43,7 +43,8 @@ void setup_example_scene(Core* engine);
 
 // Sets up a test scene (alternative to setup_example_scene) with certain elements to test 
 // specific functionalities of the engine
-void setup_test_scene_reflective(Core* engine);
+void setup_test_scene_reflective_1(Core* engine);
+void setup_test_scene_reflective_2(Core* engine);
 
 // Defines hardcoded shader names and paths for the initial scene in a tuple
 std::tuple<
@@ -64,7 +65,8 @@ int main(int argc, char** argv)
 	}
 
 	setup_example_scene(engine); // set up the example scene
-	//setup_test_scene_reflective(engine); // set up a test scene to test reflective materials
+	//setup_test_scene_reflective_1(engine); // set up a test scene to test reflective materials
+	//setup_test_scene_reflective_2(engine); // set up another test scene to test reflective materials
 
 	engine->run(); // run the main loop of the engine, which will render the scene and handle events
 
@@ -314,7 +316,7 @@ void setup_example_scene(Core* engine)
 		<< std::endl;
 }
 
-void setup_test_scene_reflective(Core* engine)
+void setup_test_scene_reflective_1(Core* engine)
 {
 	// retrieve the node manager and scene manager from the engine
 	auto& node_manager = engine->get_node_manager();
@@ -410,6 +412,131 @@ void setup_test_scene_reflective(Core* engine)
 		model_name[0] = std::toupper(model_name[0]);
 		// convert the model's id to string and set it as part of the model's name
 		model->set_name(String_Utils::generate_id_prefixed_name(model));
+		// add the model to the node manager
+		node_manager->add_node(model);
+	}
+	else
+	{ // if the file does not exist, print an error message
+		std::cerr << "[WARNING::main::setup_test_scene_reflective] Assimp model not found: "
+			<< model_file_path << std::endl;
+	}
+
+	// create a skybox and set it in the scene manager
+	std::string skybox_file_path = "resources/textures/skyboxes/hdr/canary_wharf_4k.hdr";
+	if (std::filesystem::exists(skybox_file_path))
+	{ // check if the file exists before loading it
+		scene_manager->load_skybox(skybox_file_path);
+	}
+	else
+	{ // if the file does not exist, print an error message
+		std::cerr << "[ERROR::main::setup_test_scene_reflective] Skybox file not found: "
+			<< skybox_file_path << std::endl;
+	}
+
+	// print a success message indicating the test scene setup is complete
+	std::cout << "[SUCCESS::main::setup_test_scene_reflective] Test scene setup complete" << std::endl;
+}
+
+void setup_test_scene_reflective_2(Core* engine)
+{
+	// retrieve the node manager and scene manager from the engine
+	auto& node_manager = engine->get_node_manager();
+	auto& scene_manager = engine->get_scene_manager();
+
+	// create a camera with a placeholder name and default parameters
+	auto camera = std::make_shared<Camera>("Camera");
+
+	// convert the camera's id to string and set it as part of the camera's name
+	camera->set_name(String_Utils::generate_id_prefixed_name(camera));
+
+	// set the camera as the active camera in the scene manager and add it to the node manager
+	scene_manager->set_camera(camera);
+	node_manager->add_node(std::move(camera));
+
+	// create a directional light and add it along with its gizmo to the node manager
+	auto directional_light = std::make_shared<Directional_Light>(
+		"Directional Light",
+		glm::vec3{ 0.1f }, // ambient color (default)
+		glm::vec4{ 1.0f, 1.0f, 0.7f, 1.0f }, // diffuse color (overridden)
+		glm::vec3{ 1.0f }, // specular color (override required although it is the default)
+		glm::vec3{ 2.4f, 8.0f, -3.0f }, // position (overridden)
+		glm::vec3{ -0.2f, -0.8, 0.5f } // direction (overridden)
+	);
+	// convert the light's id to string and set it as part of the light's name
+	directional_light->set_name(String_Utils::generate_id_prefixed_name(directional_light));
+
+	// create the gizmo child (the light has been fully constructed and placed in a shared_ptr)
+	directional_light->create_gizmo();
+	// add the gizmo child to the node manager 
+	// before moving the light (renderer skips it via parent check)
+	auto directional_light_gizmo = directional_light->get_gizmo();
+	if (directional_light_gizmo) node_manager->add_node(std::move(directional_light_gizmo));
+	node_manager->add_node(std::move(directional_light));
+
+	// create a point light and add it along with its gizmo to the node manager
+	auto point_light = std::make_shared<Point_Light>(
+		"Point Light",
+		glm::vec3{ 0.1f }, // ambient color (default)
+		glm::vec4{ 0.3f, 0.9f, 1.0f, 1.0f }, // diffuse color (overridden)
+		glm::vec3{ 1.0f }, // specular color (same as default)
+		glm::vec3{ -0.6f, 3.2f, 3.2f } // position (overridden)
+	);
+	// convert the light's id to string and set it as part of the light's name
+	point_light->set_name(String_Utils::generate_id_prefixed_name(point_light));
+
+	// create the gizmo child (the light has been fully constructed and placed in a shared_ptr)
+	point_light->create_gizmo();
+	// add the gizmo child to the node manager 
+	// before moving the light (renderer skips it via parent check)
+	auto point_light_gizmo = point_light->get_gizmo();
+	if (point_light_gizmo) node_manager->add_node(std::move(point_light_gizmo));
+	node_manager->add_node(std::move(point_light));
+
+	// create a reflective plane model, register it for dynamic environment map capture, 
+	// and add it to the node manager
+	auto reflective_plane = std::make_shared<Shape_Model>(
+		"Reflective Plane",
+		plane_vertices_vector, plane_indices_vector,
+		glm::vec4{ 1.0f }, // albedo (overridden - white to ensure full reflection)
+		glm::vec3{ 0.0f, -0.5f, 0.0f }, // position (overridden)
+		glm::quat(glm::radians(glm::vec3{ 0.0f, 45.0f, 0.0f })), // rotation (overridden)
+		glm::vec3{ 5.8f } // scale (overridden)
+	);
+	// set the plane to be two-sided for reflection
+	reflective_plane->set_is_two_sided(true);
+	// convert the plane's id to string and set it as part of the plane's name
+	reflective_plane->set_name(String_Utils::generate_id_prefixed_name(reflective_plane));
+	// register the reflective plane for dynamic environment map capture in the renderer 
+	// with a specified resolution (e.g., 512x512)
+	engine->get_renderer()->register_model_for_dynamic_env_map_capture(reflective_plane->get_id(), 521);
+	// add the reflective plane to the node manager
+	node_manager->add_node(reflective_plane);
+
+	// create an Assimp model, register it for dynamic environment map capture, 
+	// and add it to the node manager
+	std::string model_file_path = "resources/models/gltf/teapot/teapot.gltf";
+	if (std::filesystem::exists(model_file_path))
+	{ // if the file exists, create the model and add it to the node manager
+		auto model = std::make_shared<Assimp_Model>(
+			"Reflective Teapot",
+			model_file_path, // model file path
+			glm::vec4{ 0.8f, 0.8f, 0.8f, 1.0f }, // albedo (default)
+			glm::vec3{ -3.25f, 0.95f, -3.25f }, // position (overridden)
+			glm::quat(glm::radians(glm::vec3{ 0.0f, 85.0f, 0.0f })), // rotation (overridden)
+			glm::vec3{ 0.2f } // scale (overridden)
+		);
+		// remove the path and the extension from the file path for the model's name
+		std::string model_name = model_file_path.substr(
+			model_file_path.find_last_of("/\\") + 1,
+			model_file_path.find_last_of('.') - model_file_path.find_last_of("/\\") - 1
+		);
+		// uppercase the first letter of the model's name
+		model_name[0] = std::toupper(model_name[0]);
+		// convert the model's id to string and set it as part of the model's name
+		model->set_name(String_Utils::generate_id_prefixed_name(model));
+		// register the Assimp model for dynamic environment map capture in the renderer
+		// with a specified resolution (e.g., 512x512)
+		engine->get_renderer()->register_model_for_dynamic_env_map_capture(model->get_id(), 521);
 		// add the model to the node manager
 		node_manager->add_node(model);
 	}
