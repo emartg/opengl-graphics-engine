@@ -1500,8 +1500,10 @@ void Renderer::render_scene_for_env_map_capture(const glm::mat4& capture_views, 
 					case Node_Type::COMPOSITE_ASSIMP_MODEL: // composite Assimp models have their own meshes
 					case Node_Type::ASSIMP_MODEL:
 					{
-						render_shader = assimp_model_shader; // use the Assimp model shader
-						render_shader->use(); // activate the current shader program
+						render_shader = assimp_model_shader;
+						render_shader->use();
+						// set the base opacity (alpha) of the model based on the node's albedo (RGBA)
+						render_shader->set_float("u_material.base_opacity", node->get_albedo().a);
 					}
 					break;
 					case Node_Type::COMPOSITE_SHAPE_MODEL: // composite shape models have their own meshes
@@ -1551,8 +1553,10 @@ void Renderer::render_scene_for_env_map_capture(const glm::mat4& capture_views, 
 				case Node_Type::COMPOSITE_ASSIMP_MODEL: // composite Assimp models have their own meshes
 				case Node_Type::ASSIMP_MODEL:
 				{
-					render_shader = assimp_model_shader; // use the Assimp model shader
-					render_shader->use(); // activate the current shader program
+					render_shader = assimp_model_shader;
+					render_shader->use();
+					// set the base opacity (alpha) of the model based on the node's albedo (RGBA)
+					render_shader->set_float("u_material.base_opacity", node->get_albedo().a);
 				}
 				break;
 				case Node_Type::COMPOSITE_SHAPE_MODEL: // composite shape models have their own meshes
