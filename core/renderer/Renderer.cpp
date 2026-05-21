@@ -668,10 +668,29 @@ void Renderer::render_node(const std::shared_ptr<Node>& node)
 				case Node_Type::COMPOSITE_ASSIMP_MODEL:
 				case Node_Type::ASSIMP_MODEL:
 				{
-					render_shader = assimp_model_shader;
+					// use the reflective shader instead of the Assimp model shader 
+					// for this specific test case
+					render_shader = reflective_shader;
 					render_shader->use();
-					// set the base opacity (alpha) of the model based on the node's albedo (RGBA)
-					render_shader->set_float("u_material.base_opacity", node->get_albedo().a);
+
+					// bind the environment map (fallback to skybox if no dynamic env map)
+					render_shader->set_int("skybox", 0); // set the env map sampler to texture unit 0
+					// determine the environment map to use (either dynamic env map or skybox)
+					GLuint env_map_tex_id = 0;
+					if (auto it{ dynamic_env_maps.find(node->get_id()) }; it != dynamic_env_maps.end())
+					{ // if a dynamic environment map exists for this model, use it
+						// read from the stable "previous" buffer to avoid feedback artifacts
+						if (it->second.has_prev_cubemap) env_map_tex_id = it->second.prev_cubemap_tex_id;
+					}
+					if (env_map_tex_id == 0)
+					{ // if no dynamic env map, use the skybox cubemap texture
+						auto& skybox_texture = Core::get_instance()->get_scene_manager()->get_skybox();
+						if (skybox_texture && skybox_texture->get_texture_type() == Texture_Type::CUBEMAP)
+							env_map_tex_id = skybox_texture->get_texture_id();
+					}
+					// activate texture unit 0 and bind the env map texture or 0 if none found
+					glActiveTexture(GL_TEXTURE0);
+					glBindTexture(GL_TEXTURE_CUBE_MAP, env_map_tex_id);
 				}
 				break;
 				// COMPOSITE_SHAPE_MODEL nodes have their own meshes, 
@@ -1519,19 +1538,57 @@ void Renderer::render_scene_for_env_map_capture(const glm::mat4& capture_views, 
 					case Node_Type::COMPOSITE_ASSIMP_MODEL: // composite Assimp models have their own meshes
 					case Node_Type::ASSIMP_MODEL:
 					{
-						render_shader = assimp_model_shader;
+						// use the reflective shader instead of the Assimp model shader 
+						// for this specific test case
+						render_shader = reflective_shader;
 						render_shader->use();
-						// set the base opacity (alpha) of the model based on the node's albedo (RGBA)
-						render_shader->set_float("u_material.base_opacity", node->get_albedo().a);
+
+						// bind the environment map (fallback to skybox if no dynamic env map)
+						render_shader->set_int("skybox", 0); // set the env map sampler to texture unit 0
+						// determine the environment map to use (either dynamic env map or skybox)
+						GLuint env_map_tex_id = 0;
+						if (auto it{ dynamic_env_maps.find(node->get_id()) }; it != dynamic_env_maps.end())
+						{ // if a dynamic environment map exists for this model, use it
+							// read from the stable "previous" buffer to avoid feedback artifacts
+							if (it->second.has_prev_cubemap) env_map_tex_id = it->second.prev_cubemap_tex_id;
+						}
+						if (env_map_tex_id == 0)
+						{ // if no dynamic env map, use the skybox cubemap texture
+							auto& skybox_texture = Core::get_instance()->get_scene_manager()->get_skybox();
+							if (skybox_texture && skybox_texture->get_texture_type() == Texture_Type::CUBEMAP)
+								env_map_tex_id = skybox_texture->get_texture_id();
+						}
+						// activate texture unit 0 and bind the env map texture or 0 if none found
+						glActiveTexture(GL_TEXTURE0);
+						glBindTexture(GL_TEXTURE_CUBE_MAP, env_map_tex_id);
 					}
 					break;
 					case Node_Type::COMPOSITE_SHAPE_MODEL: // composite shape models have their own meshes
 					case Node_Type::SHAPE_MODEL:
 					{
-						render_shader = shape_model_shader; // use the shape model shader
-						render_shader->use(); // activate the current shader program
-						// set the color of the shape based on the model's albedo (RGBA)
-						render_shader->set_vec4("u_material.albedo", current_model->get_albedo());
+						// use the reflective shader instead of the shape model shader 
+						// for this specific test case
+						render_shader = reflective_shader;
+						render_shader->use();
+
+						// bind the environment map (fallback to skybox if no dynamic env map)
+						render_shader->set_int("skybox", 0); // set the env map sampler to texture unit 0
+						// determine the environment map to use (either dynamic env map or skybox)
+						GLuint env_map_tex_id = 0;
+						if (auto it{ dynamic_env_maps.find(node->get_id()) }; it != dynamic_env_maps.end())
+						{ // if a dynamic environment map exists for this model, use it
+							// read from the stable "previous" buffer to avoid feedback artifacts
+							if (it->second.has_prev_cubemap) env_map_tex_id = it->second.prev_cubemap_tex_id;
+						}
+						if (env_map_tex_id == 0)
+						{ // if no dynamic env map, use the skybox cubemap texture
+							auto& skybox_texture = Core::get_instance()->get_scene_manager()->get_skybox();
+							if (skybox_texture && skybox_texture->get_texture_type() == Texture_Type::CUBEMAP)
+								env_map_tex_id = skybox_texture->get_texture_id();
+						}
+						// activate texture unit 0 and bind the env map texture or 0 if none found
+						glActiveTexture(GL_TEXTURE0);
+						glBindTexture(GL_TEXTURE_CUBE_MAP, env_map_tex_id);
 					}
 					break;
 					default:
@@ -1572,19 +1629,57 @@ void Renderer::render_scene_for_env_map_capture(const glm::mat4& capture_views, 
 				case Node_Type::COMPOSITE_ASSIMP_MODEL: // composite Assimp models have their own meshes
 				case Node_Type::ASSIMP_MODEL:
 				{
-					render_shader = assimp_model_shader;
+					// use the reflective shader instead of the Assimp model shader 
+					// for this specific test case
+					render_shader = reflective_shader;
 					render_shader->use();
-					// set the base opacity (alpha) of the model based on the node's albedo (RGBA)
-					render_shader->set_float("u_material.base_opacity", node->get_albedo().a);
+
+					// bind the environment map (fallback to skybox if no dynamic env map)
+					render_shader->set_int("skybox", 0); // set the env map sampler to texture unit 0
+					// determine the environment map to use (either dynamic env map or skybox)
+					GLuint env_map_tex_id = 0;
+					if (auto it{ dynamic_env_maps.find(node->get_id()) }; it != dynamic_env_maps.end())
+					{ // if a dynamic environment map exists for this model, use it
+						// read from the stable "previous" buffer to avoid feedback artifacts
+						if (it->second.has_prev_cubemap) env_map_tex_id = it->second.prev_cubemap_tex_id;
+					}
+					if (env_map_tex_id == 0)
+					{ // if no dynamic env map, use the skybox cubemap texture
+						auto& skybox_texture = Core::get_instance()->get_scene_manager()->get_skybox();
+						if (skybox_texture && skybox_texture->get_texture_type() == Texture_Type::CUBEMAP)
+							env_map_tex_id = skybox_texture->get_texture_id();
+					}
+					// activate texture unit 0 and bind the env map texture or 0 if none found
+					glActiveTexture(GL_TEXTURE0);
+					glBindTexture(GL_TEXTURE_CUBE_MAP, env_map_tex_id);
 				}
 				break;
 				case Node_Type::COMPOSITE_SHAPE_MODEL: // composite shape models have their own meshes
 				case Node_Type::SHAPE_MODEL:
 				{
-					render_shader = shape_model_shader; // use the shape model shader
-					render_shader->use(); // activate the current shader program
-					// set the color of the shape based on the model's albedo (RGBA)
-					render_shader->set_vec4("u_material.albedo", model->get_albedo());
+					// use the reflective shader instead of the shape model shader 
+					// for this specific test case
+					render_shader = reflective_shader;
+					render_shader->use();
+
+					// bind the environment map (fallback to skybox if no dynamic env map)
+					render_shader->set_int("skybox", 0); // set the env map sampler to texture unit 0
+					// determine the environment map to use (either dynamic env map or skybox)
+					GLuint env_map_tex_id = 0;
+					if (auto it{ dynamic_env_maps.find(node->get_id()) }; it != dynamic_env_maps.end())
+					{ // if a dynamic environment map exists for this model, use it
+						// read from the stable "previous" buffer to avoid feedback artifacts
+						if (it->second.has_prev_cubemap) env_map_tex_id = it->second.prev_cubemap_tex_id;
+					}
+					if (env_map_tex_id == 0)
+					{ // if no dynamic env map, use the skybox cubemap texture
+						auto& skybox_texture = Core::get_instance()->get_scene_manager()->get_skybox();
+						if (skybox_texture && skybox_texture->get_texture_type() == Texture_Type::CUBEMAP)
+							env_map_tex_id = skybox_texture->get_texture_id();
+					}
+					// activate texture unit 0 and bind the env map texture or 0 if none found
+					glActiveTexture(GL_TEXTURE0);
+					glBindTexture(GL_TEXTURE_CUBE_MAP, env_map_tex_id);
 				}
 				break;
 				default:
