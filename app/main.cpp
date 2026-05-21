@@ -750,8 +750,8 @@ void setup_test_scene_refractive_2(Core* engine)
 		"Refractive Cube",
 		cube_vertices_vector, cube_indices_vector,
 		glm::vec4{ 0.8f, 0.8f, 0.8f, 1.0f }, // albedo (default)
-		glm::vec3{ 0.15f, 1.5f, 2.5f }, // position (overridden)
-		glm::quat(glm::radians(glm::vec3{ -90.0f, 0.0f, 0.0f })), // rotation (overridden)
+		glm::vec3{ -8.4f, 1.5f, -3.95f }, // position (overridden)
+		glm::quat(glm::radians(glm::vec3{ 90.0f, -80.0f, -179.0f })), // rotation (overridden)
 		glm::vec3{ 5.0f, 0.1f, 5.0f } // scale (overridden)
 	);
 	// convert the cube's id to string and set it as part of the cube's name
@@ -771,9 +771,9 @@ void setup_test_scene_refractive_2(Core* engine)
 			"Teapot",
 			model_file_path, // model file path
 			glm::vec4{ 0.8f, 0.8f, 0.8f, 1.0f }, // albedo (default)
-			glm::vec3{ -2.75f, -1.95f, -5.75f }, // position (overridden)
+			glm::vec3{ -1.4f, -0.6f, -5.6f }, // position (overridden)
 			glm::quat(glm::radians(glm::vec3{ 0.0f, 85.0f, 0.0f })), // rotation (overridden)
-			glm::vec3{ 0.3f } // scale (overridden)
+			glm::vec3{ 0.6f } // scale (overridden)
 		);
 		// remove the path and the extension from the file path for the model's name
 		std::string model_name = model_file_path.substr(
