@@ -66,8 +66,8 @@ int main(int argc, char** argv)
 		return -1;
 	}
 
-	setup_example_scene(engine); // set up the example scene
-	//setup_test_scene_reflective_1(engine); // set up a test scene to test reflective materials
+	//setup_example_scene(engine); // set up the example scene
+	setup_test_scene_reflective_1(engine); // set up a test scene to test reflective materials
 	//setup_test_scene_reflective_2(engine); // set up another test scene to test reflective materials
 	//setup_test_scene_refractive_1(engine); // set up a test scene to test refractive materials
 	//setup_test_scene_refractive_2(engine); // set up another test scene to test refractive materials
