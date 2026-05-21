@@ -679,10 +679,9 @@ void Renderer::render_node(const std::shared_ptr<Node>& node)
 				case Node_Type::COMPOSITE_SHAPE_MODEL:
 				case Node_Type::SHAPE_MODEL:
 				{
-					render_shader = shape_model_shader;
+					// use the refractive shader for this specific test case
+					render_shader = refractive_shader;
 					render_shader->use();
-					// set the color of the shape based on the node's albedo (RGBA)
-					render_shader->set_vec4("u_material.albedo", node->get_albedo());
 				}
 				break;
 				default:
