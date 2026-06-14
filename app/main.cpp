@@ -76,8 +76,8 @@ int main(int argc, char** argv)
 	//setup_test_scene_reflective_2(engine);
 	//setup_test_scene_refractive_1(engine);
 	//setup_test_scene_refractive_2(engine);
-	setup_test_scene_geometric_stress_1(engine);
-	//setup_test_scene_geometric_stress_2(engine);
+	//setup_test_scene_geometric_stress_1(engine);
+	setup_test_scene_geometric_stress_2(engine);
 	//setup_test_scene_reflective_stress(engine);
 
 	engine->run(); // run the main loop of the engine, which will render the scene and handle events
