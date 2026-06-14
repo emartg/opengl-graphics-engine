@@ -17,7 +17,8 @@
 #include <string>
 #include <vector>
 #include <algorithm>
-#include <memory> 
+#include <memory>
+#include <chrono>
 
 #include <glad/glad.h> // holds all OpenGL type declarations
 #include <glm/glm.hpp>

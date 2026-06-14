@@ -47,6 +47,9 @@ void setup_test_scene_reflective_1(Core* engine);
 void setup_test_scene_reflective_2(Core* engine);
 void setup_test_scene_refractive_1(Core* engine);
 void setup_test_scene_refractive_2(Core* engine);
+void setup_test_scene_geometric_stress_1(Core* engine, int num_shapes = 1000);
+void setup_test_scene_geometric_stress_2(Core* engine, int num_shapes = 1000);
+void setup_test_scene_reflective_stress(Core* engine, int num_shapes = 100);
 
 // Defines hardcoded shader names and paths for the initial scene in a tuple
 std::tuple<
@@ -66,11 +69,16 @@ int main(int argc, char** argv)
 		return -1;
 	}
 
-	setup_example_scene(engine); // set up the example scene
-	//setup_test_scene_reflective_1(engine); // set up a test scene to test reflective materials
-	//setup_test_scene_reflective_2(engine); // set up another test scene to test reflective materials
-	//setup_test_scene_refractive_1(engine); // set up a test scene to test refractive materials
-	//setup_test_scene_refractive_2(engine); // set up another test scene to test refractive materials
+	// setup the initial scene (uncomment one of the following lines to choose a scene,
+	// although in some cases the Renderer has to be modified in order to support the materials)
+	setup_example_scene(engine);
+	//setup_test_scene_reflective_1(engine);
+	//setup_test_scene_reflective_2(engine);
+	//setup_test_scene_refractive_1(engine);
+	//setup_test_scene_refractive_2(engine);
+	//setup_test_scene_geometric_stress_1(engine);
+	//setup_test_scene_geometric_stress_2(engine);
+	//setup_test_scene_reflective_stress(engine);
 
 	engine->run(); // run the main loop of the engine, which will render the scene and handle events
 
@@ -809,6 +817,244 @@ void setup_test_scene_refractive_2(Core* engine)
 
 	// print a success message indicating the test scene setup is complete
 	std::cout << "[SUCCESS::main::setup_test_scene_refractive_2] Test scene setup complete" << std::endl;
+}
+
+void setup_test_scene_geometric_stress_1(Core* engine, const int num_shapes)
+{
+	// retrieve the node manager and scene manager from the engine
+	auto& node_manager = engine->get_node_manager();
+	auto& scene_manager = engine->get_scene_manager();
+
+	// create a camera with a placeholder name and default parameters
+	auto camera = std::make_shared<Camera>("Camera");
+
+	// convert the camera's id to string and set it as part of the camera's name
+	camera->set_name(String_Utils::generate_id_prefixed_name(camera));
+
+	// set the camera as the active camera in the scene manager and add it to the node manager
+	scene_manager->set_camera(camera);
+	node_manager->add_node(std::move(camera));
+
+	// create a directional light and add it along with its gizmo to the node manager
+	auto directional_light = std::make_shared<Directional_Light>(
+		"Directional Light",
+		glm::vec3{ 0.1f }, // ambient color (default)
+		glm::vec4{ 1.0f, 1.0f, 0.7f, 1.0f }, // diffuse color (overridden)
+		glm::vec3{ 1.0f }, // specular color (override required although it is the default)
+		glm::vec3{ -3.0f, 8.0f, 2.4f }, // position (overridden)
+		glm::vec3{ -0.2f, -0.8, 0.5f } // direction (overridden)
+	);
+	// convert the light's id to string and set it as part of the light's name
+	directional_light->set_name(String_Utils::generate_id_prefixed_name(directional_light));
+
+	// create the gizmo child (the light has been fully constructed and placed in a shared_ptr)
+	auto directional_light_gizmo = directional_light->get_gizmo();
+	if (directional_light_gizmo) node_manager->add_node(std::move(directional_light_gizmo));
+	node_manager->add_node(std::move(directional_light));
+
+	// add a large number of shape models to the scene (with random RGB albedos, positions, and rotations)
+	// to stress test the engine's rendering capabilities
+	for (int i{}; i < num_shapes; ++i)
+	{
+		auto shape_model = std::make_shared<Shape_Model>(
+			"Shape Model " + std::to_string(i),
+			cube_vertices_vector, cube_indices_vector,
+			glm::vec4{
+				static_cast<float>(rand()) / RAND_MAX,	// random red component
+				static_cast<float>(rand()) / RAND_MAX,	// random green component
+				static_cast<float>(rand()) / RAND_MAX,	// random blue component
+				1.0f // uniform alpha component (fully opaque)
+			},
+			glm::vec3{
+				static_cast<float>(rand()) / RAND_MAX * 30.0f - 10.0f,	// random x position
+				static_cast<float>(rand()) / RAND_MAX * 30.0f - 10.0f,	// random y position
+				static_cast<float>(rand()) / RAND_MAX * 30.0f - 10.0f	// random z position
+			},
+			glm::quat(glm::radians(glm::vec3{
+				static_cast<float>(rand()) / RAND_MAX * 360.0f,	// random x rotation
+				static_cast<float>(rand()) / RAND_MAX * 360.0f, // random y rotation
+				static_cast<float>(rand()) / RAND_MAX * 360.0f  // random z rotation
+								   })),
+			glm::vec3{ 0.5f } // uniform scale
+		);
+		// convert the shape model's id to string and set it as part of the shape model's name
+		shape_model->set_name(String_Utils::generate_id_prefixed_name(shape_model));
+		node_manager->add_node(shape_model);
+	}
+
+	// create a skybox and set it in the scene manager
+	std::string skybox_file_path = "resources/textures/skyboxes/hdr/puresky_4k.hdr";
+	if (std::filesystem::exists(skybox_file_path))
+	{ // check if the file exists before loading it
+		scene_manager->load_skybox(skybox_file_path);
+	}
+	else
+	{ // if the file does not exist, print an error message
+		std::cerr << "[ERROR::main::setup_test_scene_geometric_stress_1] Skybox file not found: "
+			<< skybox_file_path << std::endl;
+	}
+
+	// print a success message indicating the test scene setup is complete
+	std::cout << "[SUCCESS::main::setup_test_scene_geometric_stress_1] Test scene setup complete"
+		<< std::endl;
+}
+
+void setup_test_scene_geometric_stress_2(Core* engine, const int num_shapes)
+{
+	// retrieve the node manager and scene manager from the engine
+	auto& node_manager = engine->get_node_manager();
+	auto& scene_manager = engine->get_scene_manager();
+
+	// create a camera with a placeholder name and default parameters
+	auto camera = std::make_shared<Camera>("Camera");
+
+	// convert the camera's id to string and set it as part of the camera's name
+	camera->set_name(String_Utils::generate_id_prefixed_name(camera));
+
+	// set the camera as the active camera in the scene manager and add it to the node manager
+	scene_manager->set_camera(camera);
+	node_manager->add_node(std::move(camera));
+
+	// create a directional light and add it along with its gizmo to the node manager
+	auto directional_light = std::make_shared<Directional_Light>(
+		"Directional Light",
+		glm::vec3{ 0.1f }, // ambient color (default)
+		glm::vec4{ 1.0f, 1.0f, 0.7f, 1.0f }, // diffuse color (overridden)
+		glm::vec3{ 1.0f }, // specular color (override required although it is the default)
+		glm::vec3{ -3.0f, 8.0f, 2.4f }, // position (overridden)
+		glm::vec3{ -0.2f, -0.8, 0.5f } // direction (overridden)
+	);
+	// convert the light's id to string and set it as part of the light's name
+	directional_light->set_name(String_Utils::generate_id_prefixed_name(directional_light));
+
+	// create the gizmo child (the light has been fully constructed and placed in a shared_ptr)
+	auto directional_light_gizmo = directional_light->get_gizmo();
+	if (directional_light_gizmo) node_manager->add_node(std::move(directional_light_gizmo));
+	node_manager->add_node(std::move(directional_light));
+
+	// add a large number of shape models to the scene (with random RGBA albedos, positions, and rotations)
+	// to stress test the engine's rendering capabilities
+	for (int i{}; i < num_shapes; ++i)
+	{
+		auto shape_model = std::make_shared<Shape_Model>(
+			"Shape Model " + std::to_string(i),
+			cube_vertices_vector, cube_indices_vector,
+			glm::vec4{
+				static_cast<float>(rand()) / RAND_MAX,	// random red component
+				static_cast<float>(rand()) / RAND_MAX,	// random green component
+				static_cast<float>(rand()) / RAND_MAX,	// random blue component
+				static_cast<float>(rand()) / RAND_MAX	// random alpha component
+			},
+			glm::vec3{
+				static_cast<float>(rand()) / RAND_MAX * 30.0f - 10.0f,	// random x position
+				static_cast<float>(rand()) / RAND_MAX * 30.0f - 10.0f,	// random y position
+				static_cast<float>(rand()) / RAND_MAX * 30.0f - 10.0f	// random z position
+			},
+			glm::quat(glm::radians(glm::vec3{
+				static_cast<float>(rand()) / RAND_MAX * 360.0f,	// random x rotation
+				static_cast<float>(rand()) / RAND_MAX * 360.0f, // random y rotation
+				static_cast<float>(rand()) / RAND_MAX * 360.0f  // random z rotation
+								   })),
+			glm::vec3{ 0.5f } // uniform scale
+		);
+		// convert the shape model's id to string and set it as part of the shape model's name
+		shape_model->set_name(String_Utils::generate_id_prefixed_name(shape_model));
+		node_manager->add_node(shape_model);
+	}
+
+	// create a skybox and set it in the scene manager
+	std::string skybox_file_path = "resources/textures/skyboxes/hdr/puresky_4k.hdr";
+	if (std::filesystem::exists(skybox_file_path))
+	{ // check if the file exists before loading it
+		scene_manager->load_skybox(skybox_file_path);
+	}
+	else
+	{ // if the file does not exist, print an error message
+		std::cerr << "[ERROR::main::setup_test_scene_geometric_stress_2] Skybox file not found: "
+			<< skybox_file_path << std::endl;
+	}
+
+	// print a success message indicating the test scene setup is complete
+	std::cout << "[SUCCESS::main::setup_test_scene_geometric_stress_2] Test scene setup complete"
+		<< std::endl;
+}
+
+void setup_test_scene_reflective_stress(Core* engine, const int num_shapes)
+{
+	// retrieve the node manager and scene manager from the engine
+	auto& node_manager = engine->get_node_manager();
+	auto& scene_manager = engine->get_scene_manager();
+
+	// create a camera with a placeholder name and default parameters
+	auto camera = std::make_shared<Camera>("Camera");
+
+	// convert the camera's id to string and set it as part of the camera's name
+	camera->set_name(String_Utils::generate_id_prefixed_name(camera));
+
+	// set the camera as the active camera in the scene manager and add it to the node manager
+	scene_manager->set_camera(camera);
+	node_manager->add_node(std::move(camera));
+
+	// create a directional light and add it along with its gizmo to the node manager
+	auto directional_light = std::make_shared<Directional_Light>(
+		"Directional Light",
+		glm::vec3{ 0.1f }, // ambient color (default)
+		glm::vec4{ 1.0f, 1.0f, 0.7f, 1.0f }, // diffuse color (overridden)
+		glm::vec3{ 1.0f }, // specular color (override required although it is the default)
+		glm::vec3{ -3.0f, 8.0f, 2.4f }, // position (overridden)
+		glm::vec3{ -0.2f, -0.8, 0.5f } // direction (overridden)
+	);
+	// convert the light's id to string and set it as part of the light's name
+	directional_light->set_name(String_Utils::generate_id_prefixed_name(directional_light));
+
+	// create the gizmo child (the light has been fully constructed and placed in a shared_ptr)
+	auto directional_light_gizmo = directional_light->get_gizmo();
+	if (directional_light_gizmo) node_manager->add_node(std::move(directional_light_gizmo));
+	node_manager->add_node(std::move(directional_light));
+
+	// add a large number of reflective shape models to the scene (with positions and rotations)
+	// to stress test the engine's rendering capabilities
+	for (int i{}; i < num_shapes; ++i)
+	{
+		auto reflective_shape_model = std::make_shared<Shape_Model>(
+			"Reflective Shape Model " + std::to_string(i),
+			cube_vertices_vector, cube_indices_vector,
+			glm::vec4{ 0.8f, 0.8f, 0.8f, 1.0f }, // albedo (default)
+			glm::vec3{
+				static_cast<float>(rand()) / RAND_MAX * 30.0f - 10.0f,	// random x position
+				static_cast<float>(rand()) / RAND_MAX * 30.0f - 10.0f,	// random y position
+				static_cast<float>(rand()) / RAND_MAX * 30.0f - 10.0f	// random z position
+			},
+			glm::quat(glm::radians(glm::vec3{
+				static_cast<float>(rand()) / RAND_MAX * 360.0f,	// random x rotation
+				static_cast<float>(rand()) / RAND_MAX * 360.0f, // random y rotation
+				static_cast<float>(rand()) / RAND_MAX * 360.0f  // random z rotation
+								   })),
+			glm::vec3{ 0.5f } // uniform scale
+		);
+		// convert the reflective shape model's id to string and set it as part of the model's name
+		reflective_shape_model->set_name(String_Utils::generate_id_prefixed_name(reflective_shape_model));
+		// register the reflective shape model for dynamic environment map capture in the renderer
+		engine->get_renderer()->register_model_for_dynamic_env_map_capture(reflective_shape_model->get_id(), 521);
+		// add the reflective shape model to the node manager
+		node_manager->add_node(reflective_shape_model);
+	}
+
+	// create a skybox and set it in the scene manager
+	std::string skybox_file_path = "resources/textures/skyboxes/hdr/puresky_4k.hdr";
+	if (std::filesystem::exists(skybox_file_path))
+	{ // check if the file exists before loading it
+		scene_manager->load_skybox(skybox_file_path);
+	}
+	else
+	{ // if the file does not exist, print an error message
+		std::cerr << "[ERROR::main::setup_test_scene_reflective_stress] Skybox file not found: "
+			<< skybox_file_path << std::endl;
+	}
+
+	// print a success message indicating the test scene setup is complete
+	std::cout << "[SUCCESS::main::setup_test_scene_reflective_stress] Test scene setup complete"
+		<< std::endl;
 }
 
 std::tuple<std::vector<std::string>,
