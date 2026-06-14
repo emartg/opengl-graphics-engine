@@ -694,10 +694,9 @@ void Renderer::render_node(const std::shared_ptr<Node>& node)
 				case Node_Type::COMPOSITE_SHAPE_MODEL:
 				case Node_Type::SHAPE_MODEL:
 				{
-					render_shader = shape_model_shader;
-					render_shader->use();
-					// set the color of the shape based on the node's albedo (RGBA)
-					render_shader->set_vec4("u_material.albedo", node->get_albedo());
+					// use the reflective shader for shape models
+					render_shader = reflective_shader;
+					render_shader->use(); // activate the current shader program
 				}
 				break;
 				default:
@@ -1539,10 +1538,9 @@ void Renderer::render_scene_for_env_map_capture(const glm::mat4& capture_views, 
 					case Node_Type::COMPOSITE_SHAPE_MODEL: // composite shape models have their own meshes
 					case Node_Type::SHAPE_MODEL:
 					{
-						render_shader = shape_model_shader; // use the shape model shader
+						// use the reflective shader for shape models to capture reflections in the env map
+						render_shader = reflective_shader;
 						render_shader->use(); // activate the current shader program
-						// set the color of the shape based on the model's albedo (RGBA)
-						render_shader->set_vec4("u_material.albedo", current_model->get_albedo());
 					}
 					break;
 					default:
@@ -1592,10 +1590,9 @@ void Renderer::render_scene_for_env_map_capture(const glm::mat4& capture_views, 
 				case Node_Type::COMPOSITE_SHAPE_MODEL: // composite shape models have their own meshes
 				case Node_Type::SHAPE_MODEL:
 				{
-					render_shader = shape_model_shader; // use the shape model shader
+					// use the reflective shader for shape models to capture reflections in the env map
+					render_shader = reflective_shader;
 					render_shader->use(); // activate the current shader program
-					// set the color of the shape based on the model's albedo (RGBA)
-					render_shader->set_vec4("u_material.albedo", model->get_albedo());
 				}
 				break;
 				default:
