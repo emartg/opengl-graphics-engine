@@ -47,7 +47,7 @@ void setup_test_scene_reflective_1(Core* engine);
 void setup_test_scene_reflective_2(Core* engine);
 void setup_test_scene_refractive_1(Core* engine);
 void setup_test_scene_refractive_2(Core* engine);
-void setup_test_scene_geometric_stress_1(Core* engine, int num_shapes = 1000);
+void setup_test_scene_geometric_stress_1(Core* engine, int num_shapes = 10000);
 void setup_test_scene_geometric_stress_2(Core* engine, int num_shapes = 1000);
 void setup_test_scene_reflective_stress(Core* engine, int num_shapes = 100);
 
@@ -71,12 +71,12 @@ int main(int argc, char** argv)
 
 	// setup the initial scene (uncomment one of the following lines to choose a scene,
 	// although in some cases the Renderer has to be modified in order to support the materials)
-	setup_example_scene(engine);
+	//setup_example_scene(engine);
 	//setup_test_scene_reflective_1(engine);
 	//setup_test_scene_reflective_2(engine);
 	//setup_test_scene_refractive_1(engine);
 	//setup_test_scene_refractive_2(engine);
-	//setup_test_scene_geometric_stress_1(engine);
+	setup_test_scene_geometric_stress_1(engine);
 	//setup_test_scene_geometric_stress_2(engine);
 	//setup_test_scene_reflective_stress(engine);
 
