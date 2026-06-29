@@ -229,8 +229,8 @@ void Renderer::frame_start_config()
 
 void Renderer::render_scene()
 {
-	// start measuring time for performance profiling
-	auto start_time{ std::chrono::high_resolution_clock::now() };
+	//// start measuring time for performance profiling
+	//auto start_time{ std::chrono::high_resolution_clock::now() };
 
 	auto core = Core::get_instance(); // get the core instance
 	if (!core) // ensure the core instance is valid before proceeding
@@ -607,17 +607,17 @@ void Renderer::render_scene()
 	// after the scene is rendered offscreen, composite to the default framebuffer
 	composite_to_screen();
 
-	// stop measuring time for performance profiling
-	auto end_time{ std::chrono::high_resolution_clock::now() };
+	//// stop measuring time for performance profiling
+	//auto end_time{ std::chrono::high_resolution_clock::now() };
 
-	// calculate the elapsed time in milliseconds and store it in the elapsed_time variable
-	auto elapsed_time = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
+	//// calculate the elapsed time in milliseconds and store it in the elapsed_time variable
+	//auto elapsed_time = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
 
-	// print the elapsed time for rendering the scene with a counter to avoid spamming the console
-	static uint32_t render_counter = 0;
-	if ((render_counter++ % 60) == 0) // print every 60 frames
-		std::cout << "[PROFILER::RENDERER::render_scene] Scene rendered in "
-		<< elapsed_time << " ms" << std::endl;
+	//// print the elapsed time for rendering the scene with a counter to avoid spamming the console
+	//static uint32_t render_counter = 0;
+	//if ((render_counter++ % 60) == 0) // print every 60 frames
+	//	std::cout << "[PROFILER::RENDERER::render_scene] Scene rendered in "
+	//	<< elapsed_time << " ms" << std::endl;
 }
 
 void Renderer::frame_end_config() const { swap_buffers(); }
@@ -1177,8 +1177,8 @@ void Renderer::convert_hdr_to_cubemap_if_needed()
 
 void Renderer::update_dynamic_env_maps()
 {
-	// start measuring time for performance profiling
-	auto start_time{ std::chrono::high_resolution_clock::now() };
+	//// start measuring time for performance profiling
+	//auto start_time{ std::chrono::high_resolution_clock::now() };
 
 	// if already capturing or no dynamic env maps, return
 	if (is_capturing_dynamic_env_map || dynamic_env_maps.empty()) return;
@@ -1225,17 +1225,17 @@ void Renderer::update_dynamic_env_maps()
 
 	is_capturing_dynamic_env_map = false; // reset capturing flag after processing all models
 
-	// stop measuring time for performance profiling
-	auto end_time{ std::chrono::high_resolution_clock::now() };
+	//// stop measuring time for performance profiling
+	//auto end_time{ std::chrono::high_resolution_clock::now() };
 
-	// calculate the elapsed time in milliseconds and store it in the elapsed_time variable
-	auto elapsed_time = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
+	//// calculate the elapsed time in milliseconds and store it in the elapsed_time variable
+	//auto elapsed_time = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
 
-	// print the elapsed time for the dynamic env map update with a counter to avoid spamming the console
-	static uint32_t render_counter = 0;
-	if ((render_counter++ % 60) == 0) // print every 60 frames
-		std::cout << "[PROFILER::RENDERER::update_dynamic_env_maps] Dynamic env map update took "
-		<< elapsed_time << " ms" << std::endl;
+	//// print the elapsed time for the dynamic env map update with a counter to avoid spamming the console
+	//static uint32_t render_counter = 0;
+	//if ((render_counter++ % 60) == 0) // print every 60 frames
+	//	std::cout << "[PROFILER::RENDERER::update_dynamic_env_maps] Dynamic env map update took "
+	//	<< elapsed_time << " ms" << std::endl;
 }
 
 void Renderer::capture_dynamic_env_map_for_model(const std::shared_ptr<Node>& model,
