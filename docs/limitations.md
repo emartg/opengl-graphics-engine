@@ -27,10 +27,10 @@ As of version **v0.8.0** (the latest beta release), the engine is functional but
 The following charts allow for a visualization of these disparities based on the retrieved data:
 
 <p></p>
-<div style="display:flex; justify-content:center; align-items:center; flex-wrap:wrap; gap:20px;"> <img src="diagrams/performance/avg_fps_per_n_cubes.png" alt="avg_fps_per_n_cubes" title="Avg. FPS per number of cubes" style="height:500px; width:auto;" /> </div>
+<div style="display:flex; justify-content:center; align-items:center; flex-wrap:wrap; gap:20px;"> <img src="diagrams/performance/avg_fps_per_n_cubes.png" alt="avg_fps_per_n_cubes" title="Avg. FPS per number of cubes" style="height:400px; width:auto;" /> </div>
 
 <p></p>
-<div style="display:flex; justify-content:center; align-items:center; flex-wrap:wrap; gap:20px;"> <img src="diagrams/performance/avg_processing_time_per_n_cubes_AB.png" alt="avg_processing_time_per_n_cubes_AB" title="Avg. processing time per number of cubes (A vs. B)" style="height:500px; width:auto;" /> <img src="diagrams/performance/avg_processing_time_per_n_cubes_C.png" alt="avg_processing_time_per_n_cubes_C" title="Avg. processing time per number of cubes (C)" style="height:500px; width:auto;" /> </div>
+<div style="display:flex; justify-content:center; align-items:center; flex-wrap:wrap; gap:20px;"> <img src="diagrams/performance/avg_processing_time_per_n_cubes_AB.png" alt="avg_processing_time_per_n_cubes_AB" title="Avg. processing time per number of cubes (A vs. B)" style="height:350px; width:auto;" /> <img src="diagrams/performance/avg_processing_time_per_n_cubes_C.png" alt="avg_processing_time_per_n_cubes_C" title="Avg. processing time per number of cubes (C)" style="height:350px; width:auto;" /> </div>
 
 ## Missing Features (Unfulfilled Objectives)
 
