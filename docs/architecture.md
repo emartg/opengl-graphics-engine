@@ -25,7 +25,7 @@ This strict separation means the `core` can be linked into other applications (e
 <div style="display:flex; justify-content:center; align-items:center; flex-wrap:wrap; gap:20px;">
 <img src="diagrams/dependencies/dependencies_and_packages.png" alt="dependencies_and_packages" title="Dependecies & Packages" style="height:500px; width:auto;" />
 </div>
-<i>Fig 1. Dependencies and packages</i></b></p>
+<p><i>Fig 1. Dependencies and packages</i></p>
 <p></p>
 
 ## Render Pipeline
@@ -33,7 +33,7 @@ This strict separation means the `core` can be linked into other applications (e
 <div style="display:flex; justify-content:center; align-items:center; flex-wrap:wrap; gap:20px;">
 <img src="diagrams/pipeline/opengl4_rendering_pipeline.png" alt="opengl4_rendering_pipeline" title="OpenGL 4 rendering pipeline" style="height:180px; width:auto;" />
 </div>
-<p><b><i>Fig 2.OpenGL 4 rendering pipeline</i></b></p>
+<p><i>Fig 2. OpenGL 4 rendering pipeline</i></p>
 <p></p>
 
 The engine follows a structured, custom, multi-pass pipeline every frame based on the OpenGL 4 rendering pipeline represented in the diagram above (Fig. 2). The 5-phase sequence is designed to ensure correctness (depth, blending, environment capture) and performance. The diagram below (Fig. 3) details how the custom rendering sequence is arranged.
@@ -41,7 +41,7 @@ The engine follows a structured, custom, multi-pass pipeline every frame based o
 <div style="display:flex; justify-content:center; align-items:center; flex-wrap:wrap; gap:20px;">
 <img src="diagrams/pipeline/custom_rendering_pipeline.png" alt="custom_rendering_pipeline" title="Custom rendering pipeline" style="height:600px; width:auto;" />
 </div>
-<p><b><i>Fig 3.Custom rendering pipeline</i></b></p>
+<p><i>Fig 3. Custom rendering pipeline</i></p>
 <p></p>
 
 Next, each phase is described step-by-step.
@@ -97,24 +97,24 @@ The following UML class diagrams (Figs. 4-8) detail the package layout, class hi
 <div style="display:flex; justify-content:center; align-items:center; flex-wrap:wrap; gap:20px;"> 
 <img src="diagrams/uml/architecture_overview.png" alt="architecture_overview" title="Arquitecture Overview" style="height:250px; width:auto;" /> 
 </div>
-<p><b><i>Fig 4. Architecture Overview</i></b></p>
+<p><i>Fig 4. Architecture Overview</i></p>
 
 <div style="display:flex; justify-content:center; align-items:center; flex-wrap:wrap; gap:20px;">
 <img src="diagrams/uml/rendering_and_gui_subsystem.png" alt="rendering_and_gui_subsystem" title="Rendering & GUI Subsystem" style="height:800px; width:auto;" />
 </div>
-<p><b><i>Fig 5. Rendering & GUI Subsystem</i></b></p>
+<p><i>Fig 5. Rendering & GUI Subsystem</i></p>
 
 <div style="display:flex; justify-content:center; align-items:center; flex-wrap:wrap; gap:20px;">
 <img src="diagrams/uml/managers_subsystem.png" alt="managers_subsystem" title="Managers Subsystem" style="height:600px; width:auto;" />
 </div>
-<p><b><i>Fig 6. Managers Subsystem</i></b></p>
+<p><i>Fig 6. Managers Subsystem</i></p>
 
 <div style="display:flex; justify-content:center; align-items:center; flex-wrap:wrap; gap:20px;">
 <img src="diagrams/uml/scene_entities_subsystem.png" alt="scene_entities_subsystem" title="Scene Entities Subsystem" style="height:750px; width:auto;" />
 </div>
-<p><b><i>Fig 7. Scene Entities Subsystem</i></b></p>
+<p><i>Fig 7. Scene Entities Subsystem</i></p>
 
 <div style="display:flex; justify-content:center; align-items:center; flex-wrap:wrap; gap:20px;">
 <img src="diagrams/uml/utilities_and_geometry_data.png" alt="utilities_and_geometry_data" title="Utilities and Geometry Data" style="height:850px; width:auto;" />
 </div>
-<p><b><i>Fig 8. Utilities and Geometry Data</i></b></p>
+<p><i>Fig 8. Utilities and Geometry Data</i></p>
