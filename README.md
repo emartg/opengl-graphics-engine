@@ -1,5 +1,5 @@
 
-# OpenGL Graphics Engine
+# OpenGL 4.2 based Graphics Engine
 
 [![Language](https://img.shields.io/badge/C%2B%2B-20-blue.svg)](https://isocpp.org/)
 [![OpenGL](https://img.shields.io/badge/OpenGL-4.2-red.svg)](https://www.opengl.org/)
@@ -13,16 +13,16 @@ A **modular, extensible 3D graphics engine** built from scratch with OpenGL 4.2.
 ## Features
 
 - **Scene Graph & Composite Pattern** - Hierarchical node system with transform inheritance, grouping, and drag-and-drop reparenting in the GUI.
-- **Lighting** - Point lights, spotlights, and directional lights with editable parameters (colour, intensity, attenuation, cut-off angles) and visual gizmos.
+- **Lighting** - Point lights, spotlights, and directional lights with editable parameters (color, intensity, attenuation, cut-off angles) and visual gizmos.
 - **Model Import** - Load 3D models (`.obj`, `.gltf`, `.fbx`, etc.) via **Assimp**.
 - **Skyboxes** - HDR environment maps and custom cubemap loading (six face images).
 - **Reflection & Refraction** - Dynamic per-object environment maps with ping-pong buffering to avoid recursion.
 - **Transparency & Blending** - Alpha channel support with back-to-front sorting for correct blending.
-- **Colour Picking & Outlining** - Click-to-select objects using off-screen colour encoding; selected objects are highlighted with a depth-aware outline.
+- **Color Picking & Outlining** - Click-to-select objects using off-screen color encoding; selected objects are highlighted with a depth-aware outline.
 - **ImGui Editor** - Rich GUI panels:
   - *Scene Graph* - tree view with drag-and-drop reparenting.
-  - *Properties* - real-time editing of transforms, colour, opacity, light parameters, etc.
-  - *Debug* - visualisation modes (Normal, Inverted Colours, Picking Colours, Grid Overlay) and performance stats.
+  - *Properties* - real-time editing of transforms, color, opacity, light parameters, etc.
+  - *Debug* - visualisation modes (Normal, Inverted Colors, Picking Colors, Grid Overlay) and performance stats.
   - *Creation* - instantiate primitives (cube, sphere, cylinder, cone, plane) or import models/skyboxes.
 - **Efficient Event-Driven Loop** - Blocks on idle using `glfwWaitEvents()`, reducing CPU usage to near zero when inactive.
 
@@ -82,7 +82,7 @@ cmake --build build --config Release
 - **Select** - Left-click on any renderable object to select it (outline appears). Double-click to select the parent group.
 - **GUI Panels** - All panels are draggable, resizable, and collapsible.
   - *Scene Graph* - drag nodes to reparent; drop on the bottom area to make the node a root.
-  - *Properties* - modify transforms, colour, opacity, light parameters, etc.
+  - *Properties* - modify transforms, color, opacity, light parameters, etc.
   - *Creation* - create new lights, primitives, or import models/skyboxes.
   - *Debug* - switch visualisation modes and reset GUI layout.
 
