@@ -58,11 +58,11 @@ Next, each phase is described step-by-step.
 - Ensures the off-screen framebuffer (FBO) exists and matches the window size.
 - Converts HDR skybox images to cubemaps if needed.
 - Updates dynamic environment maps for reflective/refractive models (captures six faces per object).
-- Processes any pending colour-picking queries.
+- Processes any pending color-picking queries.
 
 ### Phase 3: Scene Setup & Uniforms
 
-- Binds the off-screen FBO and clears colour/depth/stencil buffers.
+- Binds the off-screen FBO and clears color/depth/stencil buffers.
 - Injects view and projection matrices into shaders.
 - Injects light data (arrays of uniforms for point, spot, directional lights).
 - Traverses the scene graph, flattens it into a linear list, and splits objects into opaque and transparent lists. Transparent objects are sorted back-to-front.
@@ -84,11 +84,11 @@ Next, each phase is described step-by-step.
 - **`Core`** - Singleton orchestrator. Initialises subsystems, manages the main loop, and delegates responsibilities.
 - **`Renderer`** - Abstract interface for rendering. `GLFW_Renderer` (in `app`) is the concrete GLFW implementation.
 - **`Node`** - Base class for all scene entities. Implements the **Composite pattern** (parent-child hierarchy). Contains transform logic (position, rotation, scale) and virtual methods (`load()`, `draw()`, `deallocate_resources()`).
-- **`Render_Pass`** - Encapsulates off-screen framebuffer management (FBO, attachments, resolution). Used for colour picking and environment map captures.
+- **`Render_Pass`** - Encapsulates off-screen framebuffer management (FBO, attachments, resolution). Used for color picking and environment map captures.
 - **Managers** - Dedicated services:
   - `Scene_Manager` - holds the root node.
   - `Node_Manager` - stores and retrieves nodes by ID.
-  - `Selection_Manager` - handles colour-picking and outlining.
+  - `Selection_Manager` - handles color-picking and outlining.
   - `Input_Manager` - translates raw input to camera/UI actions.
 - **`Light`** - Abstract base for directional, point, and spot lights. Each light owns a visual gizmo (wireframe shape) that is rendered in the gizmo pass.
 
