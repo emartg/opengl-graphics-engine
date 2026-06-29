@@ -79,4 +79,4 @@ rmdir /s build  # Windows (cmd)
 - **GLAD errors:** The `glad.c` and `glad.h` are generated in `core/third_party/glad/`. If they are missing, regenerate them from the [GLAD service](https://glad.dav1d.de/) using OpenGL 4.2 Core.
 - **Assimp DLL missing:** If running the executable fails with a missing `assimp-vc143-mtd.dll`, copy it from your Assimp installation into the same directory as `App.exe`, or add its folder to your `PATH`.
 
-For additional help, consult the main `README.md` or raise an issue in the repository (if you have one).
+For additional help, consult the main [README](../README.md) or raise an issue in the repository (if you have one).

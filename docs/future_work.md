@@ -2,7 +2,7 @@
 
 Based on the experience gained and the limitations identified, the following improvements are proposed. They are ordered by estimated effort and priority.
 
-## Short-Term (1–3 Months)
+## Short-Term (1 - 3 Months)
 
 1. **Instanced Rendering + Frustum Culling**  
    - Group objects with identical meshes and materials to reduce draw calls drastically.  
@@ -22,55 +22,55 @@ Based on the experience gained and the limitations identified, the following imp
    - Render all six faces of a cubemap in a single pass using `gl_Layer` in the geometry shader.  
    - *Addresses:* Cubemap capture overhead.
 
-## Medium-Term (3–6 Months)
+## Medium-Term (3 - 6 Months)
 
-5. **Data-Driven Material System**  
+1. **Data-Driven Material System**  
    - Define materials, shaders, and textures via JSON/YAML files loaded at runtime.  
    - Allow shader swapping and parameter changes without recompilation.
 
-6. **Full Assimp Integration**  
+2. **Full Assimp Integration**  
    - Import animations, bones, morph targets, and all material maps (normal, specular, roughness, etc.).  
    - Implement skinning in the vertex shader.
 
-7. **Viewport Manipulation Gizmos**  
+3. **Viewport Manipulation Gizmos**  
    - Translate, rotate, and scale widgets in the 3D viewport using raycasting.
 
-8. **Multi-Selection**  
+4. **Multi-Selection**  
    - Support selecting multiple non-sibling nodes via `Ctrl`/`Shift` modifiers, allowing batch transformations.
 
-9. **Multi-Camera Support**  
+5. **Multi-Camera Support**  
    - Manage multiple cameras, switch between them, or display several viewports simultaneously.
 
-## Long-Term (6–12 Months)
+## Long-Term (6 - 12 Months)
 
-10. **Shader Storage Buffer Objects (SSBOs) for Lights**  
+1. **Shader Storage Buffer Objects (SSBOs) for Lights**  
     - Enable thousands of dynamic lights in the scene without per-object uniform limits.
 
-11. **Post-Processing Pipeline**  
+2. **Post-Processing Pipeline**  
     - Anti-aliasing (MSAA/FXAA).  
     - High Dynamic Range (HDR) with tone mapping.  
     - Bloom (Gaussian blur + additive composition).  
     - Gamma correction.  
     - Deferred shading (G-buffer + lighting pass).
 
-12. **Advanced Window Customisation**  
+3. **Advanced Window Customisation**  
     - Hide the console (`/SUBSYSTEM:WINDOWS`, `FreeConsole()`).  
     - Custom icon (via `.rc` resources).  
     - Fullscreen mode and embedded (child) window modes.
 
-13. **Cross-Platform Portability + CI/CD**  
+4. **Cross-Platform Portability + CI/CD**  
     - Test on Linux and macOS.  
     - Set up GitHub Actions workflows for automated builds.  
     - Integrate Google Test for unit testing.  
     - Use OSMesa or EGL for headless rendering tests.
 
-14. **Advanced Lighting & Effects**  
+5. **Advanced Lighting & Effects**  
     - Shadow mapping (spot, point, directional).  
     - Normal mapping and parallax mapping.  
     - Screen Space Ambient Occlusion (SSAO).  
-    - Physically Based Rendering (PBR – Cook-Torrance).
+    - Physically Based Rendering (PBR - Cook-Torrance).
 
-15. **Procedural Generation and Particles**  
+6. **Procedural Generation and Particles**  
     - Compute shaders for particle simulation and mesh generation (terrain, noise).  
     - Geometry shaders for billboard rendering.
 
