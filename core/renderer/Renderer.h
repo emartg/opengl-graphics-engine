@@ -19,6 +19,8 @@
 #include <algorithm>
 #include <memory>
 #include <chrono>
+#include <cstdint>
+#include <unordered_map>
 
 #include <glad/glad.h> // holds all OpenGL type declarations
 #include <glm/glm.hpp>

@@ -1,0 +1,7 @@
+{
+    "cmake.useCMakePresets": "always",
+    "cmake.configureOnOpen": true,
+    "cmake.buildTarget": "App",
+    "cmake.defaultBuildTarget": "App",
+    "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools"
+}

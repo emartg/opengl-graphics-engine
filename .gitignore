@@ -413,8 +413,9 @@ FodyWeavers.xsd
 [Bb]uild/
 
 # CMake user-specific cnnfiguration and presets files and temporary files generated after build
-CMakeSettings.json
+CMakePresets.json
 CMakeUserPresets.json
+CMakeSettings.json
 **/CMakeCache.txt
 **/CMakeUserPresets.json
 **/CTestTestfile.cmake
