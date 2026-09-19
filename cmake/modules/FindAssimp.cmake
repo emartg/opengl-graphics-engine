@@ -9,7 +9,6 @@ find_path(ASSIMP_INCLUDE_DIR assimp/mesh.h
 	"/usr/include"
 	"/usr/local/include"
 	"/opt/local/include"
-	"${CMAKE_SOURCE_DIR}/external/include"
 )
 
 find_library(ASSIMP_LIBRARY assimp
@@ -17,8 +16,12 @@ find_library(ASSIMP_LIBRARY assimp
 	"/usr/lib"
 	"/usr/local/lib"
 	"/opt/local/lib"
-	"${CMAKE_SOURCE_DIR}/external/lib"
 )
+
+if(ENGINE_USE_BUNDLED_DEPS)
+	find_path(ASSIMP_INCLUDE_DIR assimp/mesh.h PATHS "${CMAKE_SOURCE_DIR}/external/include")
+	find_library(ASSIMP_LIBRARY assimp PATHS "${CMAKE_SOURCE_DIR}/external/lib")
+endif()
 
 if(ASSIMP_INCLUDE_DIR AND ASSIMP_LIBRARY)
 	SET(ASSIMP_FOUND TRUE)

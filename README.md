@@ -64,30 +64,30 @@ CMake (≥3.20) with Ninja generator is recommended, but any generator works.
 See the detailed [Build Instructions](docs/build_instructions.md) for platform-specific steps. In short:
 
 ```bash
-# Configure the bundled MSVC x64 Debug preset
-cmake --preset msvc-debug
+# Configure the default Ninja/MSVC x64 Debug preset
+cmake --preset ninja-msvc-debug
 
 # Build App and its dependencies
-cmake --build --preset msvc-debug
+cmake --build --preset ninja-msvc-debug
 
 # Run from the runtime directory so resources are found
-./out/build/msvc-debug/bin/App.exe
+./out/build/ninja-msvc-debug/bin/App.exe
 ```
 
-In VS Code, install **CMake Tools** and **C/C++**, select the `MSVC x64 Debug` or `MSVC x64 Release` configure preset, configure the project, set `App` as the build target, and use **CMake: Build** or the `Debug App (CMake)` launch configuration. Visual Studio uses the same `out/build/msvc-debug` and `out/build/msvc-release` directories through `CMakeSettings.json`. See the [Build Instructions](docs/build_instructions.md) for the complete IDE and CLI workflows.
+In VS Code, install **CMake Tools** and **C/C++**, select the `Ninja MSVC x64 Debug` or `Ninja MSVC x64 Release` configure preset, configure the project, set `App` as the build target, and use **CMake: Build** or the `Debug App (CMake)` launch configuration. Visual Studio can use the same Ninja configurations through `CMakeSettings.json`, while native Visual Studio or other generators should use their own descriptive build directory. See the [Build Instructions](docs/build_instructions.md) for the complete IDE and CLI workflows.
 
 Alternatively, build directly with CMake from a Visual Studio Developer PowerShell. Keep manual builds under `out/build/` and use a fresh directory when changing compilers or generators:
 
 ```powershell
-cmake -S . -B out/build/manual-msvc-release -G Ninja `
+cmake -S . -B out/build/manual-ninja-msvc-release -G Ninja `
   -DCMAKE_BUILD_TYPE=Release `
   -DCMAKE_C_COMPILER=cl `
   -DCMAKE_CXX_COMPILER=cl
-cmake --build out/build/manual-msvc-release --parallel
-out/build/manual-msvc-release\bin\App.exe
+cmake --build out/build/manual-ninja-msvc-release --parallel
+out/build/manual-ninja-msvc-release\bin\App.exe
 ```
 
-For Debug, change `Release` to `Debug` and use a separate directory such as `out/build/manual-msvc-debug`. The preset and direct CLI workflows are equivalent; presets simply keep the configuration choices in the repository.
+For Debug, change `Release` to `Debug` and use a separate directory such as `out/build/manual-ninja-msvc-debug`. The preset and direct CLI workflows are equivalent; presets simply keep the default configuration choices in the repository.
 
 ---
 

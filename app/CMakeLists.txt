@@ -1,28 +1,21 @@
 ## CMakeLists.txt for the App executable, that uses the Core library 
 ## to create a simple OpenGL application
 
-# Add library directories
-link_directories(${CMAKE_BINARY_DIR}/lib)
-
-# Find and include required packages
-find_package(GLFW3 REQUIRED)
-message(STATUS "[APP] Found GLFW3 in ${GLFW3_INCLUDE_DIR}")
-
 # Collect source files from the app directory
 set(SOURCES_DIR ${CMAKE_SOURCE_DIR}/app)
-file(GLOB_RECURSE SOURCES ${SOURCES_DIR}/*.cpp)
+file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS ${SOURCES_DIR}/*.cpp)
 
 # Collect ImGui backend source files
 set(IMGUI_BACKEND_DIR ${CMAKE_SOURCE_DIR}/external/include/ImGui/backends)
-file(GLOB IMGUI_BACKEND_SOURCES ${IMGUI_BACKEND_DIR}/*.cpp)
+file(GLOB IMGUI_BACKEND_SOURCES CONFIGURE_DEPENDS ${IMGUI_BACKEND_DIR}/*.cpp)
 
 # Collect ImGui source files
 set(IMGUI_DIR ${CMAKE_SOURCE_DIR}/external/include/ImGui)
-file(GLOB IMGUI_SOURCES ${IMGUI_DIR}/*.cpp)
+file(GLOB IMGUI_SOURCES CONFIGURE_DEPENDS ${IMGUI_DIR}/*.cpp)
 
 # Collect ImGuiFileDialog source files
 set(IMGUI_FILE_DIALOG_DIR ${CMAKE_SOURCE_DIR}/external/include/ImGuiFileDialog)
-file(GLOB IMGUI_FILE_DIALOG_SOURCES ${IMGUI_FILE_DIALOG_DIR}/*.cpp)
+file(GLOB IMGUI_FILE_DIALOG_SOURCES CONFIGURE_DEPENDS ${IMGUI_FILE_DIALOG_DIR}/*.cpp)
 
 # Output each file in the list of sources for the App executable (debugging purposes)
 message(STATUS "[APP] Source files:")
@@ -46,23 +39,36 @@ endforeach()
 add_executable(App ${SOURCES} ${IMGUI_BACKEND_SOURCES} ${IMGUI_SOURCES} ${IMGUI_FILE_DIALOG_SOURCES})
 
 # Include directories for the App executable
-target_include_directories(App PUBLIC
-	${GLM_INCLUDE_DIR}
-	${GLFW3_INCLUDE_DIR}
-	${ASSIMP_INCLUDE_DIR}
+target_include_directories(App PRIVATE
+	${CMAKE_SOURCE_DIR}/app
 	${CMAKE_SOURCE_DIR}/external/include/ImGui
 	${CMAKE_SOURCE_DIR}/external/include/ImGuiFileDialog
 )
 
-# List of libraries to link against, including the ImGui library
-set(LIBS
-	${GLFW3_LIBRARY}
-	${ASSIMP_LIBRARY}
+# Link libraries to the App executable
+target_link_libraries(App PRIVATE Core ${ENGINE_GLFW_TARGET})
+target_compile_features(App PRIVATE cxx_std_20)
+
+# Stage runtime dependencies and resources beside the executable for local runs.
+if(WIN32 AND ENGINE_USE_BUNDLED_DEPS)
+	file(GLOB ENGINE_RUNTIME_DLLS CONFIGURE_DEPENDS
+		"${CMAKE_SOURCE_DIR}/external/dlls/*.dll"
+	)
+
+	foreach(RUNTIME_DLL IN LISTS ENGINE_RUNTIME_DLLS)
+		add_custom_command(TARGET App POST_BUILD
+			COMMAND ${CMAKE_COMMAND} -E copy_if_different
+				"${RUNTIME_DLL}"
+				"$<TARGET_FILE_DIR:App>"
+		)
+	endforeach()
+endif()
+
+add_custom_command(TARGET App POST_BUILD
+	COMMAND ${CMAKE_COMMAND} -E copy_directory
+		"${CMAKE_SOURCE_DIR}/resources"
+		"$<TARGET_FILE_DIR:App>/resources"
 )
 
-# Link libraries to the App executable
-target_link_libraries(App Core ${LIBS})
-
-# Copy node files to the runtime directory
-message(STATUS "[APP] Copying node files to the runtime directory...")
-file(INSTALL ${CMAKE_SOURCE_DIR}/resources/ DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/resources/)
+install(TARGETS App RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+install(DIRECTORY ${CMAKE_SOURCE_DIR}/resources/ DESTINATION ${CMAKE_INSTALL_DATADIR}/EngineProject/resources)

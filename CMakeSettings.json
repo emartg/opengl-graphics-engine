@@ -1,0 +1,98 @@
+﻿{
+  "configurations": [
+    {
+      "name": "ninja-msvc-debug",
+      "displayName": "Ninja MSVC x64 Debug",
+      "generator": "Ninja",
+      "configurationType": "Debug",
+      "inheritEnvironments": [ "msvc_x64_x64" ],
+      "buildRoot": "${projectDir}\\out\\build\\ninja-msvc-debug",
+      "installRoot": "${projectDir}\\out\\install\\ninja-msvc-debug",
+      "cmakeCommandArgs": "",
+      "buildCommandArgs": "",
+      "ctestCommandArgs": ""
+    },
+    {
+      "name": "ninja-msvc-release",
+      "displayName": "Ninja MSVC x64 Release",
+      "generator": "Ninja",
+      "configurationType": "Release",
+      "inheritEnvironments": [ "msvc_x64_x64" ],
+      "buildRoot": "${projectDir}\\out\\build\\ninja-msvc-release",
+      "installRoot": "${projectDir}\\out\\install\\ninja-msvc-release",
+      "cmakeCommandArgs": "",
+      "buildCommandArgs": "",
+      "ctestCommandArgs": ""
+    },
+    {
+      "name": "vs2022-msvc-debug",
+      "displayName": "Visual Studio 2022 MSVC x64 Debug",
+      "generator": "Visual Studio 17 2022",
+      "configurationType": "Debug",
+      "inheritEnvironments": [ "msvc_x64_x64" ],
+      "buildRoot": "${projectDir}\\out\\build\\vs2022-msvc-debug",
+      "installRoot": "${projectDir}\\out\\install\\vs2022-msvc-debug",
+      "cmakeCommandArgs": "-A x64",
+      "buildCommandArgs": "",
+      "ctestCommandArgs": ""
+    },
+    {
+      "name": "vs2022-msvc-release",
+      "displayName": "Visual Studio 2022 MSVC x64 Release",
+      "generator": "Visual Studio 17 2022",
+      "configurationType": "Release",
+      "inheritEnvironments": [ "msvc_x64_x64" ],
+      "buildRoot": "${projectDir}\\out\\build\\vs2022-msvc-release",
+      "installRoot": "${projectDir}\\out\\install\\vs2022-msvc-release",
+      "cmakeCommandArgs": "-A x64",
+      "buildCommandArgs": "",
+      "ctestCommandArgs": ""
+    },
+    {
+      "name": "vs2026-msvc-debug",
+      "displayName": "Visual Studio 2026 MSVC x64 Debug",
+      "generator": "Visual Studio 18 2026",
+      "configurationType": "Debug",
+      "inheritEnvironments": [ "msvc_x64_x64" ],
+      "buildRoot": "${projectDir}\\out\\build\\vs2026-msvc-debug",
+      "installRoot": "${projectDir}\\out\\install\\vs2026-msvc-debug",
+      "cmakeCommandArgs": "-A x64",
+      "buildCommandArgs": "",
+      "ctestCommandArgs": ""
+    },
+    {
+      "name": "vs2026-msvc-release",
+      "displayName": "Visual Studio 2026 MSVC x64 Release",
+      "generator": "Visual Studio 18 2026",
+      "configurationType": "Release",
+      "inheritEnvironments": [ "msvc_x64_x64" ],
+      "buildRoot": "${projectDir}\\out\\build\\vs2026-msvc-release",
+      "installRoot": "${projectDir}\\out\\install\\vs2026-msvc-release",
+      "cmakeCommandArgs": "-A x64",
+      "buildCommandArgs": "",
+      "ctestCommandArgs": ""
+    },
+    {
+      "name": "mingw-make-debug",
+      "displayName": "MinGW Makefiles Debug",
+      "generator": "MinGW Makefiles",
+      "configurationType": "Debug",
+      "buildRoot": "${projectDir}\\out\\build\\mingw-make-debug",
+      "installRoot": "${projectDir}\\out\\install\\mingw-make-debug",
+      "cmakeCommandArgs": "",
+      "buildCommandArgs": "",
+      "ctestCommandArgs": ""
+    },
+    {
+      "name": "mingw-make-release",
+      "displayName": "MinGW Makefiles Release",
+      "generator": "MinGW Makefiles",
+      "configurationType": "Release",
+      "buildRoot": "${projectDir}\\out\\build\\mingw-make-release",
+      "installRoot": "${projectDir}\\out\\install\\mingw-make-release",
+      "cmakeCommandArgs": "",
+      "buildCommandArgs": "",
+      "ctestCommandArgs": ""
+    }
+  ]
+}

@@ -31,9 +31,12 @@
 set(_glm_HEADER_SEARCH_DIRS
 	"/usr/include"
 	"/usr/local/include"
-	"${CMAKE_SOURCE_DIR}/external/include"
 	"C:/Program Files (x86)/glm" 
 )
+
+if(ENGINE_USE_BUNDLED_DEPS)
+	list(APPEND _glm_HEADER_SEARCH_DIRS "${CMAKE_SOURCE_DIR}/external/include")
+endif()
 
 # Check environment variable
 set(_glm_ENV_ROOT_DIR "$ENV{GLM_ROOT_DIR}")
