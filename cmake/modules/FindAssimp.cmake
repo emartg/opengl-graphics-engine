@@ -11,16 +11,34 @@ find_path(ASSIMP_INCLUDE_DIR assimp/mesh.h
 	"/opt/local/include"
 )
 
-find_library(ASSIMP_LIBRARY assimp
-	"/usr/lib64"
-	"/usr/lib"
-	"/usr/local/lib"
-	"/opt/local/lib"
-)
+if(MINGW)
+	find_library(ASSIMP_LIBRARY assimp
+		"/mingw64/lib"
+		"/mingw32/lib"
+		"/ucrt64/lib"
+		"/usr/lib64"
+		"/usr/lib"
+		"/usr/local/lib"
+		"/opt/local/lib"
+	)
+else()
+	find_library(ASSIMP_LIBRARY assimp
+		"/usr/lib64"
+		"/usr/lib"
+		"/usr/local/lib"
+		"/opt/local/lib"
+	)
+endif()
+
+# Clear stale cached results so toolchain changes (for example MSVC -> MinGW) are re-evaluated.
+unset(ASSIMP_INCLUDE_DIR CACHE)
+unset(ASSIMP_LIBRARY CACHE)
 
 if(ENGINE_USE_BUNDLED_DEPS)
 	find_path(ASSIMP_INCLUDE_DIR assimp/mesh.h PATHS "${CMAKE_SOURCE_DIR}/external/include")
-	find_library(ASSIMP_LIBRARY assimp PATHS "${CMAKE_SOURCE_DIR}/external/lib")
+	if(NOT MINGW)
+		find_library(ASSIMP_LIBRARY assimp PATHS "${CMAKE_SOURCE_DIR}/external/lib")
+	endif()
 endif()
 
 if(ASSIMP_INCLUDE_DIR AND ASSIMP_LIBRARY)

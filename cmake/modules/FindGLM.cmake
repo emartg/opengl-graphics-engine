@@ -31,7 +31,6 @@
 set(_glm_HEADER_SEARCH_DIRS
 	"/usr/include"
 	"/usr/local/include"
-	"C:/Program Files (x86)/glm" 
 )
 
 if(ENGINE_USE_BUNDLED_DEPS)

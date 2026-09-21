@@ -3532,7 +3532,9 @@ bool IGFD::KeyExplorerFeature::m_FlashableSelectable(const char* label, bool sel
     const bool span_all_columns = (flags & ImGuiSelectableFlags_SpanAllColumns) != 0;
     const float min_x           = span_all_columns ? window->ParentWorkRect.Min.x : pos.x;
     const float max_x           = span_all_columns ? window->ParentWorkRect.Max.x : window->WorkRect.Max.x;
-    if (size_arg.x == 0.0f || (flags & ImGuiSelectableFlags_SpanAvailWidth)) size.x = ImMax(label_size.x, max_x - min_x);
+    if (size_arg.x == 0.0f || (flags & static_cast<ImGuiSelectableFlags>((int)ImGuiSelectableFlags_SpanAvailWidth))) size.x 
+        = ImMax(label_size.x, max_x - min_x);
+
 
     // Text stays at the submission position, but bounding box may be extended on both sides
     const ImVec2 text_min = pos;
@@ -3993,7 +3995,7 @@ void IGFD::FileDialog::m_DisplayPathPopup(ImVec2 vSize) {
 
                         if (ImGui::TableNextColumn())  // file name
                         {
-                            if (ImGui::Selectable(infos_ptr->fileNameExt.c_str(), &selected, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_SpanAvailWidth)) {
+                            if (ImGui::Selectable(infos_ptr->fileNameExt.c_str(), &selected, static_cast<ImGuiSelectableFlags>((int)ImGuiSelectableFlags_SpanAllColumns | (int)ImGuiSelectableFlags_SpanAvailWidth))) {
                                 fdi.SetCurrentPath(fdi.ComposeNewPath(fdi.GetCurrentPopupComposedPath()));
                                 fdi.pathClicked = fdi.SelectDirectory(infos_ptr);
                                 ImGui::CloseCurrentPopup();
@@ -4124,7 +4126,7 @@ void IGFD::FileDialog::m_SelectableItem(int vRowIdx, std::shared_ptr<FileInfos> 
 
     auto& fdi = m_FileDialogInternal.fileManager;
 
-    static ImGuiSelectableFlags selectableFlags = ImGuiSelectableFlags_AllowDoubleClick | ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_SpanAvailWidth;
+    static ImGuiSelectableFlags selectableFlags = static_cast<ImGuiSelectableFlags>((int)ImGuiSelectableFlags_AllowDoubleClick | (int)ImGuiSelectableFlags_SpanAllColumns | (int)ImGuiSelectableFlags_SpanAvailWidth);
 
     va_list args;
     va_start(args, vFmt);

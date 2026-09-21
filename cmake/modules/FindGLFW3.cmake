@@ -16,18 +16,28 @@
 set(_glfw3_HEADER_SEARCH_DIRS
 	"/usr/include"
 	"/usr/local/include"
-	"C:/Program Files (x86)/glfw/include"
 )
 
-set(_glfw3_LIB_SEARCH_DIRS
-	"/usr/lib"
-	"/usr/local/lib"
-	"C:/Program Files (x86)/glfw/lib-msvc110"
-)
+if(MINGW)
+	set(_glfw3_LIB_SEARCH_DIRS
+		"/mingw64/lib"
+		"/mingw32/lib"
+		"/ucrt64/lib"
+		"/usr/lib"
+		"/usr/local/lib"
+	)
+else()
+	set(_glfw3_LIB_SEARCH_DIRS
+		"/usr/lib"
+		"/usr/local/lib"
+	)
+endif()
 
 if(ENGINE_USE_BUNDLED_DEPS)
 	list(APPEND _glfw3_HEADER_SEARCH_DIRS "${CMAKE_SOURCE_DIR}/external/include")
-	list(APPEND _glfw3_LIB_SEARCH_DIRS "${CMAKE_SOURCE_DIR}/external/lib")
+	if(NOT MINGW)
+		list(APPEND _glfw3_LIB_SEARCH_DIRS "${CMAKE_SOURCE_DIR}/external/lib")
+	endif()
 endif()
 
 # Check environment for root search directory
@@ -41,6 +51,10 @@ if(GLFW3_ROOT)
 	list(INSERT _glfw3_HEADER_SEARCH_DIRS 0 "${GLFW3_ROOT}/include")
 	list(INSERT _glfw3_LIB_SEARCH_DIRS 0 "${GLFW3_ROOT}/lib")
 endif()
+
+# Clear stale cached results so toolchain changes (for example MSVC -> MinGW) are re-evaluated.
+unset(GLFW3_INCLUDE_DIR CACHE)
+unset(GLFW3_LIBRARY CACHE)
 
 # Search for the header
 find_path(GLFW3_INCLUDE_DIR "GLFW/glfw3.h"

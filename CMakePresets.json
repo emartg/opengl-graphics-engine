@@ -58,22 +58,24 @@
       "binaryDir": "${sourceDir}/out/build/vs2026-msvc-release"
     },
     {
-      "name": "mingw-make-debug",
-      "displayName": "MinGW Makefiles Debug",
+      "name": "mingw-gcc-vcpkg-debug",
+      "displayName": "MinGW Makefiles GCC + vcpkg Debug (UCRT)",
       "generator": "MinGW Makefiles",
-      "binaryDir": "${sourceDir}/out/build/mingw-make-debug",
+      "binaryDir": "${sourceDir}/out/build/mingw-gcc-vcpkg-debug",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "CMAKE_C_COMPILER": "gcc",
         "CMAKE_CXX_COMPILER": "g++",
-        "ENGINE_USE_BUNDLED_DEPS": "ON"
+        "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+        "VCPKG_TARGET_TRIPLET": "x64-mingw-dynamic",
+        "ENGINE_USE_BUNDLED_DEPS": "OFF"
       }
     },
     {
-      "name": "mingw-make-release",
-      "displayName": "MinGW Makefiles Release",
-      "inherits": "mingw-make-debug",
-      "binaryDir": "${sourceDir}/out/build/mingw-make-release",
+      "name": "mingw-gcc-vcpkg-release",
+      "displayName": "MinGW Makefiles GCC + vcpkg Release (UCRT)",
+      "inherits": "mingw-gcc-vcpkg-debug",
+      "binaryDir": "${sourceDir}/out/build/mingw-gcc-vcpkg-release",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release"
       }
@@ -115,13 +117,13 @@
       "targets": ["App"]
     },
     {
-      "name": "mingw-make-debug",
-      "configurePreset": "mingw-make-debug",
+      "name": "mingw-gcc-vcpkg-debug",
+      "configurePreset": "mingw-gcc-vcpkg-debug",
       "targets": ["App"]
     },
     {
-      "name": "mingw-make-release",
-      "configurePreset": "mingw-make-release",
+      "name": "mingw-gcc-vcpkg-release",
+      "configurePreset": "mingw-gcc-vcpkg-release",
       "targets": ["App"]
     }
   ]

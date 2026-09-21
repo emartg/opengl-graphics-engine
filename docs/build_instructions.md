@@ -6,7 +6,7 @@ This document provides detailed steps to compile and run the OpenGL Graphics Eng
 ## Prerequisites
 
 - **Operating System:** Windows (tested on Windows 11). Linux/macOS are not officially tested but CMake configuration is prepared for them.
-- **Compiler:** Visual Studio 2022 (with C++20 support) or any C++20 compiler.
+- **Compiler:** MSVC from Visual Studio 2022/2026, or GCC from a MinGW installation.
 - **CMake:** ≥ 3.20.
 - **VS Code extensions:** CMake Tools and C/C++.
 - **Git:** To clone the repository (optional if you download the source).
@@ -21,7 +21,35 @@ The engine uses CMake's `find_package` with custom `Find*.cmake` scripts located
 
 For OpenGL (GLAD), `stb_image`, and ImGui, the required files are either generated (GLAD) or included directly as headers (stb_image, ImGui backends) in the source tree.
 
-The build will attempt to locate these dependencies on your system. If not found, you may need to install them manually (e.g., via vcpkg, Conan, or direct download) and set the appropriate `CMAKE_PREFIX_PATH`.
+The default MSVC presets use the repository's matching dependencies in `external/`. The `mingw-gcc-vcpkg-*` presets use GCC and the `x64-mingw-dynamic` vcpkg triplet. vcpkg is a package manager and CMake toolchain integration; it is not a compiler.
+
+For MinGW, install MinGW with GCC and install the dependencies into the same vcpkg installation:
+
+```powershell
+vcpkg install glfw3:x64-mingw-dynamic assimp:x64-mingw-dynamic glm:x64-mingw-dynamic
+```
+
+The repository does not contain machine-specific compiler or vcpkg paths. Configure the paths as user environment variables, replacing the examples with the locations on your machine:
+
+```powershell
+[Environment]::SetEnvironmentVariable("MINGW_ROOT", "C:\path\to\mingw64", "User")
+[Environment]::SetEnvironmentVariable("VCPKG_ROOT", "C:\path\to\vcpkg", "User")
+```
+
+Restart VS Code after changing persistent environment variables. Verify the values in a new, ordinary PowerShell terminal:
+
+```powershell
+$env:MINGW_ROOT
+$env:VCPKG_ROOT
+Get-Command gcc
+Test-Path "$env:VCPKG_ROOT\scripts\buildsystems\vcpkg.cmake"
+```
+
+Use an ordinary PowerShell terminal for the MinGW preset. A Visual Studio Developer PowerShell can inject a different `VCPKG_ROOT` into the current process. If that happens, correct it before configuring:
+
+```powershell
+$env:VCPKG_ROOT = [Environment]::GetEnvironmentVariable("VCPKG_ROOT", "User")
+```
 
 ## Build directories and generators
 
@@ -30,7 +58,7 @@ Each CMake build directory belongs to exactly one generator/toolchain/configurat
 - Debug: `out/build/ninja-msvc-debug`
 - Release: `out/build/ninja-msvc-release`
 
-The generator is part of the directory name because CMake does not allow a build tree to change generators after configuration. A Visual Studio generator, Makefiles, or another toolchain must use a different directory, for example `out/build/vs2022-msvc-debug` or `out/build/mingw-ninja-debug`.
+The generator is part of the directory name because CMake does not allow a build tree to change generators after configuration. A Visual Studio generator, Makefiles, or another toolchain must use a different directory, for example `out/build/vs2022-msvc-debug` or `out/build/mingw-gcc-vcpkg-debug`.
 
 `out/install/<configuration>` is an optional installation prefix. It is populated only by `cmake --install` and is separate from the build tree; normal compilation does not require it. The `.vs` folder contains Visual Studio's local metadata and can remain in place.
 
@@ -39,9 +67,9 @@ The generator is part of the directory name because CMake does not allow a build
 The repository contains CMake presets for the supported Windows workflow: MSVC x64, Ninja, and the bundled libraries in `external/`. Both VS Code and Visual Studio use the same canonical output directories. Do not configure or build from both IDEs at the same time.
 
 1. Install the **CMake Tools** and **C/C++** extensions.
-2. Open the repository root, `C:\Dev\XRaySim\Engine`, in VS Code.
+2. Open the repository root in VS Code.
 3. Open the Command Palette with `Ctrl+Shift+P` and run **CMake: Select Configure Preset**.
-4. Select the desired preset: Ninja/MSVC, Visual Studio 2022/2026, or MinGW Makefiles. Each preset names its generator, compiler family, and configuration.
+4. Select the desired preset: Ninja/MSVC, Visual Studio 2022/2026, or MinGW Makefiles with GCC and vcpkg. Each preset names its generator, compiler, dependency provider, and configuration.
 5. Run **CMake: Configure**. CMake Tools may configure automatically when the folder opens; run it manually after changing presets or clearing a cache.
 6. Run **CMake: Set Build Target** and select `App`.
 7. Run **CMake: Build**. This builds `GLAD`, `STB_IMAGE`, `Core`, and `App`.
@@ -91,22 +119,25 @@ The `external/` directory is the authoritative dependency source for this workfl
 
 Visual Studio reads these configurations from `CMakeSettings.json`. Do not configure or build in VS Code at the same time, because both IDEs share the same generated CMake files.
 
-## Choosing another generator or toolchain
+## MinGW with GCC and vcpkg
 
-Presets provide the default Ninja/MSVC workflow, but do not prevent other generators. Configure each alternative in its own descriptive directory:
+The supported MinGW workflow uses the `MinGW Makefiles` generator, GCC, and vcpkg. The preset name follows that combination: `mingw-gcc-vcpkg-debug` or `mingw-gcc-vcpkg-release`.
 
 ```powershell
-# Native Visual Studio 2022 generator
-cmake -S . -B out/build/vs2022-msvc-debug -G "Visual Studio 17 2022" -A x64 `
-   -DENGINE_USE_BUNDLED_DEPS=ON
-cmake --build out/build/vs2022-msvc-debug --config Debug --target App
+# Make GCC discoverable in this terminal.
+$env:Path = "$env:MINGW_ROOT\bin;$env:Path"
+$env:VCPKG_ROOT = [Environment]::GetEnvironmentVariable("VCPKG_ROOT", "User")
 
-# MinGW/Ninja, when the MinGW environment is available
-cmake -S . -B out/build/mingw-ninja-debug -G Ninja `
-   -DCMAKE_BUILD_TYPE=Debug `
-   -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++
-cmake --build out/build/mingw-ninja-debug --target App
+# Configure and build Debug.
+cmake --fresh --preset mingw-gcc-vcpkg-debug
+cmake --build --preset mingw-gcc-vcpkg-debug --parallel
+
+# Use the release preset for Release builds.
+# cmake --fresh --preset mingw-gcc-vcpkg-release
+# cmake --build --preset mingw-gcc-vcpkg-release --parallel
 ```
+
+The preset expands `$env{VCPKG_ROOT}` when configuring, so no developer-specific path is committed to the repository. Use `cmake --fresh` after changing compiler or dependency locations because CMake caches the toolchain file. Do not reuse a build directory configured for a different generator or compiler.
 
 For Visual Studio 2026, use the generator name reported by `cmake --help` and a directory such as `out/build/vs2026-msvc-debug`. Do not reuse a directory configured for another generator or compiler.
 
@@ -166,7 +197,8 @@ Remove-Item -Recurse -Force out\build
 
 ## Troubleshooting
 
-- **Missing dependencies:** If CMake fails to find a library, ensure it is installed and its path is added to `CMAKE_PREFIX_PATH`. For example: `-DCMAKE_PREFIX_PATH="C:/path/to/libs"`.
+- **GLFW or Assimp not found with MinGW:** Check that `VCPKG_ROOT` points to the vcpkg installation containing `x64-mingw-dynamic`, not a Visual Studio-only vcpkg installation. Run `vcpkg install glfw3:x64-mingw-dynamic assimp:x64-mingw-dynamic glm:x64-mingw-dynamic`, then run `cmake --fresh --preset mingw-gcc-vcpkg-debug`.
+- **Environment value looks correct but CMake uses another path:** The current terminal may have inherited a stale `VCPKG_ROOT`. Run `$env:VCPKG_ROOT = [Environment]::GetEnvironmentVariable("VCPKG_ROOT", "User")`, or close and reopen VS Code.
 - **GLAD errors:** The `glad.c` and `glad.h` are generated in `core/third_party/glad/`. If they are missing, regenerate them from the [GLAD service](https://glad.dav1d.de/) using OpenGL 4.2 Core.
 - **Assimp DLL missing:** If running the executable fails with a missing `assimp-vc143-mtd.dll`, copy it from your Assimp installation into the same directory as `App.exe`, or add its folder to your `PATH`.
 

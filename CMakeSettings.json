@@ -71,28 +71,6 @@
       "cmakeCommandArgs": "-A x64",
       "buildCommandArgs": "",
       "ctestCommandArgs": ""
-    },
-    {
-      "name": "mingw-make-debug",
-      "displayName": "MinGW Makefiles Debug",
-      "generator": "MinGW Makefiles",
-      "configurationType": "Debug",
-      "buildRoot": "${projectDir}\\out\\build\\mingw-make-debug",
-      "installRoot": "${projectDir}\\out\\install\\mingw-make-debug",
-      "cmakeCommandArgs": "",
-      "buildCommandArgs": "",
-      "ctestCommandArgs": ""
-    },
-    {
-      "name": "mingw-make-release",
-      "displayName": "MinGW Makefiles Release",
-      "generator": "MinGW Makefiles",
-      "configurationType": "Release",
-      "buildRoot": "${projectDir}\\out\\build\\mingw-make-release",
-      "installRoot": "${projectDir}\\out\\install\\mingw-make-release",
-      "cmakeCommandArgs": "",
-      "buildCommandArgs": "",
-      "ctestCommandArgs": ""
     }
   ]
 }
