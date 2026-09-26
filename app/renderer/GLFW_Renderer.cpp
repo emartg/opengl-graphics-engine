@@ -8,10 +8,10 @@
 
 #include "../gui/Gui.h"
 
-#include "../core/Core.h"
-#include "../core/renderer/Renderer.h"
-#include "../core/managers/Selection_Manager.h"
-#include "../core/managers/Input_Manager.h"
+#include "core/Core.h"
+#include "core/renderer/Renderer.h"
+#include "core/managers/Selection_Manager.h"
+#include "core/managers/Input_Manager.h"
 
 GLFW_Renderer::GLFW_Renderer() : window{ nullptr }, gui{ nullptr } {}
 

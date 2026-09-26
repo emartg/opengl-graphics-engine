@@ -108,6 +108,17 @@ out/build/manual-ninja-msvc-release\bin\App.exe
 
 For Debug, change `Release` to `Debug` and use a separate directory such as `out/build/manual-ninja-msvc-debug`. The preset and direct CLI workflows are equivalent; presets simply keep the default configuration choices in the repository.
 
+On Linux, install GLFW, Assimp, and GLM from the system package manager and use the GCC or Clang presets (`ninja-gcc-debug`, `ninja-clang-debug`, and their Release variants):
+
+```bash
+sudo apt install build-essential clang ninja-build cmake libglfw3-dev libassimp-dev libglm-dev libgl-dev
+cmake --preset ninja-gcc-debug
+cmake --build --preset ninja-gcc-debug
+cd out/build/ninja-gcc-debug/bin && ./App
+```
+
+The Engine can also be consumed by other CMake projects (e.g., as a Git submodule) with `add_subdirectory()` and the `Engine::Core` target; see [Using the Engine from Another CMake Project](docs/build_instructions.md#using-the-engine-from-another-cmake-project).
+
 ---
 
 ## Usage

@@ -2,13 +2,13 @@
 ## for creating an OpenGL application
 
 # Collect header, source, and shader files
-set(HEADERS_DIR ${CMAKE_SOURCE_DIR}/core)
+set(HEADERS_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 file(GLOB_RECURSE HEADERS CONFIGURE_DEPENDS ${HEADERS_DIR}/*.h*)
 
-set(SOURCES_DIR ${CMAKE_SOURCE_DIR}/core)
+set(SOURCES_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS ${SOURCES_DIR}/*.cpp)
 
-set(SHADERS_DIR ${CMAKE_SOURCE_DIR}/resources/shaders)
+set(SHADERS_DIR ${ENGINE_ROOT_DIR}/resources/shaders)
 file(GLOB SHADERS CONFIGURE_DEPENDS ${SHADERS_DIR}/*.glsl)
 
 # Output each file in the list of headers, sources, and shaders for the Core library (debugging purposes)
@@ -19,12 +19,17 @@ foreach(FILE_TYPE IN ITEMS HEADERS SOURCES SHADERS)
     endforeach()
 endforeach()
 
-# Create the Core static library
-add_library(Core STATIC ${SOURCES})
+# Create the Core static library (headers and shaders are listed so that IDEs display them),
+# and a namespaced alias for consumers (e.g., Engine::Core)
+add_library(Core STATIC ${SOURCES} ${HEADERS} ${SHADERS})
+add_library(Engine::Core ALIAS Core)
 
-# Include directories for the Core library
+# Include directories for the Core library:
+# - the Engine root directory, so that Core headers can be included as "core/<path>/<header>.h"
+# - the external headers (GLAD, GLM, stb_image, etc.)
 target_include_directories(Core PUBLIC
-	${CMAKE_SOURCE_DIR}/external/include
+	$<BUILD_INTERFACE:${ENGINE_ROOT_DIR}>
+	$<BUILD_INTERFACE:${ENGINE_ROOT_DIR}/external/include>
 )
 
 # Link libraries to the Core library
@@ -43,6 +48,6 @@ install(TARGETS Core
 )
 
 # Organize files into source groups for Visual Studio
-source_group("Header Files" FILES ${HEADERS_DIR})
-source_group("Source Files" FILES ${SOURCES_DIR})
-source_group("Shader Files" FILES ${SHADERS_DIR})
+source_group("Header Files" FILES ${HEADERS})
+source_group("Source Files" FILES ${SOURCES})
+source_group("Shader Files" FILES ${SHADERS})
