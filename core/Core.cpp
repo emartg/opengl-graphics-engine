@@ -92,7 +92,7 @@ bool Core::init() const
 	renderer->set_callback_functions();
 
 	// load all OpenGL function pointers with GLAD
-	if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(renderer->get_proc_address())))
+	if (!gladLoadGLLoader(renderer->get_proc_address()))
 	{ // if GLAD fails to load OpenGL functions, print an error message and return false
 		std::cerr << "[ERROR::CORE::init] Failed to initialize GLAD" << std::endl;
 		return false;

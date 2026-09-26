@@ -39,7 +39,7 @@ public:
 	void wait_for_events() const override;
 
 	// Getters
-	const char* get_proc_address() const override;
+	GLADloadproc get_proc_address() const override;
 	float get_time() const override;
 
 	// Setters
