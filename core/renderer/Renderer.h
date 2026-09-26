@@ -81,7 +81,8 @@ public:
 	virtual void wait_for_events() const = 0;
 
 	// Getters
-	virtual const char* get_proc_address() const = 0;
+	// Returns the function used by GLAD to load the OpenGL function pointers of the current context
+	virtual GLADloadproc get_proc_address() const = 0;
 	virtual float get_time() const = 0;
 	virtual float get_delta_time() const { return delta_time; }
 

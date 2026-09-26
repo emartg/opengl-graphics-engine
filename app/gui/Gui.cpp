@@ -85,10 +85,11 @@ GUI::GUI()
 	init_gui_layout_attributes(); // initialize the display size-independent layout attributes
 	// initialize the positions and sizes of the GUI windows to default values
 	// (since they require the ImGui context to be created first to access the ImGui IO object)
-	scene_graph_window_position, properties_window_position,
-		creation_window_position, debug_window_position = ImVec2{ 0.0f, 0.0f };
-	scene_graph_window_size, properties_window_size,
-		creation_window_size, debug_window_size = ImVec2{ 0.0f, 0.0f };
+	// (each attribute is assigned separately, since chaining them with commas would only assign the last one)
+	scene_graph_window_position = properties_window_position = ImVec2{ 0.0f, 0.0f };
+	creation_window_position = debug_window_position = ImVec2{ 0.0f, 0.0f };
+	scene_graph_window_size = properties_window_size = ImVec2{ 0.0f, 0.0f };
+	creation_window_size = debug_window_size = ImVec2{ 0.0f, 0.0f };
 	// initialize the flags for the windows to prevent focus on the first frame
 	scene_graph_window_just_appeared = true;
 	properties_window_just_appeared = true;
@@ -526,7 +527,7 @@ void GUI::draw_properties_window()
 		{ // if an node is selected, display its name and id, and draw its controls
 			// display the name of the selected node in bold font
 			ImGui::PushFont(bold_font);
-			ImGui::Text(selected->get_name().c_str());
+			ImGui::TextUnformatted(selected->get_name().c_str()); // unformatted, so names with '%' are displayed verbatim
 			ImGui::PopFont();
 
 			ImGui::Separator();

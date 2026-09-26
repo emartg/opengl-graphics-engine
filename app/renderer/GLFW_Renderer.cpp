@@ -74,9 +74,10 @@ bool GLFW_Renderer::should_close() const { return glfwWindowShouldClose(window);
 
 float GLFW_Renderer::get_time() const { return glfwGetTime(); }
 
-const char* GLFW_Renderer::get_proc_address() const
+GLADloadproc GLFW_Renderer::get_proc_address() const
 {
-	return reinterpret_cast<const char*>(glfwGetProcAddress);
+	// GLFW and GLAD declare the loader with different (but call-compatible) function pointer types
+	return reinterpret_cast<GLADloadproc>(glfwGetProcAddress);
 }
 
 void GLFW_Renderer::set_callback_functions() const
