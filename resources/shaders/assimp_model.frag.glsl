@@ -67,7 +67,7 @@ in vec2 v_tex_coords;
 
 // statically sized arrays of light attributes in view space passed from the vertex shader
 in vec3 v_directional_light_dir[MAX_DIR_LIGHTS_COUNT];
-in vec3 v_point_light_dir[MAX_POINT_LIGHTS_COUNT];
+in vec3 v_point_light_pos[MAX_POINT_LIGHTS_COUNT];
 in vec3 v_spotlight_pos[MAX_SPOTLIGHTS_COUNT];
 in vec3 v_spotlight_dir[MAX_SPOTLIGHTS_COUNT];
 
@@ -122,7 +122,7 @@ void main()
 
 	// loop through all point lights and accumulate their contributions
 	for (int i = 0; i < u_point_light_count; i++)
-		result  += compute_point_light_component(u_point_lights[i], v_point_light_dir[i], 
+		result  += compute_point_light_component(u_point_lights[i], v_point_light_pos[i], 
 												 normal, v_frag_pos, view_dir);
 
 	// loop through all spotlights and accumulate their contributions

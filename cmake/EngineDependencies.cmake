@@ -63,7 +63,7 @@ else()
         "If using vcpkg, ensure CMake toolchain is set via -DCMAKE_TOOLCHAIN_FILE=<vcpkg-root>/scripts/buildsystems/vcpkg.cmake.")
 endif()
 
-find_package(assimp CONFIG QUIET)
+find_package(Assimp CONFIG QUIET)
 if(NOT TARGET assimp::assimp AND NOT TARGET assimp)
     if(MINGW)
         find_package(PkgConfig QUIET)
@@ -73,7 +73,7 @@ if(NOT TARGET assimp::assimp AND NOT TARGET assimp)
     endif()
 
     if(NOT TARGET PkgConfig::ASSIMP)
-        find_package(ASSIMP QUIET)
+        find_package(Assimp QUIET)
         if(ASSIMP_FOUND)
             add_library(engine_assimp UNKNOWN IMPORTED)
             set_target_properties(engine_assimp PROPERTIES
