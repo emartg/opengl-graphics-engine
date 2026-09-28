@@ -78,7 +78,7 @@ bool Shader::compile()
 			geometry_shader_src_code = geometry_shader_stream.str();
 		fragment_shader_src_code = fragment_shader_stream.str();
 	}
-	catch (std::ifstream::failure e)
+	catch (const std::ifstream::failure& e)
 	{
 		std::cerr << "[ERROR::SHADER::compile] Shader file reading error: " << e.what() << std::endl;
 		return false; // if file reading failed, return false
@@ -87,7 +87,7 @@ bool Shader::compile()
 	const GLchar* vertex_shader_code = vertex_shader_src_code.c_str();
 	const GLchar* geometry_shader_code = nullptr;
 	if (!geometry_shader_path.empty())
-		geometry_shader_src_code = geometry_shader_src_code.c_str();
+		geometry_shader_code = geometry_shader_src_code.c_str();
 	const GLchar* fragment_shader_code = fragment_shader_src_code.c_str();
 
 	// compile shaders and create shader program
@@ -97,7 +97,10 @@ bool Shader::compile()
 	glShaderSource(vertex_shader, 1, &vertex_shader_code, NULL);
 	glCompileShader(vertex_shader);
 	if (!check_compilation_linking_errors(vertex_shader, "VERTEX"))
-		return false; // if compilation of the vertex shader failed, return false
+	{ // if compilation of the vertex shader failed, delete it and return false
+		glDeleteShader(vertex_shader);
+		return false;
+	}
 	// geometry shader compilation (if provided)
 	if (!geometry_shader_path.empty())
 	{
@@ -105,14 +108,24 @@ bool Shader::compile()
 		glShaderSource(geometry_shader, 1, &geometry_shader_code, NULL);
 		glCompileShader(geometry_shader);
 		if (!check_compilation_linking_errors(geometry_shader, "GEOMETRY"))
-			return false; // if compilation of the geometry shader failed, return false
+		{ // if compilation of the geometry shader failed, delete the created shaders and return false
+			glDeleteShader(vertex_shader);
+			glDeleteShader(geometry_shader);
+			return false;
+		}
 	}
 	// fragment shader compilation
 	fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
 	glShaderSource(fragment_shader, 1, &fragment_shader_code, NULL);
 	glCompileShader(fragment_shader);
 	if (!check_compilation_linking_errors(fragment_shader, "FRAGMENT"))
-		return false; // if compilation of the fragment shader failed, return false
+	{ // if compilation of the fragment shader failed, delete the created shaders and return false
+		glDeleteShader(vertex_shader);
+		if (!geometry_shader_path.empty())
+			glDeleteShader(geometry_shader);
+		glDeleteShader(fragment_shader);
+		return false;
+	}
 	// shader program
 	shader_program_id = glCreateProgram();
 	glAttachShader(shader_program_id, vertex_shader);
@@ -120,14 +133,20 @@ bool Shader::compile()
 		glAttachShader(shader_program_id, geometry_shader);
 	glAttachShader(shader_program_id, fragment_shader);
 	glLinkProgram(shader_program_id);
-	if (!check_compilation_linking_errors(shader_program_id, "PROGRAM"))
-		return false; // if linking the program failed, return false
 
-	// delete the shaders as they're linked into our program and are no longer needed
+	// delete the shaders, as they're either linked into the program or no longer needed
+	// (they are only flagged for deletion until the program is deleted)
 	glDeleteShader(vertex_shader);
 	if (!geometry_shader_path.empty())
 		glDeleteShader(geometry_shader);
 	glDeleteShader(fragment_shader);
+
+	if (!check_compilation_linking_errors(shader_program_id, "PROGRAM"))
+	{ // if linking the program failed, delete it and return false
+		glDeleteProgram(shader_program_id);
+		shader_program_id = 0;
+		return false;
+	}
 
 	std::cout << "[SUCCESS::SHADER::compile] Shader with name '" << name
 		<< "' compiled and linked successfully" << std::endl;

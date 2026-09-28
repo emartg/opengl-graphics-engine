@@ -131,10 +131,12 @@ $env:VCPKG_ROOT = [Environment]::GetEnvironmentVariable("VCPKG_ROOT", "User")
 # Configure and build Debug.
 cmake --fresh --preset mingw-gcc-vcpkg-debug
 cmake --build --preset mingw-gcc-vcpkg-debug --parallel
+```
 
-# Use the release preset for Release builds.
-# cmake --fresh --preset mingw-gcc-vcpkg-release
-# cmake --build --preset mingw-gcc-vcpkg-release --parallel
+```powershell
+# Optional: use the release preset for Release builds.
+cmake --fresh --preset mingw-gcc-vcpkg-release
+cmake --build --preset mingw-gcc-vcpkg-release --parallel
 ```
 
 The preset expands `$env{VCPKG_ROOT}` when configuring, so no developer-specific path is committed to the repository. Use `cmake --fresh` after changing compiler or dependency locations because CMake caches the toolchain file. Do not reuse a build directory configured for a different generator or compiler.
