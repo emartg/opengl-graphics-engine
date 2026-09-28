@@ -5,9 +5,9 @@ This document provides detailed steps to compile and run the OpenGL Graphics Eng
 
 ## Prerequisites
 
-- **Operating System:** Windows (tested on Windows 11). Linux/macOS are not officially tested but CMake configuration is prepared for them.
-- **Compiler:** MSVC from Visual Studio 2022/2026, or GCC from a MinGW installation.
-- **CMake:** ≥ 3.20.
+- **Operating System:** Windows (tested on Windows 11) or Linux (tested on Ubuntu 24.04). macOS is not officially tested.
+- **Compiler:** MSVC from Visual Studio 2022/2026, or GCC from a MinGW installation on Windows; GCC or Clang on Linux.
+- **CMake:** ≥ 3.21 (≥ 3.25 to use the presets in `CMakePresets.json`).
 - **VS Code extensions:** CMake Tools and C/C++.
 - **Git:** To clone the repository (optional if you download the source).
 
@@ -140,6 +140,62 @@ cmake --build --preset mingw-gcc-vcpkg-debug --parallel
 The preset expands `$env{VCPKG_ROOT}` when configuring, so no developer-specific path is committed to the repository. Use `cmake --fresh` after changing compiler or dependency locations because CMake caches the toolchain file. Do not reuse a build directory configured for a different generator or compiler.
 
 For Visual Studio 2026, use the generator name reported by `cmake --help` and a directory such as `out/build/vs2026-msvc-debug`. Do not reuse a directory configured for another generator or compiler.
+
+## Linux with GCC or Clang
+
+The Linux presets use Ninja and the system packages for GLFW, Assimp, and GLM
+(the binaries in `external/` are built with MSVC, so `ENGINE_USE_BUNDLED_DEPS` is disabled).
+On Ubuntu/Debian, install the toolchain and the dependencies with:
+
+```bash
+sudo apt install build-essential clang ninja-build cmake libglfw3-dev libassimp-dev libglm-dev libgl-dev
+```
+
+The configure, build, and run with the GCC or Clang presets
+
+```bash
+# Configure and build Debug with GCC (use ninja-clang-debug for Clang)
+cmake --preset ninja-gcc-debug
+cmake --build ninja-gcc-debug
+
+# Run with bin as the working directory
+cd out/build/ninja-gcc-debug/bin && ./App
+```
+
+The Release presets are `ninja-gcc-release` and `ninja-clang-release`. The presets
+are only listed on the OS they apply to (Windows presets on Windows, Linux presets on Linux),
+so VS Code and `cmake --list-presets` only show usable configurations.
+
+From Windows, the Linux build can be tested through WSL2 (Windows Subsystem for Linux):
+install Ubuntu with `wsl --install`, clone the repository inside the WSL file system (e.g., `~/scr`),
+and follow the steps above. WSLg displays the window on the Windows desktop, and the OpenGL context is
+provided by Mesa (hardware-accelerated through the D3D12 backend, or by the `llvmpipe`software renderer).
+VS Code can open the WSL folder directly with the **WSL** extension (`code.` from the WSL terminal).
+
+## Using the Engine from Another CMake Project
+
+The Engine can be consumed by another CMake project (e.g., a simulator that includes this repository as a Git submodule)
+through `add_subdirectory()`. In that case, only the `Core` library is built by default (`ENGINE_BUILD_APP`defaults
+to `OFF` when the Engine is not the top-level project), and the consumer keeps
+its own C++ standard, build type, and output directories.
+
+```cmake
+# Consumer CMakeLists.txt
+add_subdirectory(Engine) # path to the Engine sources (e.g., a Git submodule)
+
+add executable(My_App main.cpp)
+target_link_libraries(My_App PRIVATE Engine::Core)
+```
+
+`Engine::Core` propagates its include directories and dependencies, so the consumer includes the Engine headers relative
+to the Engine root:
+
+```cpp
+#include "core/Core.h"
+#include "core/camera/Camera.h"
+```
+
+The Engine root directory is exposed to consumers in the `ENGINE_ROOT_DIR` variable (e.g., locate the Engine's resources).
 
 ## Building with CMake Presets from the Command Line
 

@@ -34,7 +34,7 @@ set(_glm_HEADER_SEARCH_DIRS
 )
 
 if(ENGINE_USE_BUNDLED_DEPS)
-	list(APPEND _glm_HEADER_SEARCH_DIRS "${CMAKE_SOURCE_DIR}/external/include")
+	list(APPEND _glm_HEADER_SEARCH_DIRS "${ENGINE_ROOT_DIR}/external/include")
 endif()
 
 # Check environment variable

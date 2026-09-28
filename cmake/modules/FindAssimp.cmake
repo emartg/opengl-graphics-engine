@@ -35,9 +35,9 @@ unset(ASSIMP_INCLUDE_DIR CACHE)
 unset(ASSIMP_LIBRARY CACHE)
 
 if(ENGINE_USE_BUNDLED_DEPS)
-	find_path(ASSIMP_INCLUDE_DIR assimp/mesh.h PATHS "${CMAKE_SOURCE_DIR}/external/include")
+	find_path(ASSIMP_INCLUDE_DIR assimp/mesh.h PATHS "${ENGINE_ROOT_DIR}/external/include")
 	if(NOT MINGW)
-		find_library(ASSIMP_LIBRARY assimp PATHS "${CMAKE_SOURCE_DIR}/external/lib")
+		find_library(ASSIMP_LIBRARY assimp PATHS "${ENGINE_ROOT_DIR}/external/lib")
 	endif()
 endif()
 

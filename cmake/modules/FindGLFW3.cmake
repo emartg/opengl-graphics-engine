@@ -34,9 +34,9 @@ else()
 endif()
 
 if(ENGINE_USE_BUNDLED_DEPS)
-	list(APPEND _glfw3_HEADER_SEARCH_DIRS "${CMAKE_SOURCE_DIR}/external/include")
+	list(APPEND _glfw3_HEADER_SEARCH_DIRS "${ENGINE_ROOT_DIR}/external/include")
 	if(NOT MINGW)
-		list(APPEND _glfw3_LIB_SEARCH_DIRS "${CMAKE_SOURCE_DIR}/external/lib")
+		list(APPEND _glfw3_LIB_SEARCH_DIRS "${ENGINE_ROOT_DIR}/external/lib")
 	endif()
 endif()
 

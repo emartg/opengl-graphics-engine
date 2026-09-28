@@ -20,19 +20,20 @@
 #include "PLANE.h"
 #include "renderer/GLFW_Renderer.h"
 
-#include "../core/Core.h"
-#include "../core/Node.h"
-#include "../core/camera/Camera.h"
-#include "../core/light/Light.h"
-#include "../core/light/Directional_Light.h"
-#include "../core/light/Point_Light.h"
-#include "../core/light/Spotlight.h"
-#include "../core/model/Model.h"
-#include "../core/model/Shape_Model.h"
-#include "../core/model/Assimp_Model.h"
-#include "../core/managers/Scene_Manager.h"
-#include "../core/managers/Node_Manager.h"
-#include "../core/utils/string/String_Utils.h"
+
+#include "core/Core.h"
+#include "core/Node.h"
+#include "core/camera/Camera.h"
+#include "core/light/Light.h"
+#include "core/light/Directional_Light.h"
+#include "core/light/Point_Light.h"
+#include "core/light/Spotlight.h"
+#include "core/model/Model.h"
+#include "core/model/Shape_Model.h"
+#include "core/model/Assimp_Model.h"
+#include "core/managers/Scene_Manager.h"
+#include "core/managers/Node_Manager.h"
+#include "core/utils/string/String_Utils.h"
 
 // Initializes the Core engine, sets up the renderer, and compiles the shaders for the initial scene.
 // Returns true if initialization and shader compilation were successful, false otherwise (with error messages)
