@@ -70,8 +70,8 @@ cmake --preset ninja-msvc-debug
 # Build App and its dependencies
 cmake --build --preset ninja-msvc-debug
 
-# Run from the runtime directory so resources are found
-./out/build/ninja-msvc-debug/bin/App.exe
+# Run (resources are located automatically, whatever the working directory)
+./out/build/ninja-gcc-debug/bin/App
 ```
 
 In VS Code, install **CMake Tools** and **C/C++**, select the `Ninja MSVC x64 Debug` or `Ninja MSVC x64 Release` configure preset, configure the project, set `App` as the build target, and use **CMake: Build** or the `Debug App (CMake)` launch configuration. Visual Studio can use the same Ninja configurations through `CMakeSettings.json`, while native Visual Studio or other generators should use their own descriptive build directory. See the [Build Instructions](docs/build_instructions.md) for the complete IDE and CLI workflows.

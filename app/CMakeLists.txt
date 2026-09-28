@@ -49,7 +49,9 @@ target_include_directories(App PRIVATE
 target_link_libraries(App PRIVATE Core ${ENGINE_GLFW_TARGET})
 target_compile_features(App PRIVATE cxx_std_20)
 
-# Stage runtime dependencies and resources beside the executable for local runs.
+# Stage the bundled runtime dependencies (DLLs) beside the executable for local runs.
+# Resources are not copied: the Core locates them at runtime (beside the executable, in the
+# installation layout, in the working directory, or in the Engine's source tree for development builds).
 if(WIN32 AND ENGINE_USE_BUNDLED_DEPS)
 	file(GLOB ENGINE_RUNTIME_DLLS CONFIGURE_DEPENDS
 		"${ENGINE_ROOT_DIR}/external/dlls/*.dll"
@@ -62,13 +64,10 @@ if(WIN32 AND ENGINE_USE_BUNDLED_DEPS)
 				"$<TARGET_FILE_DIR:App>"
 		)
 	endforeach()
-endif()
 
-add_custom_command(TARGET App POST_BUILD
-	COMMAND ${CMAKE_COMMAND} -E copy_directory
-		"${ENGINE_ROOT_DIR}/resources"
-		"$<TARGET_FILE_DIR:App>/resources"
-)
+	# install the bundled DLLs beside the installed executable too
+	install(FILES ${ENGINE_RUNTIME_DLLS} DESTINATION ${CMAKE_INSTALL_BINDIR})
+endif()
 
 install(TARGETS App RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 install(DIRECTORY ${ENGINE_ROOT_DIR}/resources/ DESTINATION ${CMAKE_INSTALL_DATADIR}/EngineProject/resources)

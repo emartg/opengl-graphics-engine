@@ -89,11 +89,25 @@ From a Visual Studio Developer PowerShell, the equivalent commands are:
 cmake --preset ninja-msvc-debug
 cmake --build --preset ninja-msvc-debug
 
-# Run with bin as the working directory
+# Run (the working directory does not matter)
 out\build\ninja-msvc-debug\bin\App.exe
 ```
 
-The VS Code launch configuration uses the CMake-selected target and sets the working directory to the generated `bin` directory. This is important because the engine loads shaders, models, fonts, and textures using paths relative to the working directory.
+The VS Code launch configuration uses the CMake-selected target and sets the working directory to the generated `bin` directory.
+
+## Resources Location
+
+The engine locates its `resources` directory (shaders, fonts, models, and textures) at runtime, so the executable can be launched from any working directory. The first existing location is used, in this order:
+
+1. The directory set explicitly with `Core::set_resources_dir()` before `Core::init()`.
+2. `resources` beside the executable (e.g., a packaged build).
+3. The installation layout: `<prefix>/share/EngineProject/resources`, next to `<prefix>/bin`, as created by `cmake --install`.
+4. `resources` in the current working directory.
+5. The `resources` directory of the source tree, whose absolute path is embedded at build time.
+
+Resources are not copied into the build tree, so development builds use the source tree directly: changes to shaders or other resources take effect the next time the application runs, without rebuilding. The resolved directory is printed at startup (`Using resources directory: ...`).
+
+Build directories created before this behavior may still contain an old `bin/resources` copy, which takes precedence. Delete it (or the whole build directory) so the source tree is used.
 
 The `external/` directory is the authoritative dependency source for this workflow. Do not combine its Assimp or GLFW libraries with headers from vcpkg or another installation. The current checked-in `external/dlls/assimp-vc143-mtd.dll` is a Debug DLL; a matching Release DLL is required before using the Release preset.
 
@@ -160,8 +174,8 @@ The configure, build, and run with the GCC or Clang presets
 cmake --preset ninja-gcc-debug
 cmake --build ninja-gcc-debug
 
-# Run with bin as the working directory
-cd out/build/ninja-gcc-debug/bin && ./App
+# # Run (the working directory does not matter)
+./out/build/ninja-gcc-debug/bin/App
 ```
 
 The Release presets are `ninja-gcc-release` and `ninja-clang-release`. The presets

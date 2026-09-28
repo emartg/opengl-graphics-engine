@@ -42,6 +42,15 @@ target_link_libraries(Core PUBLIC
 )
 target_compile_features(Core PUBLIC cxx_std_20)
 
+# Locations searched for the resources directory at runtime (see Core::resolve_resources_dir):
+# - ENGINE_INSTALL_RESOURCES_DIR: relative to the installation prefix (matches the install rule of the App)
+# - ENGINE_SOURCE_RESOURCES_DIR: the Engine's source tree, used by development builds (resources are not
+#   copied into the build tree, so changes to shaders and other resources are used without rebuilding)
+target_compile_definitions(Core PRIVATE
+	ENGINE_INSTALL_RESOURCES_DIR="${CMAKE_INSTALL_DATADIR}/EngineProject/resources"
+	ENGINE_SOURCE_RESOURCES_DIR="${ENGINE_ROOT_DIR}/resources"
+)
+
 install(TARGETS Core
 	ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
 	LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
