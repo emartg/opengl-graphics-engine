@@ -1,4 +1,4 @@
-#version 420 core
+#version 450 core
 out vec4 FragColor;
 
 // maximum number of lights in the scene (same as in the vertex shader)

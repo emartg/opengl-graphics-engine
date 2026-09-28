@@ -1,4 +1,4 @@
-#version 420 core
+#version 450 core
 out vec4 FragColor;
 
 uniform int u_encoded_id; // 24-bit safe (node ids are reasonably small)

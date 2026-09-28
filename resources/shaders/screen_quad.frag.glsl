@@ -1,4 +1,4 @@
-#version 420 core
+#version 450 core
 out vec4 FragColor;
 
 // struct to hold screen debug mode parameters

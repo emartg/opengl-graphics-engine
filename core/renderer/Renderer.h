@@ -1,15 +1,15 @@
 /*
-* Renderer.h
-* Defines the interface for all renderers, which are responsible for:
-* - Initializing OpenGL
-* - Creating and managing windows
-* - Rendering graphics
-* - Managing GUI elements
-* - Event polling and buffer swapping
-* - Handling input
-* - Etc.
-* This interface allows for different implementations of renderers, such as GLFW_Renderer, SDLRenderer, etc.
-*/
+ * Renderer.h
+ * Defines the interface for all renderers, which are responsible for:
+ * - Initializing OpenGL
+ * - Creating and managing windows
+ * - Rendering graphics
+ * - Managing GUI elements
+ * - Event polling and buffer swapping
+ * - Handling input
+ * - Etc.
+ * This interface allows for different implementations of renderers, such as GLFW_Renderer, SDLRenderer, etc.
+ */
 
 #pragma once
 
@@ -34,161 +34,168 @@ class Texture;
 
 enum class Buffer_Type
 {
-	UNDEFINED = 0, COLOR, DEPTH, STENCIL,
-	COLOR_DEPTH, COLOR_STENCIL, DEPTH_STENCIL, ALL
+    UNDEFINED = 0,
+    COLOR,
+    DEPTH,
+    STENCIL,
+    COLOR_DEPTH,
+    COLOR_STENCIL,
+    DEPTH_STENCIL,
+    ALL
 };
 
 class Renderer
 {
 public:
-	// Public Types
-	// ------------
-	// Struct that holds screen debug parameters to test screen-to-texture rendering (with default values)
-	struct Screen_Debug_Params
-	{
-		GLuint debug_mode{ 0 }; // 0: regular rendering, 1: solid color, 2: grid overlay, 3: inverted colors
-		glm::vec3 solid_color{ 0.75f, 0.25f, 0.25f }; // solid color for debug mode 1
-		GLuint grid_line_count{ 50 }; // number of lines for the grid overlay for debug mode 2
-		GLfloat grid_line_thickness{ 1.50f }; // line thickness in pixels for the grid overlay for debug mode 2
-		glm::vec3 grid_bg_color{ 0.25f }; // background color for the grid overlay for debug mode 2
-		glm::vec3 grid_line_color{ 0.75f }; // line color for the grid overlay for debug mode 2
-	};
+    // Public Types
+    // ------------
+    // Struct that holds screen debug parameters to test screen-to-texture rendering (with default values)
+    struct Screen_Debug_Params
+    {
+        GLuint debug_mode{ 0 };                       // 0: regular rendering, 1: solid color, 2: grid overlay, 3: inverted colors
+        glm::vec3 solid_color{ 0.75f, 0.25f, 0.25f }; // solid color for debug mode 1
+        GLuint grid_line_count{ 50 };                 // number of lines for the grid overlay for debug mode 2
+        GLfloat grid_line_thickness{ 1.50f };         // line thickness in pixels for the grid overlay for debug mode 2
+        glm::vec3 grid_bg_color{ 0.25f };             // background color for the grid overlay for debug mode 2
+        glm::vec3 grid_line_color{ 0.75f };           // line color for the grid overlay for debug mode 2
+    };
 
-	// Constructor
-	// -----------
-	Renderer();
+    // Constructor
+    // -----------
+    Renderer();
 
-	// Destructor
-	// ----------
-	// pure virtual destructor, must be defined to allow derived classes to implement it
-	virtual ~Renderer();
+    // Destructor
+    // ----------
+    // pure virtual destructor, must be defined to allow derived classes to implement it
+    virtual ~Renderer();
 
-	// Public Methods
-	// --------------
-	virtual bool init() const = 0;
-	virtual void config_opengl() const;
-	virtual void create_window(int width, int height, const char* title) = 0;
-	virtual void configure_window() const = 0;
-	virtual void poll_io_events() const = 0;
-	virtual void swap_buffers() const = 0;
-	virtual void clear_buffers(Buffer_Type buffer_type = Buffer_Type::ALL) const;
-	virtual bool should_close() const = 0;
+    // Public Methods
+    // --------------
+    virtual bool init() const = 0;
+    virtual void config_opengl() const;
+    // Creates a window with an OpenGL 4.5 core profile context and makes the context current.
+    // Returns true if successful, false otherwise (e.g., if OpenGL 4.5 is not supported)
+    virtual bool create_window(int width, int height, const char* title) = 0;
+    virtual void configure_window() const = 0;
+    virtual void poll_io_events() const = 0;
+    virtual void swap_buffers() const = 0;
+    virtual void clear_buffers(Buffer_Type buffer_type = Buffer_Type::ALL) const;
+    virtual bool should_close() const = 0;
 
-	// Blocks the main thread until an event occurs 
-	// (mouse movement, key press, node manipulation via GUI, etc.)
-	// Keeps held widgets responsive thanks to a reasonable throttle refresh rate
-	// when events are being processed
-	virtual void wait_for_events() const = 0;
+    // Blocks the main thread until an event occurs
+    // (mouse movement, key press, node manipulation via GUI, etc.)
+    // Keeps held widgets responsive thanks to a reasonable throttle refresh rate
+    // when events are being processed
+    virtual void wait_for_events() const = 0;
 
-	// Getters
-	// returns the function used by GLAD to load the OpenGL function pointers of the current context
-	virtual GLADloadproc get_proc_address() const = 0;
-	virtual float get_time() const = 0;
-	virtual float get_delta_time() const { return delta_time; }
+    // Getters
+    // returns the function used by GLAD to load the OpenGL function pointers of the current context
+    virtual GLADloadproc get_proc_address() const = 0;
+    virtual float get_time() const = 0;
+    virtual float get_delta_time() const { return delta_time; }
 
-	virtual Screen_Debug_Params& get_screen_debug_params() { return screen_debug_params; }
+    virtual Screen_Debug_Params& get_screen_debug_params() { return screen_debug_params; }
 
-	// Setters
-	virtual void set_callback_functions() const = 0;
-	virtual void set_viewport(int width, int height) const;
-	virtual void set_clear_color(float r, float g, float b, float a = 1.0f) const;
-	virtual void set_window_should_close() const = 0;
+    // Setters
+    virtual void set_callback_functions() const = 0;
+    virtual void set_viewport(int width, int height) const;
+    virtual void set_clear_color(float r, float g, float b, float a = 1.0f) const;
+    virtual void set_window_should_close() const = 0;
 
-	virtual void set_screen_debug_params(const Screen_Debug_Params& params) { screen_debug_params = params; }
+    virtual void set_screen_debug_params(const Screen_Debug_Params& params) { screen_debug_params = params; }
 
-	// Assigns the shader program with the specified name to the appropriate member variable
-	// for further use in the renderer.
-	// Returns true if the shader was set successfully, false if the name is unknown or the shader is null
-	virtual bool set_shader_by_name(const std::string& name, const std::shared_ptr<Shader>& shader);
+    // Assigns the shader program with the specified name to the appropriate member variable
+    // for further use in the renderer.
+    // Returns true if the shader was set successfully, false if the name is unknown or the shader is null
+    virtual bool set_shader_by_name(const std::string& name, const std::shared_ptr<Shader>& shader);
 
-	// GUI
-	virtual void init_gui() {};
-	virtual void build_gui() const {};
-	virtual void render_gui() const {};
-	virtual void shutdown_gui() {};
+    // GUI
+    virtual void init_gui() {};
+    virtual void build_gui() const {};
+    virtual void render_gui() const {};
+    virtual void shutdown_gui() {};
 
-	// Render Passes
-	virtual void frame_start_config();
-	virtual void render_scene();
-	virtual void frame_end_config() const;
+    // Render Passes
+    virtual void frame_start_config();
+    virtual void render_scene();
+    virtual void frame_end_config() const;
 
-	// Registration/Unregistration for dynamic environment map capture for models by their unique ids
-	virtual void register_model_for_dynamic_env_map_capture(std::uint32_t model_id, GLuint resolution = 512);
-	virtual void unregister_model_for_dynamic_env_map_capture(std::uint32_t model_id);
+    // Registration/Unregistration for dynamic environment map capture for models by their unique ids
+    virtual void register_model_for_dynamic_env_map_capture(std::uint32_t model_id, GLuint resolution = 512);
+    virtual void unregister_model_for_dynamic_env_map_capture(std::uint32_t model_id);
 
 protected:
-	// Protected Attributes
-	// --------------------
-	Render_Pass* main_render_pass;
-	GLfloat delta_time, last_frame_time; // time settings
+    // Protected Attributes
+    // --------------------
+    Render_Pass* main_render_pass;
+    GLfloat delta_time, last_frame_time; // time settings
 
-	// shader programs' smart pointers
-	std::shared_ptr<Shader> shape_model_shader;
-	std::shared_ptr<Shader> assimp_model_shader;
-	std::shared_ptr<Shader> single_albedo_shader;
-	std::shared_ptr<Shader> screen_quad_shader;
-	std::shared_ptr<Shader> picking_shader;
-	std::shared_ptr<Shader> skybox_shader;
-	std::shared_ptr<Shader> equirect_to_cubemap_shader;
-	std::shared_ptr<Shader> reflective_shader;
-	std::shared_ptr<Shader> refractive_shader;
+    // shader programs' smart pointers
+    std::shared_ptr<Shader> shape_model_shader;
+    std::shared_ptr<Shader> assimp_model_shader;
+    std::shared_ptr<Shader> single_albedo_shader;
+    std::shared_ptr<Shader> screen_quad_shader;
+    std::shared_ptr<Shader> picking_shader;
+    std::shared_ptr<Shader> skybox_shader;
+    std::shared_ptr<Shader> equirect_to_cubemap_shader;
+    std::shared_ptr<Shader> reflective_shader;
+    std::shared_ptr<Shader> refractive_shader;
 
-	// buffers for the screen quad (for rendering the offscreen texture to the screen)
-	GLuint screen_quad_vao{}, screen_quad_vbo{}, screen_quad_ebo{};
-	GLuint offscreen_width{}, offscreen_height{};
+    // buffers for the screen quad (for rendering the offscreen texture to the screen)
+    GLuint screen_quad_vao{}, screen_quad_vbo{}, screen_quad_ebo{};
+    GLuint offscreen_width{}, offscreen_height{};
 
-	// screen debug parameters for testing screen-to-texture rendering
-	Screen_Debug_Params screen_debug_params;
+    // screen debug parameters for testing screen-to-texture rendering
+    Screen_Debug_Params screen_debug_params;
 
-	// buffers for the skybox cube
-	GLuint skybox_vao{}, skybox_vbo{}, skybox_ebo{};
+    // buffers for the skybox cube
+    GLuint skybox_vao{}, skybox_vbo{}, skybox_ebo{};
 
-	// buffers and flags for the HDR to cubemap conversion
-	GLuint hdr_to_cubemap_fbo{}, hdr_to_cubemap_rbo{};
-	bool hdr_to_cubemap_converted{ false };
-	GLuint hdr_source_tex_id{ 0 }; // to track if the HDR source texture has changed
+    // buffers and flags for the HDR to cubemap conversion
+    GLuint hdr_to_cubemap_fbo{}, hdr_to_cubemap_rbo{};
+    bool hdr_to_cubemap_converted{ false };
+    GLuint hdr_source_tex_id{ 0 }; // to track if the HDR source texture has changed
 
-	// attributes for dynamic environment maps
-	struct Dynamic_Env_Map_Entry
-	{
-		GLuint fbo{ 0 }, rbo{ 0 };
-		GLuint cubemap_tex_id{ 0 }; // write target for this frame
-		GLuint prev_cubemap_tex_id{ 0 }; // stable sampling source for this frame
-		GLuint resolution{ 512 }; // default resolution
-		bool initialized{ false };
-		bool has_prev_cubemap{ false }; // indicates if prev_cubemap_tex_id is valid (rendered at least once)
-	};
-	// map of dynamic env maps by entity id
-	std::unordered_map<std::uint32_t, Dynamic_Env_Map_Entry> dynamic_env_maps;
-	bool is_capturing_dynamic_env_map{ false }; // flag to prevent recursion during dynamic env map capture
+    // attributes for dynamic environment maps
+    struct Dynamic_Env_Map_Entry
+    {
+        GLuint fbo{ 0 }, rbo{ 0 };
+        GLuint cubemap_tex_id{ 0 };      // write target for this frame
+        GLuint prev_cubemap_tex_id{ 0 }; // stable sampling source for this frame
+        GLuint resolution{ 512 };        // default resolution
+        bool initialized{ false };
+        bool has_prev_cubemap{ false }; // indicates if prev_cubemap_tex_id is valid (rendered at least once)
+    };
+    // map of dynamic env maps by entity id
+    std::unordered_map<std::uint32_t, Dynamic_Env_Map_Entry> dynamic_env_maps;
+    bool is_capturing_dynamic_env_map{ false }; // flag to prevent recursion during dynamic env map capture
 
-	// Protected Methods
-	// -----------------
-	// Renders a single node (i.e., only its own meshes if it has any, without rendering its children) 
-	// with the appropriate shader program
-	void render_node(const std::shared_ptr<Node>& node);
+    // Protected Methods
+    // -----------------
+    // Renders a single node (i.e., only its own meshes if it has any, without rendering its children)
+    // with the appropriate shader program
+    void render_node(const std::shared_ptr<Node>& node);
 
-	// Ensures the offscreen render pass is created with the current window size
-	void ensure_offscren_render_pass();
-	// Initializes the screen quad if it has not been initialized yet
-	void init_screen_quad();
-	// Composites the offscreen render pass texture to the screen
-	void composite_to_screen();
+    // Ensures the offscreen render pass is created with the current window size
+    void ensure_offscren_render_pass();
+    // Initializes the screen quad if it has not been initialized yet
+    void init_screen_quad();
+    // Composites the offscreen render pass texture to the screen
+    void composite_to_screen();
 
-	// Creates and configures the skybox cube buffers if not already done
-	void init_skybox_cube();
-	// Renders the skybox cube with the given texture, view, and projection matrices
-	void render_skybox_cube(std::shared_ptr<Texture> skybox_texture,
-							glm::mat4& view, glm::mat4& projection);
+    // Creates and configures the skybox cube buffers if not already done
+    void init_skybox_cube();
+    // Renders the skybox cube with the given texture, view, and projection matrices
+    void render_skybox_cube(std::shared_ptr<Texture> skybox_texture, glm::mat4& view, glm::mat4& projection);
 
-	// Converts an equirectangular HDR texture to a cubemap texture if needed
-	void convert_hdr_to_cubemap_if_needed();
+    // Converts an equirectangular HDR texture to a cubemap texture if needed
+    void convert_hdr_to_cubemap_if_needed();
 
-	// Dynamic environment map helpers
-	void update_dynamic_env_maps();
-	void capture_dynamic_env_map_for_model(const std::shared_ptr<Node>& model,
-										   Dynamic_Env_Map_Entry& entry);
-	void render_scene_for_env_map_capture(const glm::mat4& capture_view, const glm::mat4& capture_projection,
-										  const std::shared_ptr<Node>& exclude_model);
-
+    // Dynamic environment map helpers
+    void update_dynamic_env_maps();
+    void capture_dynamic_env_map_for_model(const std::shared_ptr<Node>& model, Dynamic_Env_Map_Entry& entry);
+    void render_scene_for_env_map_capture(
+        const glm::mat4& capture_view,
+        const glm::mat4& capture_projection,
+        const std::shared_ptr<Node>& exclude_model);
 };

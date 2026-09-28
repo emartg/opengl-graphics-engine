@@ -47,10 +47,7 @@ namespace
           { "Screen Quad Shader", "screen_quad.vert.glsl", "", "screen_quad.frag.glsl" },
           { "Picking Shader", "picking.vert.glsl", "", "picking.frag.glsl" },
           { "Skybox Shader", "skybox.vert.glsl", "", "skybox.frag.glsl" },
-          { "Equirectangular to Cubemap Shader",
-            "equirectangular_to_cubemap.vert.glsl",
-            "",
-            "equirectangular_to_cubemap.frag.glsl" },
+          { "Equirectangular to Cubemap Shader", "equirectangular_to_cubemap.vert.glsl", "", "equirectangular_to_cubemap.frag.glsl" },
           { "Reflective Shader", "reflective.vert.glsl", "", "reflective.frag.glsl" },
           { "Refractive Shader", "refractive.vert.glsl", "", "refractive.frag.glsl" } }
     };
@@ -110,8 +107,7 @@ bool Core::resolve_resources_dir()
         std::error_code error;
         if (!std::filesystem::is_directory(resources_dir, error))
         { // if it doesn't exist, print an error message and return false
-            std::cerr << "[ERROR::CORE::resolve_resources_dir] Resources directory not found: "
-                      << resources_dir.string() << std::endl;
+            std::cerr << "[ERROR::CORE::resolve_resources_dir] Resources directory not found: " << resources_dir.string() << std::endl;
             return false;
         }
         resources_dir = std::filesystem::absolute(resources_dir, error);
@@ -140,15 +136,13 @@ bool Core::resolve_resources_dir()
         resources_dir = File_System_Utils::find_first_existing_directory(candidates);
         if (resources_dir.empty())
         { // if none of the candidates exists, print the searched locations and return false
-            std::cerr << "[ERROR::CORE::resolve_resources_dir] Resources directory not found. Searched in:"
-                      << std::endl;
+            std::cerr << "[ERROR::CORE::resolve_resources_dir] Resources directory not found. Searched in:" << std::endl;
             for (const auto& candidate : candidates) std::cerr << "  " << candidate.string() << std::endl;
             return false;
         }
     }
 
-    std::cout << "[INFO::CORE::resolve_resources_dir] Using resources directory: " << resources_dir.string()
-              << std::endl;
+    std::cout << "[INFO::CORE::resolve_resources_dir] Using resources directory: " << resources_dir.string() << std::endl;
     return true;
 }
 
@@ -161,9 +155,7 @@ bool Core::compile_builtin_shaders()
         shader_names.emplace_back(shader_info.name);
         vertex_shader_paths.push_back(get_resource_path(std::string("shaders/") + shader_info.vertex_file));
         geometry_shader_paths.push_back(
-            *shader_info.geometry_file == '\0'
-                ? std::string{}
-                : get_resource_path(std::string("shaders/") + shader_info.geometry_file));
+            *shader_info.geometry_file == '\0' ? std::string{} : get_resource_path(std::string("shaders/") + shader_info.geometry_file));
         fragment_shader_paths.push_back(get_resource_path(std::string("shaders/") + shader_info.fragment_file));
     }
 
@@ -198,7 +190,11 @@ bool Core::init()
     }
 
     // create a window with the specified width, height, and title; and configure it
-    renderer->create_window(screen_width, screen_height, "Test Window");
+    if (!renderer->create_window(screen_width, screen_height, "Test Window"))
+    { // if the window cannot be created, print an error message and return false
+        std::cerr << "[ERROR::CORE::init] Failed to create the window" << std::endl;
+        return false;
+    }
     renderer->configure_window();
 
     // set callback functions
@@ -211,6 +207,10 @@ bool Core::init()
         return false;
     }
     // now the OpenGL context is set up, and we can use OpenGL functions
+
+    // print the OpenGL version and renderer of the context (useful to diagnose driver issues)
+    std::cout << "[INFO::CORE::init] OpenGL " << glGetString(GL_VERSION) << " (" << glGetString(GL_RENDERER) << ", "
+              << glGetString(GL_VENDOR) << ")" << std::endl;
 
     // set the viewport to the window size
     renderer->set_viewport(screen_width, screen_height);
@@ -278,11 +278,7 @@ bool Core::compile_shaders(
     const std::vector<std::string>& fragment_shader_paths)
 {
     // delegate to the general overload with no geometry stage for any of the shaders
-    return compile_shaders(
-        shader_names,
-        vertex_shader_paths,
-        std::vector<std::string>(shader_names.size()),
-        fragment_shader_paths);
+    return compile_shaders(shader_names, vertex_shader_paths, std::vector<std::string>(shader_names.size()), fragment_shader_paths);
 }
 
 bool Core::compile_shaders(
@@ -305,11 +301,7 @@ bool Core::compile_shaders(
     { // iterate through the shader names and paths
         // create a new Shader object with the name and paths (an empty geometry shader path
         // means that the program has no geometry stage), and compile it
-        auto shader = std::make_shared<Shader>(
-            shader_names[i],
-            vertex_shader_paths[i],
-            geometry_shader_paths[i],
-            fragment_shader_paths[i]);
+        auto shader = std::make_shared<Shader>(shader_names[i], vertex_shader_paths[i], geometry_shader_paths[i], fragment_shader_paths[i]);
         if (!shader->compile()) // compile the shader
         {                       // if the shader compilation fails, print an error message and return false
             std::cerr << "[ERROR::CORE::compile_shaders] Failed to compile shader: " << shader_names[i] << std::endl;
@@ -325,8 +317,8 @@ bool Core::compile_shaders(
         }
         else
         { // if the shader was set successfully, print a success message
-            std::cout << "[SUCCESS::CORE::compile_shaders] Shader with name '" << shader_names[i]
-                      << "' set successfully in the renderer" << std::endl;
+            std::cout << "[SUCCESS::CORE::compile_shaders] Shader with name '" << shader_names[i] << "' set successfully in the renderer"
+                      << std::endl;
         }
 
         // if this is the picking shader, set it in the selection manager

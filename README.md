@@ -1,12 +1,12 @@
 
-# OpenGL 4.2 based Graphics Engine
+# OpenGL 4.5 based Graphics Engine
 
 [![Language](https://img.shields.io/badge/C%2B%2B-20-blue.svg)](https://isocpp.org/)
-[![OpenGL](https://img.shields.io/badge/OpenGL-4.2-red.svg)](https://www.opengl.org/)
+[![OpenGL](https://img.shields.io/badge/OpenGL-4.5-red.svg)](https://www.opengl.org/)
 [![CMake](https://img.shields.io/badge/CMake-≥3.20-brightgreen.svg)](https://cmake.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-A **modular, extensible 3D graphics engine** built from scratch with OpenGL 4.2. Initially developed as a Bachelor's Thesis (TFG), it serves as a lightweight prototyping platform for real-time rendering, featuring a composite scene graph, lighting, model import, an immediate-mode GUI editor, among other functionalities.
+A **modular, extensible 3D graphics engine** built from scratch with OpenGL 4.5. Initially developed as a Bachelor's Thesis (TFG), it serves as a lightweight prototyping platform for real-time rendering, featuring a composite scene graph, lighting, model import, an immediate-mode GUI editor, among other functionalities.
 
 ---
 
@@ -47,7 +47,7 @@ For a detailed class diagram and pipeline description, see the [Architecture Gui
 
 | Library | Version | Purpose |
 | ------- | ------- | ------- |
-| OpenGL | 4.2 Core | Graphics API |
+| OpenGL | 4.5 Core | Graphics API |
 | GLFW | 3.4 | Window creation, input, context |
 | GLAD | 0.1.36 | OpenGL extension loading |
 | GLM | 0.9.8.5 | Vector/matrix mathematics |
@@ -140,9 +140,9 @@ Another CMake Project](docs/build_instructions.md#using-the-engine-from-another-
 
 | Feature | Example Screenshot |
 | ------- | ------------------ |
-| **Window - Scene & GUI Editor** | <div style="display:flex; justify-content:center; align-items:center; flex-wrap:wrap; gap:20px;"> <img src="docs/images/gui/layout/gui_layout_1.png" alt="gui_layout_1" title="Initial window and GUI with the example scene and the red cube selected" style="height:400px; width:auto;" /> </div>|
+| **Window - Scene & GUI Editor** | <div style="display:flex; justify-content:center; align-items:center; flex-wrap:wrap; gap:20px;"> <img src="docs/images/gui/layout/gui_layout_1.png" alt="gui_layout_1" title="Initial window and GUI with the example scene and the red cube selected" style="height:400px; width:auto;" /> </div> |
 | **Blending & Transparency** | <div style="display:flex; justify-content:center; align-items:center; flex-wrap:wrap; gap:20px;"> <img src="docs/images/blending/blending_3.png" alt="blending_3" title="Blending and transparency demonstration in the example scene" style="height:240px; width:auto;" /> <img src="docs/images/blending/blending_4.png" alt="blending_4" title="Blending and transparency demonstration in the example scene" style="height:240px; width:auto;" /> </div> |
-| **Outlining** | <div style="display:flex; justify-content:center; align-items:center; flex-wrap:wrap; gap:20px;"> <img src="docs/images/selection/outlining_1.png" alt="outlining_1" title="Outlining over red cube with transparent teapot" style="height:240px; width:auto;" /> <img src="docs/images/selection/outlining_3.png" alt="outlining_3" title="Outlining over group selection demonstration" style="height:240px; width:auto;" /> </div> |
+| **Outlining** | <div style="display:flex; justify-content:center; align-items:center; flex-wrap:wrap; gap:20px;"> <img src="docs/images/selection/selection_1.png" alt="outlining_1" title="Outlining over red cube with transparent teapot" style="height:240px; width:auto;" /> <img src="docs/images/selection/selection_3.png" alt="outlining_3" title="Outlining over group selection demonstration" style="height:240px; width:auto;" /> </div> |
 | **Reflection** | <div style="display:flex; justify-content:center; align-items:center; flex-wrap:wrap; gap:20px;"><img src="docs/images/reflection/reflection_3.png" alt="reflection_3" title="Matte teapot vs reflective plane" style="height:240px; width:auto;" /> <img src="docs/images/reflection/reflection_6.png" alt="reflection_6" title="Reflective teapot vs reflective plane" style="height:240px; width:auto;" /> </div> |
 | **Refraction** | <div style="display:flex; justify-content:center; align-items:center; flex-wrap:wrap; gap:20px;"><img src="docs/images/refraction/refraction_1.png" alt="refraction_1" title="Matte teapot vs refractive plane" style="height:240px; width:auto;" /> <img src="docs/images/refraction/refraction_4.png" alt="refraction_4" title="Refractive teapot vs refractive plane" style="height:240px; width:auto;" /> </div> |
 

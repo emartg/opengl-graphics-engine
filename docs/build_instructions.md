@@ -5,7 +5,8 @@ This document provides detailed steps to compile and run the OpenGL Graphics Eng
 
 ## Prerequisites
 
-- **Operating System:** Windows (tested on Windows 11) or Linux (tested on Ubuntu 24.04). macOS is not officially tested.
+-**Operating System:** Windows (tested on Windows 11) or Linux (tested on Ubuntu 24.04). macOS is not supported, since it only provides OpenGL up to 4.1.
+- **GPU and drivers:** OpenGL 4.5 core profile support (any NVIDIA, AMD, or Intel GPU with current drivers on Windows or Linux, or a recent Mesa on Linux, including the `llvmpipe` software renderer).
 - **Compiler:** MSVC from Visual Studio 2022/2026, or GCC from a MinGW installation on Windows; GCC or Clang on Linux.
 - **CMake:** ≥ 3.21 (≥ 3.25 to use the presets in `CMakePresets.json`).
 - **VS Code extensions:** CMake Tools and C/C++.
@@ -271,7 +272,8 @@ Remove-Item -Recurse -Force out\build
 
 - **GLFW or Assimp not found with MinGW:** Check that `VCPKG_ROOT` points to the vcpkg installation containing `x64-mingw-dynamic`, not a Visual Studio-only vcpkg installation. Run `vcpkg install glfw3:x64-mingw-dynamic assimp:x64-mingw-dynamic glm:x64-mingw-dynamic`, then run `cmake --fresh --preset mingw-gcc-vcpkg-debug`.
 - **Environment value looks correct but CMake uses another path:** The current terminal may have inherited a stale `VCPKG_ROOT`. Run `$env:VCPKG_ROOT = [Environment]::GetEnvironmentVariable("VCPKG_ROOT", "User")`, or close and reopen VS Code.
-- **GLAD errors:** The `glad.c` and `glad.h` are generated in `core/third_party/glad/`. If they are missing, regenerate them from the [GLAD service](https://glad.dav1d.de/) using OpenGL 4.2 Core.
+- **GLAD errors:** `core/glad.c` and `external/include/glad/glad.h` are generated with glad 0.1.36 for OpenGL 4.5 Core, without extensions. If they are missing, regenerate them from the [GLAD service](https://glad.dav1d.de/#profile=core&language=c&specification=gl&loader=on&api=gl%3D4.5) or with `pip install glad==0.1.36` and `python -m glad --profile=core --api="gl=4.5" --generator=c --spec=gl --extensions="" --out-path <dir>`.
+- **Failed to create GLFW window:** The engine requires an OpenGL 4.5 core profile context. Update the GPU drivers, and check the version reported by the GPU (e.g., with the `glxinfo -B` command on Linux, or tools such as GPU Caps Viewer or OpenGL Extensions Viewer on Windows). Remote desktop sessions and some virtual machines only provide older OpenGL versions.
 - **Assimp DLL missing:** If running the executable fails with a missing `assimp-vc143-mtd.dll`, copy it from your Assimp installation into the same directory as `App.exe`, or add its folder to your `PATH`.
 
 For additional help, consult the main [README](../README.md) or raise an issue in the repository (if you have one).
