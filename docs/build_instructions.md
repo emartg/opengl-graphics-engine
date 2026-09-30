@@ -201,7 +201,6 @@ its own C++ standard, build type, and output directories.
 add_subdirectory(Engine) # path to the Engine sources (e.g., a Git submodule)
 
 add_executable(My_App main.cpp)
-add_executable(My_App main.cpp)
 target_link_libraries(My_App PRIVATE Engine::Core)
 ```
 

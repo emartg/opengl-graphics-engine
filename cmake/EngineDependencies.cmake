@@ -50,7 +50,7 @@ endif()
 # warning LNK4099 for every GLFW object (they are linked without debug information).
 # Ignore it for the bundled library only, and for every target that links it
 cmake_path(IS_PREFIX ENGINE_ROOT_DIR "${GLFW3_LIBRARY}" _engine_glfw_is_bundled)
-if(MSVC AND _engine_glfw_is_bundled)
+if(MSVC AND TARGET engine_glfw AND _engine_glfw_is_bundled)
     set_property(TARGET engine_glfw APPEND PROPERTY INTERFACE_LINK_OPTIONS "/IGNORE:4099")
 endif()
 

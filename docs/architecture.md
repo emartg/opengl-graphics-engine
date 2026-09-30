@@ -28,8 +28,6 @@ The project is split into three top-level modules:
 
 This strict separation means the `core` can be linked into other applications (e.g., a simulation or scientific visualiser) without pulling in GLFW or ImGui, and that applications which need a window (such as the X-ray simulator) reuse the `platform` library instead of duplicating it.
 
-This strict separation means the `core` can be linked into other applications (e.g., a simulation or scientific visualiser) without pulling in GLFW or ImGui. The following diagram (Fig. 1) shows the dependencies between the different modules and libraries in the project:
-
 <div style="display:flex; justify-content:center; align-items:center; flex-wrap:wrap; gap:20px;">
 <img src="diagrams/dependencies/dependencies_and_packages.png" alt="dependencies_and_packages" title="Dependecies & Packages" style="height:500px; width:auto;" />
 </div>

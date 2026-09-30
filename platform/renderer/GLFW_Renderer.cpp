@@ -1,7 +1,9 @@
 /*
  * GLFW_Renderer.cpp
- * Implements an inferited class of the Renderer interface using GLFW,
+ * Implements an inherited class of the Renderer interface using GLFW,
  * a library for creating windows and handling input.
+ * It also owns the ImGui context and its GLFW and OpenGL backends, delegating the
+ * application-specific windows to a Gui_Layer (if one is set).
  */
 
 #include "GLFW_Renderer.h"
