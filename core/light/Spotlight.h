@@ -21,17 +21,17 @@ public:
 	// Constructors
 	// ------------
 	Spotlight(
-	    const std::string& name,
-	    const glm::vec3    ambient      = AMBIENT,
-	    const glm::vec3    diffuse      = DIFFUSE,
-	    const glm::vec3    specular     = SPECULAR,
-	    const glm::vec3    position     = POSITION,
-	    const glm::vec3    direction    = DIRECTION,
-	    const GLfloat      inner_cutoff = INNER_CUTOFF,
-	    const GLfloat      outer_cutoff = OUTER_CUTOFF,
-	    const GLfloat      constant     = CONSTANT,
-	    const GLfloat      linear       = LINEAR,
-	    const GLfloat      quadratic    = QUADRATIC);
+		const std::string& name,
+		const glm::vec3    ambient      = AMBIENT,
+		const glm::vec3    diffuse      = DIFFUSE,
+		const glm::vec3    specular     = SPECULAR,
+		const glm::vec3    position     = POSITION,
+		const glm::vec3    direction    = DIRECTION,
+		const GLfloat      inner_cutoff = INNER_CUTOFF,
+		const GLfloat      outer_cutoff = OUTER_CUTOFF,
+		const GLfloat      constant     = CONSTANT,
+		const GLfloat      linear       = LINEAR,
+		const GLfloat      quadratic    = QUADRATIC);
 
 	// Destructor
 	// ----------

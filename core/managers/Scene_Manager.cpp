@@ -18,7 +18,7 @@ GLboolean Scene_Manager::load_skybox(const std::vector<std::string>& faces)
 	if (faces.size() != 6)
 	{ // if not, print an error and return false
 		std::cerr << "[ERROR::SCENEMANAGER::load_skybox] Skybox requires 6 face paths, "
-		          << "but " << faces.size() << " were provided" << std::endl;
+				  << "but " << faces.size() << " were provided" << std::endl;
 		return GL_FALSE;
 	}
 

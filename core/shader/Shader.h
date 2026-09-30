@@ -30,18 +30,18 @@ public:
 	// ------------
 	// Constructor without geometry shader
 	Shader(
-	    const std::string& name,
-	    const std::string& vertex_path,
-	    const std::string& fragment_path,
-	    const GLboolean    deferred_compilation = true);
+		const std::string& name,
+		const std::string& vertex_path,
+		const std::string& fragment_path,
+		const GLboolean    deferred_compilation = true);
 
 	// Constructor with geometry shader
 	Shader(
-	    const std::string& name,
-	    const std::string& vertex_path,
-	    const std::string& geometry_path,
-	    const std::string& fragment_path,
-	    const GLboolean    deferred_compilation = true);
+		const std::string& name,
+		const std::string& vertex_path,
+		const std::string& geometry_path,
+		const std::string& fragment_path,
+		const GLboolean    deferred_compilation = true);
 
 	// Destructor
 	// ----------

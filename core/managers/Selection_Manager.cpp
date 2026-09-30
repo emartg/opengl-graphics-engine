@@ -86,7 +86,7 @@ void Selection_Manager::process_pending_pick(const Camera* camera, Node_Manager*
 
 	// compute view and projection matrices from the camera
 	glm::mat4 projection =
-	    glm::perspective(glm::radians(camera->get_zoom()), static_cast<float>(width) / static_cast<float>(height), 0.1f, 100.0f);
+		glm::perspective(glm::radians(camera->get_zoom()), static_cast<float>(width) / static_cast<float>(height), 0.1f, 100.0f);
 	glm::mat4 view = camera->get_view_matrix();
 
 	// render every model once; encode each node's own id (no root promotion)
@@ -153,7 +153,7 @@ void Selection_Manager::process_pending_pick(const Camera* camera, Node_Manager*
 		if (previous_selected_id != 0)
 		{ // if there was a previous selection, log its deselection
 			std::cout << "[INFO::SELECTIONMANAGER::process_pending_pick] Deselected node '" << previous_selected_name << "' (id "
-			          << previous_selected_id << ")" << std::endl;
+					  << previous_selected_id << ")" << std::endl;
 		}
 		clear_selection(); // ensures stale outline mask cannot persist
 		return;
@@ -171,9 +171,9 @@ void Selection_Manager::process_pending_pick(const Camera* camera, Node_Manager*
 	Node_Type picked_node_type = picked_node->get_type();
 	// if a gizmo model was picked, resolve it to its owning light and bypass cycle-up
 	if ((picked_node_type == Node_Type::COMPOSITE_MODEL || picked_node_type == Node_Type::COMPOSITE_ASSIMP_MODEL ||
-	     picked_node_type == Node_Type::COMPOSITE_SHAPE_MODEL || picked_node_type == Node_Type::ASSIMP_MODEL ||
-	     picked_node_type == Node_Type::SHAPE_MODEL) // any model type
-	    && (std::dynamic_pointer_cast<Node>(picked_node)->get_gizmo_type() != Gizmo_Type::NONE))
+		 picked_node_type == Node_Type::COMPOSITE_SHAPE_MODEL || picked_node_type == Node_Type::ASSIMP_MODEL ||
+		 picked_node_type == Node_Type::SHAPE_MODEL) // any model type
+		&& (std::dynamic_pointer_cast<Node>(picked_node)->get_gizmo_type() != Gizmo_Type::NONE))
 	{
 		if (auto resolved = resolve_gizmo_to_light(node_manager, picked_node))
 			picked_node = resolved; // switch to the owning light node
@@ -183,9 +183,9 @@ void Selection_Manager::process_pending_pick(const Camera* camera, Node_Manager*
 	}
 	// cycle-up selection for models (non-gizmos)
 	else if (
-	    picked_node_type == Node_Type::COMPOSITE_MODEL || picked_node_type == Node_Type::COMPOSITE_ASSIMP_MODEL ||
-	    picked_node_type == Node_Type::COMPOSITE_SHAPE_MODEL || picked_node_type == Node_Type::ASSIMP_MODEL ||
-	    picked_node_type == Node_Type::SHAPE_MODEL) // any model type
+		picked_node_type == Node_Type::COMPOSITE_MODEL || picked_node_type == Node_Type::COMPOSITE_ASSIMP_MODEL ||
+		picked_node_type == Node_Type::COMPOSITE_SHAPE_MODEL || picked_node_type == Node_Type::ASSIMP_MODEL ||
+		picked_node_type == Node_Type::SHAPE_MODEL) // any model type
 	{                                               // if the picked node is a model, check for cycle-up conditions
 		auto model_comp       = std::dynamic_pointer_cast<Node>(picked_node);
 		bool same_as_last     = (last_picked_id == model_comp->get_id());
@@ -229,11 +229,11 @@ void Selection_Manager::process_pending_pick(const Camera* camera, Node_Manager*
 		if (previous_selected_id != 0)
 		{ // if switching from another selection, print implicit deselection as well
 			std::cout << "[INFO::SELECTIONMANAGER::process_pending_pick] Deselected node '" << previous_selected_name << "' (id "
-			          << previous_selected_id << ")" << std::endl;
+					  << previous_selected_id << ")" << std::endl;
 		}
 		// print info about the new selection
 		std::cout << "[INFO::SELECTIONMANAGER::process_pending_pick] Selected node '" << picked_node->get_name() << "' (id "
-		          << selected_node_id << ")" << std::endl;
+				  << selected_node_id << ")" << std::endl;
 	}
 	// clicking same selected node leads to no logging or state change
 }
@@ -265,7 +265,7 @@ void Selection_Manager::render_picking_visualization(const Camera* camera, Node_
 
 	// compute view and projection matrices from the camera
 	glm::mat4 projection =
-	    glm::perspective(glm::radians(camera->get_zoom()), static_cast<float>(width) / static_cast<float>(height), 0.1f, 100.0f);
+		glm::perspective(glm::radians(camera->get_zoom()), static_cast<float>(width) / static_cast<float>(height), 0.1f, 100.0f);
 	glm::mat4 view = camera->get_view_matrix();
 
 	// render all selectable models (including gizmos - lights themselves are not drawn; their gizmos are)
@@ -348,8 +348,8 @@ void Selection_Manager::delete_selected(Node_Manager* node_manager)
 	if (node->get_type() == Node_Type::CAMERA)
 	{ // prevent deletion of cameras for now
 		std::cout << "[INFO::SELECTIONMANAGER::delete_selected] Cameras cannot be deleted for now "
-		             "(id "
-		          << selected_node_id << ")" << std::endl;
+					 "(id "
+				  << selected_node_id << ")" << std::endl;
 		return;
 	}
 
@@ -485,8 +485,8 @@ void Selection_Manager::render_outline_mask(const Camera* camera, Node_Manager* 
 	if (!picking_shader)
 	{ // if no picking shader is set, print a warning and return
 		std::cerr << "[WARNING::SELECTIONMANAGER::render_outline_mask] Picking shader not set;\n"
-		             "cannot build outline mask"
-		          << std::endl;
+					 "cannot build outline mask"
+				  << std::endl;
 		return;
 	}
 
@@ -521,9 +521,9 @@ void Selection_Manager::render_outline_mask(const Camera* camera, Node_Manager* 
 		model      = light->get_gizmo(); // may be null if no gizmo exists
 	}
 	else if (
-	    selected->get_type() == Node_Type::COMPOSITE_MODEL || selected->get_type() == Node_Type::COMPOSITE_ASSIMP_MODEL ||
-	    selected->get_type() == Node_Type::COMPOSITE_SHAPE_MODEL || selected->get_type() == Node_Type::ASSIMP_MODEL ||
-	    selected->get_type() == Node_Type::SHAPE_MODEL) // any model type
+		selected->get_type() == Node_Type::COMPOSITE_MODEL || selected->get_type() == Node_Type::COMPOSITE_ASSIMP_MODEL ||
+		selected->get_type() == Node_Type::COMPOSITE_SHAPE_MODEL || selected->get_type() == Node_Type::ASSIMP_MODEL ||
+		selected->get_type() == Node_Type::SHAPE_MODEL) // any model type
 	{                                                   // if the selected node is a model, use it directly
 		model = std::dynamic_pointer_cast<Node>(selected);
 	}
@@ -536,7 +536,7 @@ void Selection_Manager::render_outline_mask(const Camera* camera, Node_Manager* 
 
 	// compute view and projection matrices from the camera
 	glm::mat4 projection =
-	    glm::perspective(glm::radians(camera->get_zoom()), static_cast<float>(width) / static_cast<float>(height), 0.1f, 100.0f);
+		glm::perspective(glm::radians(camera->get_zoom()), static_cast<float>(width) / static_cast<float>(height), 0.1f, 100.0f);
 	glm::mat4 view = camera->get_view_matrix();
 
 	// render entire hierarchy of the selected root model with a constant mask value of 1
@@ -614,7 +614,7 @@ void Selection_Manager::ensure_picking_pass()
 	}
 
 	std::cout << "[INFO::SELECTIONMANAGER::ensure_picking_pass] Picking pass created with dimensions (" << width << "x" << height << ")"
-	          << std::endl;
+			  << std::endl;
 }
 
 void Selection_Manager::ensure_outline_pass()
@@ -646,7 +646,7 @@ void Selection_Manager::ensure_outline_pass()
 	}
 
 	std::cout << "[INFO::SELECTIONMANAGER::ensure_outline_pass] Outline pass created with dimensions (" << width << "x" << height << ")"
-	          << std::endl;
+			  << std::endl;
 }
 
 void Selection_Manager::clear_outline_mask()
@@ -695,8 +695,8 @@ bool Selection_Manager::is_outline_eligible(const std::shared_ptr<Node>& node) c
 
 	// check node type for outline eligibility
 	if (node->get_type() == Node_Type::COMPOSITE_ASSIMP_MODEL || node->get_type() == Node_Type::COMPOSITE_SHAPE_MODEL ||
-	    node->get_type() == Node_Type::COMPOSITE_MODEL || node->get_type() == Node_Type::ASSIMP_MODEL ||
-	    node->get_type() == Node_Type::SHAPE_MODEL) // any model type
+		node->get_type() == Node_Type::COMPOSITE_MODEL || node->get_type() == Node_Type::ASSIMP_MODEL ||
+		node->get_type() == Node_Type::SHAPE_MODEL) // any model type
 	{                                               // outline any non-gizmo model
 		auto model = dynamic_cast<Node*>(node.get());
 		if (!model)
@@ -725,7 +725,7 @@ std::uint32_t Selection_Manager::read_pixel_id(GLint x, GLint y) const
 	glReadBuffer(GL_COLOR_ATTACHMENT0);
 	glReadPixels(x, y, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, data);
 	std::uint32_t id =
-	    static_cast<std::uint32_t>(data[0]) | (static_cast<std::uint32_t>(data[1]) << 8) | (static_cast<std::uint32_t>(data[2]) << 16);
+		static_cast<std::uint32_t>(data[0]) | (static_cast<std::uint32_t>(data[1]) << 8) | (static_cast<std::uint32_t>(data[2]) << 16);
 	return id; // return the decoded id from RGB
 }
 
@@ -754,12 +754,12 @@ std::shared_ptr<Node> Selection_Manager::resolve_gizmo_to_light(Node_Manager* no
 	if (parent && parent->get_type() == Node_Type::LIGHT)
 	{
 		std::cout << "[INFO::SELECTIONMANAGER::resolve_gizmo_to_light] Resolved gizmo model id " << gizmoModel->get_id()
-		          << " to owning parent light id " << parent->get_id() << std::endl;
+				  << " to owning parent light id " << parent->get_id() << std::endl;
 		return parent;
 	}
 
 	// if no valid parent light found, print a warning and return null
 	std::cerr << "[WARNING::SELECTIONMANAGER::resolve_gizmo_to_light] Could not resolve gizmo model id " << gizmoModel->get_id()
-	          << " to an owning parent light" << std::endl;
+			  << " to an owning parent light" << std::endl;
 	return nullptr;
 }

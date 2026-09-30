@@ -10,15 +10,15 @@
 // Constructors
 // ------------
 Shader::Shader(
-    const std::string& name,
-    const std::string& vertex_path,
-    const std::string& fragment_path,
-    const GLboolean    deferred_compilation) :
-    Node(name, Node_Type::SHADER), // set the node type to SHADER
-    shader_program_id{},           // initialize the id to 0
-    vertex_shader_path{ vertex_path },
-    geometry_shader_path{ "" },
-    fragment_shader_path{ fragment_path }
+	const std::string& name,
+	const std::string& vertex_path,
+	const std::string& fragment_path,
+	const GLboolean    deferred_compilation) :
+	Node(name, Node_Type::SHADER), // set the node type to SHADER
+	shader_program_id{},           // initialize the id to 0
+	vertex_shader_path{ vertex_path },
+	geometry_shader_path{ "" },
+	fragment_shader_path{ fragment_path }
 {
 	// compile the shader if deferred_compilation is set to false
 	if (!deferred_compilation)
@@ -26,16 +26,16 @@ Shader::Shader(
 }
 
 Shader::Shader(
-    const std::string& name,
-    const std::string& vertex_path,
-    const std::string& geometryPath,
-    const std::string& fragment_path,
-    const GLboolean    deferred_compilation) :
-    Node(name, Node_Type::SHADER), // set the node type to SHADER
-    shader_program_id{},           // initialize the id to 0
-    vertex_shader_path{ vertex_path },
-    geometry_shader_path{ geometryPath },
-    fragment_shader_path{ fragment_path }
+	const std::string& name,
+	const std::string& vertex_path,
+	const std::string& geometryPath,
+	const std::string& fragment_path,
+	const GLboolean    deferred_compilation) :
+	Node(name, Node_Type::SHADER), // set the node type to SHADER
+	shader_program_id{},           // initialize the id to 0
+	vertex_shader_path{ vertex_path },
+	geometry_shader_path{ geometryPath },
+	fragment_shader_path{ fragment_path }
 {
 	// compile the shader if deferred_compilation is set to false
 	if (!deferred_compilation)

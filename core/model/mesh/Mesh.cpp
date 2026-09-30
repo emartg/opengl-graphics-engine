@@ -11,9 +11,9 @@
 // Constructors
 // ------------
 Mesh::Mesh(std::vector<Vertex> vertices, std::vector<GLuint> indices, std::vector<std::shared_ptr<Texture>> textures) :
-    vertices{ vertices },
-    indices{ indices },
-    textures{ textures }
+	vertices{ vertices },
+	indices{ indices },
+	textures{ textures }
 {
 	setup_mesh();
 }
@@ -78,17 +78,17 @@ void Mesh::bind_textures(Shader& shader) const
 
 		// infer type from name substrings (if not already assigned)
 		if (albedo_idx < 0 &&
-		    (name.find("albedo") != std::string::npos || name.find("diffuse") != std::string::npos ||
-		     name.find("basecolor") != std::string::npos || name.find("bcolor") != std::string::npos))
+			(name.find("albedo") != std::string::npos || name.find("diffuse") != std::string::npos ||
+			 name.find("basecolor") != std::string::npos || name.find("bcolor") != std::string::npos))
 			albedo_idx = static_cast<GLint>(i);
 		else if (
-		    metallic_idx < 0 &&
-		    (name.find("specular") != std::string::npos || name.find("reflective") != std::string::npos ||
+			metallic_idx < 0 &&
+			(name.find("specular") != std::string::npos || name.find("reflective") != std::string::npos ||
 			 name.find("metal") != std::string::npos || name.find("metallic") != std::string::npos))
 			metallic_idx = static_cast<GLint>(i);
 		else if (
-		    opacity_idx < 0 &&
-		    (name.find("opacity") != std::string::npos || name.find("alpha") != std::string::npos ||
+			opacity_idx < 0 &&
+			(name.find("opacity") != std::string::npos || name.find("alpha") != std::string::npos ||
 			 name.find("transparent") != std::string::npos || name.find("transparency") != std::string::npos))
 			opacity_idx = static_cast<GLint>(i);
 	}

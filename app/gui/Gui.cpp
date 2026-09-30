@@ -58,10 +58,10 @@ namespace
 	// assigns the given path to the specified cubemap face index if it has not been assigned yet
 	// (returns true if the assignment was successful, false otherwise)
 	bool assign_cubemap_face(
-	    std::array<std::string, static_cast<std::size_t>(cubemap_face_index::COUNT)>& ordered_paths,
-	    std::array<bool, static_cast<std::size_t>(cubemap_face_index::COUNT)>&        path_assigned,
-	    cubemap_face_index                                                            idx,
-	    const std::string&                                                            path)
+		std::array<std::string, static_cast<std::size_t>(cubemap_face_index::COUNT)>& ordered_paths,
+		std::array<bool, static_cast<std::size_t>(cubemap_face_index::COUNT)>&        path_assigned,
+		cubemap_face_index                                                            idx,
+		const std::string&                                                            path)
 	{
 		const std::size_t i = static_cast<std::size_t>(idx);
 		if (!path_assigned[i])
@@ -81,16 +81,16 @@ bool GUI::proportional_scaling{ true }; // propertional scaling flag is true by 
 // Constructors
 // ------------
 GUI::GUI() :
-    randomizer{ std::make_unique<Random>() }, // create a random number generator
-    new_albedo{ 0.8f, 0.8f, 0.8f, 1.0f },     // default albedo color for new objects is light gray
-    new_position{ 0.0f },                     // default position for new objects is the origin
-    new_rotation{ 0.0f },                     // default rotation for new objects is no rotation (identity quaternion)
-    new_direction{ 0.0f, 0.0f, -1.0f },       // default direction for new objects is negative z-axis
-    new_scale{ 1.0f },                        // default scale for new objects is 1.0
-    new_inner_cutoff{ 12.5f },                // default inner cutoff angle for new spotlights
-    new_outer_cutoff{ 32.5f },                // default outer cutoff angle for new spotlights
-    medium_font{ nullptr },                   // medium font for the GUI (default font) is nullptr initially
-    bold_font{ nullptr }                      // bold font for the GUI is nullptr initially
+	randomizer{ std::make_unique<Random>() }, // create a random number generator
+	new_albedo{ 0.8f, 0.8f, 0.8f, 1.0f },     // default albedo color for new objects is light gray
+	new_position{ 0.0f },                     // default position for new objects is the origin
+	new_rotation{ 0.0f },                     // default rotation for new objects is no rotation (identity quaternion)
+	new_direction{ 0.0f, 0.0f, -1.0f },       // default direction for new objects is negative z-axis
+	new_scale{ 1.0f },                        // default scale for new objects is 1.0
+	new_inner_cutoff{ 12.5f },                // default inner cutoff angle for new spotlights
+	new_outer_cutoff{ 32.5f },                // default outer cutoff angle for new spotlights
+	medium_font{ nullptr },                   // medium font for the GUI (default font) is nullptr initially
+	bold_font{ nullptr }                      // bold font for the GUI is nullptr initially
 {
 	init_gui_layout_attributes(); // initialize the display size-independent layout attributes
 	// initialize the positions and sizes of the GUI windows to default values
@@ -169,7 +169,7 @@ void GUI::configure_gui_style()
 	// add custom fonts to the ImGui context, setting one as the default font
 	io.Fonts->AddFontDefault();
 	ImFont* mediumFont =
-	    io.Fonts->AddFontFromFileTTF(Core::get_instance()->get_resource_path("fonts/RobotoMono-Medium.ttf").c_str(), 16.0f);
+		io.Fonts->AddFontFromFileTTF(Core::get_instance()->get_resource_path("fonts/RobotoMono-Medium.ttf").c_str(), 16.0f);
 	ImFont* boldFont = io.Fonts->AddFontFromFileTTF(Core::get_instance()->get_resource_path("fonts/RobotoMono-Bold.ttf").c_str(), 16.0f);
 	io.FontDefault   = mediumFont; // set the medium font as the default font
 	// set the member fonts for the GUI class
@@ -361,11 +361,11 @@ void GUI::draw_scene_graph_window()
 
 		// display instruction text
 		ImGui::TextWrapped(
-		    "Left click: Select node\n"
-		    "Left click empty space: Clear selection\n"
-		    "Drag models to group/ungroup\n"
-		    "Drop on empty space to make a root node\n"
-		    "Del/Supr: Delete selected node");
+			"Left click: Select node\n"
+			"Left click empty space: Clear selection\n"
+			"Drag models to group/ungroup\n"
+			"Drop on empty space to make a root node\n"
+			"Del/Supr: Delete selected node");
 		ImGui::Separator();
 
 		// create a child window to hold the tree. this provides a consistent background
@@ -434,7 +434,7 @@ void GUI::draw_scene_graph_window()
 					dragged_node->set_scale(scale);
 
 					std::cout << "[INFO::GUI] Node '" << dragged_node->get_name() << "' (id " << dragged_node_id << ") is now a root node"
-					          << std::endl;
+							  << std::endl;
 				}
 			}
 
@@ -465,7 +465,7 @@ void GUI::draw_scene_graph_window()
 				if (!previous_selected_name.empty())
 				{
 					std::cout << "[INFO::GUI::draw_scene_graph_window] Deselected node '" << previous_selected_name << "' (id "
-					          << previous_selected_id << ")" << std::endl;
+							  << previous_selected_id << ")" << std::endl;
 				}
 			}
 		}
@@ -521,9 +521,9 @@ void GUI::draw_properties_window()
 				draw_light_controls(light);                        // draw the light controls
 			}
 			else if (
-			    selected->get_type() == Node_Type::COMPOSITE_MODEL || selected->get_type() == Node_Type::COMPOSITE_ASSIMP_MODEL ||
-			    selected->get_type() == Node_Type::ASSIMP_MODEL || selected->get_type() == Node_Type::COMPOSITE_SHAPE_MODEL ||
-			    selected->get_type() == Node_Type::SHAPE_MODEL)   // any model type
+				selected->get_type() == Node_Type::COMPOSITE_MODEL || selected->get_type() == Node_Type::COMPOSITE_ASSIMP_MODEL ||
+				selected->get_type() == Node_Type::ASSIMP_MODEL || selected->get_type() == Node_Type::COMPOSITE_SHAPE_MODEL ||
+				selected->get_type() == Node_Type::SHAPE_MODEL)   // any model type
 			{                                                     // if the selected node is a model, draw the model controls
 				auto model = dynamic_cast<Node*>(selected.get()); // dynamic cast to Model object
 				// only draw the model controls if the model is not a gizmo, since that is handled
@@ -633,10 +633,10 @@ void GUI::draw_creation_window()
 
 			// open a file dialog to select a model file
 			ImGuiFileDialog::Instance()->OpenDialog(
-			    "ChooseFileDlgKey",                                              // unique key for the file dialog
-			    "Choose 3D Model File",                                          // title of the file dialog
-			    ".obj, .fbx, .dae, .gltf, .glb, .stl, .ply, .3ds, .max, .blend", // supported file extensions
-			    fileDialogConfig                                                 // file dialog configuration
+				"ChooseFileDlgKey",                                              // unique key for the file dialog
+				"Choose 3D Model File",                                          // title of the file dialog
+				".obj, .fbx, .dae, .gltf, .glb, .stl, .ply, .3ds, .max, .blend", // supported file extensions
+				fileDialogConfig                                                 // file dialog configuration
 			);
 		}
 		draw_import_model_popup(); // draw the popup for importing a new model
@@ -652,10 +652,10 @@ void GUI::draw_creation_window()
 
 			// open a file dialog to select skybox image files
 			ImGuiFileDialog::Instance()->OpenDialog(
-			    "ChooseSkyboxDlgKey",        // unique key for the file dialog
-			    "Choose Skybox Image Files", // title of the file dialog
-			    ".jpg,.jpeg,.png,.hdr",      // supported file extensions
-			    fileDialogConfig             // file dialog configuration
+				"ChooseSkyboxDlgKey",        // unique key for the file dialog
+				"Choose Skybox Image Files", // title of the file dialog
+				".jpg,.jpeg,.png,.hdr",      // supported file extensions
+				fileDialogConfig             // file dialog configuration
 			);
 		}
 		draw_import_skybox_popup(); // draw the popup for importing a new skybox textures
@@ -730,9 +730,9 @@ void GUI::draw_debug_window()
 			// make the combo box take the full width of the window
 			ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
 			if (ImGui::BeginCombo(
-			        "##OutlineColorComboBox",
-			        outline_color_palette[current_outline_color_idx].first,
-			        ImGuiComboFlags_HeightSmall))
+					"##OutlineColorComboBox",
+					outline_color_palette[current_outline_color_idx].first,
+					ImGuiComboFlags_HeightSmall))
 			{ // if the combo box is opened, iterate through all colors in the palette and display them
 				for (int n{}; n < static_cast<int>(outline_color_palette.size()); ++n)
 				{
@@ -812,15 +812,15 @@ void GUI::draw_debug_window()
 				ImGui::Text(" Grid Line Count: %d", params.grid_line_count);
 				ImGui::Text(" Grid Line Thickness: %.2f", params.grid_line_thickness);
 				ImGui::Text(
-				    " Grid Background Color: (%.3f, %.3f, %.3f)",
-				    params.grid_bg_color.r,
-				    params.grid_bg_color.g,
-				    params.grid_bg_color.b);
+					" Grid Background Color: (%.3f, %.3f, %.3f)",
+					params.grid_bg_color.r,
+					params.grid_bg_color.g,
+					params.grid_bg_color.b);
 				ImGui::Text(
-				    " Grid Line Color: (%.3f, %.3f, %.3f)",
-				    params.grid_line_color.r,
-				    params.grid_line_color.g,
-				    params.grid_line_color.b);
+					" Grid Line Color: (%.3f, %.3f, %.3f)",
+					params.grid_line_color.r,
+					params.grid_line_color.g,
+					params.grid_line_color.b);
 				break;
 			default:
 				std::cerr << "[ERROR::GUI::draw_debug_window] Unknown screen texture debug mode index: " << debug_mode_idx << std::endl;
@@ -892,10 +892,10 @@ void GUI::draw_debug_window()
 				ImGui::SameLine();               // keep the input field on the same line as the label
 				ImGui::SetNextItemWidth(100.0f); // set a fixed width for the input field
 				if (ImGui::InputInt(
-				        "##GridLineCount",
-				        (int*)&params.grid_line_count,
-				        1,
-				        10)) // set step values for the input field (normal and fast)
+						"##GridLineCount",
+						(int*)&params.grid_line_count,
+						1,
+						10)) // set step values for the input field (normal and fast)
 				{            // if the input field is changed, update the number of grid lines
 					// clamp the value to a reasonable range [2, 1000]
 					if (params.grid_line_count < 2)
@@ -913,11 +913,11 @@ void GUI::draw_debug_window()
 				ImGui::SameLine();               // keep the input field on the same line as the label
 				ImGui::SetNextItemWidth(100.0f); // set a fixed width for the input field
 				if (ImGui::InputFloat(
-				        "##GridLineThickness",
-				        &params.grid_line_thickness,
-				        0.05f,
-				        0.5f, // set step values for the input field (normal and fast)
-				        "%.2f"))
+						"##GridLineThickness",
+						&params.grid_line_thickness,
+						0.05f,
+						0.5f, // set step values for the input field (normal and fast)
+						"%.2f"))
 				{ // if the input field is changed, update the grid line thickness
 					// clamp the value to a reasonable range [1.0, 10.0]
 					params.grid_line_thickness = std::clamp(params.grid_line_thickness, 1.0f, 10.0f);
@@ -931,18 +931,18 @@ void GUI::draw_debug_window()
 				// for the background color and the line color,
 				// disable the alpha channel and the inputs (only show an RGB color picker)
 				if (ImGui::ColorEdit3(
-				        "##GridBackgroundColor",
-				        (float*)&params.grid_bg_color,
-				        ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoAlpha))
+						"##GridBackgroundColor",
+						(float*)&params.grid_bg_color,
+						ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoAlpha))
 					params_changed = true; // mark the params as changed
 				ImGui::Text("  ");         // add some vertical spacing for better visual separation
 				ImGui::SameLine();
 				ImGui::Text("Grid Line Color      ");
 				ImGui::SameLine(); // keep the color picker on the same line as the label
 				if (ImGui::ColorEdit3(
-				        "##GridLineColor",
-				        (float*)&params.grid_line_color,
-				        ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoAlpha))
+						"##GridLineColor",
+						(float*)&params.grid_line_color,
+						ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoAlpha))
 					params_changed = true; // mark the params as changed
 			}
 			break;
@@ -1064,8 +1064,8 @@ void GUI::draw_tree_node_recursive(const std::shared_ptr<Node>& node)
 					if (p == dragged_node)
 					{ // if any ancestor of the target node is the dragged node, it's an invalid operation
 						std::cerr << "[WARNING::GUI] Invalid drop: "
-						             " Cannot parent a node to its own descendant"
-						          << std::endl;
+									 " Cannot parent a node to its own descendant"
+								  << std::endl;
 						is_valid_operation = false;
 						break;
 					}
@@ -1099,7 +1099,7 @@ void GUI::draw_tree_node_recursive(const std::shared_ptr<Node>& node)
 				dragged_node->set_scale(scale);
 
 				std::cout << "[INFO::GUI] Reparented node '" << dragged_node->get_name() << "' to '" << target_node->get_name() << "'"
-				          << std::endl;
+						  << std::endl;
 			}
 		}
 
@@ -1154,13 +1154,13 @@ void GUI::handle_node_selection(std::uint32_t node_id)
 			node    = parent;
 
 			std::cout << "[INFO::GUI::handle_node_selection] Resolved gizmo model '" << node->get_name() << "' (id " << gizmo_id
-			          << ") to its parent light '" << node->get_name() << "' (id " << node_id << ")" << std::endl;
+					  << ") to its parent light '" << node->get_name() << "' (id " << node_id << ")" << std::endl;
 		}
 		else
 		{
 			// otherwise, print a warning and return without changing selection
 			std::cerr << "[WARNING::GUI::handle_node_selection] Could not resolve gizmo model '" << node->get_name() << "' (id " << gizmo_id
-			          << ") to a parent light. Selection will not change" << std::endl;
+					  << ") to a parent light. Selection will not change" << std::endl;
 			return;
 		}
 	}
@@ -1173,7 +1173,7 @@ void GUI::handle_node_selection(std::uint32_t node_id)
 	selection_manager->set_selected_node_id(node_id);
 
 	std::cout << "[INFO::GUI::handle_node_selection] Selected node '" << (node ? node->get_name() : "Unknown") << "' (id " << node_id << ")"
-	          << std::endl;
+			  << std::endl;
 }
 
 void GUI::update_scene_graph_auto_open_set()
@@ -1283,14 +1283,14 @@ void GUI::draw_directional_light_controls(Directional_Light* directional_light)
 	glm::vec3 pos = directional_light->get_position();
 	// create a control for the x, y, and z components of the directional light's position
 	if (draw_vec3_control(
-	        "position",
-	        pos,
-	        false, // this is not a scale control
-	        MIN_POSITION_VALUE,
-	        MAX_POSITION_VALUE,
-	        INPUT_FIELD_WIDTH,
-	        POSITION_SPEED,
-	        POSITION_RESET_VALUE))
+			"position",
+			pos,
+			false, // this is not a scale control
+			MIN_POSITION_VALUE,
+			MAX_POSITION_VALUE,
+			INPUT_FIELD_WIDTH,
+			POSITION_SPEED,
+			POSITION_RESET_VALUE))
 	{                                         // if the control is used
 		directional_light->set_position(pos); // set the new position of the directional light
 	}
@@ -1302,14 +1302,14 @@ void GUI::draw_directional_light_controls(Directional_Light* directional_light)
 		glm::vec3 rotation_in_degrees = gizmo->get_rotation_in_euler_angles();
 		// create a control for the x, y, and z components of the directional light's rotation
 		if (draw_vec3_control(
-		        "Rotation",
-		        rotation_in_degrees,
-		        false, // this is not a scale control
-		        MIN_ROTATION_VALUE,
-		        MAX_ROTATION_VALUE,
-		        INPUT_FIELD_WIDTH,
-		        ROTATION_SPEED,
-		        ROTATION_RESET_VALUE))
+				"Rotation",
+				rotation_in_degrees,
+				false, // this is not a scale control
+				MIN_ROTATION_VALUE,
+				MAX_ROTATION_VALUE,
+				INPUT_FIELD_WIDTH,
+				ROTATION_SPEED,
+				ROTATION_RESET_VALUE))
 		{ // if the control is used
 			// set the new rotation of the directional light's gizmo
 			gizmo->set_rotation_in_euler_angles(rotation_in_degrees);
@@ -1339,14 +1339,14 @@ void GUI::draw_point_light_controls(Point_Light* point_light)
 	glm::vec3 pos = point_light->get_position();
 	// create a control for the x, y, and z components of the point light's position
 	if (draw_vec3_control(
-	        "position",
-	        pos,
-	        false, // this is not a scale control
-	        MIN_POSITION_VALUE,
-	        MAX_POSITION_VALUE,
-	        INPUT_FIELD_WIDTH,
-	        POSITION_SPEED,
-	        POSITION_RESET_VALUE))
+			"position",
+			pos,
+			false, // this is not a scale control
+			MIN_POSITION_VALUE,
+			MAX_POSITION_VALUE,
+			INPUT_FIELD_WIDTH,
+			POSITION_SPEED,
+			POSITION_RESET_VALUE))
 	{                                   // if the control is used
 		point_light->set_position(pos); // set the new position of the point light
 	}
@@ -1371,14 +1371,14 @@ void GUI::draw_spotlight_controls(Spotlight* spotlight)
 	glm::vec3 pos = spotlight->get_position();
 	// create a control for the x, y, and z components of the spotlight's position
 	if (draw_vec3_control(
-	        "position",
-	        pos,
-	        false, // this is not a scale control
-	        MIN_POSITION_VALUE,
-	        MAX_POSITION_VALUE,
-	        INPUT_FIELD_WIDTH,
-	        POSITION_SPEED,
-	        POSITION_RESET_VALUE))
+			"position",
+			pos,
+			false, // this is not a scale control
+			MIN_POSITION_VALUE,
+			MAX_POSITION_VALUE,
+			INPUT_FIELD_WIDTH,
+			POSITION_SPEED,
+			POSITION_RESET_VALUE))
 	{                                 // if the control is used
 		spotlight->set_position(pos); // set the new position of the spotlight
 	}
@@ -1390,14 +1390,14 @@ void GUI::draw_spotlight_controls(Spotlight* spotlight)
 		glm::vec3 rotation_in_degrees = gizmo->get_rotation_in_euler_angles();
 		// create a control for the x, y, and z components of the spotlight's rotation
 		if (draw_vec3_control(
-		        "Rotation",
-		        rotation_in_degrees,
-		        false, // this is not a scale control
-		        MIN_ROTATION_VALUE,
-		        MAX_ROTATION_VALUE,
-		        INPUT_FIELD_WIDTH,
-		        ROTATION_SPEED,
-		        ROTATION_RESET_VALUE))
+				"Rotation",
+				rotation_in_degrees,
+				false, // this is not a scale control
+				MIN_ROTATION_VALUE,
+				MAX_ROTATION_VALUE,
+				INPUT_FIELD_WIDTH,
+				ROTATION_SPEED,
+				ROTATION_RESET_VALUE))
 		{ // if the control are used
 		  // set the new rotation of the spotlight's gizmo
 			gizmo->set_rotation_in_euler_angles(rotation_in_degrees);
@@ -1414,26 +1414,26 @@ void GUI::draw_spotlight_controls(Spotlight* spotlight)
 	// create controls for the inner and outer cut-off angles of the spotlight
 	ImGui::Text("Cut-off Angles (in degrees):");
 	if (draw_float_control(
-	        "Inner",
-	        inner_cutoff,
-	        MIN_CUTOFF_VALUE,
-	        outer_cutoff, // inner_cutoff <= outer_cutoff
-	        INPUT_FIELD_WIDTH,
-	        CUTOFF_ANGLES_SPEED,
-	        INNER_CUTOFF_RESET_VALUE))
+			"Inner",
+			inner_cutoff,
+			MIN_CUTOFF_VALUE,
+			outer_cutoff, // inner_cutoff <= outer_cutoff
+			INPUT_FIELD_WIDTH,
+			CUTOFF_ANGLES_SPEED,
+			INNER_CUTOFF_RESET_VALUE))
 	{
 		// if the control is used, convert back to radians and cosine
 		// and set the new inner cut-off angle for the spotlight
 		spotlight->set_inner_cutoff(glm::cos(glm::radians(inner_cutoff)));
 	}
 	if (draw_float_control(
-	        "Outer",
-	        outer_cutoff,
-	        inner_cutoff,
-	        MAX_CUTOFF_VALUE, // outer_cutoff >= inner_cutoff
-	        INPUT_FIELD_WIDTH,
-	        CUTOFF_ANGLES_SPEED,
-	        OUTER_CUTOFF_RESET_VALUE))
+			"Outer",
+			outer_cutoff,
+			inner_cutoff,
+			MAX_CUTOFF_VALUE, // outer_cutoff >= inner_cutoff
+			INPUT_FIELD_WIDTH,
+			CUTOFF_ANGLES_SPEED,
+			OUTER_CUTOFF_RESET_VALUE))
 	{
 		// if the control is used, convert back to radians and cosine
 		// and set the new outer cut-off angle for the spotlight
@@ -1478,14 +1478,14 @@ void GUI::draw_model_controls(Node* model)
 	glm::vec3 pos = model->get_position();
 	// create a control for the x, y, and z components of the model's position
 	if (draw_vec3_control(
-	        "position",
-	        pos,
-	        false, // this is not a scale control
-	        MIN_POSITION_VALUE,
-	        MAX_POSITION_VALUE,
-	        INPUT_FIELD_WIDTH,
-	        POSITION_SPEED,
-	        POSITION_RESET_VALUE))
+			"position",
+			pos,
+			false, // this is not a scale control
+			MIN_POSITION_VALUE,
+			MAX_POSITION_VALUE,
+			INPUT_FIELD_WIDTH,
+			POSITION_SPEED,
+			POSITION_RESET_VALUE))
 	{                             // if the control is used
 		model->set_position(pos); // set the new position of the model
 	}
@@ -1494,14 +1494,14 @@ void GUI::draw_model_controls(Node* model)
 	glm::vec3 rotation_in_degrees = model->get_rotation_in_euler_angles();
 	// create a control for the x, y, and z components of the model's rotation
 	if (draw_vec3_control(
-	        "Rotation",
-	        rotation_in_degrees,
-	        false, // this is not a scale control
-	        MIN_ROTATION_VALUE,
-	        MAX_ROTATION_VALUE,
-	        INPUT_FIELD_WIDTH,
-	        ROTATION_SPEED,
-	        ROTATION_RESET_VALUE))
+			"Rotation",
+			rotation_in_degrees,
+			false, // this is not a scale control
+			MIN_ROTATION_VALUE,
+			MAX_ROTATION_VALUE,
+			INPUT_FIELD_WIDTH,
+			ROTATION_SPEED,
+			ROTATION_RESET_VALUE))
 	{                                                             // if the control is used
 		model->set_rotation_in_euler_angles(rotation_in_degrees); // set the new rotation of the model
 	}
@@ -1512,14 +1512,14 @@ void GUI::draw_model_controls(Node* model)
 	float speed = model->get_type() == Node_Type::SHAPE_MODEL ? SCALE_SPEED * 5.0f : SCALE_SPEED;
 	// create a control for the x, y, and z components of the model's scale
 	if (draw_vec3_control(
-	        "Scale",
-	        scale,
-	        true, // this is the scale control
-	        MIN_SCALE_VALUE,
-	        MAX_SCALE_VALUE,
-	        INPUT_FIELD_WIDTH,
-	        speed,
-	        SCALE_RESET_VALUE))
+			"Scale",
+			scale,
+			true, // this is the scale control
+			MIN_SCALE_VALUE,
+			MAX_SCALE_VALUE,
+			INPUT_FIELD_WIDTH,
+			speed,
+			SCALE_RESET_VALUE))
 	{                            // if the control is used
 		model->set_scale(scale); // set the new scale of the model
 	}
@@ -1548,23 +1548,23 @@ void GUI::draw_create_directional_light_popup()
 		draw_color_control("Albedo", albedo_rgb);
 		new_albedo = glm::vec4(albedo_rgb, 1.0f); // set alpha to 1.0f
 		draw_vec3_control(
-		    "position",
-		    new_position,
-		    false, // this is not a scale control
-		    MIN_POSITION_VALUE,
-		    MAX_POSITION_VALUE,
-		    INPUT_FIELD_WIDTH,
-		    POSITION_SPEED,
-		    POSITION_RESET_VALUE);
+			"position",
+			new_position,
+			false, // this is not a scale control
+			MIN_POSITION_VALUE,
+			MAX_POSITION_VALUE,
+			INPUT_FIELD_WIDTH,
+			POSITION_SPEED,
+			POSITION_RESET_VALUE);
 		draw_vec3_control(
-		    "Direction",
-		    new_direction,
-		    false, // this is not a scale control
-		    MIN_DIRECTION_VALUE,
-		    MAX_DIRECTION_VALUE,
-		    INPUT_FIELD_WIDTH,
-		    DIRECTION_SPEED,
-		    DIRECTION_RESET_VALUE);
+			"Direction",
+			new_direction,
+			false, // this is not a scale control
+			MIN_DIRECTION_VALUE,
+			MAX_DIRECTION_VALUE,
+			INPUT_FIELD_WIDTH,
+			DIRECTION_SPEED,
+			DIRECTION_RESET_VALUE);
 
 		ImGui::Separator();
 
@@ -1583,12 +1583,12 @@ void GUI::draw_create_directional_light_popup()
 		{ // if the create button is clicked
 			// create a new directional light with a placeholder name and the specified properties
 			auto directional_light = std::make_shared<Directional_Light>(
-			    "Directional Light",
-			    glm::vec3{ 0.1f },
-			    new_albedo,
-			    glm::vec3{ 1.0f },
-			    new_position,
-			    new_direction);
+				"Directional Light",
+				glm::vec3{ 0.1f },
+				new_albedo,
+				glm::vec3{ 1.0f },
+				new_position,
+				new_direction);
 
 			// convert the light's id to string and set it as part of the light's name
 			directional_light->set_name(String_Utils::generate_id_prefixed_name(directional_light));
@@ -1635,14 +1635,14 @@ void GUI::draw_create_point_light_popup()
 		draw_color_control("Albedo", albedo_rgb);
 		new_albedo = glm::vec4(albedo_rgb, 1.0f); // set alpha to 1.0f
 		draw_vec3_control(
-		    "position",
-		    new_position,
-		    false, // this is not a scale control
-		    MIN_POSITION_VALUE,
-		    MAX_POSITION_VALUE,
-		    INPUT_FIELD_WIDTH,
-		    POSITION_SPEED,
-		    POSITION_RESET_VALUE);
+			"position",
+			new_position,
+			false, // this is not a scale control
+			MIN_POSITION_VALUE,
+			MAX_POSITION_VALUE,
+			INPUT_FIELD_WIDTH,
+			POSITION_SPEED,
+			POSITION_RESET_VALUE);
 
 		ImGui::Separator();
 
@@ -1705,41 +1705,41 @@ void GUI::draw_create_spotlight_popup()
 		draw_color_control("Albedo", albedo_rgb);
 		new_albedo = glm::vec4(albedo_rgb, 1.0f); // set alpha to 1.0f
 		draw_vec3_control(
-		    "position",
-		    new_position,
-		    false, // this is not a scale control
-		    MIN_POSITION_VALUE,
-		    MAX_POSITION_VALUE,
-		    INPUT_FIELD_WIDTH,
-		    POSITION_SPEED,
-		    POSITION_RESET_VALUE);
+			"position",
+			new_position,
+			false, // this is not a scale control
+			MIN_POSITION_VALUE,
+			MAX_POSITION_VALUE,
+			INPUT_FIELD_WIDTH,
+			POSITION_SPEED,
+			POSITION_RESET_VALUE);
 		draw_vec3_control(
-		    "Direction",
-		    new_direction,
-		    false, // this is not a scale control
-		    MIN_DIRECTION_VALUE,
-		    MAX_DIRECTION_VALUE,
-		    INPUT_FIELD_WIDTH,
-		    DIRECTION_SPEED,
-		    DIRECTION_RESET_VALUE);
+			"Direction",
+			new_direction,
+			false, // this is not a scale control
+			MIN_DIRECTION_VALUE,
+			MAX_DIRECTION_VALUE,
+			INPUT_FIELD_WIDTH,
+			DIRECTION_SPEED,
+			DIRECTION_RESET_VALUE);
 		ImGui::Text("Cut-Off Angles (in degrees):");
 		// initialize the inner and outer cut-off angles with default values before drawing the controls
 		draw_float_control(
-		    "Inner",
-		    new_inner_cutoff,
-		    MIN_CUTOFF_VALUE,
-		    MAX_CUTOFF_VALUE, // inner_cutoff <= outer_cutoff
-		    INPUT_FIELD_WIDTH,
-		    CUTOFF_ANGLES_SPEED,
-		    INNER_CUTOFF_RESET_VALUE);
+			"Inner",
+			new_inner_cutoff,
+			MIN_CUTOFF_VALUE,
+			MAX_CUTOFF_VALUE, // inner_cutoff <= outer_cutoff
+			INPUT_FIELD_WIDTH,
+			CUTOFF_ANGLES_SPEED,
+			INNER_CUTOFF_RESET_VALUE);
 		draw_float_control(
-		    "Outer",
-		    new_outer_cutoff,
-		    new_inner_cutoff,
-		    MAX_CUTOFF_VALUE, // outer_cutoff >= inner_cutoff
-		    INPUT_FIELD_WIDTH,
-		    CUTOFF_ANGLES_SPEED,
-		    OUTER_CUTOFF_RESET_VALUE);
+			"Outer",
+			new_outer_cutoff,
+			new_inner_cutoff,
+			MAX_CUTOFF_VALUE, // outer_cutoff >= inner_cutoff
+			INPUT_FIELD_WIDTH,
+			CUTOFF_ANGLES_SPEED,
+			OUTER_CUTOFF_RESET_VALUE);
 
 		ImGui::Separator();
 
@@ -1752,8 +1752,8 @@ void GUI::draw_create_spotlight_popup()
 			new_direction    = randomizer->generate_random_direction();
 			new_inner_cutoff = randomizer->generate_random_float(MIN_CUTOFF_VALUE, MAX_CUTOFF_VALUE);
 			new_outer_cutoff = randomizer->generate_random_float(
-			    new_inner_cutoff, // ensure outer cut-off is greater than inner cut-off
-			    MAX_CUTOFF_VALUE);
+				new_inner_cutoff, // ensure outer cut-off is greater than inner cut-off
+				MAX_CUTOFF_VALUE);
 		}
 
 		// display a button to add the new spotlight
@@ -1762,7 +1762,7 @@ void GUI::draw_create_spotlight_popup()
 		{ // if the create button is clicked
 			// create a new spotlight with a placeholder name and the specified properties
 			auto spotlight =
-			    std::make_shared<Spotlight>("Spotlight", glm::vec3{ 0.1f }, new_albedo, glm::vec3{ 1.0f }, new_position, new_direction);
+				std::make_shared<Spotlight>("Spotlight", glm::vec3{ 0.1f }, new_albedo, glm::vec3{ 1.0f }, new_position, new_direction);
 
 			// convert the light's id to string and set it as part of the light's name
 			spotlight->set_name(String_Utils::generate_id_prefixed_name(spotlight));
@@ -1806,32 +1806,32 @@ void GUI::draw_create_plane_shape_popup()
 		// display controls to set the color, position, and size of the new plane shape
 		draw_color_control("Color", new_albedo);
 		draw_vec3_control(
-		    "position",
-		    new_position,
-		    false, // this is not a scale control
-		    MIN_POSITION_VALUE,
-		    MAX_POSITION_VALUE,
-		    INPUT_FIELD_WIDTH,
-		    POSITION_SPEED,
-		    POSITION_RESET_VALUE);
+			"position",
+			new_position,
+			false, // this is not a scale control
+			MIN_POSITION_VALUE,
+			MAX_POSITION_VALUE,
+			INPUT_FIELD_WIDTH,
+			POSITION_SPEED,
+			POSITION_RESET_VALUE);
 		draw_vec3_control(
-		    "Rotation",
-		    new_rotation,
-		    false, // this is not a scale control
-		    MIN_ROTATION_VALUE,
-		    MAX_ROTATION_VALUE,
-		    INPUT_FIELD_WIDTH,
-		    ROTATION_SPEED,
-		    ROTATION_RESET_VALUE);
+			"Rotation",
+			new_rotation,
+			false, // this is not a scale control
+			MIN_ROTATION_VALUE,
+			MAX_ROTATION_VALUE,
+			INPUT_FIELD_WIDTH,
+			ROTATION_SPEED,
+			ROTATION_RESET_VALUE);
 		draw_vec3_control(
-		    "Scale",
-		    new_scale,
-		    true, // this is the scale control
-		    MIN_SCALE_VALUE,
-		    MAX_SCALE_VALUE,
-		    INPUT_FIELD_WIDTH,
-		    SCALE_SPEED * 5.0f,
-		    SCALE_RESET_VALUE);
+			"Scale",
+			new_scale,
+			true, // this is the scale control
+			MIN_SCALE_VALUE,
+			MAX_SCALE_VALUE,
+			INPUT_FIELD_WIDTH,
+			SCALE_SPEED * 5.0f,
+			SCALE_RESET_VALUE);
 
 		ImGui::Separator();
 
@@ -1849,13 +1849,13 @@ void GUI::draw_create_plane_shape_popup()
 		{ // if the create button is clicked
 			// create a plane shape with a placeholder name and the specified properties
 			auto plane_shape = std::make_shared<Shape_Model>(
-			    "Plane Shape",
-			    plane_vertices_vector,
-			    plane_indices_vector,
-			    new_albedo,
-			    new_position,
-			    glm::quat{ 1.0f, 0.0f, 0.0f, 0.0f },
-			    new_scale);
+				"Plane Shape",
+				plane_vertices_vector,
+				plane_indices_vector,
+				new_albedo,
+				new_position,
+				glm::quat{ 1.0f, 0.0f, 0.0f, 0.0f },
+				new_scale);
 			// indicate that the plane is a two-sided shape
 			plane_shape->set_is_two_sided(true);
 			// set the rotation in Euler angles of the new plane shape
@@ -1898,32 +1898,32 @@ void GUI::draw_create_cube_shape_popup()
 		// display controls to set the color, position, and size of the new cube shape
 		draw_color_control("Color", new_albedo);
 		draw_vec3_control(
-		    "position",
-		    new_position,
-		    false, // this is not a scale control
-		    MIN_POSITION_VALUE,
-		    MAX_POSITION_VALUE,
-		    INPUT_FIELD_WIDTH,
-		    POSITION_SPEED,
-		    POSITION_RESET_VALUE);
+			"position",
+			new_position,
+			false, // this is not a scale control
+			MIN_POSITION_VALUE,
+			MAX_POSITION_VALUE,
+			INPUT_FIELD_WIDTH,
+			POSITION_SPEED,
+			POSITION_RESET_VALUE);
 		draw_vec3_control(
-		    "Rotation",
-		    new_rotation,
-		    false, // this is not a scale control
-		    MIN_ROTATION_VALUE,
-		    MAX_ROTATION_VALUE,
-		    INPUT_FIELD_WIDTH,
-		    ROTATION_SPEED,
-		    ROTATION_RESET_VALUE);
+			"Rotation",
+			new_rotation,
+			false, // this is not a scale control
+			MIN_ROTATION_VALUE,
+			MAX_ROTATION_VALUE,
+			INPUT_FIELD_WIDTH,
+			ROTATION_SPEED,
+			ROTATION_RESET_VALUE);
 		draw_vec3_control(
-		    "Scale",
-		    new_scale,
-		    true, // this is the scale control
-		    MIN_SCALE_VALUE,
-		    MAX_SCALE_VALUE,
-		    INPUT_FIELD_WIDTH,
-		    SCALE_SPEED * 5.0f,
-		    SCALE_RESET_VALUE);
+			"Scale",
+			new_scale,
+			true, // this is the scale control
+			MIN_SCALE_VALUE,
+			MAX_SCALE_VALUE,
+			INPUT_FIELD_WIDTH,
+			SCALE_SPEED * 5.0f,
+			SCALE_RESET_VALUE);
 
 		ImGui::Separator();
 
@@ -1941,13 +1941,13 @@ void GUI::draw_create_cube_shape_popup()
 		{ // if the create button is clicked
 			// create a cube shape with a placeholder name and the specified properties
 			auto cube_shape = std::make_shared<Shape_Model>(
-			    "Cube Shape",
-			    cube_vertices_vector,
-			    cube_indices_vector,
-			    new_albedo,
-			    new_position,
-			    glm::quat{ 1.0f, 0.0f, 0.0f, 0.0f },
-			    new_scale);
+				"Cube Shape",
+				cube_vertices_vector,
+				cube_indices_vector,
+				new_albedo,
+				new_position,
+				glm::quat{ 1.0f, 0.0f, 0.0f, 0.0f },
+				new_scale);
 			// set the rotation of the new cube shape
 			cube_shape->set_rotation_in_euler_angles(new_rotation);
 
@@ -1982,8 +1982,8 @@ void GUI::draw_import_model_popup()
 	// centered on the display and with a predefined size
 	ImGui::SetNextWindowSize(ImVec2(FILE_DIALOG_POPUP_WIDTH, FILE_DIALOG_POPUP_HEIGHT), ImGuiCond_Appearing);
 	ImGui::SetNextWindowPos(
-	    ImVec2(io.DisplaySize.x * 0.5f - FILE_DIALOG_POPUP_WIDTH * 0.5f, io.DisplaySize.y * 0.5f - FILE_DIALOG_POPUP_HEIGHT * 0.5f),
-	    ImGuiCond_Appearing);
+		ImVec2(io.DisplaySize.x * 0.5f - FILE_DIALOG_POPUP_WIDTH * 0.5f, io.DisplaySize.y * 0.5f - FILE_DIALOG_POPUP_HEIGHT * 0.5f),
+		ImGuiCond_Appearing);
 
 	// check if the file dialog is displayed and if the user selected a file
 	if (ImGuiFileDialog::Instance()->Display("ChooseFileDlgKey"))
@@ -2033,8 +2033,8 @@ void GUI::draw_import_skybox_popup()
 	// set the size and position of the next window to display the file dialog adequately
 	ImGui::SetNextWindowSize(ImVec2(FILE_DIALOG_POPUP_WIDTH, FILE_DIALOG_POPUP_HEIGHT), ImGuiCond_Appearing);
 	ImGui::SetNextWindowPos(
-	    ImVec2(io.DisplaySize.x * 0.5f - FILE_DIALOG_POPUP_WIDTH * 0.5f, io.DisplaySize.y * 0.5f - FILE_DIALOG_POPUP_HEIGHT * 0.5f),
-	    ImGuiCond_Appearing);
+		ImVec2(io.DisplaySize.x * 0.5f - FILE_DIALOG_POPUP_WIDTH * 0.5f, io.DisplaySize.y * 0.5f - FILE_DIALOG_POPUP_HEIGHT * 0.5f),
+		ImGuiCond_Appearing);
 
 	// main loop for the file dialog display and handling
 	if (ImGuiFileDialog::Instance()->Display("ChooseSkyboxDlgKey"))
@@ -2062,27 +2062,27 @@ void GUI::draw_import_skybox_popup()
 					bool matched{ false }; // track if a match was found for this filename
 
 					if (file_name.find("right") != std::string::npos || file_name.find("posx") != std::string::npos ||
-					    file_name.find("px") != std::string::npos)
+						file_name.find("px") != std::string::npos)
 						matched = assign_cubemap_face(ordered_paths, path_assigned, cubemap_face_index::RIGHT, full_path);
 					else if (
-					    file_name.find("left") != std::string::npos || file_name.find("negx") != std::string::npos ||
-					    file_name.find("nx") != std::string::npos)
+						file_name.find("left") != std::string::npos || file_name.find("negx") != std::string::npos ||
+						file_name.find("nx") != std::string::npos)
 						matched = assign_cubemap_face(ordered_paths, path_assigned, cubemap_face_index::LEFT, full_path);
 					else if (
-					    file_name.find("top") != std::string::npos || file_name.find("posy") != std::string::npos ||
-					    file_name.find("py") != std::string::npos || file_name.find("up") != std::string::npos)
+						file_name.find("top") != std::string::npos || file_name.find("posy") != std::string::npos ||
+						file_name.find("py") != std::string::npos || file_name.find("up") != std::string::npos)
 						matched = assign_cubemap_face(ordered_paths, path_assigned, cubemap_face_index::TOP, full_path);
 					else if (
-					    file_name.find("bottom") != std::string::npos || file_name.find("negy") != std::string::npos ||
-					    file_name.find("ny") != std::string::npos || file_name.find("down") != std::string::npos)
+						file_name.find("bottom") != std::string::npos || file_name.find("negy") != std::string::npos ||
+						file_name.find("ny") != std::string::npos || file_name.find("down") != std::string::npos)
 						matched = assign_cubemap_face(ordered_paths, path_assigned, cubemap_face_index::BOTTOM, full_path);
 					else if (
-					    file_name.find("front") != std::string::npos || file_name.find("posz") != std::string::npos ||
-					    file_name.find("pz") != std::string::npos)
+						file_name.find("front") != std::string::npos || file_name.find("posz") != std::string::npos ||
+						file_name.find("pz") != std::string::npos)
 						matched = assign_cubemap_face(ordered_paths, path_assigned, cubemap_face_index::FRONT, full_path);
 					else if (
-					    file_name.find("back") != std::string::npos || file_name.find("negz") != std::string::npos ||
-					    file_name.find("nz") != std::string::npos)
+						file_name.find("back") != std::string::npos || file_name.find("negz") != std::string::npos ||
+						file_name.find("nz") != std::string::npos)
 						matched = assign_cubemap_face(ordered_paths, path_assigned, cubemap_face_index::BACK, full_path);
 
 					if (!matched)
@@ -2114,7 +2114,7 @@ void GUI::draw_import_skybox_popup()
 					show_count_error    = true;
 					error_popup_message = "A single file must have the .hdr extension";
 					std::cerr << "[ERROR::GUI::draw_import_skybox_popup] Single selected file is not .hdr: " << single_file_name
-					          << std::endl;
+							  << std::endl;
 				}
 			}
 			else if (selection.size() == 6)
@@ -2133,15 +2133,15 @@ void GUI::draw_import_skybox_popup()
 					validation_passed   = false;
 					show_mapping_error  = true;
 					error_popup_message = "Could not infer cubemap face ordering from file names.\n"
-					                      "Filenames must contain tokens like: right, left, top, bottom, front, back.\n"
-					                      "Alternatives: posx, negx, posy, negy, posz, negz; or px, nx, py, ny, pz, nz.\n"
-					                      "Up/down are also accepted for top/bottom";
+										  "Filenames must contain tokens like: right, left, top, bottom, front, back.\n"
+										  "Alternatives: posx, negx, posy, negy, posz, negz; or px, nx, py, ny, pz, nz.\n"
+										  "Up/down are also accepted for top/bottom";
 					std::cerr << "[ERROR::GUI::draw_import_skybox_popup] "
-					             "Could not map cubemap faces from filenames, valid names must contain "
-					             "tokens like:\n\tright, left, top, bottom, front, back; or posx, negx, posy, negy, "
-					             "posz, negz; \n\tor px, nx, py, ny, pz, nz. "
-					             "Up/down are also accepted for top/bottom"
-					          << std::endl;
+								 "Could not map cubemap faces from filenames, valid names must contain "
+								 "tokens like:\n\tright, left, top, bottom, front, back; or posx, negx, posy, negy, "
+								 "posz, negz; \n\tor px, nx, py, ny, pz, nz. "
+								 "Up/down are also accepted for top/bottom"
+							  << std::endl;
 				}
 			}
 			else
@@ -2149,7 +2149,7 @@ void GUI::draw_import_skybox_popup()
 				validation_passed   = false;
 				show_count_error    = true;
 				error_popup_message = "Invalid number of files selected.\n"
-				                      "Please select either 1 .hdr file or 6 image files (.png, .jpg, .jpeg)";
+									  "Please select either 1 .hdr file or 6 image files (.png, .jpg, .jpeg)";
 				std::cerr << "[ERROR::GUI::draw_import_skybox_popup] Invalid number of files selected: " << selection.size() << std::endl;
 			}
 
@@ -2163,8 +2163,8 @@ void GUI::draw_import_skybox_popup()
 					auto skybox_texture = std::make_shared<Texture>("Skybox HDR Equirectangular", path, true);
 					scene_manager->set_skybox(std::move(skybox_texture));
 					std::cout << "[SUCCESS::GUI::draw_import_skybox_popup] "
-					             "Successfully imported HDR equirectangular skybox"
-					          << std::endl;
+								 "Successfully imported HDR equirectangular skybox"
+							  << std::endl;
 				}
 				else if (selection.size() == 6)
 				{ // create the cubemap texture from the ordered face paths
@@ -2180,8 +2180,8 @@ void GUI::draw_import_skybox_popup()
 					auto skybox_texture = std::make_shared<Texture>("Skybox Cubemap", ordered_face_paths);
 					scene_manager->set_skybox(std::move(skybox_texture));
 					std::cout << "[SUCCESS::GUI::draw_import_skybox_popup] "
-					             "Successfully imported cubemap skybox"
-					          << std::endl;
+								 "Successfully imported cubemap skybox"
+							  << std::endl;
 				}
 				should_reopen_file_dialog = false; // ensure no dialog is reopened on success
 			}
@@ -2214,8 +2214,8 @@ void GUI::draw_import_skybox_popup()
 	// set the size and position of the error popup
 	ImGui::SetNextWindowSize(ImVec2(ERROR_POPUP_WIDTH, ERROR_POPUP_HEIGHT), ImGuiCond_Appearing);
 	ImGui::SetNextWindowPos(
-	    ImVec2(io.DisplaySize.x * 0.5f - ERROR_POPUP_WIDTH * 0.5f, io.DisplaySize.y * 0.5f - ERROR_POPUP_HEIGHT * 0.5f),
-	    ImGuiCond_Appearing);
+		ImVec2(io.DisplaySize.x * 0.5f - ERROR_POPUP_WIDTH * 0.5f, io.DisplaySize.y * 0.5f - ERROR_POPUP_HEIGHT * 0.5f),
+		ImGuiCond_Appearing);
 
 	// error modal popup definition
 	if (ImGui::BeginPopupModal("Skybox Import Error", NULL, ImGuiWindowFlags_AlwaysAutoResize))
@@ -2250,7 +2250,7 @@ void GUI::draw_import_skybox_popup()
 				fileDialogConfig.flags             = ImGuiFileDialogFlags_Modal;
 
 				ImGuiFileDialog::Instance()
-				    ->OpenDialog("ChooseSkyboxDlgKey", "Choose Skybox Image Files", ".jpg,.jpeg,.png,.hdr", fileDialogConfig);
+					->OpenDialog("ChooseSkyboxDlgKey", "Choose Skybox Image Files", ".jpg,.jpeg,.png,.hdr", fileDialogConfig);
 				should_reopen_file_dialog = false; // reset the flag
 			}
 		}
@@ -2306,16 +2306,16 @@ bool GUI::draw_color_control(const std::string& label, glm::vec4& color, bool sh
 }
 
 bool GUI::draw_vec3_control(
-    const std::string& label,
-    glm::vec3&         values,
-    bool               scale_controls,
-    float              min_input_field_value,
-    float              max_input_field_value,
-    float              input_field_width,
-    float              speed,
-    float              reset_value,
-    float              reset_button_width,
-    float              reset_button_height)
+	const std::string& label,
+	glm::vec3&         values,
+	bool               scale_controls,
+	float              min_input_field_value,
+	float              max_input_field_value,
+	float              input_field_width,
+	float              speed,
+	float              reset_value,
+	float              reset_button_width,
+	float              reset_button_height)
 {
 	bool value_changed{ false }; // flag to indicate if any value has changed
 
@@ -2336,11 +2336,11 @@ bool GUI::draw_vec3_control(
 	ImGui::SameLine();
 	ImGui::SetNextItemWidth(input_field_width); // set the width of the input field for the x component
 	if (ImGui::InputFloat(
-	        "##x",
-	        &values.x,
-	        0.0f,
-	        0.0f, // no step buttons
-	        "%.3f"))
+			"##x",
+			&values.x,
+			0.0f,
+			0.0f, // no step buttons
+			"%.3f"))
 	{                         // if the input field is used
 		value_changed = true; // set the value_changed flag to true
 	}
@@ -2373,11 +2373,11 @@ bool GUI::draw_vec3_control(
 	ImGui::SameLine();
 	ImGui::SetNextItemWidth(input_field_width); // set the width of the input field for the y component
 	if (ImGui::InputFloat(
-	        "##y",
-	        &values.y,
-	        0.0f,
-	        0.0f, // no step buttons
-	        "%.3f"))
+			"##y",
+			&values.y,
+			0.0f,
+			0.0f, // no step buttons
+			"%.3f"))
 	{                         // if the input field is used
 		value_changed = true; // set the value_changed flag to true
 	}
@@ -2410,11 +2410,11 @@ bool GUI::draw_vec3_control(
 	ImGui::SameLine();
 	ImGui::SetNextItemWidth(input_field_width); // set the width of the input field for the z component
 	if (ImGui::InputFloat(
-	        "##z",
-	        &values.z,
-	        0.0f,
-	        0.0f, // no step buttons
-	        "%.3f"))
+			"##z",
+			&values.z,
+			0.0f,
+			0.0f, // no step buttons
+			"%.3f"))
 	{                         // if the input field is used
 		value_changed = true; // set the value_changed flag to true
 	}
@@ -2477,15 +2477,15 @@ bool GUI::draw_vec3_control(
 }
 
 bool GUI::draw_float_control(
-    const std::string& label,
-    float&             value,
-    float              min_input_field_value,
-    float              max_input_field_value,
-    float              input_field_width,
-    float              speed,
-    float              reset_value,
-    float              reset_button_width,
-    float              reset_button_height)
+	const std::string& label,
+	float&             value,
+	float              min_input_field_value,
+	float              max_input_field_value,
+	float              input_field_width,
+	float              speed,
+	float              reset_value,
+	float              reset_button_width,
+	float              reset_button_height)
 {
 	bool value_changed{ false }; // flag to indicate if the value has changed
 
@@ -2496,11 +2496,11 @@ bool GUI::draw_float_control(
 	ImGui::SameLine();
 	ImGui::SetNextItemWidth(input_field_width); // set the width of the input field
 	if (ImGui::InputFloat(
-	        "##val",
-	        &value,
-	        0.0f,
-	        0.0f, // no step buttons
-	        "%.2f"))
+			"##val",
+			&value,
+			0.0f,
+			0.0f, // no step buttons
+			"%.2f"))
 	{ // if the input field is used
 		value_changed = true;
 	} // set the value_changed flag to true
@@ -2536,11 +2536,11 @@ bool GUI::draw_float_control(
 }
 
 void GUI::draw_remove_node_button(
-    Node*                  node,
-    std::vector<uint32_t>& nodes_to_remove_ids,
-    const std::string&     label,
-    float                  button_width,
-    float                  button_height)
+	Node*                  node,
+	std::vector<uint32_t>& nodes_to_remove_ids,
+	const std::string&     label,
+	float                  button_width,
+	float                  button_height)
 {
 	std::string button_label = "Remove " + label;
 	if (ImGui::Button(button_label.c_str(), ImVec2(button_width, button_height)))
@@ -2548,6 +2548,6 @@ void GUI::draw_remove_node_button(
 		nodes_to_remove_ids.push_back(node->get_id()); // add the node id to the list of nodes to remove
 
 		std::cout << "[INFO::GUI::draw_remove_node_button] Node '" << node->get_name() << "' (id " << node->get_id()
-		          << ") marked for removal" << std::endl;
+				  << ") marked for removal" << std::endl;
 	}
 }

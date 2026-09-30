@@ -111,9 +111,9 @@ private:
 	static constexpr float MIN_SCALE_VALUE{ 0.001f }, MAX_SCALE_VALUE{ 100.0f };
 	static constexpr float MIN_CUTOFF_VALUE{ 0.0f }, MAX_CUTOFF_VALUE{ 45.0f };
 	static constexpr float POSITION_SPEED{ 0.15f }, ROTATION_SPEED{ 1.0f }, DIRECTION_SPEED{ 0.01f }, SCALE_SPEED{ 0.002f },
-	    CUTOFF_ANGLES_SPEED{ 0.25f };
+		CUTOFF_ANGLES_SPEED{ 0.25f };
 	static constexpr float POSITION_RESET_VALUE{ 0.0f }, ROTATION_RESET_VALUE{ 0.0f }, DIRECTION_RESET_VALUE{ 0.0f },
-	    SCALE_RESET_VALUE{ 1.0f }, INNER_CUTOFF_RESET_VALUE{ 12.5f }, OUTER_CUTOFF_RESET_VALUE{ 32.5f };
+		SCALE_RESET_VALUE{ 1.0f }, INNER_CUTOFF_RESET_VALUE{ 12.5f }, OUTER_CUTOFF_RESET_VALUE{ 32.5f };
 	// default values for distances from the origin
 	static constexpr float MIN_DISTANCE_TO_ORIGIN{ 4.0f }, MAX_DISTANCE_TO_ORIGIN{ 15.0f };
 
@@ -180,48 +180,48 @@ private:
 	// Creates a color picker with sliders for RGB components
 	// and returns true if the color was changed
 	bool draw_color_control(
-	    const std::string& label,
-	    glm::vec3&         color,
-	    bool               show_label         = true,
-	    float              color_picker_width = ImGui::GetContentRegionAvail().x);
+		const std::string& label,
+		glm::vec3&         color,
+		bool               show_label         = true,
+		float              color_picker_width = ImGui::GetContentRegionAvail().x);
 	// Creates a color picker with sliders for RGBA components
 	// and returns true if the color was changed
 	bool draw_color_control(
-	    const std::string& label,
-	    glm::vec4&         color,
-	    bool               show_label         = true,
-	    float              color_picker_width = ImGui::GetContentRegionAvail().x);
+		const std::string& label,
+		glm::vec4&         color,
+		bool               show_label         = true,
+		float              color_picker_width = ImGui::GetContentRegionAvail().x);
 	// Creates a 3-component vector control with input fields and buttons
 	// and returns true if any of the components were changed
 	bool draw_vec3_control(
-	    const std::string& label,
-	    glm::vec3&         values,
-	    bool               scale_controls,
-	    float              min_input_field_value,
-	    float              max_input_field_value,
-	    float              input_field_width   = INPUT_FIELD_WIDTH,
-	    float              speed               = 0.1f,
-	    float              reset_value         = 0.0f,
-	    float              reset_button_width  = BUTTON_WIDTH,
-	    float              reset_button_height = BUTTON_HEIGHT);
+		const std::string& label,
+		glm::vec3&         values,
+		bool               scale_controls,
+		float              min_input_field_value,
+		float              max_input_field_value,
+		float              input_field_width   = INPUT_FIELD_WIDTH,
+		float              speed               = 0.1f,
+		float              reset_value         = 0.0f,
+		float              reset_button_width  = BUTTON_WIDTH,
+		float              reset_button_height = BUTTON_HEIGHT);
 	// Draws a float control with an input field and arrow buttons
 	// and returns true if the value was changed
 	bool draw_float_control(
-	    const std::string& label,
-	    float&             value,
-	    float              min_input_field_value,
-	    float              max_input_field_value,
-	    float              input_field_width   = INPUT_FIELD_WIDTH,
-	    float              speed               = 0.1f,
-	    float              resetValue          = 0.0f,
-	    float              reset_button_width  = BUTTON_WIDTH,
-	    float              reset_button_height = BUTTON_HEIGHT);
+		const std::string& label,
+		float&             value,
+		float              min_input_field_value,
+		float              max_input_field_value,
+		float              input_field_width   = INPUT_FIELD_WIDTH,
+		float              speed               = 0.1f,
+		float              resetValue          = 0.0f,
+		float              reset_button_width  = BUTTON_WIDTH,
+		float              reset_button_height = BUTTON_HEIGHT);
 
 	// Draws a remove button for an node and adds its id to the vector of nodes marked for removal
 	void draw_remove_node_button(
-	    Node*                       node,
-	    std::vector<std::uint32_t>& nodes_to_remove_ids,
-	    const std::string&          label         = "Remove",
-	    float                       button_width  = BUTTON_WIDTH,
-	    float                       button_height = BUTTON_HEIGHT);
+		Node*                       node,
+		std::vector<std::uint32_t>& nodes_to_remove_ids,
+		const std::string&          label         = "Remove",
+		float                       button_width  = BUTTON_WIDTH,
+		float                       button_height = BUTTON_HEIGHT);
 };

@@ -27,8 +27,8 @@ const glm::vec4 Random::generate_random_color() const
 const glm::vec3 Random::generate_random_position(glm::vec3 target, float min_distance_from_target, float max_distance_from_target) const
 {
 	glm::vec3 new_position{ target.x + (rand() % 100) / 100.0f * (max_distance_from_target - min_distance_from_target),
-	                        target.y + (rand() % 100) / 100.0f * (max_distance_from_target - min_distance_from_target),
-	                        target.z + (rand() % 100) / 100.0f * (max_distance_from_target - min_distance_from_target) };
+							target.y + (rand() % 100) / 100.0f * (max_distance_from_target - min_distance_from_target),
+							target.z + (rand() % 100) / 100.0f * (max_distance_from_target - min_distance_from_target) };
 
 	return new_position;
 }

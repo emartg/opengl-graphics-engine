@@ -44,15 +44,15 @@ void Render_Pass::create(const Render_Pass_Specification& spec)
 		{
 			glBindTexture(GL_TEXTURE_2D, color_attachment_ids[i]);
 			glTexImage2D(
-			    GL_TEXTURE_2D,
-			    0,
-			    GL_RGBA8, // prefer sized internal format for color attachments
-			    specification.width,
-			    specification.height,
-			    0,
-			    GL_RGBA,
-			    GL_UNSIGNED_BYTE,
-			    NULL);
+				GL_TEXTURE_2D,
+				0,
+				GL_RGBA8, // prefer sized internal format for color attachments
+				specification.width,
+				specification.height,
+				0,
+				GL_RGBA,
+				GL_UNSIGNED_BYTE,
+				NULL);
 
 			// set texture parameters for filtering and wrapping
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -86,15 +86,15 @@ void Render_Pass::create(const Render_Pass_Specification& spec)
 			// For now the approach is to keep it simple and ignore stencil when depth_as_texture = true.
 			GLenum internal_format = GL_DEPTH_COMPONENT24; // prefer sized internal format for depth texture
 			glTexImage2D(
-			    GL_TEXTURE_2D,
-			    0,
-			    internal_format,
-			    specification.width,
-			    specification.height,
-			    0,
-			    GL_DEPTH_COMPONENT,
-			    GL_UNSIGNED_INT,
-			    nullptr);
+				GL_TEXTURE_2D,
+				0,
+				internal_format,
+				specification.width,
+				specification.height,
+				0,
+				GL_DEPTH_COMPONENT,
+				GL_UNSIGNED_INT,
+				nullptr);
 
 			// set texture parameters for filtering and wrapping
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -236,10 +236,10 @@ std::string Render_Pass::get_specification_str() const
 {
 	// return a string representation of the render pass specification
 	return "{\n\tWidth: " + std::to_string(specification.width) + "\n" + "\tHeight: " + std::to_string(specification.height) + "\n" +
-	    "\tColor Attachment Count: " + std::to_string(specification.color_attachment_count) + "\n" +
-	    "\tHas Depth Attachment: " + (specification.has_depth_attachment ? "Yes" : "No") + "\n" +
-	    "\tHas Stencil Attachment: " + (specification.has_stencil_attachment ? "Yes" : "No") + "\n" +
-	    "\tDepth As Texture: " + (specification.depth_as_texture ? "Yes" : "No") + "\n}";
+		"\tColor Attachment Count: " + std::to_string(specification.color_attachment_count) + "\n" +
+		"\tHas Depth Attachment: " + (specification.has_depth_attachment ? "Yes" : "No") + "\n" +
+		"\tHas Stencil Attachment: " + (specification.has_stencil_attachment ? "Yes" : "No") + "\n" +
+		"\tDepth As Texture: " + (specification.depth_as_texture ? "Yes" : "No") + "\n}";
 }
 
 GLuint Render_Pass::get_texture_id(GLuint index) const

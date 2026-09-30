@@ -30,12 +30,12 @@ public:
 	// Constructors
 	// ------------
 	Light(
-	    const std::string&          name,
-	    const glm::vec3             ambient,
-	    const glm::vec3             diffuse,
-	    const glm::vec3             specular,
-	    const std::shared_ptr<Node> gizmo = nullptr,
-	    const Light_Type            type  = Light_Type::UNDEFINED);
+		const std::string&          name,
+		const glm::vec3             ambient,
+		const glm::vec3             diffuse,
+		const glm::vec3             specular,
+		const std::shared_ptr<Node> gizmo = nullptr,
+		const Light_Type            type  = Light_Type::UNDEFINED);
 
 	// Virtual destructor
 	// ------------------

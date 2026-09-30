@@ -131,20 +131,20 @@ public:
 	// and empty geometry shader paths mean that the program has no geometry shader.
 	// Returns true if compilation and linking were successful, false otherwise
 	bool compile_shaders(
-	    const std::vector<std::string>& shader_names,
-	    const std::vector<std::string>& vertex_shader_paths,
-	    const std::vector<std::string>& fragment_shader_paths);
+		const std::vector<std::string>& shader_names,
+		const std::vector<std::string>& vertex_shader_paths,
+		const std::vector<std::string>& fragment_shader_paths);
 	bool compile_shaders(
-	    const std::vector<std::string>& shader_names,
-	    const std::vector<std::string>& vertex_shader_paths,
-	    const std::vector<std::string>& geometry_shader_paths,
-	    const std::vector<std::string>& fragment_shader_paths);
+		const std::vector<std::string>& shader_names,
+		const std::vector<std::string>& vertex_shader_paths,
+		const std::vector<std::string>& geometry_shader_paths,
+		const std::vector<std::string>& fragment_shader_paths);
 
 	// Loads the textures and adds them to the engine
 	void load_textures(
-	    const std::vector<std::string>& texture_names,
-	    const std::vector<std::string>& texture_paths,
-	    const std::vector<std::string>& texture_types);
+		const std::vector<std::string>& texture_names,
+		const std::vector<std::string>& texture_paths,
+		const std::vector<std::string>& texture_types);
 
 	// Callback functions
 	void framebuffer_size_callback(GLint width, GLint height);

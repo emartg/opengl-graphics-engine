@@ -78,15 +78,15 @@ const GLfloat triangle_fan_plane_vertices_array[] = {
 
 // Triangle fan plane data in vector form
 const std::vector<GLfloat> triangle_fan_plane_positions_vector{ std::begin(triangle_fan_plane_positions_array),
-                                                                std::end(triangle_fan_plane_positions_array) };
+																std::end(triangle_fan_plane_positions_array) };
 const std::vector<GLfloat> triangle_fan_plane_normals_vector{ std::begin(triangle_fan_plane_normals_array),
-                                                              std::end(triangle_fan_plane_normals_array) };
+															  std::end(triangle_fan_plane_normals_array) };
 const std::vector<GLfloat> triangle_fan_plane_tex_coords_vector{ std::begin(triangle_fan_plane_tex_coords_array),
-                                                                 std::end(triangle_fan_plane_tex_coords_array) };
+																 std::end(triangle_fan_plane_tex_coords_array) };
 const std::vector<GLuint>  triangle_fan_plane_indices_vector{ std::begin(triangle_fan_plane_indices_array),
-                                                              std::end(triangle_fan_plane_indices_array) };
+															  std::end(triangle_fan_plane_indices_array) };
 const std::vector<GLfloat> triangle_fan_plane_vertices_vector{ std::begin(triangle_fan_plane_vertices_array),
-                                                               std::end(triangle_fan_plane_vertices_array) };
+															   std::end(triangle_fan_plane_vertices_array) };
 
 // clang-format off
 
@@ -107,4 +107,4 @@ const GLfloat triangle_fan_plane_direction_line_array[] = {
 
 // Triangle fan plane direction line data in vector form
 const std::vector<GLfloat> triangle_fan_plane_direction_line_vector{ std::begin(triangle_fan_plane_direction_line_array),
-                                                                     std::end(triangle_fan_plane_direction_line_array) };
+																	 std::end(triangle_fan_plane_direction_line_array) };

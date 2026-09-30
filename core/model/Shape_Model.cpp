@@ -10,78 +10,78 @@
 // Constructors
 // ------------
 Shape_Model::Shape_Model(
-    const std::string&         name,
-    const std::vector<GLfloat> vertices,
-    const std::vector<GLuint>  indices,
-    const glm::vec4            albedo,
-    const glm::vec3            position,
-    const glm::quat            rotation,
-    const glm::vec3            scale,
-    const glm::vec3            forward,
-    const glm::vec3            mesh_forward) :
-    Model(
-        name,
-        Node_Type::SHAPE_MODEL, // set the model type to SHAPE_MODEL
-        albedo,
-        position,
-        rotation,
-        scale,
-        forward,
-        mesh_forward),
-    vertices{ process_vertex_data(vertices) },
-    indices{ indices }
+	const std::string&         name,
+	const std::vector<GLfloat> vertices,
+	const std::vector<GLuint>  indices,
+	const glm::vec4            albedo,
+	const glm::vec3            position,
+	const glm::quat            rotation,
+	const glm::vec3            scale,
+	const glm::vec3            forward,
+	const glm::vec3            mesh_forward) :
+	Model(
+		name,
+		Node_Type::SHAPE_MODEL, // set the model type to SHAPE_MODEL
+		albedo,
+		position,
+		rotation,
+		scale,
+		forward,
+		mesh_forward),
+	vertices{ process_vertex_data(vertices) },
+	indices{ indices }
 {
 	create_mesh();
 }
 
 Shape_Model::Shape_Model(
-    const std::string&         name,
-    const std::vector<GLfloat> positions,
-    const std::vector<GLfloat> normals,
-    const std::vector<GLfloat> tex_coords,
-    const std::vector<GLuint>  indices,
-    const glm::vec4            albedo,
-    const glm::vec3            position,
-    const glm::quat            rotation,
-    const glm::vec3            scale,
-    const glm::vec3            forward,
-    const glm::vec3            mesh_forward) :
-    Model(
-        name,
-        Node_Type::SHAPE_MODEL, // set the model type to SHAPE_MODEL
-        albedo,
-        position,
-        rotation,
-        scale,
-        forward,
-        mesh_forward),
-    vertices{ process_vertex_data(positions, normals, tex_coords) },
-    indices{ indices }
+	const std::string&         name,
+	const std::vector<GLfloat> positions,
+	const std::vector<GLfloat> normals,
+	const std::vector<GLfloat> tex_coords,
+	const std::vector<GLuint>  indices,
+	const glm::vec4            albedo,
+	const glm::vec3            position,
+	const glm::quat            rotation,
+	const glm::vec3            scale,
+	const glm::vec3            forward,
+	const glm::vec3            mesh_forward) :
+	Model(
+		name,
+		Node_Type::SHAPE_MODEL, // set the model type to SHAPE_MODEL
+		albedo,
+		position,
+		rotation,
+		scale,
+		forward,
+		mesh_forward),
+	vertices{ process_vertex_data(positions, normals, tex_coords) },
+	indices{ indices }
 {
 	create_mesh();
 }
 
 Shape_Model::Shape_Model(
-    const std::string& name,
-    const GLfloat*     vertices,
-    const GLuint       n_vertices,
-    const GLuint*      indices,
-    const GLuint       n_indices,
-    const glm::vec4    albedo,
-    const glm::vec3    position,
-    const glm::quat    rotation,
-    const glm::vec3    scale,
-    const glm::vec3    forward,
-    const glm::vec3    mesh_forward) :
-    Model(
-        name,
-        Node_Type::SHAPE_MODEL, // set the model type to SHAPE_MODEL
-        albedo,
-        position,
-        rotation,
-        scale,
-        forward,
-        mesh_forward)
+	const std::string& name,
+	const GLfloat*     vertices,
+	const GLuint       n_vertices,
+	const GLuint*      indices,
+	const GLuint       n_indices,
+	const glm::vec4    albedo,
+	const glm::vec3    position,
+	const glm::quat    rotation,
+	const glm::vec3    scale,
+	const glm::vec3    forward,
+	const glm::vec3    mesh_forward) :
+	Model(
+		name,
+		Node_Type::SHAPE_MODEL, // set the model type to SHAPE_MODEL
+		albedo,
+		position,
+		rotation,
+		scale,
+		forward,
+		mesh_forward)
 {
 	std::vector<GLfloat> vertex_data{ vertices, vertices + n_vertices * 8 };
 	std::vector<GLuint>  index_data{ indices, indices + n_indices };
@@ -92,28 +92,28 @@ Shape_Model::Shape_Model(
 }
 
 Shape_Model::Shape_Model(
-    const std::string& name,
-    const GLfloat*     positions,
-    const GLfloat*     normals,
-    const GLfloat*     tex_coords,
-    const GLuint       n_vertices,
-    const GLuint*      indices,
-    const GLuint       n_indices,
-    const glm::vec4    albedo,
-    const glm::vec3    position,
-    const glm::quat    rotation,
-    const glm::vec3    scale,
-    const glm::vec3    forward,
-    const glm::vec3    mesh_forward) :
-    Model(
-        name,
-        Node_Type::SHAPE_MODEL, // set the model type to SHAPE_MODEL
-        albedo,
-        position,
-        rotation,
-        scale,
-        forward,
-        mesh_forward)
+	const std::string& name,
+	const GLfloat*     positions,
+	const GLfloat*     normals,
+	const GLfloat*     tex_coords,
+	const GLuint       n_vertices,
+	const GLuint*      indices,
+	const GLuint       n_indices,
+	const glm::vec4    albedo,
+	const glm::vec3    position,
+	const glm::quat    rotation,
+	const glm::vec3    scale,
+	const glm::vec3    forward,
+	const glm::vec3    mesh_forward) :
+	Model(
+		name,
+		Node_Type::SHAPE_MODEL, // set the model type to SHAPE_MODEL
+		albedo,
+		position,
+		rotation,
+		scale,
+		forward,
+		mesh_forward)
 {
 	std::vector<GLfloat> position_data{ positions, positions + n_vertices * 3 };
 	std::vector<GLfloat> normal_data{ normals, normals + n_vertices * 3 };

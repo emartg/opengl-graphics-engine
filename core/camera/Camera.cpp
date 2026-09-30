@@ -12,15 +12,15 @@
 // Constructors
 // ------------
 Camera::Camera(const std::string& name, const glm::vec3 position, const glm::vec3 up, const GLfloat yaw, const GLfloat pitch) :
-    Node("Camera", Node_Type::CAMERA, ALBEDO, POSITION, ROTATION, SCALE, FORWARD, FORWARD, Gizmo_Type::NONE, false, false),
-    position{ position },
-    front{ FRONT },
-    world_up{ up },
-    yaw{ yaw },
-    pitch{ pitch },
-    movement_speed{ SPEED },
-    mouse_sensitivity{ SENSITIVITY },
-    zoom{ ZOOM }
+	Node("Camera", Node_Type::CAMERA, ALBEDO, POSITION, ROTATION, SCALE, FORWARD, FORWARD, Gizmo_Type::NONE, false, false),
+	position{ position },
+	front{ FRONT },
+	world_up{ up },
+	yaw{ yaw },
+	pitch{ pitch },
+	movement_speed{ SPEED },
+	mouse_sensitivity{ SENSITIVITY },
+	zoom{ ZOOM }
 {
 	// store the initial values for camera reset
 	initial_position = position;
@@ -33,16 +33,16 @@ Camera::Camera(const std::string& name, const glm::vec3 position, const glm::vec
 }
 
 Camera::Camera(
-    const std::string& name,
-    const GLfloat      pos_x,
-    const GLfloat      pos_y,
-    const GLfloat      pos_z,
-    const GLfloat      up_x,
-    const GLfloat      up_y,
-    const GLfloat      up_z,
-    const GLfloat      yaw,
-    const GLfloat      pitch) :
-    Camera(name, glm::vec3(pos_x, pos_y, pos_z), glm::vec3(up_x, up_y, up_z), yaw, pitch)
+	const std::string& name,
+	const GLfloat      pos_x,
+	const GLfloat      pos_y,
+	const GLfloat      pos_z,
+	const GLfloat      up_x,
+	const GLfloat      up_y,
+	const GLfloat      up_z,
+	const GLfloat      yaw,
+	const GLfloat      pitch) :
+	Camera(name, glm::vec3(pos_x, pos_y, pos_z), glm::vec3(up_x, up_y, up_z), yaw, pitch)
 {}
 
 // Public Methods

@@ -16,23 +16,23 @@
 // Constructors
 // ------------
 Texture::Texture(const std::string& name, const std::string& path, const Texture_Type type) :
-    Node(name, Node_Type::TEXTURE), // set the node type to TEXTURE
-    texture_id{ load_texture_from_file(path.c_str()) },
-    path{ path },
-    texture_type{ type }
+	Node(name, Node_Type::TEXTURE), // set the node type to TEXTURE
+	texture_id{ load_texture_from_file(path.c_str()) },
+	path{ path },
+	texture_type{ type }
 {}
 
 Texture::Texture(const std::string& name, GLuint existing_id, Texture_Type type) :
-    Node(name, Node_Type::TEXTURE), // set the node type to TEXTURE
-    texture_id{ existing_id },
-    texture_type{ type }
+	Node(name, Node_Type::TEXTURE), // set the node type to TEXTURE
+	texture_id{ existing_id },
+	texture_type{ type }
 {}
 
 Texture::Texture(const std::string& name, const std::string& hdr_path, const bool as_hdr) :
-    Node(name, Node_Type::TEXTURE), // set the node type to TEXTURE
-    texture_id{ as_hdr ? load_hdr_texture_from_file(hdr_path.c_str()) : load_texture_from_file(hdr_path.c_str()) },
-    path{ hdr_path },
-    texture_type{ as_hdr ? Texture_Type::HDR_EQUIRECTANGULAR : Texture_Type::UNDEFINED }
+	Node(name, Node_Type::TEXTURE), // set the node type to TEXTURE
+	texture_id{ as_hdr ? load_hdr_texture_from_file(hdr_path.c_str()) : load_texture_from_file(hdr_path.c_str()) },
+	path{ hdr_path },
+	texture_type{ as_hdr ? Texture_Type::HDR_EQUIRECTANGULAR : Texture_Type::UNDEFINED }
 {
 	if (as_hdr && texture_id == 0)
 	{ // if the HDR texture failed to load, print an error
@@ -41,9 +41,9 @@ Texture::Texture(const std::string& name, const std::string& hdr_path, const boo
 }
 
 Texture::Texture(const std::string& name, const std::vector<std::string>& faces) :
-    Node(name, Node_Type::TEXTURE), // set the node type to TEXTURE
-    texture_id{ load_cubemap_from_files(faces) },
-    texture_type{ Texture_Type::CUBEMAP }
+	Node(name, Node_Type::TEXTURE), // set the node type to TEXTURE
+	texture_id{ load_cubemap_from_files(faces) },
+	texture_type{ Texture_Type::CUBEMAP }
 {
 	if (faces.size() == 6)
 	{ // if 6 faces are provided, store their paths
@@ -52,7 +52,7 @@ Texture::Texture(const std::string& name, const std::vector<std::string>& faces)
 	else
 	{ // if not, print an error and set the cubemap texture id to 0
 		std::cerr << "[ERROR::TEXTURE::Texture] Cubemap texture requires 6 face paths, "
-		          << "but " << faces.size() << " were provided" << std::endl;
+				  << "but " << faces.size() << " were provided" << std::endl;
 		texture_id = 0; // ensure texture id is 0 if cubemap loading failed
 	}
 }
@@ -107,7 +107,7 @@ GLuint Texture::load_texture_from_file(const GLchar* path)
 	else
 	{ // if the image failed to load, print an error, free memory, and set texture_id to 0
 		std::cerr << "[ERROR::TEXTURE::load_texture_from_file] Failed to load texture from:\n\t" << path
-		          << "\n\tFailure reason: " << stbi_failure_reason() << std::endl;
+				  << "\n\tFailure reason: " << stbi_failure_reason() << std::endl;
 		stbi_image_free(data); // free image memory
 		texture_id = 0;
 	}
@@ -166,7 +166,7 @@ GLuint Texture::load_hdr_texture_from_file(const GLchar* path)
 	else
 	{ // if the image failed to load, print an error, free memory, and set texture_id to 0
 		std::cerr << "[ERROR::TEXTURE::load_hdr_texture_from_file] Failed to load HDR texture from:\n\t" << path
-		          << "\n\tFailure reason: " << stbi_failure_reason() << std::endl;
+				  << "\n\tFailure reason: " << stbi_failure_reason() << std::endl;
 		stbi_image_free(data); // free image memory
 		texture_id = 0;
 
@@ -183,7 +183,7 @@ GLuint Texture::load_cubemap_from_files(const std::vector<std::string>& faces)
 	if (faces.size() != 6)
 	{ // if not, print an error and return 0
 		std::cerr << "[ERROR::TEXTURE::load_cubemap_from_files] Cubemap texture requires 6 face paths, "
-		          << "but " << faces.size() << " were provided" << std::endl;
+				  << "but " << faces.size() << " were provided" << std::endl;
 		return 0;
 	}
 
@@ -221,7 +221,7 @@ GLuint Texture::load_cubemap_from_files(const std::vector<std::string>& faces)
 		else
 		{ // if any face failed to load, print an error, free memory, and return 0
 			std::cerr << "[ERROR::TEXTURE::load_cubemap_from_files] Failed to load cubemap texture at:\n\t" << faces[i]
-			          << "\n\tFailure reason: " << stbi_failure_reason() << std::endl;
+					  << "\n\tFailure reason: " << stbi_failure_reason() << std::endl;
 			stbi_image_free(data); // free image memory
 			texture_id = 0;
 			return texture_id;
@@ -238,8 +238,8 @@ GLuint Texture::load_cubemap_from_files(const std::vector<std::string>& faces)
 
 	// print success message and return the cubemap texture id
 	std::cout << "[SUCCESS::TEXTURE::load_cubemap_from_files] Cubemap texture loaded successfully "
-	             "from provided faces"
-	          << std::endl;
+				 "from provided faces"
+			  << std::endl;
 	return texture_id;
 }
 

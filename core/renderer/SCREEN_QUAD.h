@@ -52,6 +52,6 @@ const GLfloat screen_quad_vertices_array[] = {
 // Screen quad vertex data in vector form
 const std::vector<GLfloat> screen_quad_positions_vector{ std::begin(screen_quad_pos_array), std::end(screen_quad_pos_array) };
 const std::vector<GLfloat> screen_quad_tex_coords_vector{ std::begin(screen_quad_tex_coords_array),
-                                                          std::end(screen_quad_tex_coords_array) };
+														  std::end(screen_quad_tex_coords_array) };
 const std::vector<GLuint>  screen_quad_indices_vector{ std::begin(screen_quad_indices_array), std::end(screen_quad_indices_array) };
 const std::vector<GLfloat> screen_quad_vertices_vector{ std::begin(screen_quad_vertices_array), std::end(screen_quad_vertices_array) };

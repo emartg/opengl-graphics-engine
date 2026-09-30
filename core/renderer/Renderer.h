@@ -200,7 +200,7 @@ protected:
 	void update_dynamic_env_maps();
 	void capture_dynamic_env_map_for_model(const std::shared_ptr<Node>& model, Dynamic_Env_Map_Entry& entry);
 	void render_scene_for_env_map_capture(
-	    const glm::mat4&             capture_view,
-	    const glm::mat4&             capture_projection,
-	    const std::shared_ptr<Node>& exclude_model);
+		const glm::mat4&             capture_view,
+		const glm::mat4&             capture_projection,
+		const std::shared_ptr<Node>& exclude_model);
 };

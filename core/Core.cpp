@@ -60,11 +60,11 @@ Core* Core::instance{ nullptr };
 // Constructors
 // ------------
 Core::Core() :
-    renderer{ nullptr },
-    node_manager{ std::make_shared<Node_Manager>() },
-    input_manager{ std::make_shared<Input_Manager>() },
-    scene_manager{ std::make_shared<Scene_Manager>() },
-    selection_manager{ std::make_shared<Selection_Manager>() }
+	renderer{ nullptr },
+	node_manager{ std::make_shared<Node_Manager>() },
+	input_manager{ std::make_shared<Input_Manager>() },
+	scene_manager{ std::make_shared<Scene_Manager>() },
+	selection_manager{ std::make_shared<Selection_Manager>() }
 {}
 
 // Destructor
@@ -155,7 +155,7 @@ bool Core::compile_builtin_shaders()
 		shader_names.emplace_back(shader_info.name);
 		vertex_shader_paths.push_back(get_resource_path(std::string("shaders/") + shader_info.vertex_file));
 		geometry_shader_paths.push_back(
-		    *shader_info.geometry_file == '\0' ? std::string{} : get_resource_path(std::string("shaders/") + shader_info.geometry_file));
+			*shader_info.geometry_file == '\0' ? std::string{} : get_resource_path(std::string("shaders/") + shader_info.geometry_file));
 		fragment_shader_paths.push_back(get_resource_path(std::string("shaders/") + shader_info.fragment_file));
 	}
 
@@ -210,7 +210,7 @@ bool Core::init()
 
 	// print the OpenGL version and renderer of the context (useful to diagnose driver issues)
 	std::cout << "[INFO::CORE::init] OpenGL " << glGetString(GL_VERSION) << " (" << glGetString(GL_RENDERER) << ", "
-	          << glGetString(GL_VENDOR) << ")" << std::endl;
+			  << glGetString(GL_VENDOR) << ")" << std::endl;
 
 	// set the viewport to the window size
 	renderer->set_viewport(screen_width, screen_height);
@@ -281,25 +281,25 @@ void Core::shutdown()
 }
 
 bool Core::compile_shaders(
-    const std::vector<std::string>& shader_names,
-    const std::vector<std::string>& vertex_shader_paths,
-    const std::vector<std::string>& fragment_shader_paths)
+	const std::vector<std::string>& shader_names,
+	const std::vector<std::string>& vertex_shader_paths,
+	const std::vector<std::string>& fragment_shader_paths)
 {
 	// delegate to the general overload with no geometry stage for any of the shaders
 	return compile_shaders(shader_names, vertex_shader_paths, std::vector<std::string>(shader_names.size()), fragment_shader_paths);
 }
 
 bool Core::compile_shaders(
-    const std::vector<std::string>& shader_names,
-    const std::vector<std::string>& vertex_shader_paths,
-    const std::vector<std::string>& geometry_shader_paths,
-    const std::vector<std::string>& fragment_shader_paths)
+	const std::vector<std::string>& shader_names,
+	const std::vector<std::string>& vertex_shader_paths,
+	const std::vector<std::string>& geometry_shader_paths,
+	const std::vector<std::string>& fragment_shader_paths)
 {
 	size_t shader_count = shader_names.size(); // number of shaders to compile
 
 	// ensure the sizes of the input vectors match
 	if (vertex_shader_paths.size() != shader_count || geometry_shader_paths.size() != shader_count ||
-	    fragment_shader_paths.size() != shader_count)
+		fragment_shader_paths.size() != shader_count)
 	{ // if the sizes do not match, print an error message and return false
 		std::cerr << "[ERROR::CORE::compile_shaders] Mismatched shader names and paths sizes!" << std::endl;
 		return false;
@@ -320,13 +320,13 @@ bool Core::compile_shaders(
 		if (!renderer->set_shader_by_name(shader->get_name(), shader))
 		{ // if the shader was not set successfully, print an error message and return false
 			std::cerr << "[ERROR::CORE::compile_shaders] Failed to set shader with name '" << shader_names[i]
-			          << "' in the renderer (unknown name or null shader)" << std::endl;
+					  << "' in the renderer (unknown name or null shader)" << std::endl;
 			return false;
 		}
 		else
 		{ // if the shader was set successfully, print a success message
 			std::cout << "[SUCCESS::CORE::compile_shaders] Shader with name '" << shader_names[i] << "' set successfully in the renderer"
-			          << std::endl;
+					  << std::endl;
 		}
 
 		// if this is the picking shader, set it in the selection manager
@@ -346,9 +346,9 @@ bool Core::compile_shaders(
 }
 
 void Core::load_textures(
-    const std::vector<std::string>& texture_names,
-    const std::vector<std::string>& texture_paths,
-    const std::vector<std::string>& texture_types)
+	const std::vector<std::string>& texture_names,
+	const std::vector<std::string>& texture_paths,
+	const std::vector<std::string>& texture_types)
 {
 	for (GLuint i{}; i < texture_names.size(); i++)
 	{

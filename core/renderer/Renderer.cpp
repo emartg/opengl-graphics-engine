@@ -249,7 +249,7 @@ void Renderer::render_scene()
 
 	// ensure camera and shaders are valid before proceeding
 	if (!camera || !shape_model_shader || !assimp_model_shader || !single_albedo_shader || !screen_quad_shader || !picking_shader ||
-	    !skybox_shader || !equirect_to_cubemap_shader || !reflective_shader || !refractive_shader)
+		!skybox_shader || !equirect_to_cubemap_shader || !reflective_shader || !refractive_shader)
 	{ // if any of them are null, print an error message and return
 		std::cerr << "[ERROR::RENDERER::render_scene] Camera or shaders aren't set up correctly" << std::endl;
 		return;
@@ -257,10 +257,10 @@ void Renderer::render_scene()
 
 	// compute view and projection transformations
 	glm::mat4 projection = glm::perspective(
-	    glm::radians(camera->get_zoom()),
-	    static_cast<GLfloat>(core->get_screen_width()) / static_cast<GLfloat>(core->get_screen_height()),
-	    0.1f,
-	    100.0f);
+		glm::radians(camera->get_zoom()),
+		static_cast<GLfloat>(core->get_screen_width()) / static_cast<GLfloat>(core->get_screen_height()),
+		0.1f,
+		100.0f);
 	glm::mat4 view = camera->get_view_matrix();
 
 	// transpose of the upper-left 3x3 submatrix of the view matrix, used for environment mapping
@@ -317,8 +317,8 @@ void Renderer::render_scene()
 				shape_model_shader->use();
 				// vertex shader uniforms
 				shape_model_shader->set_vec3(
-				    "u_directional_light_dir[" + std::to_string(directional_light_idx) + "]",
-				    directional_light->get_direction());
+					"u_directional_light_dir[" + std::to_string(directional_light_idx) + "]",
+					directional_light->get_direction());
 				// fragment shader uniforms
 				shape_model_shader->set_vec3(prefix + "ambient", directional_light->get_ambient());
 				shape_model_shader->set_vec3(prefix + "diffuse", directional_light->get_diffuse());
@@ -328,8 +328,8 @@ void Renderer::render_scene()
 				assimp_model_shader->use();
 				// vertex shader uniforms
 				assimp_model_shader->set_vec3(
-				    "u_directional_light_dir[" + std::to_string(directional_light_idx) + "]",
-				    directional_light->get_direction());
+					"u_directional_light_dir[" + std::to_string(directional_light_idx) + "]",
+					directional_light->get_direction());
 				// fragment shader uniforms
 				assimp_model_shader->set_vec3(prefix + "ambient", directional_light->get_ambient());
 				assimp_model_shader->set_vec3(prefix + "diffuse", directional_light->get_diffuse());
@@ -508,8 +508,8 @@ void Renderer::render_scene()
 			static uint32_t warn_counter = 0;
 			if ((warn_counter++ % 240) == 0)
 				std::cerr << "[WARNING::RENDERER::render_scene] "
-				             "Skybox still HDR (conversion pending)"
-				          << std::endl;
+							 "Skybox still HDR (conversion pending)"
+						  << std::endl;
 		}
 	}
 
@@ -609,8 +609,8 @@ void Renderer::register_model_for_dynamic_env_map_capture(std::uint32_t model_id
 	entry.has_prev_cubemap = false;                      // initially, there is no valid previous cubemap
 
 	std::cout << "[INFO::RENDERER::register_model_for_dynamic_env_map_capture] "
-	             "Registered dynamic environment map for model id "
-	          << model_id << " with resolution " << resolution << std::endl;
+				 "Registered dynamic environment map for model id "
+			  << model_id << " with resolution " << resolution << std::endl;
 }
 
 void Renderer::unregister_model_for_dynamic_env_map_capture(std::uint32_t model_id)
@@ -631,8 +631,8 @@ void Renderer::unregister_model_for_dynamic_env_map_capture(std::uint32_t model_
 	dynamic_env_maps.erase(it); // remove the entry from the map
 
 	std::cout << "[INFO::RENDERER::unregister_model_for_dynamic_env_map_capture] "
-	             "Unregistered dynamic environment map for model id "
-	          << model_id << std::endl;
+				 "Unregistered dynamic environment map for model id "
+			  << model_id << std::endl;
 }
 
 // Protected Methods
@@ -768,8 +768,8 @@ void Renderer::ensure_offscren_render_pass()
 
 		// print a message indicating the offscreen render pass has been recreated
 		std::cout << "[INFO::RENDERER::ensure_offscren_render_pass] "
-		             "\nOffscreen render pass recreated with updated dimensions:\n"
-		          << main_render_pass->get_specification_str() << std::endl;
+					 "\nOffscreen render pass recreated with updated dimensions:\n"
+				  << main_render_pass->get_specification_str() << std::endl;
 	}
 
 	init_screen_quad(); // initialize the screen quad if it hasn't been initialized yet
@@ -790,16 +790,16 @@ void Renderer::init_screen_quad()
 	// bind the VBO and EBO, and send the screen quad vertex and index data to the GPU
 	glBindBuffer(GL_ARRAY_BUFFER, screen_quad_vbo);
 	glBufferData(
-	    GL_ARRAY_BUFFER,
-	    static_cast<GLsizeiptr>(screen_quad_vertices_vector.size() * sizeof(GLfloat)),
-	    screen_quad_vertices_vector.data(),
-	    GL_STATIC_DRAW);
+		GL_ARRAY_BUFFER,
+		static_cast<GLsizeiptr>(screen_quad_vertices_vector.size() * sizeof(GLfloat)),
+		screen_quad_vertices_vector.data(),
+		GL_STATIC_DRAW);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, screen_quad_ebo);
 	glBufferData(
-	    GL_ELEMENT_ARRAY_BUFFER,
-	    static_cast<GLsizeiptr>(screen_quad_indices_vector.size() * sizeof(GLuint)),
-	    screen_quad_indices_vector.data(),
-	    GL_STATIC_DRAW);
+		GL_ELEMENT_ARRAY_BUFFER,
+		static_cast<GLsizeiptr>(screen_quad_indices_vector.size() * sizeof(GLuint)),
+		screen_quad_indices_vector.data(),
+		GL_STATIC_DRAW);
 
 	// set the vertex attribute pointers for the screen quad
 	// compute a local stride for the vertex attributes (5 floats per vertex: 3 pos, 2 tex coords)
@@ -889,8 +889,8 @@ void Renderer::composite_to_screen()
 		else
 		{ // if the picking texture is not available, print a warning and bind the main color texture instead
 			std::cerr << "[WARNING::RENDERER::composite_to_screen] Picking texture not available, "
-			             "binding main render pass color texture instead"
-			          << std::endl;
+						 "binding main render pass color texture instead"
+					  << std::endl;
 			glBindTexture(GL_TEXTURE_2D, main_render_pass->get_texture_id(0));
 		}
 	}
@@ -1051,8 +1051,8 @@ void Renderer::convert_hdr_to_cubemap_if_needed()
 	if (!equirect_to_cubemap_shader)
 	{ // if the equirectangular to cubemap shader is not set, print an error message and return
 		std::cerr << "[ERROR::RENDERER::convert_hdr_to_cubemap_if_needed] "
-		             "Equirectangular to Cubemap Shader not set"
-		          << std::endl;
+					 "Equirectangular to Cubemap Shader not set"
+				  << std::endl;
 		return;
 	}
 
@@ -1161,7 +1161,7 @@ void Renderer::convert_hdr_to_cubemap_if_needed()
 	hdr_to_cubemap_converted = true; // mark as converted to avoid redundant conversions
 
 	std::cout << "[SUCCESS::RENDERER::convert_hdr_to_cubemap_if_needed] Converted HDR (src texId = " << hdr_source_tex_id
-	          << ") to cubemap (texId = " << env_cubemap << ")" << std::endl;
+			  << ") to cubemap (texId = " << env_cubemap << ")" << std::endl;
 
 	// reset source id so a new HDR selection triggers fresh conversion logic properly
 	hdr_source_tex_id = env_cubemap; // the active skybox is now the cubemap
@@ -1245,15 +1245,15 @@ void Renderer::capture_dynamic_env_map_for_model(const std::shared_ptr<Node>& mo
 		glBindTexture(GL_TEXTURE_CUBE_MAP, entry.cubemap_tex_id);
 		for (unsigned int i = 0; i < 6; ++i)
 			glTexImage2D(
-			    GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
-			    0,
-			    GL_RGB16F,
-			    entry.resolution,
-			    entry.resolution,
-			    0,
-			    GL_RGB,
-			    GL_FLOAT,
-			    nullptr);
+				GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
+				0,
+				GL_RGB16F,
+				entry.resolution,
+				entry.resolution,
+				0,
+				GL_RGB,
+				GL_FLOAT,
+				nullptr);
 		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
@@ -1265,15 +1265,15 @@ void Renderer::capture_dynamic_env_map_for_model(const std::shared_ptr<Node>& mo
 		glBindTexture(GL_TEXTURE_CUBE_MAP, entry.prev_cubemap_tex_id);
 		for (unsigned int i = 0; i < 6; ++i)
 			glTexImage2D(
-			    GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
-			    0,
-			    GL_RGB16F,
-			    entry.resolution,
-			    entry.resolution,
-			    0,
-			    GL_RGB,
-			    GL_FLOAT,
-			    nullptr);
+				GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
+				0,
+				GL_RGB16F,
+				entry.resolution,
+				entry.resolution,
+				0,
+				GL_RGB,
+				GL_FLOAT,
+				nullptr);
 		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
@@ -1300,8 +1300,8 @@ void Renderer::capture_dynamic_env_map_for_model(const std::shared_ptr<Node>& mo
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{ // validate FBO completeness, if incomplete, print error, restore FBO, and return
 		std::cerr << "[ERROR::RENDERER::capture_dynamic_env_map_for_model] "
-		             "Dynamic Env Map FBO incomplete for model id "
-		          << model->get_id() << std::endl;
+					 "Dynamic Env Map FBO incomplete for model id "
+				  << model->get_id() << std::endl;
 		glBindFramebuffer(GL_FRAMEBUFFER, prev_fbo); // restore previous FBO
 		return;
 	}
@@ -1342,9 +1342,9 @@ void Renderer::capture_dynamic_env_map_for_model(const std::shared_ptr<Node>& mo
 }
 
 void Renderer::render_scene_for_env_map_capture(
-    const glm::mat4&             capture_views,
-    const glm::mat4&             capture_proj,
-    const std::shared_ptr<Node>& exclude_model)
+	const glm::mat4&             capture_views,
+	const glm::mat4&             capture_proj,
+	const std::shared_ptr<Node>& exclude_model)
 {
 	auto  core          = Core::get_instance();      // get the core instance
 	auto& node_manager  = core->get_node_manager();  // get the node manager
@@ -1399,8 +1399,8 @@ void Renderer::render_scene_for_env_map_capture(
 				shape_model_shader->set_vec3(prefix + "specular", dl->get_specular());
 				assimp_model_shader->use();
 				assimp_model_shader->set_vec3(
-				    "u_directional_light_dir[" + std::to_string(directional_light_idx) + "]",
-				    dl->get_direction());
+					"u_directional_light_dir[" + std::to_string(directional_light_idx) + "]",
+					dl->get_direction());
 				assimp_model_shader->set_vec3(prefix + "ambient", dl->get_ambient());
 				assimp_model_shader->set_vec3(prefix + "diffuse", dl->get_diffuse());
 				assimp_model_shader->set_vec3(prefix + "specular", dl->get_specular());
@@ -1544,8 +1544,8 @@ void Renderer::render_scene_for_env_map_capture(
 					default:
 						// if the model type is unknown, print an error message and return
 						std::cerr << "[ERROR::RENDERER::render_scene_for_env_map_capture] "
-						             "Unknown model type for "
-						          << current_model->get_name() << std::endl;
+									 "Unknown model type for "
+								  << current_model->get_name() << std::endl;
 						return;
 
 						// set the polygon mode to fill for regular models
@@ -1598,8 +1598,8 @@ void Renderer::render_scene_for_env_map_capture(
 				default:
 					// if the model type is unknown, print an error message and return
 					std::cerr << "[ERROR::RENDERER::render_scene_for_env_map_capture] "
-					             "Unknown model type for "
-					          << model->get_name() << std::endl;
+								 "Unknown model type for "
+							  << model->get_name() << std::endl;
 					return;
 			}
 

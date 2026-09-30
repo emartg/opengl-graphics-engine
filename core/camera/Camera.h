@@ -33,22 +33,22 @@ public:
 	// ------------
 	// Constructor with vectors
 	Camera(
-	    const std::string& name,
-	    const glm::vec3    position = POSITION,
-	    const glm::vec3    up       = UP,
-	    const GLfloat      yaw      = YAW,
-	    const GLfloat      pitch    = PITCH);
+		const std::string& name,
+		const glm::vec3    position = POSITION,
+		const glm::vec3    up       = UP,
+		const GLfloat      yaw      = YAW,
+		const GLfloat      pitch    = PITCH);
 	// Constructor with scalar values
 	Camera(
-	    const std::string& name,
-	    const GLfloat      pos_x,
-	    const GLfloat      pos_y,
-	    const GLfloat      pos_z,
-	    const GLfloat      up_x,
-	    const GLfloat      up_y,
-	    const GLfloat      up_z,
-	    const GLfloat      yaw   = YAW,
-	    const GLfloat      pitch = PITCH);
+		const std::string& name,
+		const GLfloat      pos_x,
+		const GLfloat      pos_y,
+		const GLfloat      pos_z,
+		const GLfloat      up_x,
+		const GLfloat      up_y,
+		const GLfloat      up_z,
+		const GLfloat      yaw   = YAW,
+		const GLfloat      pitch = PITCH);
 
 	// Destructor
 	// ----------

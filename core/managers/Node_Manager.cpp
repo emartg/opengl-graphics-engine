@@ -106,7 +106,7 @@ void Node_Manager::add_node(std::shared_ptr<Node> node)
 
 	// print the type, id, and name of the added node
 	std::cout << "[INFO::NODEMANAGER::add_node] Added " << node_type << " node with id " << node->get_id() << " and name '"
-	          << node->get_name() << "'" << std::endl;
+			  << node->get_name() << "'" << std::endl;
 }
 void Node_Manager::remove_node_by_id(std::uint32_t id)
 {
@@ -145,7 +145,7 @@ void Node_Manager::remove_node_by_id(std::uint32_t id)
 			parent->remove_child(node_to_remove);
 
 			std::cout << "[INFO::NODEMANAGER::remove_node_by_id] Severed node id " << id << " from parent with id " << parent->get_id()
-			          << std::endl;
+					  << std::endl;
 		}
 	}
 
@@ -156,7 +156,7 @@ void Node_Manager::remove_node_by_id(std::uint32_t id)
 		if (!children.empty())
 		{ // if the node has children, print info and recursively remove each child, then print confirmation
 			std::cout << "[INFO::NODEMANAGER::remove_node_by_id] Node with id " << id << " has " << children.size()
-			          << " children. Removing children first..." << std::endl;
+					  << " children. Removing children first..." << std::endl;
 
 			// create a copy of the children vector to avoid iteratior invalidation during removal
 			std::vector<std::shared_ptr<Node>> children_copy = children;

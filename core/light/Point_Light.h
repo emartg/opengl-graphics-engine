@@ -19,14 +19,14 @@ public:
 	// Constructors
 	// ------------
 	Point_Light(
-	    const std::string& name,
-	    const glm::vec3    ambient   = AMBIENT,
-	    const glm::vec3    diffuse   = DIFFUSE,
-	    const glm::vec3    specular  = SPECULAR,
-	    const glm::vec3    position  = POSITION,
-	    const GLfloat      constant  = CONSTANT,
-	    const GLfloat      linear    = LINEAR,
-	    const GLfloat      quadratic = QUADRATIC);
+		const std::string& name,
+		const glm::vec3    ambient   = AMBIENT,
+		const glm::vec3    diffuse   = DIFFUSE,
+		const glm::vec3    specular  = SPECULAR,
+		const glm::vec3    position  = POSITION,
+		const GLfloat      constant  = CONSTANT,
+		const GLfloat      linear    = LINEAR,
+		const GLfloat      quadratic = QUADRATIC);
 
 	// Destructor
 	// ----------

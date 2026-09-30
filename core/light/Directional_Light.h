@@ -24,12 +24,12 @@ public:
 	// Constructors
 	// ------------
 	Directional_Light(
-	    const std::string& name,
-	    const glm::vec3    ambient   = AMBIENT,
-	    const glm::vec3    diffuse   = DIFFUSE,
-	    const glm::vec3    specular  = SPECULAR,
-	    const glm::vec3    position  = POSITION,
-	    const glm::vec3    direction = DIRECTION);
+		const std::string& name,
+		const glm::vec3    ambient   = AMBIENT,
+		const glm::vec3    diffuse   = DIFFUSE,
+		const glm::vec3    specular  = SPECULAR,
+		const glm::vec3    position  = POSITION,
+		const glm::vec3    direction = DIRECTION);
 
 	// Destructor
 	// ----------

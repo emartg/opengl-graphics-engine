@@ -17,11 +17,11 @@
 // Constructor
 // -----------
 Input_Manager::Input_Manager() :
-    last_mouse_x{},
-    last_mouse_y{},
-    mouse_sensitivity{ 1.0f },
-    first_mouse{ true },
-    camera_control_enabled{ false }
+	last_mouse_x{},
+	last_mouse_y{},
+	mouse_sensitivity{ 1.0f },
+	first_mouse{ true },
+	camera_control_enabled{ false }
 {}
 
 // Destructor
@@ -99,7 +99,7 @@ void Input_Manager::key_callback(std::string input)
 		if (!node)
 		{ // if the selected node does not exist, print an error message and return
 			std::cerr << "[ERROR::INPUTMANAGER::key_callback] Delete key pressed, but selected node with id " << selected_node_id
-			          << " does not exist" << std::endl;
+					  << " does not exist" << std::endl;
 			return;
 		}
 
@@ -108,14 +108,14 @@ void Input_Manager::key_callback(std::string input)
 		if (node->get_type() == Node_Type::CAMERA)
 		{
 			std::cout << "[INFO::INPUTMANAGER::key_callback] Cameras cannot be deleted for now "
-			             "(id "
-			          << selected_node_id << ")" << std::endl;
+						 "(id "
+					  << selected_node_id << ")" << std::endl;
 			return;
 		}
 
 		// if the node exists and can be deleted, print a message and delete it from the scene
 		std::cout << "[INFO::INPUTMANAGER::key_callback] Delete key pressed, deleting selected node " << node->get_name() << " (id "
-		          << selected_node_id << ")" << std::endl;
+				  << selected_node_id << ")" << std::endl;
 
 		selection_manager->delete_selected(node_manager.get());
 	}

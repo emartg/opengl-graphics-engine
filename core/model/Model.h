@@ -25,15 +25,15 @@ public:
 	// Constructors
 	// ------------
 	Model(
-	    const std::string& name,
-	    const Node_Type    type         = Node_Type::COMPOSITE_MODEL,
-	    const glm::vec4    albedo       = ALBEDO,
-	    const glm::vec3    position     = POSITION,
-	    const glm::quat    rotation     = ROTATION,
-	    const glm::vec3    scale        = SCALE,
-	    const glm::vec3    forward      = FORWARD,
-	    const glm::vec3    mesh_forward = FORWARD,
-	    const Gizmo_Type   gizmo_type   = Gizmo_Type::NONE);
+		const std::string& name,
+		const Node_Type    type         = Node_Type::COMPOSITE_MODEL,
+		const glm::vec4    albedo       = ALBEDO,
+		const glm::vec3    position     = POSITION,
+		const glm::quat    rotation     = ROTATION,
+		const glm::vec3    scale        = SCALE,
+		const glm::vec3    forward      = FORWARD,
+		const glm::vec3    mesh_forward = FORWARD,
+		const Gizmo_Type   gizmo_type   = Gizmo_Type::NONE);
 
 	// Virtual destructor
 	// ------------------

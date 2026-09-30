@@ -13,16 +13,16 @@
 // Constructors
 // ------------
 Model::Model(
-    const std::string& name,
-    const Node_Type    type,
-    const glm::vec4    albedo,
-    const glm::vec3    position,
-    const glm::quat    rotation,
-    const glm::vec3    scale,
-    const glm::vec3    forward,
-    const glm::vec3    mesh_forward,
-    const Gizmo_Type   gizmo_type) :
-    Node(name, type, albedo, position, rotation, scale, forward, mesh_forward, gizmo_type)
+	const std::string& name,
+	const Node_Type    type,
+	const glm::vec4    albedo,
+	const glm::vec3    position,
+	const glm::quat    rotation,
+	const glm::vec3    scale,
+	const glm::vec3    forward,
+	const glm::vec3    mesh_forward,
+	const Gizmo_Type   gizmo_type) :
+	Node(name, type, albedo, position, rotation, scale, forward, mesh_forward, gizmo_type)
 {}
 
 // Public Methods

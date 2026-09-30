@@ -31,14 +31,14 @@ public:
 	// ------------
 	// Constructor that loads a model from a file
 	Assimp_Model(
-	    const std::string& name,
-	    std::string const& path,
-	    const glm::vec4    albedo       = ALBEDO,
-	    const glm::vec3    position     = POSITION,
-	    const glm::quat    rotation     = ROTATION,
-	    const glm::vec3    scale        = SCALE,
-	    const glm::vec3    forward      = FORWARD,
-	    const glm::vec3    mesh_forward = FORWARD);
+		const std::string& name,
+		std::string const& path,
+		const glm::vec4    albedo       = ALBEDO,
+		const glm::vec3    position     = POSITION,
+		const glm::quat    rotation     = ROTATION,
+		const glm::vec3    scale        = SCALE,
+		const glm::vec3    forward      = FORWARD,
+		const glm::vec3    mesh_forward = FORWARD);
 
 	// Destructor
 	// ----------

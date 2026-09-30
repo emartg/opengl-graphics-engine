@@ -157,6 +157,6 @@ const GLfloat hex_pyramid_vertices_array[] = {
 const std::vector<GLfloat> hex_pyramid_positions_vector{ std::begin(hex_pyramid_positions_array), std::end(hex_pyramid_positions_array) };
 const std::vector<GLfloat> hex_pyramid_normals_vector{ std::begin(hex_pyramid_normals_array), std::end(hex_pyramid_normals_array) };
 const std::vector<GLfloat> hex_pyramid_tex_coords_vector{ std::begin(hex_pyramid_tex_coords_array),
-                                                          std::end(hex_pyramid_tex_coords_array) };
+														  std::end(hex_pyramid_tex_coords_array) };
 const std::vector<GLuint>  hex_pyramid_indices_vector{ std::begin(hex_pyramid_indices_array), std::end(hex_pyramid_indices_array) };
 const std::vector<GLfloat> hex_pyramid_vertices_vector{ std::begin(hex_pyramid_vertices_array), std::end(hex_pyramid_vertices_array) };

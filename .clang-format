@@ -103,7 +103,7 @@ SpacesInParentheses: false
 SpacesInSquareBrackets: false
 Standard: Latest
 TabWidth: 4
-UseTab: ForIndentation
+UseTab: ForContinuationAndIndentation
 WhitespaceSensitiveMacros:
   - PRAGMA_WARNING_DISABLE_GCC
   - PRAGMA_WARNING_DISABLE_MSVC

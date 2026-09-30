@@ -57,8 +57,8 @@ bool GLFW_Renderer::create_window(int width, int height, const char* title)
 	{ // if the window (or its OpenGL context) cannot be created, print an error message and return false
 		// (GLFW is terminated by the destructor)
 		std::cerr << "[ERROR::GLFWRENDERER::create_window] Failed to create GLFW window "
-		             "(an OpenGL 4.5 core profile context is required; check that the GPU drivers are up to date)"
-		          << std::endl;
+					 "(an OpenGL 4.5 core profile context is required; check that the GPU drivers are up to date)"
+				  << std::endl;
 		return false;
 	}
 	glfwMakeContextCurrent(window);

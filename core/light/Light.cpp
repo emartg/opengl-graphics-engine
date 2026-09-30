@@ -11,17 +11,17 @@
 // Constructors
 // ------------
 Light::Light(
-    const std::string&          name,
-    const glm::vec3             ambient,
-    const glm::vec3             diffuse,
-    const glm::vec3             specular,
-    const std::shared_ptr<Node> gizmo,
-    const Light_Type            light_type) :
-    Node(name, Node_Type::LIGHT, ALBEDO, POSITION, ROTATION, SCALE, FORWARD, FORWARD, Gizmo_Type::NONE, false, false),
-    ambient{ ambient },
-    diffuse{ diffuse },
-    specular{ specular },
-    light_type{ light_type }
+	const std::string&          name,
+	const glm::vec3             ambient,
+	const glm::vec3             diffuse,
+	const glm::vec3             specular,
+	const std::shared_ptr<Node> gizmo,
+	const Light_Type            light_type) :
+	Node(name, Node_Type::LIGHT, ALBEDO, POSITION, ROTATION, SCALE, FORWARD, FORWARD, Gizmo_Type::NONE, false, false),
+	ambient{ ambient },
+	diffuse{ diffuse },
+	specular{ specular },
+	light_type{ light_type }
 {}
 
 // Public Methods

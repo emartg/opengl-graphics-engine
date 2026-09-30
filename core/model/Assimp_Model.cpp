@@ -15,23 +15,23 @@
 // ------------
 // Constructor that loads a model from a file
 Assimp_Model::Assimp_Model(
-    const std::string& name,
-    const std::string& path,
-    const glm::vec4    albedo,
-    const glm::vec3    position,
-    const glm::quat    rotation,
-    const glm::vec3    scale,
-    const glm::vec3    forward,
-    const glm::vec3    mesh_forward) :
-    Model(
-        name,
-        Node_Type::ASSIMP_MODEL, // set the model type to ASSIMP_MODEL
-        albedo,
-        position,
-        rotation,
-        scale,
-        forward,
-        mesh_forward)
+	const std::string& name,
+	const std::string& path,
+	const glm::vec4    albedo,
+	const glm::vec3    position,
+	const glm::quat    rotation,
+	const glm::vec3    scale,
+	const glm::vec3    forward,
+	const glm::vec3    mesh_forward) :
+	Model(
+		name,
+		Node_Type::ASSIMP_MODEL, // set the model type to ASSIMP_MODEL
+		albedo,
+		position,
+		rotation,
+		scale,
+		forward,
+		mesh_forward)
 {
 	load_assimp_model(path); // load the model from the specified path
 }
@@ -44,16 +44,16 @@ void Assimp_Model::load_assimp_model(std::string const& path)
 
 	// read file via Assimp (the second argument of ReadFile is a combination of post-processing options)
 	const aiScene* scene = importer.ReadFile(
-	    path,
-	    aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_GenNormals |
-	        aiProcess_PreTransformVertices // bake node transformations into vertices
+		path,
+		aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_GenNormals |
+			aiProcess_PreTransformVertices // bake node transformations into vertices
 	);
 
 	// check for errors in the importing process
 	if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
 	{
 		std::cerr << "[ERROR::ASSIMPMODEL::load_assimp_model] "
-		          << "Assimp failed to load model from:\n\t" << path << "\n\tImporter error: " << importer.GetErrorString() << std::endl;
+				  << "Assimp failed to load model from:\n\t" << path << "\n\tImporter error: " << importer.GetErrorString() << std::endl;
 		return;
 	}
 
@@ -191,7 +191,7 @@ std::vector<std::shared_ptr<Texture>> Assimp_Model::load_material_textures(aiMat
 
 	GLuint texture_count = mat->GetTextureCount(type);
 	std::cout << "[INFO::ASSIMPMODEL::load_material_textures] Material has " << texture_count << " texture(s) of type "
-	          << Texture::texture_type_to_string(texture_type) << std::endl;
+			  << Texture::texture_type_to_string(texture_type) << std::endl;
 
 	// iterate over all textures of the specified type in the material
 	// and add them to the textures vector if they haven't been loaded before
@@ -209,8 +209,8 @@ std::vector<std::shared_ptr<Texture>> Assimp_Model::load_material_textures(aiMat
 		{
 			// embedded texture, warn and skip loading
 			std::cerr << "[WARNING::ASSIMPMODEL::load_material_textures] "
-			             "Embedded textures not supported, skipping texture:\n"
-			          << path_c_string << " of type " << Texture::texture_type_to_string(texture_type) << std::endl;
+						 "Embedded textures not supported, skipping texture:\n"
+					  << path_c_string << " of type " << Texture::texture_type_to_string(texture_type) << std::endl;
 			// TO DO: implement support for embedded textures in the future
 			// (requires extracting the texture data from the Assimp scene and creating
 			// a Texture object from it without loading from file)

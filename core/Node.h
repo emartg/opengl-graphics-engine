@@ -62,31 +62,31 @@ public:
 	// It is pre-incremented to ensure the first node has id 1, not 0 (since 0 is reserved
 	// as a sentinel value for undefined nodes, e.g., when no nodes are selected)
 	Node(
-	    const std::string& name,
-	    const Node_Type    type          = Node_Type::UNDEFINED,
-	    const glm::vec4    albedo        = ALBEDO,
-	    const glm::vec3    position      = POSITION,
-	    const glm::quat    rotation      = ROTATION,
-	    const glm::vec3    scale         = SCALE,
-	    const glm::vec3    forward       = FORWARD,
-	    const glm::vec3    mesh_forward  = FORWARD,
-	    const Gizmo_Type   gizmo_type    = Gizmo_Type::NONE,
-	    bool               is_draggable  = true,
-	    bool               can_be_parent = true) :
-	    id{ ++node_count },
-	    name{ name },
-	    type{ type },
-	    albedo{ albedo },
-	    position{ position },
-	    rotation{ rotation },
-	    scale{ scale },
-	    forward{ forward },
-	    mesh_forward{ mesh_forward },
-	    gizmo_type{ gizmo_type },
-	    is_visible{ true },
-	    is_draggable{ is_draggable },
-	    can_be_parent{ can_be_parent },
-	    children{} // initialize children vector as empty
+		const std::string& name,
+		const Node_Type    type          = Node_Type::UNDEFINED,
+		const glm::vec4    albedo        = ALBEDO,
+		const glm::vec3    position      = POSITION,
+		const glm::quat    rotation      = ROTATION,
+		const glm::vec3    scale         = SCALE,
+		const glm::vec3    forward       = FORWARD,
+		const glm::vec3    mesh_forward  = FORWARD,
+		const Gizmo_Type   gizmo_type    = Gizmo_Type::NONE,
+		bool               is_draggable  = true,
+		bool               can_be_parent = true) :
+		id{ ++node_count },
+		name{ name },
+		type{ type },
+		albedo{ albedo },
+		position{ position },
+		rotation{ rotation },
+		scale{ scale },
+		forward{ forward },
+		mesh_forward{ mesh_forward },
+		gizmo_type{ gizmo_type },
+		is_visible{ true },
+		is_draggable{ is_draggable },
+		can_be_parent{ can_be_parent },
+		children{} // initialize children vector as empty
 	{}
 
 	// Virtual destructor

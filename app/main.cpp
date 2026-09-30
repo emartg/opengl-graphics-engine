@@ -63,7 +63,7 @@ int main(int argc, char** argv)
 	std::cout << "[INFO::main] Starting the application..." << std::endl;
 
 	Core* engine = Core::get_instance(); // retrieve the singleton instance of
-	                                     // the Core class
+										 // the Core class
 
 	if (!initialize_core(engine))
 	{ // if initialization failed, exit with an error code
@@ -83,10 +83,10 @@ int main(int argc, char** argv)
 	// setup_test_scene_reflective_stress(engine);
 
 	engine->run(); // run the main loop of the engine, which will render the
-	               // scene and handle events
+				   // scene and handle events
 
 	engine->shutdown(); // clean up resources in the correct order and shut down
-	                    // the engine
+						// the engine
 
 	std::cout << "[SUCCESS::main] Application finished successfully" << std::endl;
 
@@ -114,7 +114,7 @@ bool initialize_core(Core* engine)
 		std::cout << "[INFO::main] Enter any key and press Enter to exit" << std::endl;
 		std::cin.get();
 		return false; // indicate that the program should exit with an error
-		              // code
+					  // code
 	}
 
 	return true; // indicate that the initialization was successful
@@ -140,13 +140,13 @@ void setup_example_scene(Core* engine)
 	// create a directional light and add it along with its gizmo to the node
 	// manager
 	auto directional_light = std::make_shared<Directional_Light>(
-	    "Directional Light",
-	    glm::vec3{ 0.1f },                   // ambient color (default)
-	    glm::vec4{ 1.0f, 1.0f, 0.7f, 1.0f }, // diffuse color (overridden)
-	    glm::vec3{ 1.0f },                   // specular color (override required although it is the
-		                                     // default)
-	    glm::vec3{ 2.4f, 8.0f, -3.0f },      // position (overridden)
-	    glm::vec3{ -0.2f, -0.8, 0.5f }       // direction (overridden)
+		"Directional Light",
+		glm::vec3{ 0.1f },                   // ambient color (default)
+		glm::vec4{ 1.0f, 1.0f, 0.7f, 1.0f }, // diffuse color (overridden)
+		glm::vec3{ 1.0f },                   // specular color (override required although it is the
+											 // default)
+		glm::vec3{ 2.4f, 8.0f, -3.0f },      // position (overridden)
+		glm::vec3{ -0.2f, -0.8, 0.5f }       // direction (overridden)
 	);
 	// convert the light's id to string and set it as part of the light's name
 	directional_light->set_name(String_Utils::generate_id_prefixed_name(directional_light));
@@ -163,11 +163,11 @@ void setup_example_scene(Core* engine)
 
 	// create a point light and add it along with its gizmo to the node manager
 	auto point_light = std::make_shared<Point_Light>(
-	    "Point Light",
-	    glm::vec3{ 0.1f },                   // ambient color (default)
-	    glm::vec4{ 0.3f, 0.9f, 1.0f, 1.0f }, // diffuse color (overridden)
-	    glm::vec3{ 1.0f },                   // specular color (same as default)
-	    glm::vec3{ -0.6f, 3.2f, 3.2f }       // position (overridden)
+		"Point Light",
+		glm::vec3{ 0.1f },                   // ambient color (default)
+		glm::vec4{ 0.3f, 0.9f, 1.0f, 1.0f }, // diffuse color (overridden)
+		glm::vec3{ 1.0f },                   // specular color (same as default)
+		glm::vec3{ -0.6f, 3.2f, 3.2f }       // position (overridden)
 	);
 	// convert the light's id to string and set it as part of the light's name
 	point_light->set_name(String_Utils::generate_id_prefixed_name(point_light));
@@ -184,16 +184,16 @@ void setup_example_scene(Core* engine)
 
 	// create a spotlight and add it along with its gizmo to the node manager
 	auto spotlight = std::make_shared<Spotlight>(
-	    "Spotlight",
-	    glm::vec3{ 0.1f },                   // ambient color (override required
-		                                     // although it is the default)
-	    glm::vec4{ 1.0f, 0.4f, 0.4f, 1.0f }, // diffuse color (overridden)
-	    glm::vec3{ 1.0f },                   // specular color (override required although it is the
-		                                     // default)
-	    glm::vec3{ 3.0f, -0.3f, -0.9f },     // position (overridden)
-	    glm::vec3{ -0.8f, 0.3f, 0.6f },      // direction (overridden)
-	    glm::cos(glm::radians(15.0f)),       // inner cut-off (overridden)
-	    glm::cos(glm::radians(32.5f))        // outer cut-off (overridden)
+		"Spotlight",
+		glm::vec3{ 0.1f },                   // ambient color (override required
+											 // although it is the default)
+		glm::vec4{ 1.0f, 0.4f, 0.4f, 1.0f }, // diffuse color (overridden)
+		glm::vec3{ 1.0f },                   // specular color (override required although it is the
+											 // default)
+		glm::vec3{ 3.0f, -0.3f, -0.9f },     // position (overridden)
+		glm::vec3{ -0.8f, 0.3f, 0.6f },      // direction (overridden)
+		glm::cos(glm::radians(15.0f)),       // inner cut-off (overridden)
+		glm::cos(glm::radians(32.5f))        // outer cut-off (overridden)
 	);
 	// convert the light's id to string and set it as part of the light's name
 	spotlight->set_name(String_Utils::generate_id_prefixed_name(spotlight));
@@ -217,10 +217,10 @@ void setup_example_scene(Core* engine)
 	// create a shapes group to hold multiple shapes as children of the root
 	// group
 	auto shapes_group = std::make_shared<Model>(
-	    "Shapes Group",
-	    Node_Type::COMPOSITE_MODEL,
-	    glm::vec4{ 1.0f },             // albedo (overridden)
-	    glm::vec3{ 0.0f, 0.0f, -2.5f } // position (overridden - offset from root)
+		"Shapes Group",
+		Node_Type::COMPOSITE_MODEL,
+		glm::vec4{ 1.0f },             // albedo (overridden)
+		glm::vec3{ 0.0f, 0.0f, -2.5f } // position (overridden - offset from root)
 	);
 
 	// convert the model's id to string and set it as part of the model's name
@@ -229,31 +229,31 @@ void setup_example_scene(Core* engine)
 	// create three shapes with different colors and transformations as children
 	// of the shapes group
 	auto red_cube = std::make_shared<Shape_Model>(
-	    "Red Cube Shape",
-	    cube_vertices_vector,
-	    cube_indices_vector,
-	    glm::vec4{ 0.9f, 0.2f, 0.2f, 1.0f },                     // albedo (overridden)
-	    glm::vec3{ -1.0f, 0.0f, 0.0f },                          // position (overridden - local offset from parent)
-	    glm::quat(glm::vec3{ 0.0f, glm::radians(15.0f), 0.0f }), // rotation (overridden)
-	    glm::vec3{ 0.8f }                                        // scale (overridden)
+		"Red Cube Shape",
+		cube_vertices_vector,
+		cube_indices_vector,
+		glm::vec4{ 0.9f, 0.2f, 0.2f, 1.0f },                     // albedo (overridden)
+		glm::vec3{ -1.0f, 0.0f, 0.0f },                          // position (overridden - local offset from parent)
+		glm::quat(glm::vec3{ 0.0f, glm::radians(15.0f), 0.0f }), // rotation (overridden)
+		glm::vec3{ 0.8f }                                        // scale (overridden)
 	);
 	auto blue_cube = std::make_shared<Shape_Model>(
-	    "Blue Cube Shape",
-	    cube_vertices_vector,
-	    cube_indices_vector,
-	    glm::vec4{ 0.2f, 0.2f, 0.9f, 1.0f },                      // albedo (overridden)
-	    glm::vec3{ 1.0f, 0.0f, 0.0f },                            // position (overridden - local offset from parent)
-	    glm::quat(glm::vec3{ 0.0f, glm::radians(-25.0f), 0.0f }), // rotation (overridden)
-	    glm::vec3{ 0.6f }                                         // scale (overridden)
+		"Blue Cube Shape",
+		cube_vertices_vector,
+		cube_indices_vector,
+		glm::vec4{ 0.2f, 0.2f, 0.9f, 1.0f },                      // albedo (overridden)
+		glm::vec3{ 1.0f, 0.0f, 0.0f },                            // position (overridden - local offset from parent)
+		glm::quat(glm::vec3{ 0.0f, glm::radians(-25.0f), 0.0f }), // rotation (overridden)
+		glm::vec3{ 0.6f }                                         // scale (overridden)
 	);
 	auto green_plane = std::make_shared<Shape_Model>(
-	    "Green Plane",
-	    plane_vertices_vector,
-	    plane_indices_vector,
-	    glm::vec4{ 0.3f, 0.9f, 0.3f, 0.5f },                      // albedo (overridden - alpha below 1 for transparency)
-	    glm::vec3{ 0.0f, 0.75f, 0.0f },                           // position (overridden - local offset from parent)
-	    glm::quat(glm::vec3{ glm::radians(-90.0f), 0.0f, 0.0f }), // rotation (overridden - vertical plane)
-	    glm::vec3{ 2.5f }                                         // scale (overridden)
+		"Green Plane",
+		plane_vertices_vector,
+		plane_indices_vector,
+		glm::vec4{ 0.3f, 0.9f, 0.3f, 0.5f },                      // albedo (overridden - alpha below 1 for transparency)
+		glm::vec3{ 0.0f, 0.75f, 0.0f },                           // position (overridden - local offset from parent)
+		glm::quat(glm::vec3{ glm::radians(-90.0f), 0.0f, 0.0f }), // rotation (overridden - vertical plane)
+		glm::vec3{ 2.5f }                                         // scale (overridden)
 	);
 	green_plane->set_is_two_sided(true); // set the plane to be two-sided for transparency
 
@@ -283,18 +283,18 @@ void setup_example_scene(Core* engine)
 	if (std::filesystem::exists(model_file_path))
 	{ // check if the file exists before loading it
 		auto model = std::make_shared<Assimp_Model>(
-		    "Teapot",
-		    model_file_path,                    // model file path
-		    glm::vec4{ 0.8, 0.8f, 0.8f, 0.5f }, // albedo (overriden)
-		    glm::vec3{ 0.0f, 0.0f, 3.0f },      // position (overridden - offset from root)
-		    glm::quat(glm::vec3{ 0.0f }),       // rotation (default)
-		    glm::vec3{ 0.25f }                  // scale (overridden)
+			"Teapot",
+			model_file_path,                    // model file path
+			glm::vec4{ 0.8, 0.8f, 0.8f, 0.5f }, // albedo (overriden)
+			glm::vec3{ 0.0f, 0.0f, 3.0f },      // position (overridden - offset from root)
+			glm::quat(glm::vec3{ 0.0f }),       // rotation (default)
+			glm::vec3{ 0.25f }                  // scale (overridden)
 		);
 		// remove the path and the extension from the file path for the model's
 		// name
 		std::string model_name = model_file_path.substr(
-		    model_file_path.find_last_of("/\\") + 1,
-		    model_file_path.find_last_of('.') - model_file_path.find_last_of("/\\") - 1);
+			model_file_path.find_last_of("/\\") + 1,
+			model_file_path.find_last_of('.') - model_file_path.find_last_of("/\\") - 1);
 		// uppercase the first letter of the model's name
 		model_name[0] = std::toupper(model_name[0]);
 		// convert the model's id to string and set it as part of the model's
@@ -331,8 +331,8 @@ void setup_example_scene(Core* engine)
 
 	// print a success message indicating the example scene setup is complete
 	std::cout << "[SUCCESS::main::setup_example_scene] Example scene setup "
-	             "completed successfully"
-	          << std::endl;
+				 "completed successfully"
+			  << std::endl;
 }
 
 void setup_test_scene_reflective_1(Core* engine)
@@ -355,13 +355,13 @@ void setup_test_scene_reflective_1(Core* engine)
 	// create a directional light and add it along with its gizmo to the node
 	// manager
 	auto directional_light = std::make_shared<Directional_Light>(
-	    "Directional Light",
-	    glm::vec3{ 0.1f },                   // ambient color (default)
-	    glm::vec4{ 1.0f, 1.0f, 0.7f, 1.0f }, // diffuse color (overridden)
-	    glm::vec3{ 1.0f },                   // specular color (override required although it is the
-		                                     // default)
-	    glm::vec3{ 2.4f, 8.0f, -3.0f },      // position (overridden)
-	    glm::vec3{ -0.2f, -0.8, 0.5f }       // direction (overridden)
+		"Directional Light",
+		glm::vec3{ 0.1f },                   // ambient color (default)
+		glm::vec4{ 1.0f, 1.0f, 0.7f, 1.0f }, // diffuse color (overridden)
+		glm::vec3{ 1.0f },                   // specular color (override required although it is the
+											 // default)
+		glm::vec3{ 2.4f, 8.0f, -3.0f },      // position (overridden)
+		glm::vec3{ -0.2f, -0.8, 0.5f }       // direction (overridden)
 	);
 	// convert the light's id to string and set it as part of the light's name
 	directional_light->set_name(String_Utils::generate_id_prefixed_name(directional_light));
@@ -378,11 +378,11 @@ void setup_test_scene_reflective_1(Core* engine)
 
 	// create a point light and add it along with its gizmo to the node manager
 	auto point_light = std::make_shared<Point_Light>(
-	    "Point Light",
-	    glm::vec3{ 0.1f },                   // ambient color (default)
-	    glm::vec4{ 0.3f, 0.9f, 1.0f, 1.0f }, // diffuse color (overridden)
-	    glm::vec3{ 1.0f },                   // specular color (same as default)
-	    glm::vec3{ -0.6f, 3.2f, 3.2f }       // position (overridden)
+		"Point Light",
+		glm::vec3{ 0.1f },                   // ambient color (default)
+		glm::vec4{ 0.3f, 0.9f, 1.0f, 1.0f }, // diffuse color (overridden)
+		glm::vec3{ 1.0f },                   // specular color (same as default)
+		glm::vec3{ -0.6f, 3.2f, 3.2f }       // position (overridden)
 	);
 	// convert the light's id to string and set it as part of the light's name
 	point_light->set_name(String_Utils::generate_id_prefixed_name(point_light));
@@ -400,13 +400,13 @@ void setup_test_scene_reflective_1(Core* engine)
 	// create a reflective plane model, register it for dynamic environment map
 	// capture, and add it to the node manager
 	auto reflective_plane = std::make_shared<Shape_Model>(
-	    "Reflective Plane",
-	    plane_vertices_vector,
-	    plane_indices_vector,
-	    glm::vec4{ 1.0f },                                       // albedo (overridden - white to ensure full reflection)
-	    glm::vec3{ 0.0f, -0.5f, 0.0f },                          // position (overridden)
-	    glm::quat(glm::radians(glm::vec3{ 0.0f, 45.0f, 0.0f })), // rotation (overridden)
-	    glm::vec3{ 5.8f }                                        // scale (overridden)
+		"Reflective Plane",
+		plane_vertices_vector,
+		plane_indices_vector,
+		glm::vec4{ 1.0f },                                       // albedo (overridden - white to ensure full reflection)
+		glm::vec3{ 0.0f, -0.5f, 0.0f },                          // position (overridden)
+		glm::quat(glm::radians(glm::vec3{ 0.0f, 45.0f, 0.0f })), // rotation (overridden)
+		glm::vec3{ 5.8f }                                        // scale (overridden)
 	);
 	// set the plane to be two-sided for reflection
 	reflective_plane->set_is_two_sided(true);
@@ -424,18 +424,18 @@ void setup_test_scene_reflective_1(Core* engine)
 	{ // if the file exists, create the model and add
 	  // it to the node manager
 		auto model = std::make_shared<Assimp_Model>(
-		    "Teapot",
-		    model_file_path,                                         // model file path
-		    glm::vec4{ 0.8f, 0.8f, 0.8f, 1.0f },                     // albedo (default)
-		    glm::vec3{ -3.25f, 0.95f, -3.25f },                      // position (overridden)
-		    glm::quat(glm::radians(glm::vec3{ 0.0f, 85.0f, 0.0f })), // rotation (overridden)
-		    glm::vec3{ 0.2f }                                        // scale (overridden)
+			"Teapot",
+			model_file_path,                                         // model file path
+			glm::vec4{ 0.8f, 0.8f, 0.8f, 1.0f },                     // albedo (default)
+			glm::vec3{ -3.25f, 0.95f, -3.25f },                      // position (overridden)
+			glm::quat(glm::radians(glm::vec3{ 0.0f, 85.0f, 0.0f })), // rotation (overridden)
+			glm::vec3{ 0.2f }                                        // scale (overridden)
 		);
 		// remove the path and the extension from the file path for the model's
 		// name
 		std::string model_name = model_file_path.substr(
-		    model_file_path.find_last_of("/\\") + 1,
-		    model_file_path.find_last_of('.') - model_file_path.find_last_of("/\\") - 1);
+			model_file_path.find_last_of("/\\") + 1,
+			model_file_path.find_last_of('.') - model_file_path.find_last_of("/\\") - 1);
 		// uppercase the first letter of the model's name
 		model_name[0] = std::toupper(model_name[0]);
 		// convert the model's id to string and set it as part of the model's
@@ -447,8 +447,8 @@ void setup_test_scene_reflective_1(Core* engine)
 	else
 	{ // if the file does not exist, print an error message
 		std::cerr << "[WARNING::main::setup_test_scene_reflective_1] Assimp "
-		             "model not found: "
-		          << model_file_path << std::endl;
+					 "model not found: "
+				  << model_file_path << std::endl;
 	}
 
 	// create a skybox and set it in the scene manager
@@ -460,14 +460,14 @@ void setup_test_scene_reflective_1(Core* engine)
 	else
 	{ // if the file does not exist, print an error message
 		std::cerr << "[ERROR::main::setup_test_scene_reflective_1] Skybox file "
-		             "not found: "
-		          << skybox_file_path << std::endl;
+					 "not found: "
+				  << skybox_file_path << std::endl;
 	}
 
 	// print a success message indicating the test scene setup is complete
 	std::cout << "[SUCCESS::main::setup_test_scene_reflective_1] Test scene "
-	             "setup complete"
-	          << std::endl;
+				 "setup complete"
+			  << std::endl;
 }
 
 void setup_test_scene_reflective_2(Core* engine)
@@ -490,13 +490,13 @@ void setup_test_scene_reflective_2(Core* engine)
 	// create a directional light and add it along with its gizmo to the node
 	// manager
 	auto directional_light = std::make_shared<Directional_Light>(
-	    "Directional Light",
-	    glm::vec3{ 0.1f },                   // ambient color (default)
-	    glm::vec4{ 1.0f, 1.0f, 0.7f, 1.0f }, // diffuse color (overridden)
-	    glm::vec3{ 1.0f },                   // specular color (override required although it is the
-		                                     // default)
-	    glm::vec3{ 2.4f, 8.0f, -3.0f },      // position (overridden)
-	    glm::vec3{ -0.2f, -0.8, 0.5f }       // direction (overridden)
+		"Directional Light",
+		glm::vec3{ 0.1f },                   // ambient color (default)
+		glm::vec4{ 1.0f, 1.0f, 0.7f, 1.0f }, // diffuse color (overridden)
+		glm::vec3{ 1.0f },                   // specular color (override required although it is the
+											 // default)
+		glm::vec3{ 2.4f, 8.0f, -3.0f },      // position (overridden)
+		glm::vec3{ -0.2f, -0.8, 0.5f }       // direction (overridden)
 	);
 	// convert the light's id to string and set it as part of the light's name
 	directional_light->set_name(String_Utils::generate_id_prefixed_name(directional_light));
@@ -513,11 +513,11 @@ void setup_test_scene_reflective_2(Core* engine)
 
 	// create a point light and add it along with its gizmo to the node manager
 	auto point_light = std::make_shared<Point_Light>(
-	    "Point Light",
-	    glm::vec3{ 0.1f },                   // ambient color (default)
-	    glm::vec4{ 0.3f, 0.9f, 1.0f, 1.0f }, // diffuse color (overridden)
-	    glm::vec3{ 1.0f },                   // specular color (same as default)
-	    glm::vec3{ -0.6f, 3.2f, 3.2f }       // position (overridden)
+		"Point Light",
+		glm::vec3{ 0.1f },                   // ambient color (default)
+		glm::vec4{ 0.3f, 0.9f, 1.0f, 1.0f }, // diffuse color (overridden)
+		glm::vec3{ 1.0f },                   // specular color (same as default)
+		glm::vec3{ -0.6f, 3.2f, 3.2f }       // position (overridden)
 	);
 	// convert the light's id to string and set it as part of the light's name
 	point_light->set_name(String_Utils::generate_id_prefixed_name(point_light));
@@ -535,13 +535,13 @@ void setup_test_scene_reflective_2(Core* engine)
 	// create a reflective plane model, register it for dynamic environment map
 	// capture, and add it to the node manager
 	auto reflective_plane = std::make_shared<Shape_Model>(
-	    "Reflective Plane",
-	    plane_vertices_vector,
-	    plane_indices_vector,
-	    glm::vec4{ 1.0f },                                       // albedo (overridden - white to ensure full reflection)
-	    glm::vec3{ 0.0f, -0.5f, 0.0f },                          // position (overridden)
-	    glm::quat(glm::radians(glm::vec3{ 0.0f, 45.0f, 0.0f })), // rotation (overridden)
-	    glm::vec3{ 5.8f }                                        // scale (overridden)
+		"Reflective Plane",
+		plane_vertices_vector,
+		plane_indices_vector,
+		glm::vec4{ 1.0f },                                       // albedo (overridden - white to ensure full reflection)
+		glm::vec3{ 0.0f, -0.5f, 0.0f },                          // position (overridden)
+		glm::quat(glm::radians(glm::vec3{ 0.0f, 45.0f, 0.0f })), // rotation (overridden)
+		glm::vec3{ 5.8f }                                        // scale (overridden)
 	);
 	// set the plane to be two-sided for reflection
 	reflective_plane->set_is_two_sided(true);
@@ -560,18 +560,18 @@ void setup_test_scene_reflective_2(Core* engine)
 	{ // if the file exists, create the model and add
 	  // it to the node manager
 		auto model = std::make_shared<Assimp_Model>(
-		    "Reflective Teapot",
-		    model_file_path,                                         // model file path
-		    glm::vec4{ 0.8f, 0.8f, 0.8f, 1.0f },                     // albedo (default)
-		    glm::vec3{ -3.25f, 0.95f, -3.25f },                      // position (overridden)
-		    glm::quat(glm::radians(glm::vec3{ 0.0f, 85.0f, 0.0f })), // rotation (overridden)
-		    glm::vec3{ 0.2f }                                        // scale (overridden)
+			"Reflective Teapot",
+			model_file_path,                                         // model file path
+			glm::vec4{ 0.8f, 0.8f, 0.8f, 1.0f },                     // albedo (default)
+			glm::vec3{ -3.25f, 0.95f, -3.25f },                      // position (overridden)
+			glm::quat(glm::radians(glm::vec3{ 0.0f, 85.0f, 0.0f })), // rotation (overridden)
+			glm::vec3{ 0.2f }                                        // scale (overridden)
 		);
 		// remove the path and the extension from the file path for the model's
 		// name
 		std::string model_name = model_file_path.substr(
-		    model_file_path.find_last_of("/\\") + 1,
-		    model_file_path.find_last_of('.') - model_file_path.find_last_of("/\\") - 1);
+			model_file_path.find_last_of("/\\") + 1,
+			model_file_path.find_last_of('.') - model_file_path.find_last_of("/\\") - 1);
 		// uppercase the first letter of the model's name
 		model_name[0] = std::toupper(model_name[0]);
 		// convert the model's id to string and set it as part of the model's
@@ -586,8 +586,8 @@ void setup_test_scene_reflective_2(Core* engine)
 	else
 	{ // if the file does not exist, print an error message
 		std::cerr << "[WARNING::main::setup_test_scene_reflective_2] Assimp "
-		             "model not found: "
-		          << model_file_path << std::endl;
+					 "model not found: "
+				  << model_file_path << std::endl;
 	}
 
 	// create a skybox and set it in the scene manager
@@ -599,14 +599,14 @@ void setup_test_scene_reflective_2(Core* engine)
 	else
 	{ // if the file does not exist, print an error message
 		std::cerr << "[ERROR::main::setup_test_scene_reflective_2] Skybox file "
-		             "not found: "
-		          << skybox_file_path << std::endl;
+					 "not found: "
+				  << skybox_file_path << std::endl;
 	}
 
 	// print a success message indicating the test scene setup is complete
 	std::cout << "[SUCCESS::main::setup_test_scene_reflective_2] Test scene "
-	             "setup complete"
-	          << std::endl;
+				 "setup complete"
+			  << std::endl;
 }
 
 void setup_test_scene_refractive_1(Core* engine)
@@ -629,13 +629,13 @@ void setup_test_scene_refractive_1(Core* engine)
 	// create a directional light and add it along with its gizmo to the node
 	// manager
 	auto directional_light = std::make_shared<Directional_Light>(
-	    "Directional Light",
-	    glm::vec3{ 0.1f },                   // ambient color (default)
-	    glm::vec4{ 1.0f, 1.0f, 0.7f, 1.0f }, // diffuse color (overridden)
-	    glm::vec3{ 1.0f },                   // specular color (override required although it is the
-		                                     // default)
-	    glm::vec3{ 2.4f, 8.0f, -3.0f },      // position (overridden)
-	    glm::vec3{ -0.2f, -0.8, 0.5f }       // direction (overridden)
+		"Directional Light",
+		glm::vec3{ 0.1f },                   // ambient color (default)
+		glm::vec4{ 1.0f, 1.0f, 0.7f, 1.0f }, // diffuse color (overridden)
+		glm::vec3{ 1.0f },                   // specular color (override required although it is the
+											 // default)
+		glm::vec3{ 2.4f, 8.0f, -3.0f },      // position (overridden)
+		glm::vec3{ -0.2f, -0.8, 0.5f }       // direction (overridden)
 	);
 	// convert the light's id to string and set it as part of the light's name
 	directional_light->set_name(String_Utils::generate_id_prefixed_name(directional_light));
@@ -653,11 +653,11 @@ void setup_test_scene_refractive_1(Core* engine)
 
 	// create a point light and add it along with its gizmo to the node manager
 	auto point_light = std::make_shared<Point_Light>(
-	    "Point Light",
-	    glm::vec3{ 0.1f },                   // ambient color (default)
-	    glm::vec4{ 0.3f, 0.9f, 1.0f, 1.0f }, // diffuse color (overridden)
-	    glm::vec3{ 1.0f },                   // specular color (same as default)
-	    glm::vec3{ -0.6f, 3.2f, 3.2f }       // position (overridden)
+		"Point Light",
+		glm::vec3{ 0.1f },                   // ambient color (default)
+		glm::vec4{ 0.3f, 0.9f, 1.0f, 1.0f }, // diffuse color (overridden)
+		glm::vec3{ 1.0f },                   // specular color (same as default)
+		glm::vec3{ -0.6f, 3.2f, 3.2f }       // position (overridden)
 	);
 	// convert the light's id to string and set it as part of the light's name
 	point_light->set_name(String_Utils::generate_id_prefixed_name(point_light));
@@ -676,13 +676,13 @@ void setup_test_scene_refractive_1(Core* engine)
 	// create a refractive cube model, register it for dynamic environment map
 	// capture, and add it to the node manager
 	auto refractive_cube = std::make_shared<Shape_Model>(
-	    "Refractive Cube",
-	    cube_vertices_vector,
-	    cube_indices_vector,
-	    glm::vec4{ 0.8f, 0.8f, 0.8f, 1.0f },                      // albedo (default)
-	    glm::vec3{ 0.15f, 1.5f, 2.5f },                           // position (overridden)
-	    glm::quat(glm::radians(glm::vec3{ -90.0f, 0.0f, 0.0f })), // rotation (overridden)
-	    glm::vec3{ 5.0f, 0.1f, 5.0f }                             // scale (overridden)
+		"Refractive Cube",
+		cube_vertices_vector,
+		cube_indices_vector,
+		glm::vec4{ 0.8f, 0.8f, 0.8f, 1.0f },                      // albedo (default)
+		glm::vec3{ 0.15f, 1.5f, 2.5f },                           // position (overridden)
+		glm::quat(glm::radians(glm::vec3{ -90.0f, 0.0f, 0.0f })), // rotation (overridden)
+		glm::vec3{ 5.0f, 0.1f, 5.0f }                             // scale (overridden)
 	);
 	// convert the cube's id to string and set it as part of the cube's name
 	refractive_cube->set_name(String_Utils::generate_id_prefixed_name(refractive_cube));
@@ -698,18 +698,18 @@ void setup_test_scene_refractive_1(Core* engine)
 	{ // if the file exists, create the model and add
 	  // it to the node manager
 		auto model = std::make_shared<Assimp_Model>(
-		    "Teapot",
-		    model_file_path,                                         // model file path
-		    glm::vec4{ 0.8f, 0.8f, 0.8f, 1.0f },                     // albedo (default)
-		    glm::vec3{ -2.75f, -1.95f, -5.75f },                     // position (overridden)
-		    glm::quat(glm::radians(glm::vec3{ 0.0f, 85.0f, 0.0f })), // rotation (overridden)
-		    glm::vec3{ 0.3f }                                        // scale (overridden)
+			"Teapot",
+			model_file_path,                                         // model file path
+			glm::vec4{ 0.8f, 0.8f, 0.8f, 1.0f },                     // albedo (default)
+			glm::vec3{ -2.75f, -1.95f, -5.75f },                     // position (overridden)
+			glm::quat(glm::radians(glm::vec3{ 0.0f, 85.0f, 0.0f })), // rotation (overridden)
+			glm::vec3{ 0.3f }                                        // scale (overridden)
 		);
 		// remove the path and the extension from the file path for the model's
 		// name
 		std::string model_name = model_file_path.substr(
-		    model_file_path.find_last_of("/\\") + 1,
-		    model_file_path.find_last_of('.') - model_file_path.find_last_of("/\\") - 1);
+			model_file_path.find_last_of("/\\") + 1,
+			model_file_path.find_last_of('.') - model_file_path.find_last_of("/\\") - 1);
 		// uppercase the first letter of the model's name
 		model_name[0] = std::toupper(model_name[0]);
 		// convert the model's id to string and set it as part of the model's
@@ -721,8 +721,8 @@ void setup_test_scene_refractive_1(Core* engine)
 	else
 	{ // if the file does not exist, print an error message
 		std::cerr << "[WARNING::main::setup_test_scene_refractive_1] Assimp "
-		             "model not found: "
-		          << model_file_path << std::endl;
+					 "model not found: "
+				  << model_file_path << std::endl;
 	}
 
 	// create a skybox and set it in the scene manager
@@ -734,14 +734,14 @@ void setup_test_scene_refractive_1(Core* engine)
 	else
 	{ // if the file does not exist, print an error message
 		std::cerr << "[ERROR::main::setup_test_scene_refractive_1] Skybox file "
-		             "not found: "
-		          << skybox_file_path << std::endl;
+					 "not found: "
+				  << skybox_file_path << std::endl;
 	}
 
 	// print a success message indicating the test scene setup is complete
 	std::cout << "[SUCCESS::main::setup_test_scene_refractive_1] Test scene "
-	             "setup complete"
-	          << std::endl;
+				 "setup complete"
+			  << std::endl;
 }
 
 void setup_test_scene_refractive_2(Core* engine)
@@ -764,13 +764,13 @@ void setup_test_scene_refractive_2(Core* engine)
 	// create a directional light and add it along with its gizmo to the node
 	// manager
 	auto directional_light = std::make_shared<Directional_Light>(
-	    "Directional Light",
-	    glm::vec3{ 0.1f },                   // ambient color (default)
-	    glm::vec4{ 1.0f, 1.0f, 0.7f, 1.0f }, // diffuse color (overridden)
-	    glm::vec3{ 1.0f },                   // specular color (override required although it is the
-		                                     // default)
-	    glm::vec3{ 2.4f, 8.0f, -3.0f },      // position (overridden)
-	    glm::vec3{ -0.2f, -0.8, 0.5f }       // direction (overridden)
+		"Directional Light",
+		glm::vec3{ 0.1f },                   // ambient color (default)
+		glm::vec4{ 1.0f, 1.0f, 0.7f, 1.0f }, // diffuse color (overridden)
+		glm::vec3{ 1.0f },                   // specular color (override required although it is the
+											 // default)
+		glm::vec3{ 2.4f, 8.0f, -3.0f },      // position (overridden)
+		glm::vec3{ -0.2f, -0.8, 0.5f }       // direction (overridden)
 	);
 	// convert the light's id to string and set it as part of the light's name
 	directional_light->set_name(String_Utils::generate_id_prefixed_name(directional_light));
@@ -788,11 +788,11 @@ void setup_test_scene_refractive_2(Core* engine)
 
 	// create a point light and add it along with its gizmo to the node manager
 	auto point_light = std::make_shared<Point_Light>(
-	    "Point Light",
-	    glm::vec3{ 0.1f },                   // ambient color (default)
-	    glm::vec4{ 0.3f, 0.9f, 1.0f, 1.0f }, // diffuse color (overridden)
-	    glm::vec3{ 1.0f },                   // specular color (same as default)
-	    glm::vec3{ -0.6f, 3.2f, 3.2f }       // position (overridden)
+		"Point Light",
+		glm::vec3{ 0.1f },                   // ambient color (default)
+		glm::vec4{ 0.3f, 0.9f, 1.0f, 1.0f }, // diffuse color (overridden)
+		glm::vec3{ 1.0f },                   // specular color (same as default)
+		glm::vec3{ -0.6f, 3.2f, 3.2f }       // position (overridden)
 	);
 	// convert the light's id to string and set it as part of the light's name
 	point_light->set_name(String_Utils::generate_id_prefixed_name(point_light));
@@ -811,13 +811,13 @@ void setup_test_scene_refractive_2(Core* engine)
 	// create a refractive cube model, register it for dynamic environment map
 	// capture, and add it to the node manager
 	auto refractive_cube = std::make_shared<Shape_Model>(
-	    "Refractive Cube",
-	    cube_vertices_vector,
-	    cube_indices_vector,
-	    glm::vec4{ 0.8f, 0.8f, 0.8f, 1.0f },                          // albedo (default)
-	    glm::vec3{ -8.4f, 1.5f, -3.95f },                             // position (overridden)
-	    glm::quat(glm::radians(glm::vec3{ 90.0f, -80.0f, -179.0f })), // rotation (overridden)
-	    glm::vec3{ 5.0f, 0.1f, 5.0f }                                 // scale (overridden)
+		"Refractive Cube",
+		cube_vertices_vector,
+		cube_indices_vector,
+		glm::vec4{ 0.8f, 0.8f, 0.8f, 1.0f },                          // albedo (default)
+		glm::vec3{ -8.4f, 1.5f, -3.95f },                             // position (overridden)
+		glm::quat(glm::radians(glm::vec3{ 90.0f, -80.0f, -179.0f })), // rotation (overridden)
+		glm::vec3{ 5.0f, 0.1f, 5.0f }                                 // scale (overridden)
 	);
 	// convert the cube's id to string and set it as part of the cube's name
 	refractive_cube->set_name(String_Utils::generate_id_prefixed_name(refractive_cube));
@@ -834,18 +834,18 @@ void setup_test_scene_refractive_2(Core* engine)
 	{ // if the file exists, create the model and add
 	  // it to the node manager
 		auto model = std::make_shared<Assimp_Model>(
-		    "Teapot",
-		    model_file_path,                                         // model file path
-		    glm::vec4{ 0.8f, 0.8f, 0.8f, 1.0f },                     // albedo (default)
-		    glm::vec3{ -1.4f, -0.6f, -5.6f },                        // position (overridden)
-		    glm::quat(glm::radians(glm::vec3{ 0.0f, 85.0f, 0.0f })), // rotation (overridden)
-		    glm::vec3{ 0.6f }                                        // scale (overridden)
+			"Teapot",
+			model_file_path,                                         // model file path
+			glm::vec4{ 0.8f, 0.8f, 0.8f, 1.0f },                     // albedo (default)
+			glm::vec3{ -1.4f, -0.6f, -5.6f },                        // position (overridden)
+			glm::quat(glm::radians(glm::vec3{ 0.0f, 85.0f, 0.0f })), // rotation (overridden)
+			glm::vec3{ 0.6f }                                        // scale (overridden)
 		);
 		// remove the path and the extension from the file path for the model's
 		// name
 		std::string model_name = model_file_path.substr(
-		    model_file_path.find_last_of("/\\") + 1,
-		    model_file_path.find_last_of('.') - model_file_path.find_last_of("/\\") - 1);
+			model_file_path.find_last_of("/\\") + 1,
+			model_file_path.find_last_of('.') - model_file_path.find_last_of("/\\") - 1);
 		// uppercase the first letter of the model's name
 		model_name[0] = std::toupper(model_name[0]);
 		// convert the model's id to string and set it as part of the model's
@@ -860,8 +860,8 @@ void setup_test_scene_refractive_2(Core* engine)
 	else
 	{ // if the file does not exist, print an error message
 		std::cerr << "[WARNING::main::setup_test_scene_refractive_2] Assimp "
-		             "model not found: "
-		          << model_file_path << std::endl;
+					 "model not found: "
+				  << model_file_path << std::endl;
 	}
 
 	// create a skybox and set it in the scene manager
@@ -873,14 +873,14 @@ void setup_test_scene_refractive_2(Core* engine)
 	else
 	{ // if the file does not exist, print an error message
 		std::cerr << "[ERROR::main::setup_test_scene_refractive_2] Skybox file "
-		             "not found: "
-		          << skybox_file_path << std::endl;
+					 "not found: "
+				  << skybox_file_path << std::endl;
 	}
 
 	// print a success message indicating the test scene setup is complete
 	std::cout << "[SUCCESS::main::setup_test_scene_refractive_2] Test scene "
-	             "setup complete"
-	          << std::endl;
+				 "setup complete"
+			  << std::endl;
 }
 
 void setup_test_scene_geometric_stress_1(Core* engine, const int num_shapes)
@@ -903,13 +903,13 @@ void setup_test_scene_geometric_stress_1(Core* engine, const int num_shapes)
 	// create a directional light and add it along with its gizmo to the node
 	// manager
 	auto directional_light = std::make_shared<Directional_Light>(
-	    "Directional Light",
-	    glm::vec3{ 0.1f },                   // ambient color (default)
-	    glm::vec4{ 1.0f, 1.0f, 0.7f, 1.0f }, // diffuse color (overridden)
-	    glm::vec3{ 1.0f },                   // specular color (override required although it is the
-		                                     // default)
-	    glm::vec3{ -3.0f, 8.0f, 2.4f },      // position (overridden)
-	    glm::vec3{ -0.2f, -0.8, 0.5f }       // direction (overridden)
+		"Directional Light",
+		glm::vec3{ 0.1f },                   // ambient color (default)
+		glm::vec4{ 1.0f, 1.0f, 0.7f, 1.0f }, // diffuse color (overridden)
+		glm::vec3{ 1.0f },                   // specular color (override required although it is the
+											 // default)
+		glm::vec3{ -3.0f, 8.0f, 2.4f },      // position (overridden)
+		glm::vec3{ -0.2f, -0.8, 0.5f }       // direction (overridden)
 	);
 	// convert the light's id to string and set it as part of the light's name
 	directional_light->set_name(String_Utils::generate_id_prefixed_name(directional_light));
@@ -927,28 +927,28 @@ void setup_test_scene_geometric_stress_1(Core* engine, const int num_shapes)
 	for (int i{}; i < num_shapes; ++i)
 	{
 		auto shape_model = std::make_shared<Shape_Model>(
-		    "Shape Model " + std::to_string(i),
-		    cube_vertices_vector,
-		    cube_indices_vector,
-		    glm::vec4{
-		        static_cast<float>(rand()) / RAND_MAX, // random red component
-		        static_cast<float>(rand()) / RAND_MAX, // random green component
-		        static_cast<float>(rand()) / RAND_MAX, // random blue component
-		        1.0f                                   // uniform alpha component (fully opaque)
-		    },
-		    glm::vec3{
-		        static_cast<float>(rand()) / RAND_MAX * 30.0f - 10.0f, // random x position
-		        static_cast<float>(rand()) / RAND_MAX * 30.0f - 10.0f, // random y position
-		        static_cast<float>(rand()) / RAND_MAX * 30.0f - 10.0f  // random z position
-		    },
-		    glm::quat(
-		        glm::radians(
-		            glm::vec3{
-		                static_cast<float>(rand()) / RAND_MAX * 360.0f, // random x rotation
-		                static_cast<float>(rand()) / RAND_MAX * 360.0f, // random y rotation
-		                static_cast<float>(rand()) / RAND_MAX * 360.0f  // random z rotation
-		            })),
-		    glm::vec3{ 0.5f } // uniform scale
+			"Shape Model " + std::to_string(i),
+			cube_vertices_vector,
+			cube_indices_vector,
+			glm::vec4{
+				static_cast<float>(rand()) / RAND_MAX, // random red component
+				static_cast<float>(rand()) / RAND_MAX, // random green component
+				static_cast<float>(rand()) / RAND_MAX, // random blue component
+				1.0f                                   // uniform alpha component (fully opaque)
+			},
+			glm::vec3{
+				static_cast<float>(rand()) / RAND_MAX * 30.0f - 10.0f, // random x position
+				static_cast<float>(rand()) / RAND_MAX * 30.0f - 10.0f, // random y position
+				static_cast<float>(rand()) / RAND_MAX * 30.0f - 10.0f  // random z position
+			},
+			glm::quat(
+				glm::radians(
+					glm::vec3{
+						static_cast<float>(rand()) / RAND_MAX * 360.0f, // random x rotation
+						static_cast<float>(rand()) / RAND_MAX * 360.0f, // random y rotation
+						static_cast<float>(rand()) / RAND_MAX * 360.0f  // random z rotation
+					})),
+			glm::vec3{ 0.5f } // uniform scale
 		);
 		// convert the shape model's id to string and set it as part of the
 		// shape model's name
@@ -965,14 +965,14 @@ void setup_test_scene_geometric_stress_1(Core* engine, const int num_shapes)
 	else
 	{ // if the file does not exist, print an error message
 		std::cerr << "[ERROR::main::setup_test_scene_geometric_stress_1] "
-		             "Skybox file not found: "
-		          << skybox_file_path << std::endl;
+					 "Skybox file not found: "
+				  << skybox_file_path << std::endl;
 	}
 
 	// print a success message indicating the test scene setup is complete
 	std::cout << "[SUCCESS::main::setup_test_scene_geometric_stress_1] Test "
-	             "scene setup complete"
-	          << std::endl;
+				 "scene setup complete"
+			  << std::endl;
 }
 
 void setup_test_scene_geometric_stress_2(Core* engine, const int num_shapes)
@@ -995,13 +995,13 @@ void setup_test_scene_geometric_stress_2(Core* engine, const int num_shapes)
 	// create a directional light and add it along with its gizmo to the node
 	// manager
 	auto directional_light = std::make_shared<Directional_Light>(
-	    "Directional Light",
-	    glm::vec3{ 0.1f },                   // ambient color (default)
-	    glm::vec4{ 1.0f, 1.0f, 0.7f, 1.0f }, // diffuse color (overridden)
-	    glm::vec3{ 1.0f },                   // specular color (override required although it is the
-		                                     // default)
-	    glm::vec3{ -3.0f, 8.0f, 2.4f },      // position (overridden)
-	    glm::vec3{ -0.2f, -0.8, 0.5f }       // direction (overridden)
+		"Directional Light",
+		glm::vec3{ 0.1f },                   // ambient color (default)
+		glm::vec4{ 1.0f, 1.0f, 0.7f, 1.0f }, // diffuse color (overridden)
+		glm::vec3{ 1.0f },                   // specular color (override required although it is the
+											 // default)
+		glm::vec3{ -3.0f, 8.0f, 2.4f },      // position (overridden)
+		glm::vec3{ -0.2f, -0.8, 0.5f }       // direction (overridden)
 	);
 	// convert the light's id to string and set it as part of the light's name
 	directional_light->set_name(String_Utils::generate_id_prefixed_name(directional_light));
@@ -1019,28 +1019,28 @@ void setup_test_scene_geometric_stress_2(Core* engine, const int num_shapes)
 	for (int i{}; i < num_shapes; ++i)
 	{
 		auto shape_model = std::make_shared<Shape_Model>(
-		    "Shape Model " + std::to_string(i),
-		    cube_vertices_vector,
-		    cube_indices_vector,
-		    glm::vec4{
-		        static_cast<float>(rand()) / RAND_MAX, // random red component
-		        static_cast<float>(rand()) / RAND_MAX, // random green component
-		        static_cast<float>(rand()) / RAND_MAX, // random blue component
-		        static_cast<float>(rand()) / RAND_MAX  // random alpha component
-		    },
-		    glm::vec3{
-		        static_cast<float>(rand()) / RAND_MAX * 30.0f - 10.0f, // random x position
-		        static_cast<float>(rand()) / RAND_MAX * 30.0f - 10.0f, // random y position
-		        static_cast<float>(rand()) / RAND_MAX * 30.0f - 10.0f  // random z position
-		    },
-		    glm::quat(
-		        glm::radians(
-		            glm::vec3{
-		                static_cast<float>(rand()) / RAND_MAX * 360.0f, // random x rotation
-		                static_cast<float>(rand()) / RAND_MAX * 360.0f, // random y rotation
-		                static_cast<float>(rand()) / RAND_MAX * 360.0f  // random z rotation
-		            })),
-		    glm::vec3{ 0.5f } // uniform scale
+			"Shape Model " + std::to_string(i),
+			cube_vertices_vector,
+			cube_indices_vector,
+			glm::vec4{
+				static_cast<float>(rand()) / RAND_MAX, // random red component
+				static_cast<float>(rand()) / RAND_MAX, // random green component
+				static_cast<float>(rand()) / RAND_MAX, // random blue component
+				static_cast<float>(rand()) / RAND_MAX  // random alpha component
+			},
+			glm::vec3{
+				static_cast<float>(rand()) / RAND_MAX * 30.0f - 10.0f, // random x position
+				static_cast<float>(rand()) / RAND_MAX * 30.0f - 10.0f, // random y position
+				static_cast<float>(rand()) / RAND_MAX * 30.0f - 10.0f  // random z position
+			},
+			glm::quat(
+				glm::radians(
+					glm::vec3{
+						static_cast<float>(rand()) / RAND_MAX * 360.0f, // random x rotation
+						static_cast<float>(rand()) / RAND_MAX * 360.0f, // random y rotation
+						static_cast<float>(rand()) / RAND_MAX * 360.0f  // random z rotation
+					})),
+			glm::vec3{ 0.5f } // uniform scale
 		);
 		// convert the shape model's id to string and set it as part of the
 		// shape model's name
@@ -1057,14 +1057,14 @@ void setup_test_scene_geometric_stress_2(Core* engine, const int num_shapes)
 	else
 	{ // if the file does not exist, print an error message
 		std::cerr << "[ERROR::main::setup_test_scene_geometric_stress_2] "
-		             "Skybox file not found: "
-		          << skybox_file_path << std::endl;
+					 "Skybox file not found: "
+				  << skybox_file_path << std::endl;
 	}
 
 	// print a success message indicating the test scene setup is complete
 	std::cout << "[SUCCESS::main::setup_test_scene_geometric_stress_2] Test "
-	             "scene setup complete"
-	          << std::endl;
+				 "scene setup complete"
+			  << std::endl;
 }
 
 void setup_test_scene_reflective_stress(Core* engine, const int num_shapes)
@@ -1087,13 +1087,13 @@ void setup_test_scene_reflective_stress(Core* engine, const int num_shapes)
 	// create a directional light and add it along with its gizmo to the node
 	// manager
 	auto directional_light = std::make_shared<Directional_Light>(
-	    "Directional Light",
-	    glm::vec3{ 0.1f },                   // ambient color (default)
-	    glm::vec4{ 1.0f, 1.0f, 0.7f, 1.0f }, // diffuse color (overridden)
-	    glm::vec3{ 1.0f },                   // specular color (override required although it is the
-		                                     // default)
-	    glm::vec3{ -3.0f, 8.0f, 2.4f },      // position (overridden)
-	    glm::vec3{ -0.2f, -0.8, 0.5f }       // direction (overridden)
+		"Directional Light",
+		glm::vec3{ 0.1f },                   // ambient color (default)
+		glm::vec4{ 1.0f, 1.0f, 0.7f, 1.0f }, // diffuse color (overridden)
+		glm::vec3{ 1.0f },                   // specular color (override required although it is the
+											 // default)
+		glm::vec3{ -3.0f, 8.0f, 2.4f },      // position (overridden)
+		glm::vec3{ -0.2f, -0.8, 0.5f }       // direction (overridden)
 	);
 	// convert the light's id to string and set it as part of the light's name
 	directional_light->set_name(String_Utils::generate_id_prefixed_name(directional_light));
@@ -1111,23 +1111,23 @@ void setup_test_scene_reflective_stress(Core* engine, const int num_shapes)
 	for (int i{}; i < num_shapes; ++i)
 	{
 		auto reflective_shape_model = std::make_shared<Shape_Model>(
-		    "Reflective Shape Model " + std::to_string(i),
-		    cube_vertices_vector,
-		    cube_indices_vector,
-		    glm::vec4{ 0.8f, 0.8f, 0.8f, 1.0f }, // albedo (default)
-		    glm::vec3{
-		        static_cast<float>(rand()) / RAND_MAX * 30.0f - 10.0f, // random x position
-		        static_cast<float>(rand()) / RAND_MAX * 30.0f - 10.0f, // random y position
-		        static_cast<float>(rand()) / RAND_MAX * 30.0f - 10.0f  // random z position
-		    },
-		    glm::quat(
-		        glm::radians(
-		            glm::vec3{
-		                static_cast<float>(rand()) / RAND_MAX * 360.0f, // random x rotation
-		                static_cast<float>(rand()) / RAND_MAX * 360.0f, // random y rotation
-		                static_cast<float>(rand()) / RAND_MAX * 360.0f  // random z rotation
-		            })),
-		    glm::vec3{ 0.5f } // uniform scale
+			"Reflective Shape Model " + std::to_string(i),
+			cube_vertices_vector,
+			cube_indices_vector,
+			glm::vec4{ 0.8f, 0.8f, 0.8f, 1.0f }, // albedo (default)
+			glm::vec3{
+				static_cast<float>(rand()) / RAND_MAX * 30.0f - 10.0f, // random x position
+				static_cast<float>(rand()) / RAND_MAX * 30.0f - 10.0f, // random y position
+				static_cast<float>(rand()) / RAND_MAX * 30.0f - 10.0f  // random z position
+			},
+			glm::quat(
+				glm::radians(
+					glm::vec3{
+						static_cast<float>(rand()) / RAND_MAX * 360.0f, // random x rotation
+						static_cast<float>(rand()) / RAND_MAX * 360.0f, // random y rotation
+						static_cast<float>(rand()) / RAND_MAX * 360.0f  // random z rotation
+					})),
+			glm::vec3{ 0.5f } // uniform scale
 		);
 		// convert the reflective shape model's id to string and set it as part
 		// of the model's name
@@ -1148,12 +1148,12 @@ void setup_test_scene_reflective_stress(Core* engine, const int num_shapes)
 	else
 	{ // if the file does not exist, print an error message
 		std::cerr << "[ERROR::main::setup_test_scene_reflective_stress] Skybox "
-		             "file not found: "
-		          << skybox_file_path << std::endl;
+					 "file not found: "
+				  << skybox_file_path << std::endl;
 	}
 
 	// print a success message indicating the test scene setup is complete
 	std::cout << "[SUCCESS::main::setup_test_scene_reflective_stress] Test "
-	             "scene setup complete"
-	          << std::endl;
+				 "scene setup complete"
+			  << std::endl;
 }
