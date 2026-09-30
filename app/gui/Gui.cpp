@@ -113,13 +113,9 @@ GUI::~GUI() {}
 
 // Public Methods
 // --------------
-void GUI::init_gui(GLFWwindow* window, const char* glsl_version)
+void GUI::configure()
 {
-	// setup Dear ImGui context
-	IMGUI_CHECKVERSION();
-	ImGui::CreateContext();
 	ImGuiIO& io = ImGui::GetIO();
-	(void)io;
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // enable keyboard controls
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;  // enable gamepad controls
 
@@ -129,31 +125,13 @@ void GUI::init_gui(GLFWwindow* window, const char* glsl_version)
 	io.KeyRepeatRate  = 0.05f; // rate at which the button is repeated (seconds between repeats)
 
 	configure_gui_style(); // configure the ImGui style (fonts, colors, etc.)
-
-	// setup platform/renderer bindings
-	ImGui_ImplGlfw_InitForOpenGL(window, true);
-	ImGui_ImplOpenGL3_Init(glsl_version);
 }
 
-void GUI::build_gui()
+void GUI::draw()
 {
-	begin_gui_frame();      // start a new ImGui frame
 	configure_gui_layout(); // configure the layout of the GUI windows based on the display size
 	draw_gui_windows();     // draw the GUI windows (information, settings, and create Windows)
 	handle_gui_input();     // handle ImGui input (mouse and keyboard)
-}
-
-void GUI::render_gui()
-{
-	ImGui::Render(); // render the ImGui draw data
-	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-}
-
-void GUI::shutdown_gui() const
-{
-	ImGui_ImplOpenGL3_Shutdown();
-	ImGui_ImplGlfw_Shutdown();
-	ImGui::DestroyContext(); // destroy the ImGui context
 }
 
 // Private methods
@@ -270,14 +248,6 @@ void GUI::configure_gui_style()
 	colors[ImGuiCol_NavWindowingHighlight] = ImVec4(1.00f, 1.00f, 1.00f, 0.70f);
 	colors[ImGuiCol_NavWindowingDimBg]     = ImVec4(0.80f, 0.80f, 0.80f, 0.20f);
 	colors[ImGuiCol_ModalWindowDimBg]      = ImVec4(0.20f, 0.20f, 0.22f, 0.55f);
-}
-
-
-void GUI::begin_gui_frame() const
-{
-	ImGui_ImplOpenGL3_NewFrame();
-	ImGui_ImplGlfw_NewFrame();
-	ImGui::NewFrame();
 }
 
 void GUI::configure_gui_layout()

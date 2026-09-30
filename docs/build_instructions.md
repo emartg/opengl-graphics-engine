@@ -201,6 +201,7 @@ its own C++ standard, build type, and output directories.
 add_subdirectory(Engine) # path to the Engine sources (e.g., a Git submodule)
 
 add_executable(My_App main.cpp)
+add_executable(My_App main.cpp)
 target_link_libraries(My_App PRIVATE Engine::Core)
 ```
 
@@ -213,6 +214,36 @@ to the Engine root:
 ```
 
 The Engine root directory is exposed to consumers in the `ENGINE_ROOT_DIR` variable (e.g., to locate the Engine's resources).
+
+Applications that need a window, input, and ImGui link `Engine::Platform` instead (it includes `Engine::Core`), and implement the `Gui_Layer` interface to draw their own ImGui windows:
+
+```cmake
+target_link_libraries(My_App PRIVATE Engine::Platform)
+```
+
+```cpp
+#include "core/Core.h"
+#include "platform/renderer/GLFW_Renderer.h"
+
+class My_Gui : public Gui_Layer
+{
+public:
+    void draw() override { /* ImGui::Begin(...); ...; ImGui::End(); */ }
+};
+
+int main()
+{
+    Core* engine = Core::get_instance();
+    GLFW_Renderer* renderer = new GLFW_Renderer();
+    renderer->set_gui_layer(std::make_unique<My_Gui>());
+    engine->set_renderer(renderer);
+    if (engine->init())
+        engine->run();
+    engine->shutdown();
+}
+```
+
+The Platform library is built by default (`ENGINE_BUILD_PLATFORM`); consumers that only need the Core library can disable it to skip building it and ImGui (GLFW is still located at configuration time).
 
 ## Building with CMake Presets from the Command Line
 

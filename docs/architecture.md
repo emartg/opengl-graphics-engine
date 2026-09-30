@@ -5,7 +5,7 @@ This document provides an overview of the engine's internal design.
 
 ## Modules and Separation
 
-The project is split into two top-level modules:
+The project is split into three top-level modules:
 
 1. **`core` (static library)** - Platform-agnostic rendering engine. It contains:
    - The scene graph and node system.
@@ -14,11 +14,19 @@ The project is split into two top-level modules:
    - Mathematical utilities and geometry primitives.
    - Dependencies: OpenGL, GLAD, GLM, stb_image, Assimp.
 
-2. **`app` (executable)** - Platform-specific application layer. It contains:
-   - Window creation and context management (GLFW).
+2. **`platform` (static library)** - Platform layer, reusable by any application that needs a window. It contains:
+   - Window creation and context management (`GLFW_Renderer`, the GLFW implementation of `Renderer`).
    - Input event handling (callbacks).
-   - The ImGui editor interface.
-   - Dependencies: GLFW, ImGui.
+   - The ImGui context and its GLFW and OpenGL backends.
+   - The `Gui_Layer` interface, implemented by each application to draw its own ImGui windows.
+   - Dependencies: `core`, GLFW, ImGui, ImGuiFileDialog.
+
+3. **`app` (executable)** - Sample application (scene editor). It contains:
+   - The example and test scenes.
+   - The ImGui editor interface (`GUI`, a `Gui_Layer`).
+   - Dependencies: `platform`.
+
+This strict separation means the `core` can be linked into other applications (e.g., a simulation or scientific visualiser) without pulling in GLFW or ImGui, and that applications which need a window (such as the X-ray simulator) reuse the `platform` library instead of duplicating it.
 
 This strict separation means the `core` can be linked into other applications (e.g., a simulation or scientific visualiser) without pulling in GLFW or ImGui. The following diagram (Fig. 1) shows the dependencies between the different modules and libraries in the project:
 
@@ -82,7 +90,7 @@ Next, each phase is described step-by-step.
 ## Key Classes
 
 - **`Core`** - Singleton orchestrator. Initialises subsystems, manages the main loop, and delegates responsibilities.
-- **`Renderer`** - Abstract interface for rendering. `GLFW_Renderer` (in `app`) is the concrete GLFW implementation.
+- **`Renderer`** - Abstract interface for rendering. `GLFW_Renderer` (in `platform`) is the concrete GLFW implementation.
 - **`Node`** - Base class for all scene entities. Implements the **Composite pattern** (parent-child hierarchy). Contains transform logic (position, rotation, scale) and virtual methods (`load()`, `draw()`, `deallocate_resources()`).
 - **`Render_Pass`** - Encapsulates off-screen framebuffer management (FBO, attachments, resolution). Used for color picking and environment map captures.
 - **Managers** - Dedicated services:

@@ -109,6 +109,11 @@ public:
 	// Returns true if the shader was set successfully, false if the name is unknown or the shader is null
 	virtual bool set_shader_by_name(const std::string& name, const std::shared_ptr<Shader>& shader);
 
+	// Releases the OpenGL objects owned by the renderer (render passes, buffers, etc.).
+	// It must be called while the OpenGL context still exists (i.e., before the window is destroyed);
+	// otherwise, the destructor releases them. It can be called more than once
+	void release_resources();
+
 	// GUI
 	virtual void init_gui() {};
 	virtual void build_gui() const {};

@@ -4,6 +4,8 @@
  * using the ImGui library.
  * The engine will use this class to create a window that will display information about the scene
  * and allow the user to interact with it and change certain parameters.
+ * It implements the Gui_Layer interface: the platform renderer owns the ImGui context and backends,
+ * and calls this class to configure the context and to draw the windows every frame.
  */
 
 #pragma once
@@ -15,13 +17,11 @@
 #include <glm/glm.hpp>
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/matrix_decompose.hpp> // for glm::decompose
-#define GLFW_INCLUDE_NONE               // prevent GLFW from including OpenGL headers
-#include <GLFW/glfw3.h>
 
 #include <imgui.h>
 #include <imgui_internal.h>
-#include <backends/imgui_impl_glfw.h>
-#include <backends/imgui_impl_opengl3.h>
+
+#include "platform/gui/Gui_Layer.h"
 
 // Forward declaration of classes to avoid cyclic includes and allow virtual interfaces and pointers
 class Node;
@@ -35,7 +35,7 @@ class Random;
 enum class Node_Type;
 enum class Light_Type;
 
-class GUI
+class GUI : public Gui_Layer
 {
 public:
 	// Constructors
@@ -44,18 +44,14 @@ public:
 
 	// Destructor
 	// ----------
-	~GUI();
+	~GUI() override;
 
 	// Public Methods
 	// --------------
-	// Initializes the GUI with the given GLFW window and GLSL version
-	void init_gui(GLFWwindow* window, const char* glsl_version);
-	// Builds the GUI by starting a new ImGui frame and setting up the layout
-	void build_gui();
-	// Renders the GUI by drawing the ImGui windows and handling input events
-	void render_gui();
-	// Shuts down the GUI and cleans up resources
-	void shutdown_gui() const;
+	// Configures the ImGui context (input flags, fonts, and style)
+	void configure() override;
+	// Sets up the layout, draws the GUI windows, and handles the GUI input for the current frame
+	void draw() override;
 
 private:
 	// Private Attributes
@@ -129,8 +125,6 @@ private:
 	// Configures the ImGui style (fonts, colors, etc.)
 	void configure_gui_style();
 
-	// Starts a new ImGui frame and configures the ImGui style
-	void begin_gui_frame() const;
 	// Sets the GUI layout attributes based on the current display size
 	void configure_gui_layout();
 	// Draws the GUI windows

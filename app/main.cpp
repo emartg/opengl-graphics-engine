@@ -21,7 +21,7 @@
 
 #include "CUBE.h"
 #include "PLANE.h"
-#include "renderer/GLFW_Renderer.h"
+#include "gui/Gui.h"
 
 #include "core/Core.h"
 #include "core/Node.h"
@@ -36,6 +36,8 @@
 #include "core/model/Model.h"
 #include "core/model/Shape_Model.h"
 #include "core/utils/string/String_Utils.h"
+
+#include "platform/renderer/GLFW_Renderer.h"
 
 // Initializes the Core engine (which also compiles its built-in shaders) and
 // sets up the renderer. Returns true if initialization was successful, false
@@ -93,8 +95,9 @@ int main(int argc, char** argv)
 
 bool initialize_core(Core* engine)
 {
-	// create a GLFW_Renderer instance and set it as the renderer for the engine
-	Renderer* renderer = new GLFW_Renderer();
+	// create a GLFW_Renderer instance with the application's GUI, and set it as the renderer for the engine
+	GLFW_Renderer* renderer = new GLFW_Renderer();
+	renderer->set_gui_layer(std::make_unique<GUI>());
 	engine->set_renderer(renderer);
 
 	if (engine->init()) // initialize the engine (OpenGL, window, GUI, etc.)

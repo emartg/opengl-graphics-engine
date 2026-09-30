@@ -40,28 +40,44 @@ Renderer::Renderer() : main_render_pass{ new Render_Pass() }, delta_time{ 0.0f }
 // ----------
 Renderer::~Renderer()
 {
-	// deallocate the main render pass and nullify the pointer to avoid dangling pointer issues
+	// release the OpenGL objects if they were not released yet (see release_resources)
+	release_resources();
+
+	// delete the main render pass and nullify the pointer to avoid dangling pointer issues
 	if (main_render_pass)
 	{
 		delete main_render_pass;
 		main_render_pass = nullptr;
 	}
 
-	// delete screen-quad GL objects if created
+	std::cout << "[RENDERER::~Renderer] Renderer destructor called" << std::endl;
+}
+
+// Public Methods
+// --------------
+void Renderer::release_resources()
+{
+	// deallocate the OpenGL objects of the main render pass (the object itself is deleted by the destructor)
+	if (main_render_pass)
+		main_render_pass->deallocate_resources();
+
+	// delete screen-quad GL objects if created, and reset their ids (so that they are not deleted twice)
 	if (screen_quad_ebo)
 		glDeleteBuffers(1, &screen_quad_ebo);
 	if (screen_quad_vbo)
 		glDeleteBuffers(1, &screen_quad_vbo);
 	if (screen_quad_vao)
 		glDeleteVertexArrays(1, &screen_quad_vao);
+	screen_quad_ebo = screen_quad_vbo = screen_quad_vao = 0;
 
-	// delete skybox GL objects if created
+	// delete skybox GL objects if created, and reset their ids
 	if (skybox_ebo)
 		glDeleteBuffers(1, &skybox_ebo);
 	if (skybox_vbo)
 		glDeleteBuffers(1, &skybox_vbo);
 	if (skybox_vao)
 		glDeleteVertexArrays(1, &skybox_vao);
+	skybox_ebo = skybox_vbo = skybox_vao = 0;
 
 	// clean up dynamic environment map FBOs, RBOs, and cubemap textures
 	for (auto [id, entry] : dynamic_env_maps)
@@ -76,12 +92,8 @@ Renderer::~Renderer()
 			glDeleteTextures(1, &entry.prev_cubemap_tex_id);
 	}
 	dynamic_env_maps.clear();
-
-	std::cout << "[RENDERER::~Renderer] Renderer destructor called" << std::endl;
 }
 
-// Public Methods
-// --------------
 void Renderer::config_opengl() const
 {
 	// depth buffer configuration:

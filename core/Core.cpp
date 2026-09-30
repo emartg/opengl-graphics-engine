@@ -258,8 +258,16 @@ void Core::shutdown()
 	{ // check if the renderer is not null before shutting it down
 		std::cout << "[INFO::CORE::shutdown] Destroying renderer..." << std::endl;
 		renderer->shutdown_gui(); // the GUI must be shut down before the renderer
-		delete renderer;          // destroy the renderer before the Core instance
-		renderer = nullptr;       // nullify the pointer to avoid dangling pointer issues
+
+		// release every OpenGL object while the OpenGL context still exists (i.e., before the renderer
+		// destroys the window): the selection render passes, the scene nodes, and the renderer's own objects
+		selection_manager.reset();
+		scene_manager.reset();
+		node_manager.reset();
+		renderer->release_resources();
+
+		delete renderer;    // destroy the renderer (and its window) before the Core instance
+		renderer = nullptr; // nullify the pointer to avoid dangling pointer issues
 	}
 	else
 	{ // if the renderer is null, print an error message and return

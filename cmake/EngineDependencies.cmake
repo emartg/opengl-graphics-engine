@@ -46,6 +46,14 @@ if(NOT TARGET glfw AND NOT TARGET glfw3 AND NOT TARGET glfw::glfw AND NOT TARGET
     endif()
 endif()
 
+# The bundled GLFW library is distributed without its PDB file, so MSVC Debug links report
+# warning LNK4099 for every GLFW object (they are linked without debug information).
+# Ignore it for the bundled library only, and for every target that links it
+cmake_path(IS_PREFIX ENGINE_ROOT_DIR "${GLFW3_LIBRARY}" _engine_glfw_is_bundled)
+if(MSVC AND _engine_glfw_is_bundled)
+    set_property(TARGET engine_glfw APPEND PROPERTY INTERFACE_LINK_OPTIONS "/IGNORE:4099")
+endif()
+
 if(TARGET glfw)
     set(_engine_glfw_target glfw)
 elseif(TARGET glfw3)
@@ -100,6 +108,27 @@ target_include_directories(engine_glad PUBLIC "${PROJECT_SOURCE_DIR}/external/in
 
 add_library(engine_stb_image STATIC "${PROJECT_SOURCE_DIR}/core/stb_image.cpp")
 target_include_directories(engine_stb_image PUBLIC "${PROJECT_SOURCE_DIR}/external/include")
+
+# ImGui (with its GLFW and OpenGL 3+ backends) and ImGuiFileDialog, used by the Platform library
+if(ENGINE_BUILD_PLATFORM)
+    set(_engine_imgui_dir "${PROJECT_SOURCE_DIR}/external/include/ImGui")
+    set(_engine_imgui_file_dialog_dir "${PROJECT_SOURCE_DIR}/external/include/ImGuiFileDialog")
+    file(GLOB _engine_imgui_sources CONFIGURE_DEPENDS "${_engine_imgui_dir}/*.cpp")
+
+    add_library(engine_imgui STATIC
+        ${_engine_imgui_sources}
+        "${_engine_imgui_dir}/backends/imgui_impl_glfw.cpp"
+        "${_engine_imgui_dir}/backends/imgui_impl_opengl3.cpp"
+        "${_engine_imgui_file_dialog_dir}/ImGuiFileDialog.cpp"
+    )
+    target_include_directories(engine_imgui PUBLIC
+        "${_engine_imgui_dir}"
+        "${_engine_imgui_file_dialog_dir}"
+        "${PROJECT_SOURCE_DIR}/external/include"
+    )
+    target_link_libraries(engine_imgui PUBLIC ${_engine_glfw_target} ${_engine_opengl_target})
+    target_compile_features(engine_imgui PUBLIC cxx_std_17)
+endif()
 
 set(ENGINE_GLFW_TARGET "${_engine_glfw_target}" CACHE INTERNAL "Resolved GLFW target")
 set(ENGINE_OPENGL_TARGET "${_engine_opengl_target}" CACHE INTERNAL "Resolved OpenGL target")

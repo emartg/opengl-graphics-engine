@@ -19,6 +19,7 @@ endif()
 
 # Options (the sample application is built by default only when the Engine is the top-level project)
 option(ENGINE_BUILD_APP "Build the sample application" ${PROJECT_IS_TOP_LEVEL})
+option(ENGINE_BUILD_PLATFORM "Build the Platform library (GLFW window, input, and ImGui)" ON)
 option(ENGINE_BUILD_TESTS "Build engine tests" OFF)
 option(ENGINE_USE_BUNDLED_DEPS "Allow the repository's dependency fallback" ON)
 
@@ -43,8 +44,16 @@ set (ENGINE_ROOT_DIR "${PROJECT_SOURCE_DIR}" CACHE INTERNAL "Root directory of t
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/modules")
 include("${PROJECT_SOURCE_DIR}/cmake/EngineDependencies.cmake")
 
+# The sample application requires the Platform library
+if(ENGINE_BUILD_APP AND NOT ENGINE_BUILD_PLATFORM)
+	message(FATAL_ERROR "ENGINE_BUILD_APP requires ENGINE_BUILD_PLATFORM to be ON")
+endif()
+
 # Add subdirectories
 add_subdirectory(core)
+if(ENGINE_BUILD_PLATFORM)
+	add_subdirectory(platform)
+endif()
 if(ENGINE_BUILD_APP)
-  add_subdirectory(app)
+	add_subdirectory(app)
 endif()

@@ -6,14 +6,18 @@
 
 #include "GLFW_Renderer.h"
 
-#include "../gui/Gui.h"
+#include <algorithm>
+
+#include <imgui.h>
+#include <backends/imgui_impl_glfw.h>
+#include <backends/imgui_impl_opengl3.h>
 
 #include "core/Core.h"
 #include "core/renderer/Renderer.h"
 #include "core/managers/Selection_Manager.h"
 #include "core/managers/Input_Manager.h"
 
-GLFW_Renderer::GLFW_Renderer() : window{ nullptr }, gui{ nullptr } {}
+GLFW_Renderer::GLFW_Renderer() : window{ nullptr }, gui_layer{ nullptr }, gui_initialized{ false } {}
 
 GLFW_Renderer::~GLFW_Renderer()
 {
@@ -135,29 +139,50 @@ void GLFW_Renderer::wait_for_events() const
 
 void GLFW_Renderer::init_gui()
 {
-	gui = new GUI();
-	gui->init_gui(window, "#version 450");
+	// setup the Dear ImGui context
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+
+	// let the application configure the context (input flags, fonts, style, etc.)
+	if (gui_layer)
+		gui_layer->configure();
+
+	// setup the platform (GLFW) and renderer (OpenGL 4.5 core, GLSL 450) backends
+	ImGui_ImplGlfw_InitForOpenGL(window, true);
+	ImGui_ImplOpenGL3_Init("#version 450");
+	gui_initialized = true;
 }
 
 void GLFW_Renderer::build_gui() const
 {
-	gui->build_gui();
+	// start a new ImGui frame
+	ImGui_ImplOpenGL3_NewFrame();
+	ImGui_ImplGlfw_NewFrame();
+	ImGui::NewFrame();
+
+	// draw the application-specific windows (if any)
+	if (gui_layer)
+		gui_layer->draw();
 }
 
 void GLFW_Renderer::render_gui() const
 {
-	gui->render_gui();
+	ImGui::Render(); // generate the ImGui draw data
+	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
 
 void GLFW_Renderer::shutdown_gui()
 {
-	if (gui)
-	{ // check if the GUI instance is not null before shutting it down
+	if (gui_initialized)
+	{ // check if the GUI was initialized before shutting it down
 		std::cout << "[INFO::GLFWRENDERER::shutdown_gui] Shutting down GUI..." << std::endl;
-		// clean up the GUI resources and shutdown the GUI
-		gui->shutdown_gui();
-		delete gui;    // delete the GUI instance
-		gui = nullptr; // set the GUI pointer to nullptr to avoid dangling pointer
+		// destroy the application-specific GUI layer before the ImGui context it uses
+		gui_layer.reset();
+		// shut down the backends (which release their OpenGL objects) and destroy the ImGui context
+		ImGui_ImplOpenGL3_Shutdown();
+		ImGui_ImplGlfw_Shutdown();
+		ImGui::DestroyContext();
+		gui_initialized = false;
 	}
 
 	std::cout << "[INFO::GLFWRENDERER::shutdown_gui] GUI shut down successfully" << std::endl;
