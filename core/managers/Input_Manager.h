@@ -1,9 +1,9 @@
 /*
-* Input_Manager.h
-* This file defines the Input_Manager class, which is responsible for handling user input:
-* - Mouse cursor position and scroll input
-* - Keyboard key input
-*/
+ * Input_Manager.h
+ * This file defines the Input_Manager class, which is responsible for handling user input:
+ * - Mouse cursor position and scroll input
+ * - Keyboard key input
+ */
 
 #pragma once
 
@@ -36,7 +36,6 @@ public:
 	void key_callback(std::string input);
 
 private:
-	GLfloat last_mouse_x, last_mouse_y, mouse_sensitivity;
+	GLfloat   last_mouse_x, last_mouse_y, mouse_sensitivity;
 	GLboolean first_mouse, camera_control_enabled;
-
 };

@@ -1,13 +1,17 @@
 [*]
 root = true
-indent_style = space
+charset = utf-8
+indent_style = tab
 indent_size = 4
+tab_width = 4
+insert_final_newline = true
+trim_trailing_whitespace = true
 
 cpp_indent_braces=false
 cpp_indent_multi_line_relative_to=innermost_parenthesis
 cpp_indent_within_parentheses=indent
 cpp_indent_preserve_within_parentheses=false
-cpp_indent_case_labels=false
+cpp_indent_case_labels=true
 cpp_indent_case_contents=true
 cpp_indent_case_contents_when_block=false
 cpp_indent_lambda_braces_when_parameter=true
@@ -27,11 +31,11 @@ cpp_new_line_close_brace_same_line_empty_type=true
 cpp_new_line_close_brace_same_line_empty_function=true
 cpp_new_line_before_catch=true
 cpp_new_line_before_else=true
-cpp_new_line_before_while_in_do_while=false
+cpp_new_line_before_while_in_do_while=true
 
 cpp_space_before_function_open_parenthesis=remove
-cpp_space_within_parameter_list_parentheses=true
-cpp_space_between_empty_parameter_list_parentheses=true
+cpp_space_within_parameter_list_parentheses=false
+cpp_space_between_empty_parameter_list_parentheses=false
 cpp_space_after_keywords_in_control_flow_statements=true
 cpp_space_within_control_flow_statement_parentheses=false
 cpp_space_before_lambda_open_parenthesis=false
@@ -44,7 +48,7 @@ cpp_space_before_initializer_list_open_brace=false
 cpp_space_within_initializer_list_braces=true
 cpp_space_preserve_in_initializer_list=true
 cpp_space_before_open_square_bracket=false
-cpp_space_within_square_brackets=true
+cpp_space_within_square_brackets=false
 cpp_space_before_empty_square_brackets=false
 cpp_space_between_empty_square_brackets=false
 cpp_space_group_square_brackets=true

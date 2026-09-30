@@ -1,8 +1,8 @@
 /*
-* Directional_Light.h
-* This file defines the Directional_Light class (a derived class of Light),
-* which is used to create a directional light source.
-*/
+ * Directional_Light.h
+ * This file defines the Directional_Light class (a derived class of Light),
+ * which is used to create a directional light source.
+ */
 
 #pragma once
 
@@ -23,11 +23,13 @@ class Directional_Light : public Light
 public:
 	// Constructors
 	// ------------
-	Directional_Light(const std::string& name,
-					  const glm::vec3 ambient = AMBIENT,
-					  const glm::vec3 diffuse = DIFFUSE,
-					  const glm::vec3 specular = SPECULAR,
-					  const glm::vec3 position = POSITION, const glm::vec3 direction = DIRECTION);
+	Directional_Light(
+	    const std::string& name,
+	    const glm::vec3    ambient   = AMBIENT,
+	    const glm::vec3    diffuse   = DIFFUSE,
+	    const glm::vec3    specular  = SPECULAR,
+	    const glm::vec3    position  = POSITION,
+	    const glm::vec3    direction = DIRECTION);
 
 	// Destructor
 	// ----------
@@ -42,10 +44,10 @@ public:
 	void draw(const Shader& shader) const override;
 
 	// Getters
-	glm::vec3 get_position() const { return position; }
-	glm::vec3 get_direction() const { return direction; }
+	glm::vec3              get_position() const { return position; }
+	glm::vec3              get_direction() const { return direction; }
 	std::shared_ptr<Line>& get_gizmo_direction_line() { return gizmo_direction_line; }
-	GLfloat get_gizmo_direction_line_length() { return gizmo_direction_line_length; }
+	GLfloat                get_gizmo_direction_line_length() { return gizmo_direction_line_length; }
 
 	// Setters
 	// Sets the position of the light and updates the gizmo's position accordingly.
@@ -58,21 +60,18 @@ public:
 	// This method also ensures the gizmo's direction line is updated if there are direction changes
 	void set_direction_only(const glm::vec3& direction);
 	// Sets the direction of the light and aligns the gizmo with the new direction.
-	// This is useful when the light's direction is changed programmatically, 
+	// This is useful when the light's direction is changed programmatically,
 	// and the visual gizmo needs to update its orientation to match.
 	// This method also ensures the gizmo's direction line is updated if there are direction changes
 	void set_direction_and_align_gizmo(const glm::vec3& direction);
-	void set_gizmo_direction_line(std::shared_ptr<Line> gizmo_direction_line)
-	{
-		this->gizmo_direction_line = gizmo_direction_line;
-	}
+	void set_gizmo_direction_line(std::shared_ptr<Line> gizmo_direction_line) { this->gizmo_direction_line = gizmo_direction_line; }
 	void set_gizmo_direction_line_length(const GLfloat length) { gizmo_direction_line_length = length; }
 
 	// Creates the gizmo for the directional light
 	void create_gizmo() override;
 	// Syncronizes gizmo's position with the light's position
 	void sync_gizmo_position_from_light();
-	// Updates the vertices of the gizmo's direction line 
+	// Updates the vertices of the gizmo's direction line
 	// based on the light's current position and direction
 	void update_gizmo_direction_line();
 
@@ -91,7 +90,7 @@ private:
 	glm::vec3 direction;
 
 	std::shared_ptr<Line> gizmo_direction_line; // the gizmo representing the direction of the light
-	GLfloat gizmo_direction_line_length{ 1.5f };
+	GLfloat               gizmo_direction_line_length{ 1.5f };
 
 	// Private Static Attributes
 	// -------------------------
@@ -100,6 +99,4 @@ private:
 	static constexpr glm::vec3 DIRECTION{ 0.0f, 1.0f, 0.0f }; // +Y axis by default
 	static constexpr glm::vec3 AMBIENT{ 0.1f }, DIFFUSE{ 0.8f }, SPECULAR{ 1.0f };
 	static constexpr glm::vec3 GIZMO_SCALE{ 0.4f }; // default scale factor for the directional light gizmo
-
 };
-

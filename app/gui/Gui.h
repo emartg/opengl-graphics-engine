@@ -1,10 +1,10 @@
 /*
-* GUI.h
-* This file defines the GUI class, which is used to create a graphical user interface
-* using the ImGui library.
-* The engine will use this class to create a window that will display information about the scene
-* and allow the user to interact with it and change certain parameters.
-*/
+ * GUI.h
+ * This file defines the GUI class, which is used to create a graphical user interface
+ * using the ImGui library.
+ * The engine will use this class to create a window that will display information about the scene
+ * and allow the user to interact with it and change certain parameters.
+ */
 
 #pragma once
 
@@ -15,7 +15,7 @@
 #include <glm/glm.hpp>
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/matrix_decompose.hpp> // for glm::decompose
-#define GLFW_INCLUDE_NONE // prevent GLFW from including OpenGL headers
+#define GLFW_INCLUDE_NONE               // prevent GLFW from including OpenGL headers
 #include <GLFW/glfw3.h>
 
 #include <imgui.h>
@@ -65,7 +65,7 @@ private:
 	// attributes for the new objects to be created
 	glm::vec4 new_albedo;
 	glm::vec3 new_position, new_rotation, new_direction, new_scale;
-	float new_inner_cutoff, new_outer_cutoff;
+	float     new_inner_cutoff, new_outer_cutoff;
 
 	// set of node ids that should be auto-opened in the Scene Graph window
 	std::unordered_set<std::uint32_t> scene_graph_auto_open_ids;
@@ -88,17 +88,14 @@ private:
 	// padding of the windows from the edges of the display
 	ImVec2 window_position_padding, window_size_padding;
 	// positions and sizes of the windows in the display
-	ImVec2 scene_graph_window_position, properties_window_position,
-		creation_window_position, debug_window_position;
-	ImVec2 scene_graph_window_size, properties_window_size,
-		creation_window_size, debug_window_size;
+	ImVec2 scene_graph_window_position, properties_window_position, creation_window_position, debug_window_position;
+	ImVec2 scene_graph_window_size, properties_window_size, creation_window_size, debug_window_size;
 	// flags for the windows to prevent focus on the first frame (indicating that the window just appeared)
-	bool scene_graph_window_just_appeared, properties_window_just_appeared,
-		creation_window_just_appeared, debug_window_just_appeared;
+	bool scene_graph_window_just_appeared, properties_window_just_appeared, creation_window_just_appeared, debug_window_just_appeared;
 
 	// style attributes for the GUI
 	ImFont* medium_font; // medium font for the GUI (default font)
-	ImFont* bold_font; // bold font for the GUI
+	ImFont* bold_font;   // bold font for the GUI
 
 	// Private Static Attributes
 	// -------------------------
@@ -117,11 +114,10 @@ private:
 	static constexpr float MIN_DIRECTION_VALUE{ -1.0f }, MAX_DIRECTION_VALUE{ 1.0f };
 	static constexpr float MIN_SCALE_VALUE{ 0.001f }, MAX_SCALE_VALUE{ 100.0f };
 	static constexpr float MIN_CUTOFF_VALUE{ 0.0f }, MAX_CUTOFF_VALUE{ 45.0f };
-	static constexpr float POSITION_SPEED{ 0.15f }, ROTATION_SPEED{ 1.0f },
-		DIRECTION_SPEED{ 0.01f }, SCALE_SPEED{ 0.002f }, CUTOFF_ANGLES_SPEED{ 0.25f };
-	static constexpr float POSITION_RESET_VALUE{ 0.0f }, ROTATION_RESET_VALUE{ 0.0f },
-		DIRECTION_RESET_VALUE{ 0.0f }, SCALE_RESET_VALUE{ 1.0f },
-		INNER_CUTOFF_RESET_VALUE{ 12.5f }, OUTER_CUTOFF_RESET_VALUE{ 32.5f };
+	static constexpr float POSITION_SPEED{ 0.15f }, ROTATION_SPEED{ 1.0f }, DIRECTION_SPEED{ 0.01f }, SCALE_SPEED{ 0.002f },
+	    CUTOFF_ANGLES_SPEED{ 0.25f };
+	static constexpr float POSITION_RESET_VALUE{ 0.0f }, ROTATION_RESET_VALUE{ 0.0f }, DIRECTION_RESET_VALUE{ 0.0f },
+	    SCALE_RESET_VALUE{ 1.0f }, INNER_CUTOFF_RESET_VALUE{ 12.5f }, OUTER_CUTOFF_RESET_VALUE{ 32.5f };
 	// default values for distances from the origin
 	static constexpr float MIN_DISTANCE_TO_ORIGIN{ 4.0f }, MAX_DISTANCE_TO_ORIGIN{ 15.0f };
 
@@ -160,7 +156,7 @@ private:
 	// Updates the set of node ids that should be auto-opened in the scene graph window
 	void update_scene_graph_auto_open_set();
 
-	// Draws controls for a light. Depending on the type of light, 
+	// Draws controls for a light. Depending on the type of light,
 	// it will call dynamically cast to the appropriate light type and draw the corresponding controls
 	void draw_light_controls(Light* light);
 	// Draws controls for a directional light
@@ -189,32 +185,49 @@ private:
 
 	// Creates a color picker with sliders for RGB components
 	// and returns true if the color was changed
-	bool draw_color_control(const std::string& label, glm::vec3& color, bool show_label = true,
-							float color_picker_width = ImGui::GetContentRegionAvail().x);
+	bool draw_color_control(
+	    const std::string& label,
+	    glm::vec3&         color,
+	    bool               show_label         = true,
+	    float              color_picker_width = ImGui::GetContentRegionAvail().x);
 	// Creates a color picker with sliders for RGBA components
 	// and returns true if the color was changed
-	bool draw_color_control(const std::string& label, glm::vec4& color, bool show_label = true,
-							float color_picker_width = ImGui::GetContentRegionAvail().x);
+	bool draw_color_control(
+	    const std::string& label,
+	    glm::vec4&         color,
+	    bool               show_label         = true,
+	    float              color_picker_width = ImGui::GetContentRegionAvail().x);
 	// Creates a 3-component vector control with input fields and buttons
 	// and returns true if any of the components were changed
-	bool draw_vec3_control(const std::string& label, glm::vec3& values, bool scale_controls,
-						   float min_input_field_value, float max_input_field_value,
-						   float input_field_width = INPUT_FIELD_WIDTH,
-						   float speed = 0.1f, float reset_value = 0.0f,
-						   float reset_button_width = BUTTON_WIDTH,
-						   float reset_button_height = BUTTON_HEIGHT);
+	bool draw_vec3_control(
+	    const std::string& label,
+	    glm::vec3&         values,
+	    bool               scale_controls,
+	    float              min_input_field_value,
+	    float              max_input_field_value,
+	    float              input_field_width   = INPUT_FIELD_WIDTH,
+	    float              speed               = 0.1f,
+	    float              reset_value         = 0.0f,
+	    float              reset_button_width  = BUTTON_WIDTH,
+	    float              reset_button_height = BUTTON_HEIGHT);
 	// Draws a float control with an input field and arrow buttons
 	// and returns true if the value was changed
-	bool draw_float_control(const std::string& label, float& value,
-							float min_input_field_value, float max_input_field_value,
-							float input_field_width = INPUT_FIELD_WIDTH,
-							float speed = 0.1f, float resetValue = 0.0f,
-							float reset_button_width = BUTTON_WIDTH,
-							float reset_button_height = BUTTON_HEIGHT);
+	bool draw_float_control(
+	    const std::string& label,
+	    float&             value,
+	    float              min_input_field_value,
+	    float              max_input_field_value,
+	    float              input_field_width   = INPUT_FIELD_WIDTH,
+	    float              speed               = 0.1f,
+	    float              resetValue          = 0.0f,
+	    float              reset_button_width  = BUTTON_WIDTH,
+	    float              reset_button_height = BUTTON_HEIGHT);
 
 	// Draws a remove button for an node and adds its id to the vector of nodes marked for removal
-	void draw_remove_node_button(Node* node, std::vector<std::uint32_t>& nodes_to_remove_ids,
-								 const std::string& label = "Remove",
-								 float button_width = BUTTON_WIDTH, float button_height = BUTTON_HEIGHT);
-
+	void draw_remove_node_button(
+	    Node*                       node,
+	    std::vector<std::uint32_t>& nodes_to_remove_ids,
+	    const std::string&          label         = "Remove",
+	    float                       button_width  = BUTTON_WIDTH,
+	    float                       button_height = BUTTON_HEIGHT);
 };

@@ -1,9 +1,9 @@
 /*
-* Texture.h
-* This file defines the Texture class (a derived class of Node),
-* which is used to load a texture from a file and bind it to a unit.
-* The Texture class supports both 2D textures and cubemap textures.
-*/
+ * Texture.h
+ * This file defines the Texture class (a derived class of Node),
+ * which is used to load a texture from a file and bind it to a unit.
+ * The Texture class supports both 2D textures and cubemap textures.
+ */
 
 #pragma once
 
@@ -53,7 +53,7 @@ public:
 
 	// Contructor for a cubemap texture from a single equirectangular HDR environment map,
 	// that will later be converted to a cubemap (uses the internal constructor with existing_id).
-	// as_hdr should be true to indicate the file is an HDR image, otherwise 
+	// as_hdr should be true to indicate the file is an HDR image, otherwise
 	// the file will be loaded as a standard 2D texture
 	Texture(const std::string& name, const std::string& hdr_path, const bool as_hdr);
 
@@ -61,11 +61,11 @@ public:
 	Texture(const std::string& name, const std::vector<std::string>& faces);
 
 	// Copy constructor and copy assignment operator (deleted - Texture is not copyable)
-	Texture(const Texture&) = delete;
+	Texture(const Texture&)            = delete;
 	Texture& operator=(const Texture&) = delete;
 
 	// Move constructor and move assignment operator (deleted - Node base class is not movable)
-	Texture(Texture&&) = delete;
+	Texture(Texture&&)            = delete;
 	Texture& operator=(Texture&&) = delete;
 
 	// Public Methods
@@ -82,10 +82,10 @@ public:
 	virtual void draw(const Shader& shader) const override {}
 
 	// Getters
-	GLuint get_texture_id() const { return texture_id; }
-	const std::string& get_texture_path() const { return path; }
+	GLuint                          get_texture_id() const { return texture_id; }
+	const std::string&              get_texture_path() const { return path; }
 	const std::vector<std::string>& get_cubemap_face_paths() const { return cubemap_face_paths; }
-	const Texture_Type& get_texture_type() const { return texture_type; }
+	const Texture_Type&             get_texture_type() const { return texture_type; }
 
 	// Setters
 	void set_texture_type(const Texture_Type type) { texture_type = type; }
@@ -111,13 +111,12 @@ public:
 private:
 	// Private Attributes
 	// ------------------
-	GLuint texture_id;
-	Texture_Type texture_type;
-	std::string path; // path of the texture to compare with other textures
+	GLuint                   texture_id;
+	Texture_Type             texture_type;
+	std::string              path;               // path of the texture to compare with other textures
 	std::vector<std::string> cubemap_face_paths; // paths of the 6 faces if this is a cubemap
 
 	// Friend Classes
 	// --------------
 	friend class Renderer; // allow Renderer to access private members for HDR to cubemap conversion
-
 };

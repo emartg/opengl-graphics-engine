@@ -1,7 +1,7 @@
 /*
-* Mesh.cpp
-* This file implements the Mesh class, which is used to store mesh data and render it.
-*/
+ * Mesh.cpp
+ * This file implements the Mesh class, which is used to store mesh data and render it.
+ */
 
 #include "Mesh.h"
 
@@ -10,9 +10,10 @@
 
 // Constructors
 // ------------
-Mesh::Mesh(std::vector<Vertex> vertices, std::vector<GLuint> indices,
-		   std::vector<std::shared_ptr<Texture>> textures)
-	: vertices{ vertices }, indices{ indices }, textures{ textures }
+Mesh::Mesh(std::vector<Vertex> vertices, std::vector<GLuint> indices, std::vector<std::shared_ptr<Texture>> textures) :
+    vertices{ vertices },
+    indices{ indices },
+    textures{ textures }
 {
 	setup_mesh();
 }
@@ -49,9 +50,9 @@ void Mesh::bind_textures(Shader& shader) const
 	GLuint next_available_unit{ 3 };
 
 	// indices of known texture types (to bind to fixed slots - initially -1 = not found)
-	GLint albedo_idx{ -1 };		// index of the albedo map in the textures vector
-	GLint metallic_idx{ -1 };	// index of the metallic map in the textures vector
-	GLint opacity_idx{ -1 };	// index of the opacity map in the textures vector
+	GLint albedo_idx{ -1 };   // index of the albedo map in the textures vector
+	GLint metallic_idx{ -1 }; // index of the metallic map in the textures vector
+	GLint opacity_idx{ -1 };  // index of the opacity map in the textures vector
 
 	// tag-based selection of known texture types before relying on legacy filename-based hints
 	for (GLuint i{}; i < textures.size(); ++i)
@@ -70,30 +71,30 @@ void Mesh::bind_textures(Shader& shader) const
 	for (GLuint i = 0; i < textures.size() && (albedo_idx < 0 || metallic_idx < 0); ++i)
 	{
 		// skip already assigned textures
-		if (textures[i]->get_texture_type() != Texture_Type::UNDEFINED) continue;
+		if (textures[i]->get_texture_type() != Texture_Type::UNDEFINED)
+			continue;
 
 		const std::string name = textures[i]->get_name(); // retrieve texture name
 
 		// infer type from name substrings (if not already assigned)
-		if (albedo_idx < 0 && (name.find("albedo") != std::string::npos ||
-							   name.find("diffuse") != std::string::npos ||
-							   name.find("basecolor") != std::string::npos ||
-							   name.find("bcolor") != std::string::npos))
+		if (albedo_idx < 0 &&
+		    (name.find("albedo") != std::string::npos || name.find("diffuse") != std::string::npos ||
+		     name.find("basecolor") != std::string::npos || name.find("bcolor") != std::string::npos))
 			albedo_idx = static_cast<GLint>(i);
-		else if (metallic_idx < 0 && (name.find("specular") != std::string::npos ||
-									  name.find("reflective") != std::string::npos ||
-									  name.find("metal") != std::string::npos ||
-									  name.find("metallic") != std::string::npos))
+		else if (
+		    metallic_idx < 0 &&
+		    (name.find("specular") != std::string::npos || name.find("reflective") != std::string::npos ||
+			 name.find("metal") != std::string::npos || name.find("metallic") != std::string::npos))
 			metallic_idx = static_cast<GLint>(i);
-		else if (opacity_idx < 0 && (name.find("opacity") != std::string::npos ||
-									 name.find("alpha") != std::string::npos ||
-									 name.find("transparent") != std::string::npos ||
-									 name.find("transparency") != std::string::npos))
+		else if (
+		    opacity_idx < 0 &&
+		    (name.find("opacity") != std::string::npos || name.find("alpha") != std::string::npos ||
+			 name.find("transparent") != std::string::npos || name.find("transparency") != std::string::npos))
 			opacity_idx = static_cast<GLint>(i);
 	}
 
 	// bind fixed slots first (if found)
-	if (albedo_idx >= 0) // if an albedo map was found, bind it to the expected unit 
+	if (albedo_idx >= 0) // if an albedo map was found, bind it to the expected unit
 		textures[albedo_idx]->bind(albedo_map_unit);
 	if (metallic_idx >= 0) // if a metallic map was found, bind it to the expected unit
 		textures[metallic_idx]->bind(metallic_map_unit);
@@ -104,9 +105,7 @@ void Mesh::bind_textures(Shader& shader) const
 	for (GLuint i = 0; i < textures.size(); ++i)
 	{
 		// if this texture is already bound to a fixed slot, skip it
-		if (static_cast<GLint>(i) == albedo_idx ||
-			static_cast<GLint>(i) == metallic_idx ||
-			static_cast<GLint>(i) == opacity_idx)
+		if (static_cast<GLint>(i) == albedo_idx || static_cast<GLint>(i) == metallic_idx || static_cast<GLint>(i) == opacity_idx)
 			continue;
 		// otherwise, bind the texture to the next available unit
 		textures[i]->bind(next_available_unit++);

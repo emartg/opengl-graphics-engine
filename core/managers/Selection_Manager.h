@@ -1,8 +1,8 @@
 /*
-* Selection_Manager.h
-* Manages selection of nodes in the scene via picking passes,
-* and an outlining mask pass for the selected node.
-*/
+ * Selection_Manager.h
+ * Manages selection of nodes in the scene via picking passes,
+ * and an outlining mask pass for the selected node.
+ */
 
 #pragma once
 
@@ -26,8 +26,8 @@ class Node_Manager;
 // Struct to hold outline parameters for the selected node
 struct Outline_Params
 {
-	glm::vec3 color{ 0.0f, 0.95f, 1.0f };	// outline color - highly visible cyan by default
-	GLuint thickness{ 2 };					// outline thickness in pixels - 2 by default (must be >= 1)
+	glm::vec3 color{ 0.0f, 0.95f, 1.0f }; // outline color - highly visible cyan by default
+	GLuint    thickness{ 2 };             // outline thickness in pixels - 2 by default (must be >= 1)
 };
 
 class Selection_Manager
@@ -95,20 +95,20 @@ private:
 	// Private Attributes
 	// ------------------
 	// general selection manager attributes
-	GLuint width, height;
+	GLuint        width, height;
 	std::uint32_t selected_node_id;
 
 	// cycle-up selection helpers
-	std::uint32_t last_picked_id{ 0 }; // id of last picked node for cycling
-	double last_pick_time{ 0.0 }; // time of last pick
+	std::uint32_t last_picked_id{ 0 };   // id of last picked node for cycling
+	double        last_pick_time{ 0.0 }; // time of last pick
 
 	// picking attributes
-	Render_Pass picking_pass;
-	std::shared_ptr<Shader> picking_shader;
+	Render_Pass               picking_pass;
+	std::shared_ptr<Shader>   picking_shader;
 	std::optional<glm::ivec2> pending_pick; // screen coords (OpenGL origin bottom-left)
 
 	// outline attributes
-	Render_Pass outline_pass; // FBO for rendering the outline mask (single channel via RGBA8)
+	Render_Pass    outline_pass;   // FBO for rendering the outline mask (single channel via RGBA8)
 	Outline_Params outline_params; // parameters for the outline effect
 
 	// Private Methods
@@ -132,11 +132,9 @@ private:
 	std::shared_ptr<Node> find_node_by_id(Node_Manager* node_manager, std::uint32_t id) const;
 
 	// If the given node is a gizmo model, resolves it to the owning parent light node
-	std::shared_ptr<Node> resolve_gizmo_to_light(Node_Manager* node_manager,
-												 const std::shared_ptr<Node>& gizmo_model) const;
+	std::shared_ptr<Node> resolve_gizmo_to_light(Node_Manager* node_manager, const std::shared_ptr<Node>& gizmo_model) const;
 
 	// Private Static Attributes
 	// -------------------------
 	static constexpr double CYCLE_TIME_THRESHOLD = 0.5; // time threshold in seconds for cycle-up selection
-
 };

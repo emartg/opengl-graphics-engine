@@ -1,8 +1,8 @@
 /*
-* Point_Light.h
-* This file defines the Point_Light class (a derived class of Light),
-* which is used to create a point light source.
-*/
+ * Point_Light.h
+ * This file defines the Point_Light class (a derived class of Light),
+ * which is used to create a point light source.
+ */
 
 #pragma once
 
@@ -18,14 +18,15 @@ class Point_Light : public Light
 public:
 	// Constructors
 	// ------------
-	Point_Light(const std::string& name,
-				const glm::vec3 ambient = AMBIENT,
-				const glm::vec3 diffuse = DIFFUSE,
-				const glm::vec3 specular = SPECULAR,
-				const glm::vec3 position = POSITION,
-				const GLfloat constant = CONSTANT,
-				const GLfloat linear = LINEAR,
-				const GLfloat quadratic = QUADRATIC);
+	Point_Light(
+	    const std::string& name,
+	    const glm::vec3    ambient   = AMBIENT,
+	    const glm::vec3    diffuse   = DIFFUSE,
+	    const glm::vec3    specular  = SPECULAR,
+	    const glm::vec3    position  = POSITION,
+	    const GLfloat      constant  = CONSTANT,
+	    const GLfloat      linear    = LINEAR,
+	    const GLfloat      quadratic = QUADRATIC);
 
 	// Destructor
 	// ----------
@@ -35,9 +36,9 @@ public:
 	// --------------
 	// Getters
 	glm::vec3 get_position() const { return position; }
-	GLfloat get_constant() const { return constant; }
-	GLfloat get_linear() const { return linear; }
-	GLfloat get_quadratic() const { return quadratic; }
+	GLfloat   get_constant() const { return constant; }
+	GLfloat   get_linear() const { return linear; }
+	GLfloat   get_quadratic() const { return quadratic; }
 
 	// Setters
 	void set_position(glm::vec3 position);
@@ -62,16 +63,15 @@ private:
 	// Private Attributes
 	// ------------------
 	glm::vec3 position;
-	GLfloat constant;
-	GLfloat linear;
-	GLfloat quadratic;
+	GLfloat   constant;
+	GLfloat   linear;
+	GLfloat   quadratic;
 
 	// Private Static Attributes
 	// -------------------------
 	// default values for the point light attributes
 	static constexpr glm::vec3 POSITION{ 1.0f, 2.0f, 3.0f };
 	static constexpr glm::vec3 AMBIENT{ 0.1f }, DIFFUSE{ 0.8f }, SPECULAR{ 1.0f };
-	static constexpr GLfloat CONSTANT{ 1.0f }, LINEAR{ 0.09f }, QUADRATIC{ 0.032f };
+	static constexpr GLfloat   CONSTANT{ 1.0f }, LINEAR{ 0.09f }, QUADRATIC{ 0.032f };
 	static constexpr glm::vec3 GIZMO_SCALE{ 0.3f }; // default scale factor for the point light gizmo
-
 };

@@ -1,8 +1,8 @@
 /*
-* Scene_Manager.cpp
-* This file implements the Scene_Manager class, which is responsible for managing the scene,
-* including the camera and other scene-related objects.
-*/
+ * Scene_Manager.cpp
+ * This file implements the Scene_Manager class, which is responsible for managing the scene,
+ * including the camera and other scene-related objects.
+ */
 
 #include "Scene_Manager.h"
 
@@ -18,7 +18,7 @@ GLboolean Scene_Manager::load_skybox(const std::vector<std::string>& faces)
 	if (faces.size() != 6)
 	{ // if not, print an error and return false
 		std::cerr << "[ERROR::SCENEMANAGER::load_skybox] Skybox requires 6 face paths, "
-			<< "but " << faces.size() << " were provided" << std::endl;
+		          << "but " << faces.size() << " were provided" << std::endl;
 		return GL_FALSE;
 	}
 
@@ -42,8 +42,7 @@ GLboolean Scene_Manager::load_skybox(const std::string& hdr_path)
 	skybox = std::make_shared<Texture>("skybox", hdr_path, true);
 	if (skybox->get_texture_id() == 0)
 	{ // if the texture id is 0, loading failed - print an error, reset the skybox pointer, and return falseX
-		std::cerr << "[ERROR::SCENEMANAGER::load_skybox] Failed to load HDR skybox texture from: "
-			<< hdr_path << std::endl;
+		std::cerr << "[ERROR::SCENEMANAGER::load_skybox] Failed to load HDR skybox texture from: " << hdr_path << std::endl;
 		skybox = nullptr; // reset the skybox pointer
 		return GL_FALSE;
 	}

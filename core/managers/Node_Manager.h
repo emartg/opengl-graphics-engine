@@ -1,10 +1,10 @@
 /*
-* Node_Manager.h
-* This file defines the Node_Manager class, which is responsible for managing Node objects in the engine.
-* It provides methods to add, retrieve, and manage nodes of various types
-* and keeps track of the number of nodes of each type.
-* Also, when the Node_Manager is destroyed, it deallocates resources for all nodes.
-*/
+ * Node_Manager.h
+ * This file defines the Node_Manager class, which is responsible for managing Node objects in the engine.
+ * It provides methods to add, retrieve, and manage nodes of various types
+ * and keeps track of the number of nodes of each type.
+ * Also, when the Node_Manager is destroyed, it deallocates resources for all nodes.
+ */
 
 #pragma once
 
@@ -71,5 +71,4 @@ private:
 	// ---------------
 	// Converts Node_Type enum to string for map lookup
 	std::string node_type_to_string(Node_Type type) const;
-
 };

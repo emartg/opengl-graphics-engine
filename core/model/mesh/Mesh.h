@@ -1,7 +1,7 @@
 /*
-* Mesh.h
-* This file defines the Mesh class, which is used to store mesh data and render it.
-*/
+ * Mesh.h
+ * This file defines the Mesh class, which is used to store mesh data and render it.
+ */
 
 #pragma once
 
@@ -31,8 +31,7 @@ class Mesh
 public:
 	// Constructors
 	// ------------
-	Mesh(std::vector<Vertex> vertices, std::vector<GLuint> indices,
-		 std::vector<std::shared_ptr<Texture>> textures);
+	Mesh(std::vector<Vertex> vertices, std::vector<GLuint> indices, std::vector<std::shared_ptr<Texture>> textures);
 
 	// Public Methods
 	// --------------
@@ -51,14 +50,13 @@ public:
 private:
 	// Private Attributes
 	// ------------------
-	std::vector<Vertex> vertices;
-	std::vector<GLuint> indices;
+	std::vector<Vertex>                   vertices;
+	std::vector<GLuint>                   indices;
 	std::vector<std::shared_ptr<Texture>> textures;
-	GLuint vao, vbo, ebo;
+	GLuint                                vao, vbo, ebo;
 
 	// Private Methods
 	// ---------------
 	// Initializes all the buffer objects/arrays
 	void setup_mesh();
-
 };

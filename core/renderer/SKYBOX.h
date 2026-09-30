@@ -1,8 +1,8 @@
 /*
-* SKYBOX.h
-* This file defines the vertex data for a simple skybox cube,
-* which is used to create a skybox in the scene.
-*/
+ * SKYBOX.h
+ * This file defines the vertex data for a simple skybox cube,
+ * which is used to create a skybox in the scene.
+ */
 
 #pragma once
 
@@ -12,6 +12,8 @@
 
 // Number of unique vertices and indices in the skybox cube (6 faces x 2 triangles x 3 vertices)
 const GLuint skybox_vertex_count = 8, skybox_index_count = 36;
+
+// clang-format off
 
 // Skybox cube vertices (unique corners)
 const GLfloat skybox_positions_array[] = {
@@ -31,10 +33,8 @@ const GLuint skybox_indices_array[] = {
 	4, 5, 1,	1, 0, 4		// bottom face	(facing -Y)
 };
 
+// clang-format on
+
 // Skybox cube data in vector form
-const std::vector<GLfloat> skybox_positions_vector{
-	std::begin(skybox_positions_array), std::end(skybox_positions_array)
-};
-const std::vector<GLuint> skybox_indices_vector{
-	std::begin(skybox_indices_array), std::end(skybox_indices_array)
-};
+const std::vector<GLfloat> skybox_positions_vector{ std::begin(skybox_positions_array), std::end(skybox_positions_array) };
+const std::vector<GLuint>  skybox_indices_vector{ std::begin(skybox_indices_array), std::end(skybox_indices_array) };

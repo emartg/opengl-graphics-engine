@@ -1,8 +1,8 @@
 /*
-* Line.cpp
-* This file implements the Line class, which is used to represent a line in 3D space
-* and provides methods for rendering and manipulating the line.
-*/
+ * Line.cpp
+ * This file implements the Line class, which is used to represent a line in 3D space
+ * and provides methods for rendering and manipulating the line.
+ */
 
 #include "Line.h"
 
@@ -13,9 +13,7 @@ Line::Line(const std::vector<GLfloat>& vertices)
 	// check if the vector is empty or has the correct size (empty vector allows for deferred update)
 	if (vertices.size() != 6 && !vertices.empty())
 	{
-		throw std::invalid_argument(
-			"Line constructor requires 6 float values for two endpoints, or be empty for deferred update."
-		);
+		throw std::invalid_argument("Line constructor requires 6 float values for two endpoints, or be empty for deferred update.");
 	}
 
 	setup_line(vertices);
@@ -66,7 +64,7 @@ void Line::setup_line(const std::vector<GLfloat>& vertices)
 
 	// bind the VBO and send the vertices to the GPU
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
-	// use GL_DYNAMIC_DRAW to allow for dynamic updates of the vertex data 
+	// use GL_DYNAMIC_DRAW to allow for dynamic updates of the vertex data
 	// (this is useful for lines that may change frequently), and ensure
 	// that, if the vector is empty, there is still space reserved for two points,
 	// which is 6 floats (2 points * 3 coordinates each)

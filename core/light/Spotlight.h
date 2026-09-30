@@ -1,8 +1,8 @@
 /*
-* Spotlight.h
-* This file defines the Spotlight class (a derived class of Light),
-* which is used to create a spotlight source.
-*/
+ * Spotlight.h
+ * This file defines the Spotlight class (a derived class of Light),
+ * which is used to create a spotlight source.
+ */
 
 #pragma once
 
@@ -20,15 +20,18 @@ class Spotlight : public Light
 public:
 	// Constructors
 	// ------------
-	Spotlight(const std::string& name,
-			  const glm::vec3 ambient = AMBIENT,
-			  const glm::vec3 diffuse = DIFFUSE,
-			  const glm::vec3 specular = SPECULAR,
-			  const glm::vec3 position = POSITION, const glm::vec3 direction = DIRECTION,
-			  const GLfloat inner_cutoff = INNER_CUTOFF, const GLfloat outer_cutoff = OUTER_CUTOFF,
-			  const GLfloat constant = CONSTANT,
-			  const GLfloat linear = LINEAR,
-			  const GLfloat quadratic = QUADRATIC);
+	Spotlight(
+	    const std::string& name,
+	    const glm::vec3    ambient      = AMBIENT,
+	    const glm::vec3    diffuse      = DIFFUSE,
+	    const glm::vec3    specular     = SPECULAR,
+	    const glm::vec3    position     = POSITION,
+	    const glm::vec3    direction    = DIRECTION,
+	    const GLfloat      inner_cutoff = INNER_CUTOFF,
+	    const GLfloat      outer_cutoff = OUTER_CUTOFF,
+	    const GLfloat      constant     = CONSTANT,
+	    const GLfloat      linear       = LINEAR,
+	    const GLfloat      quadratic    = QUADRATIC);
 
 	// Destructor
 	// ----------
@@ -39,11 +42,11 @@ public:
 	// Getters
 	glm::vec3 get_position() const { return position; }
 	glm::vec3 get_direction() const { return direction; }
-	GLfloat get_inner_cutoff() const { return inner_cutoff; }
-	GLfloat get_outer_cutoff() const { return outer_cutoff; }
-	GLfloat get_constant() const { return constant; }
-	GLfloat get_linear() const { return linear; }
-	GLfloat get_quadratic() const { return quadratic; }
+	GLfloat   get_inner_cutoff() const { return inner_cutoff; }
+	GLfloat   get_outer_cutoff() const { return outer_cutoff; }
+	GLfloat   get_constant() const { return constant; }
+	GLfloat   get_linear() const { return linear; }
+	GLfloat   get_quadratic() const { return quadratic; }
 
 	// Setters
 	// Sets the position of the light and updates the gizmo's position accordingly.
@@ -56,7 +59,7 @@ public:
 	// This method also ensures the gizmo's direction line is updated if there are direction changes
 	void set_direction_only(const glm::vec3& direction);
 	// Sets the direction of the light and aligns the gizmo with the new direction.
-	// This is useful when the light's direction is changed programmatically, 
+	// This is useful when the light's direction is changed programmatically,
 	// and the visual gizmo needs to update its orientation to match.
 	// This method also ensures the gizmo's direction line is updated if there are direction changes
 	void set_direction_and_align_gizmo(const glm::vec3& direction);
@@ -84,21 +87,19 @@ private:
 	// ------------------
 	glm::vec3 position;
 	glm::vec3 direction;
-	GLfloat inner_cutoff;
-	GLfloat outer_cutoff;
-	GLfloat constant;
-	GLfloat linear;
-	GLfloat quadratic;
+	GLfloat   inner_cutoff;
+	GLfloat   outer_cutoff;
+	GLfloat   constant;
+	GLfloat   linear;
+	GLfloat   quadratic;
 
 	// Private Static Attributes
 	// -------------------------
 	// default values for the spotlight attributes
-	static constexpr glm::vec3 POSITION{ 1.0f , 4.5f , -0.5f };
+	static constexpr glm::vec3 POSITION{ 1.0f, 4.5f, -0.5f };
 	static constexpr glm::vec3 DIRECTION{ 0.0f, -1.0f, 0.0f }; // -Y axis by default
 	static constexpr glm::vec3 AMBIENT{ 0.1f }, DIFFUSE{ 0.8f }, SPECULAR{ 1.0f };
-	static constexpr GLfloat CONSTANT{ 1.0f }, LINEAR{ 0.09f }, QUADRATIC{ 0.032f };
-	static const GLfloat INNER_CUTOFF, OUTER_CUTOFF;
+	static constexpr GLfloat   CONSTANT{ 1.0f }, LINEAR{ 0.09f }, QUADRATIC{ 0.032f };
+	static const GLfloat       INNER_CUTOFF, OUTER_CUTOFF;
 	static constexpr glm::vec3 GIZMO_SCALE{ 0.3f }; // default scale factor for the spotlight gizmo
-
 };
-

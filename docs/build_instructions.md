@@ -5,7 +5,7 @@ This document provides detailed steps to compile and run the OpenGL Graphics Eng
 
 ## Prerequisites
 
--**Operating System:** Windows (tested on Windows 11) or Linux (tested on Ubuntu 24.04). macOS is not supported, since it only provides OpenGL up to 4.1.
+- **Operating System:** Windows (tested on Windows 11) or Linux (tested on Ubuntu 24.04). macOS is not supported, since it only provides OpenGL up to 4.1.
 - **GPU and drivers:** OpenGL 4.5 core profile support (any NVIDIA, AMD, or Intel GPU with current drivers on Windows or Linux, or a recent Mesa on Linux, including the `llvmpipe` software renderer).
 - **Compiler:** MSVC from Visual Studio 2022/2026, or GCC from a MinGW installation on Windows; GCC or Clang on Linux.
 - **CMake:** ≥ 3.21 (≥ 3.25 to use the presets in `CMakePresets.json`).

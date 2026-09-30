@@ -1,9 +1,9 @@
 BasedOnStyle: LLVM
 AccessModifierOffset: -4
 AlignAfterOpenBracket: AlwaysBreak
-AlignConsecutiveAssignments: None
+AlignConsecutiveAssignments: Consecutive
 AlignConsecutiveBitFields: None
-AlignConsecutiveDeclarations: None
+AlignConsecutiveDeclarations: Consecutive
 AlignConsecutiveMacros: None
 AlignEscapedNewlines: DontAlign
 AlignOperands: DontAlign
@@ -103,7 +103,7 @@ SpacesInParentheses: false
 SpacesInSquareBrackets: false
 Standard: Latest
 TabWidth: 4
-UseTab: Never
+UseTab: ForIndentation
 WhitespaceSensitiveMacros:
   - PRAGMA_WARNING_DISABLE_GCC
   - PRAGMA_WARNING_DISABLE_MSVC

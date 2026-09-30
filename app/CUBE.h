@@ -1,13 +1,13 @@
 /*
-* CUBE.h
-* This file defines the vertex data for a simple cube,
-* both in array and vector form.
-* Vertices are replicated for each face, so that each face can have
-* different normals and texture coordinates.
-* The vertex data is separated into position, normal, and texture coordinate data, but there is also
-* an array and a vector with the interleaved vertex data to test the Shape_Model constructors that take
-* interleaved vertex data directly.
-*/
+ * CUBE.h
+ * This file defines the vertex data for a simple cube,
+ * both in array and vector form.
+ * Vertices are replicated for each face, so that each face can have
+ * different normals and texture coordinates.
+ * The vertex data is separated into position, normal, and texture coordinate data, but there is also
+ * an array and a vector with the interleaved vertex data to test the Shape_Model constructors that take
+ * interleaved vertex data directly.
+ */
 
 #pragma once
 
@@ -17,6 +17,8 @@
 
 // Number of vertices and indices in the cube
 const GLuint cube_vertex_count = 24, cube_index_count = 36;
+
+// clang-format off
 
 // Cube vertex position data
 const GLfloat cube_positions_array[] = {
@@ -183,19 +185,11 @@ const GLfloat cube_vertices_array[] = {
 	-1.0f,	-1.0f,  1.0f,		0.0f,	-1.0f,	0.0f,		0.0f,	1.0f
 };
 
+// clang-format on
+
 // Cube data in vector form
-const std::vector<GLfloat> cube_positions_vector{
-	std::begin(cube_positions_array), std::end(cube_positions_array)
-};
-const std::vector<GLfloat> cube_normals_vector{
-	std::begin(cube_normals_array), std::end(cube_normals_array)
-};
-const std::vector<GLfloat> cube_tex_coords_vector{
-	std::begin(cube_tex_coords_array), std::end(cube_tex_coords_array)
-};
-const std::vector<GLuint> cube_indices_vector{
-	std::begin(cube_indices_array), std::end(cube_indices_array)
-};
-const std::vector<GLfloat> cube_vertices_vector{
-	std::begin(cube_vertices_array), std::end(cube_vertices_array)
-};
+const std::vector<GLfloat> cube_positions_vector{ std::begin(cube_positions_array), std::end(cube_positions_array) };
+const std::vector<GLfloat> cube_normals_vector{ std::begin(cube_normals_array), std::end(cube_normals_array) };
+const std::vector<GLfloat> cube_tex_coords_vector{ std::begin(cube_tex_coords_array), std::end(cube_tex_coords_array) };
+const std::vector<GLuint>  cube_indices_vector{ std::begin(cube_indices_array), std::end(cube_indices_array) };
+const std::vector<GLfloat> cube_vertices_vector{ std::begin(cube_vertices_array), std::end(cube_vertices_array) };

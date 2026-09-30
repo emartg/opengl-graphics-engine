@@ -1,8 +1,8 @@
 /*
-* SCREEN_QUAD.h
-* This file defines the vertex data for a simple screen quad,
-* which is used alongside FBOs for post-processing effects and rendering to textures.
-*/
+ * SCREEN_QUAD.h
+ * This file defines the vertex data for a simple screen quad,
+ * which is used alongside FBOs for post-processing effects and rendering to textures.
+ */
 
 #pragma once
 
@@ -12,6 +12,8 @@
 
 // Number of vertices and indices in the screen quad (2 triangles x 3 vertices)
 const GLuint screen_quad_vertex_count = 6, screen_quad_index_count = 12;
+
+// clang-format off
 
 // Screen quad vertices
 const GLfloat screen_quad_pos_array[] = {
@@ -45,16 +47,11 @@ const GLfloat screen_quad_vertices_array[] = {
 	-1.0f,   1.0f,	0.0f,		0.0f,	1.0f  // top-left
 };
 
+// clang-format on
+
 // Screen quad vertex data in vector form
-const std::vector<GLfloat> screen_quad_positions_vector{
-	std::begin(screen_quad_pos_array), std::end(screen_quad_pos_array)
-};
-const std::vector<GLfloat> screen_quad_tex_coords_vector{
-	std::begin(screen_quad_tex_coords_array), std::end(screen_quad_tex_coords_array)
-};
-const std::vector<GLuint> screen_quad_indices_vector{
-	std::begin(screen_quad_indices_array), std::end(screen_quad_indices_array)
-};
-const std::vector<GLfloat> screen_quad_vertices_vector{
-	std::begin(screen_quad_vertices_array), std::end(screen_quad_vertices_array)
-};
+const std::vector<GLfloat> screen_quad_positions_vector{ std::begin(screen_quad_pos_array), std::end(screen_quad_pos_array) };
+const std::vector<GLfloat> screen_quad_tex_coords_vector{ std::begin(screen_quad_tex_coords_array),
+                                                          std::end(screen_quad_tex_coords_array) };
+const std::vector<GLuint>  screen_quad_indices_vector{ std::begin(screen_quad_indices_array), std::end(screen_quad_indices_array) };
+const std::vector<GLfloat> screen_quad_vertices_vector{ std::begin(screen_quad_vertices_array), std::end(screen_quad_vertices_array) };

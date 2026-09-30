@@ -1,8 +1,8 @@
 /*
-* Render_Pass.h
-* This file defines the Render_Pass class, which is used to manage the lifecycle
-* of a framebuffer object (FBO) for rendering to a texture.
-*/
+ * Render_Pass.h
+ * This file defines the Render_Pass class, which is used to manage the lifecycle
+ * of a framebuffer object (FBO) for rendering to a texture.
+ */
 
 #pragma once
 
@@ -15,9 +15,9 @@
 // Struct that defines the specification for creating a render pass
 struct Render_Pass_Specification
 {
-	GLuint width{ 0 };
-	GLuint height{ 0 };
-	GLuint color_attachment_count{ 1 };
+	GLuint    width{ 0 };
+	GLuint    height{ 0 };
+	GLuint    color_attachment_count{ 1 };
 	GLboolean has_depth_attachment{ true };
 	GLboolean has_stencil_attachment{ true };
 	// if true and has_depth_attachment is true, allocate a depth (or depth-stencil) texture instead of an RBO
@@ -67,10 +67,9 @@ private:
 	// ------------------
 	Render_Pass_Specification specification;
 
-	GLuint fbo_id; // framebuffer object identificator
-	GLuint rbo_id; // renderbuffer object identificator for depth and stencil attachment
+	GLuint fbo_id;           // framebuffer object identificator
+	GLuint rbo_id;           // renderbuffer object identificator for depth and stencil attachment
 	GLuint depth_texture_id; // depth (or depth-stencil) attachment texture id if depth_as_texture is true
 
 	std::vector<GLuint> color_attachment_ids; // texture identificators for color attachments
-
 };

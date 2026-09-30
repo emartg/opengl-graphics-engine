@@ -1,8 +1,8 @@
 /*
-* String_Utils.cpp
-* This file implements the String_Utils class, which provides static utility methods
-* whose functionality revolves around string manipulation and formatting.
-*/
+ * String_Utils.cpp
+ * This file implements the String_Utils class, which provides static utility methods
+ * whose functionality revolves around string manipulation and formatting.
+ */
 
 #include "String_Utils.h"
 
@@ -13,8 +13,7 @@
 std::string String_Utils::to_uppercase(const std::string& input_string)
 {
 	std::string result = input_string;
-	std::transform(result.begin(), result.end(), result.begin(),
-				   [](unsigned char c) { return static_cast<char>(std::toupper(c)); });
+	std::transform(result.begin(), result.end(), result.begin(), [](unsigned char c) { return static_cast<char>(std::toupper(c)); });
 	return result;
 }
 
@@ -26,8 +25,7 @@ std::string String_Utils::to_uppercase_from_copy(std::string input_string)
 std::string String_Utils::to_lowercase(const std::string& input_string)
 {
 	std::string result = input_string;
-	std::transform(result.begin(), result.end(), result.begin(),
-				   [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+	std::transform(result.begin(), result.end(), result.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
 	return result;
 }
 
@@ -68,14 +66,15 @@ std::string String_Utils::get_directory_path(const std::string& filepath)
 
 std::string String_Utils::generate_id_prefixed_name(Node& node)
 {
-	std::ostringstream oss; // create an output string stream
+	std::ostringstream oss;                                     // create an output string stream
 	oss << "{id: " << node.get_id() << "} " << node.get_name(); // format the string with id and name
-	return oss.str(); // return the generated string from the output string stream
+	return oss.str();                                           // return the generated string from the output string stream
 }
 
 std::string String_Utils::generate_id_prefixed_name(const std::shared_ptr<Node>& node)
 {
-	if (!node) return {}; // return empty string if node is null
+	if (!node)
+		return {};                           // return empty string if node is null
 	return generate_id_prefixed_name(*node); // call the reference overload
 }
 
@@ -100,7 +99,7 @@ std::string String_Utils::to_clean_display_name(const std::string& filename)
 		}
 		else if (capitalize_next)
 		{ // if the flag is set, capitalize the character and reset the flag
-			c = static_cast<char>(std::toupper(static_cast<unsigned char>(c)));
+			c               = static_cast<char>(std::toupper(static_cast<unsigned char>(c)));
 			capitalize_next = false;
 		}
 		else

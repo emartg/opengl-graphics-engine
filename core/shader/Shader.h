@@ -1,9 +1,9 @@
 /*
-* Shader.h
-* This file defines the Shader class (a derived class of Node),
-* which is used to read, compile, and link shaders to a shader program.
-* It also provides methods to set uniform variables in the shader program.
-*/
+ * Shader.h
+ * This file defines the Shader class (a derived class of Node),
+ * which is used to read, compile, and link shaders to a shader program.
+ * It also provides methods to set uniform variables in the shader program.
+ */
 
 #pragma once
 
@@ -29,17 +29,19 @@ public:
 	// Constructors
 	// ------------
 	// Constructor without geometry shader
-	Shader(const std::string& name,
-		   const std::string& vertex_path,
-		   const std::string& fragment_path,
-		   const GLboolean deferred_compilation = true);
+	Shader(
+	    const std::string& name,
+	    const std::string& vertex_path,
+	    const std::string& fragment_path,
+	    const GLboolean    deferred_compilation = true);
 
 	// Constructor with geometry shader
-	Shader(const std::string& name,
-		   const std::string& vertex_path,
-		   const std::string& geometry_path,
-		   const std::string& fragment_path,
-		   const GLboolean deferred_compilation = true);
+	Shader(
+	    const std::string& name,
+	    const std::string& vertex_path,
+	    const std::string& geometry_path,
+	    const std::string& fragment_path,
+	    const GLboolean    deferred_compilation = true);
 
 	// Destructor
 	// ----------
@@ -66,7 +68,7 @@ public:
 	void use() const;
 
 	// Getters
-	GLuint get_shader_program_id() const { return shader_program_id; }
+	GLuint      get_shader_program_id() const { return shader_program_id; }
 	std::string get_vertex_shader_path() const { return vertex_shader_path; }
 	std::string get_geometry_shader_path() const { return geometry_shader_path; }
 	std::string get_fragment_shader_path() const { return fragment_shader_path; }
@@ -82,7 +84,6 @@ public:
 	void set_mat4(const std::string& name, const glm::mat4& mat) const;
 
 private:
-
 	// Private Attributes
 	// ------------------
 	std::string vertex_shader_path;   // path to the vertex shader file
@@ -94,5 +95,4 @@ private:
 	// Utility method to check for shader compilation/linking errors.
 	// Returns true if there were compilation/linking errors, false otherwise
 	bool check_compilation_linking_errors(GLuint shader, std::string type) const;
-
 };

@@ -1,11 +1,11 @@
 /*
-* PLANE.h
-* This file defines the vertex data for a rectangular plane (a quad made of 2 triangles).
-* It uses an index buffer to share vertices, and its defined both in array and vector form.
-* The vertex data is separated into position, normal, and texture coordinate data, but there is also
-* an array and a vector with the interleaved vertex data to test the Shape_Model constructors that take
-* interleaved vertex data directly.
-*/
+ * PLANE.h
+ * This file defines the vertex data for a rectangular plane (a quad made of 2 triangles).
+ * It uses an index buffer to share vertices, and its defined both in array and vector form.
+ * The vertex data is separated into position, normal, and texture coordinate data, but there is also
+ * an array and a vector with the interleaved vertex data to test the Shape_Model constructors that take
+ * interleaved vertex data directly.
+ */
 
 #pragma once
 
@@ -18,11 +18,13 @@
 const GLuint plane_vertex_count = 4, plane_index_count = 6;
 
 // Plane dimensions used in shape construction
-constexpr float PLANE_WIDTH = 2.0f;
+constexpr float PLANE_WIDTH  = 2.0f;
 constexpr float PLANE_HEIGHT = 2.0f;
 
 // Forward direction of the plane defined below
 constexpr glm::vec3 PLANE_FORWARD{ 0.0f, 1.0f, 0.0f }; // facing up along the Y-axis
+
+// clang-format off
 
 // Plane vertices
 const GLfloat plane_positions_array[] = {
@@ -64,19 +66,11 @@ const GLfloat plane_vertices_array[] = {
 	-PLANE_WIDTH / 2,	0.0f,	 PLANE_HEIGHT / 2,		0.0f,	1.0f,	0.0f,		0.0f,	1.0f  // 3
 };
 
+// clang-format on
+
 // Plane data in vector form
-const std::vector<GLfloat> plane_positions_vector{
-	std::begin(plane_positions_array), std::end(plane_positions_array)
-};
-const std::vector<GLfloat> plane_normals_vector{
-	std::begin(plane_normals_array), std::end(plane_normals_array)
-};
-const std::vector<GLfloat> plane_tex_coords_vector{
-	std::begin(plane_tex_coords_array), std::end(plane_tex_coords_array)
-};
-const std::vector<GLuint> plane_indices_vector{
-	std::begin(plane_indices_array), std::end(plane_indices_array)
-};
-const std::vector<GLfloat> plane_vertices_vector{
-	std::begin(plane_vertices_array), std::end(plane_vertices_array)
-};
+const std::vector<GLfloat> plane_positions_vector{ std::begin(plane_positions_array), std::end(plane_positions_array) };
+const std::vector<GLfloat> plane_normals_vector{ std::begin(plane_normals_array), std::end(plane_normals_array) };
+const std::vector<GLfloat> plane_tex_coords_vector{ std::begin(plane_tex_coords_array), std::end(plane_tex_coords_array) };
+const std::vector<GLuint>  plane_indices_vector{ std::begin(plane_indices_array), std::end(plane_indices_array) };
+const std::vector<GLfloat> plane_vertices_vector{ std::begin(plane_vertices_array), std::end(plane_vertices_array) };

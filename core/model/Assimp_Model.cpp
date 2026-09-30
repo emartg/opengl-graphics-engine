@@ -1,8 +1,8 @@
 /*
-* Assimp_Model.cpp
-* This file implements the Assimp_Model class (a derived class of Model),
-* which is used to load and draw 3D models from files using the Assimp library.
-*/
+ * Assimp_Model.cpp
+ * This file implements the Assimp_Model class (a derived class of Model),
+ * which is used to load and draw 3D models from files using the Assimp library.
+ */
 
 #include "Assimp_Model.h"
 
@@ -14,12 +14,24 @@
 // Constructors
 // ------------
 // Constructor that loads a model from a file
-Assimp_Model::Assimp_Model(const std::string& name, const std::string& path,
-						   const glm::vec4 albedo, const glm::vec3 position,
-						   const glm::quat rotation, const glm::vec3 scale,
-						   const glm::vec3 forward, const glm::vec3 mesh_forward)
-	: Model(name, Node_Type::ASSIMP_MODEL, // set the model type to ASSIMP_MODEL
-			albedo, position, rotation, scale, forward, mesh_forward)
+Assimp_Model::Assimp_Model(
+    const std::string& name,
+    const std::string& path,
+    const glm::vec4    albedo,
+    const glm::vec3    position,
+    const glm::quat    rotation,
+    const glm::vec3    scale,
+    const glm::vec3    forward,
+    const glm::vec3    mesh_forward) :
+    Model(
+        name,
+        Node_Type::ASSIMP_MODEL, // set the model type to ASSIMP_MODEL
+        albedo,
+        position,
+        rotation,
+        scale,
+        forward,
+        mesh_forward)
 {
 	load_assimp_model(path); // load the model from the specified path
 }
@@ -31,27 +43,24 @@ void Assimp_Model::load_assimp_model(std::string const& path)
 	Assimp::Importer importer;
 
 	// read file via Assimp (the second argument of ReadFile is a combination of post-processing options)
-	const aiScene* scene =
-		importer.ReadFile(path,
-						  aiProcess_Triangulate |
-						  aiProcess_FlipUVs |
-						  aiProcess_GenNormals |
-						  aiProcess_PreTransformVertices // bake node transformations into vertices
-		);
+	const aiScene* scene = importer.ReadFile(
+	    path,
+	    aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_GenNormals |
+	        aiProcess_PreTransformVertices // bake node transformations into vertices
+	);
 
 	// check for errors in the importing process
 	if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
 	{
 		std::cerr << "[ERROR::ASSIMPMODEL::load_assimp_model] "
-			<< "Assimp failed to load model from:\n\t" << path
-			<< "\n\tImporter error: " << importer.GetErrorString() << std::endl;
+		          << "Assimp failed to load model from:\n\t" << path << "\n\tImporter error: " << importer.GetErrorString() << std::endl;
 		return;
 	}
 
 	// store the directory of the model file, handling both '/' and '\'
 	// as separators for cross-platform compatibility
-	size_t slash_fwd = path.find_last_of('/');
-	size_t slash_bwd = path.find_last_of('\\');
+	size_t slash_fwd  = path.find_last_of('/');
+	size_t slash_bwd  = path.find_last_of('\\');
 	size_t last_slash = std::string::npos;
 
 	if (slash_fwd != std::string::npos && slash_bwd != std::string::npos)
@@ -62,12 +71,12 @@ void Assimp_Model::load_assimp_model(std::string const& path)
 	if (last_slash != std::string::npos)
 	{ // if a slash was found, set the directory accordingly
 		// preserve the same separator as in the original path string
-		char separator = path[last_slash]; // either '/' or '\'
-		directory = path.substr(0, last_slash + 1); // include the slash
+		char separator = path[last_slash];               // either '/' or '\'
+		directory      = path.substr(0, last_slash + 1); // include the slash
 	}
 	else
 	{
-		// if no slash was found, clear the directory 
+		// if no slash was found, clear the directory
 		// so that textures are loaded from the current working directory
 		directory.clear();
 	}
@@ -78,8 +87,7 @@ void Assimp_Model::load_assimp_model(std::string const& path)
 	// calculate the bounding box of the model based on the vertices of the meshes
 	calculate_bounding_box();
 
-	std::cout << "[SUCCESS::ASSIMPMODEL::load_assimp_model] Model loaded successfully from:\n\t"
-		<< path << std::endl;
+	std::cout << "[SUCCESS::ASSIMPMODEL::load_assimp_model] Model loaded successfully from:\n\t" << path << std::endl;
 }
 
 void Assimp_Model::process_node(aiNode* node, const aiScene* scene)
@@ -92,16 +100,14 @@ void Assimp_Model::process_node(aiNode* node, const aiScene* scene)
 	}
 
 	// recursively process each of the children's nodes (if any)
-	for (GLuint i{}; i < node->mNumChildren; i++)
-		process_node(node->mChildren[i], scene);
-
+	for (GLuint i{}; i < node->mNumChildren; i++) process_node(node->mChildren[i], scene);
 }
 
 std::shared_ptr<Mesh> Assimp_Model::process_mesh(aiMesh* mesh, const aiScene* scene)
 {
 	// vector to store vertices, indices and textures
 	std::vector<Vertex> vertices; // each vertex contains position, normal and texture coordinates
-	std::vector<GLuint> indices; // each index corresponds to a vertex in the vertices vector
+	std::vector<GLuint> indices;  // each index corresponds to a vertex in the vertices vector
 	// each texture corresponds to a material texture of the mesh
 	std::vector<std::shared_ptr<Texture>> textures;
 
@@ -111,19 +117,19 @@ std::shared_ptr<Mesh> Assimp_Model::process_mesh(aiMesh* mesh, const aiScene* sc
 		Vertex vertex;
 		// process vertex positions, normals and texture coordinates (if available)
 		glm::vec3 vector;
-		vector.x = mesh->mVertices[i].x;
-		vector.y = mesh->mVertices[i].y;
-		vector.z = mesh->mVertices[i].z;
+		vector.x        = mesh->mVertices[i].x;
+		vector.y        = mesh->mVertices[i].y;
+		vector.z        = mesh->mVertices[i].z;
 		vertex.position = vector;
-		vector.x = mesh->mNormals[i].x;
-		vector.y = mesh->mNormals[i].y;
-		vector.z = mesh->mNormals[i].z;
-		vertex.normal = vector;
+		vector.x        = mesh->mNormals[i].x;
+		vector.y        = mesh->mNormals[i].y;
+		vector.z        = mesh->mNormals[i].z;
+		vertex.normal   = vector;
 		if (mesh->mTextureCoords[0]) // does the mesh contain texture coordinates?
 		{
 			glm::vec2 vec;
-			vec.x = mesh->mTextureCoords[0][i].x;
-			vec.y = mesh->mTextureCoords[0][i].y;
+			vec.x             = mesh->mTextureCoords[0][i].x;
+			vec.y             = mesh->mTextureCoords[0][i].y;
 			vertex.tex_coords = vec;
 		}
 		else // if the mesh doesn't contain texture coordinates, set them to (0, 0)
@@ -139,8 +145,7 @@ std::shared_ptr<Mesh> Assimp_Model::process_mesh(aiMesh* mesh, const aiScene* sc
 	for (GLuint i{}; i < mesh->mNumFaces; i++)
 	{
 		aiFace face = mesh->mFaces[i];
-		for (GLuint j{}; j < face.mNumIndices; j++)
-			indices.push_back(face.mIndices[j]);
+		for (GLuint j{}; j < face.mNumIndices; j++) indices.push_back(face.mIndices[j]);
 	}
 
 	// process material (load all supported types of texture maps)
@@ -150,10 +155,8 @@ std::shared_ptr<Mesh> Assimp_Model::process_mesh(aiMesh* mesh, const aiScene* sc
 		aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
 
 		// lambda function to load and append textures of a specific type
-		auto append = [&](aiTextureType ai_type, Texture_Type texture_type)
-		{
-			std::vector<std::shared_ptr<Texture>> maps =
-				load_material_textures(material, ai_type, texture_type);
+		auto append = [&](aiTextureType ai_type, Texture_Type texture_type) {
+			std::vector<std::shared_ptr<Texture>> maps = load_material_textures(material, ai_type, texture_type);
 			textures.insert(textures.end(), maps.begin(), maps.end());
 		};
 
@@ -180,17 +183,15 @@ std::shared_ptr<Mesh> Assimp_Model::process_mesh(aiMesh* mesh, const aiScene* sc
 	return std::make_shared<Mesh>(vertices, indices, textures);
 }
 
-std::vector<std::shared_ptr<Texture>> Assimp_Model::load_material_textures(aiMaterial* mat,
-																		   aiTextureType type,
-																		   Texture_Type texture_type)
+std::vector<std::shared_ptr<Texture>> Assimp_Model::load_material_textures(aiMaterial* mat, aiTextureType type, Texture_Type texture_type)
 {
 	// vector to store the loaded textures of the specified type from the material,
 	// avoiding duplicates
 	std::vector<std::shared_ptr<Texture>> loaded_textures;
 
 	GLuint texture_count = mat->GetTextureCount(type);
-	std::cout << "[INFO::ASSIMPMODEL::load_material_textures] Material has " << texture_count
-		<< " texture(s) of type " << Texture::texture_type_to_string(texture_type) << std::endl;
+	std::cout << "[INFO::ASSIMPMODEL::load_material_textures] Material has " << texture_count << " texture(s) of type "
+	          << Texture::texture_type_to_string(texture_type) << std::endl;
 
 	// iterate over all textures of the specified type in the material
 	// and add them to the textures vector if they haven't been loaded before
@@ -199,8 +200,7 @@ std::vector<std::shared_ptr<Texture>> Assimp_Model::load_material_textures(aiMat
 		aiString str;
 		mat->GetTexture(type, i, &str);
 
-		std::cout << "[INFO::ASSIMPMODEL::load_material_textures] Raw texture path from Assimp: \""
-			<< str.C_Str() << "\"" << std::endl;
+		std::cout << "[INFO::ASSIMPMODEL::load_material_textures] Raw texture path from Assimp: \"" << str.C_Str() << "\"" << std::endl;
 
 		// check for embedded textures (those starting with '*'), which are not yet supported,
 		// hence why they are not loaded and a warning is issued
@@ -209,29 +209,27 @@ std::vector<std::shared_ptr<Texture>> Assimp_Model::load_material_textures(aiMat
 		{
 			// embedded texture, warn and skip loading
 			std::cerr << "[WARNING::ASSIMPMODEL::load_material_textures] "
-				"Embedded textures not supported, skipping texture:\n"
-				<< path_c_string << " of type " << Texture::texture_type_to_string(texture_type) << std::endl;
-			// TO DO: implement support for embedded textures in the future 
-			// (requires extracting the texture data from the Assimp scene and creating 
+			             "Embedded textures not supported, skipping texture:\n"
+			          << path_c_string << " of type " << Texture::texture_type_to_string(texture_type) << std::endl;
+			// TO DO: implement support for embedded textures in the future
+			// (requires extracting the texture data from the Assimp scene and creating
 			// a Texture object from it without loading from file)
 			continue;
 		}
 
 		std::string texture_path = directory + str.C_Str(); // construct the full path to the texture file
-		std::cout << "[INFO::ASSIMPMODEL::load_material_textures] Full texture path: \""
-			<< texture_path << "\"" << std::endl;
+		std::cout << "[INFO::ASSIMPMODEL::load_material_textures] Full texture path: \"" << texture_path << "\"" << std::endl;
 
 		// check if the texture file exists at the constructed path, and if not, try alternative paths
 		std::ifstream test_file(texture_path);
 		if (!test_file.good())
 		{
-			std::cerr << "[WARNING::ASSIMPMODEL::load_material_textures] Texture file not found: "
-				<< texture_path << std::endl;
+			std::cerr << "[WARNING::ASSIMPMODEL::load_material_textures] Texture file not found: " << texture_path << std::endl;
 
-			// texture might be just the filename without the directory, 
+			// texture might be just the filename without the directory,
 			// so try to locate it in the model directory and common subdirectories
-			std::string filename = str.C_Str();
-			size_t last_slash = filename.find_last_of("/\\"); // strip any directory from the filename
+			std::string filename   = str.C_Str();
+			size_t      last_slash = filename.find_last_of("/\\"); // strip any directory from the filename
 			if (last_slash != std::string::npos)
 				filename = filename.substr(last_slash + 1);
 
@@ -251,25 +249,23 @@ std::vector<std::shared_ptr<Texture>> Assimp_Model::load_material_textures(aiMat
 				if (test.good())
 				{ // if the file exists at this search path, use it and break out of the loop
 					texture_path = search_path;
-					found = true;
-					std::cout << "[INFO::ASSIMPMODEL::load_material_textures] Found texture at: "
-						<< texture_path << std::endl;
+					found        = true;
+					std::cout << "[INFO::ASSIMPMODEL::load_material_textures] Found texture at: " << texture_path << std::endl;
 					break;
 				}
 			}
 
-			// if the texture file was not found in any of the search paths, 
+			// if the texture file was not found in any of the search paths,
 			// issue an error and skip loading this texture
 			if (!found)
 			{
-				std::cerr << "[ERROR::ASSIMPMODEL::load_material_textures] Could not locate texture: "
-					<< filename << std::endl;
+				std::cerr << "[ERROR::ASSIMPMODEL::load_material_textures] Could not locate texture: " << filename << std::endl;
 				continue;
 			}
 		}
 
-		// check if the texture was loaded before by comparing the file paths 
-		// of the previously loaded textures with the current one, and if so, 
+		// check if the texture was loaded before by comparing the file paths
+		// of the previously loaded textures with the current one, and if so,
 		// skip loading and reuse the existing texture
 		bool skip = false;
 		for (const auto& cached_texture : textures)
@@ -282,8 +278,8 @@ std::vector<std::shared_ptr<Texture>> Assimp_Model::load_material_textures(aiMat
 			}
 		}
 
-		// if the texture hasn't been loaded already, load it from file and add it to both 
-		// the textures vector (cache for the current mesh) and 
+		// if the texture hasn't been loaded already, load it from file and add it to both
+		// the textures vector (cache for the current mesh) and
 		// the loaded textures vector (to be returned to the caller)
 		if (!skip)
 		{
@@ -298,7 +294,8 @@ std::vector<std::shared_ptr<Texture>> Assimp_Model::load_material_textures(aiMat
 
 void Assimp_Model::calculate_bounding_box()
 {
-	if (meshes.empty()) return; // if there are no meshes, return early
+	if (meshes.empty())
+		return; // if there are no meshes, return early
 
 	// initialize the bounding box minimum and maximum points to extreme values
 	bounding_box_min = glm::vec3(std::numeric_limits<float>::max());

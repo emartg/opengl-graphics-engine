@@ -1,20 +1,20 @@
 ﻿/*
-* Renderer.cpp
-* Implements the Renderer interface, which is responsible for:
-* - Initializing OpenGL
-* - Creating and managing windows
-* - Rendering graphics
-* - Managing GUI elements
-* - Event polling and buffer swapping
-* - Handling input
-* - Etc.
-* This interface allows for different implementations of renderers based on different windowing libraries,
-* such as GLFW, SDL, etc.
-*/
+ * Renderer.cpp
+ * Implements the Renderer interface, which is responsible for:
+ * - Initializing OpenGL
+ * - Creating and managing windows
+ * - Rendering graphics
+ * - Managing GUI elements
+ * - Event polling and buffer swapping
+ * - Handling input
+ * - Etc.
+ * This interface allows for different implementations of renderers based on different windowing libraries,
+ * such as GLFW, SDL, etc.
+ */
 
 #include "Renderer.h"
 
-#include "SKYBOX.h" // skybox vertex data
+#include "SKYBOX.h"      // skybox vertex data
 #include "SCREEN_QUAD.h" // screen-quad vertex data
 #include "Render_Pass.h"
 #include "../Core.h"
@@ -34,11 +34,7 @@
 
 // Constructor
 // -----------
-Renderer::Renderer()
-	: main_render_pass{ new Render_Pass() },
-	delta_time{ 0.0f }, last_frame_time{ 0.0f }
-{
-}
+Renderer::Renderer() : main_render_pass{ new Render_Pass() }, delta_time{ 0.0f }, last_frame_time{ 0.0f } {}
 
 // Destructor
 // ----------
@@ -52,22 +48,32 @@ Renderer::~Renderer()
 	}
 
 	// delete screen-quad GL objects if created
-	if (screen_quad_ebo) glDeleteBuffers(1, &screen_quad_ebo);
-	if (screen_quad_vbo) glDeleteBuffers(1, &screen_quad_vbo);
-	if (screen_quad_vao) glDeleteVertexArrays(1, &screen_quad_vao);
+	if (screen_quad_ebo)
+		glDeleteBuffers(1, &screen_quad_ebo);
+	if (screen_quad_vbo)
+		glDeleteBuffers(1, &screen_quad_vbo);
+	if (screen_quad_vao)
+		glDeleteVertexArrays(1, &screen_quad_vao);
 
 	// delete skybox GL objects if created
-	if (skybox_ebo) glDeleteBuffers(1, &skybox_ebo);
-	if (skybox_vbo) glDeleteBuffers(1, &skybox_vbo);
-	if (skybox_vao) glDeleteVertexArrays(1, &skybox_vao);
+	if (skybox_ebo)
+		glDeleteBuffers(1, &skybox_ebo);
+	if (skybox_vbo)
+		glDeleteBuffers(1, &skybox_vbo);
+	if (skybox_vao)
+		glDeleteVertexArrays(1, &skybox_vao);
 
 	// clean up dynamic environment map FBOs, RBOs, and cubemap textures
 	for (auto [id, entry] : dynamic_env_maps)
 	{
-		if (entry.fbo) glDeleteFramebuffers(1, &entry.fbo);
-		if (entry.rbo) glDeleteRenderbuffers(1, &entry.rbo);
-		if (entry.cubemap_tex_id) glDeleteTextures(1, &entry.cubemap_tex_id);
-		if (entry.prev_cubemap_tex_id) glDeleteTextures(1, &entry.prev_cubemap_tex_id);
+		if (entry.fbo)
+			glDeleteFramebuffers(1, &entry.fbo);
+		if (entry.rbo)
+			glDeleteRenderbuffers(1, &entry.rbo);
+		if (entry.cubemap_tex_id)
+			glDeleteTextures(1, &entry.cubemap_tex_id);
+		if (entry.prev_cubemap_tex_id)
+			glDeleteTextures(1, &entry.prev_cubemap_tex_id);
 	}
 	dynamic_env_maps.clear();
 
@@ -81,7 +87,7 @@ void Renderer::config_opengl() const
 	// depth buffer configuration:
 	// 1. Enable the depth test
 	// 2. Set the depth function to GL_LESS, which is the default depth function,
-	//    i.e., discard fragments whose depth value is greater than or equal to 
+	//    i.e., discard fragments whose depth value is greater than or equal to
 	//    the current fragment's depth value
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS); // default depth function (discard fragments behind the current fragment)
@@ -91,7 +97,7 @@ void Renderer::config_opengl() const
 	// 2. Set the stencil operation to the default operation, which means that
 	//    the stencil value will not be modified by the stencil test whatever the outcome
 	//    of the depth and stencil tests is
-	// 3. Set the stencil function to pass only if the stencil value is not equal 
+	// 3. Set the stencil function to pass only if the stencil value is not equal
 	//    to the reference value, which is set to 1 in this case
 	glEnable(GL_STENCIL_TEST);
 	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
@@ -102,13 +108,13 @@ void Renderer::config_opengl() const
 
 	// face culling configuration:
 	glEnable(GL_CULL_FACE); // enable face culling
-	glCullFace(GL_BACK); // cull back faces (default)
-	glFrontFace(GL_CCW); // counter-clockwise wound faces are front faces (default)
+	glCullFace(GL_BACK);    // cull back faces (default)
+	glFrontFace(GL_CCW);    // counter-clockwise wound faces are front faces (default)
 
 	// blending configuration:
-	glEnable(GL_BLEND); // enable blending
+	glEnable(GL_BLEND);                                // enable blending
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // standard alpha blending function (default)
-	glBlendEquation(GL_FUNC_ADD); // standard blend equation (default)
+	glBlendEquation(GL_FUNC_ADD);                      // standard blend equation (default)
 }
 
 void Renderer::clear_buffers(Buffer_Type buffer_type) const
@@ -116,28 +122,14 @@ void Renderer::clear_buffers(Buffer_Type buffer_type) const
 	GLbitfield mask = 0;
 	switch (buffer_type)
 	{
-		case Buffer_Type::COLOR:
-			mask |= GL_COLOR_BUFFER_BIT;
-			break;
-		case Buffer_Type::DEPTH:
-			mask |= GL_DEPTH_BUFFER_BIT;
-			break;
-		case Buffer_Type::STENCIL:
-			mask |= GL_STENCIL_BUFFER_BIT;
-			break;
-		case Buffer_Type::COLOR_DEPTH:
-			mask |= GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT;
-			break;
-		case Buffer_Type::COLOR_STENCIL:
-			mask |= GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT;
-			break;
-		case Buffer_Type::DEPTH_STENCIL:
-			mask |= GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT;
-			break;
+		case Buffer_Type::COLOR: mask |= GL_COLOR_BUFFER_BIT; break;
+		case Buffer_Type::DEPTH: mask |= GL_DEPTH_BUFFER_BIT; break;
+		case Buffer_Type::STENCIL: mask |= GL_STENCIL_BUFFER_BIT; break;
+		case Buffer_Type::COLOR_DEPTH: mask |= GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT; break;
+		case Buffer_Type::COLOR_STENCIL: mask |= GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT; break;
+		case Buffer_Type::DEPTH_STENCIL: mask |= GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT; break;
 		case Buffer_Type::ALL:
-		default:
-			mask |= GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT;
-			break;
+		default: mask |= GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT; break;
 	}
 	glClear(mask); // clear the specified buffers
 }
@@ -182,14 +174,12 @@ bool Renderer::set_shader_by_name(const std::string& name, const std::shared_ptr
 		refractive_shader = shader;
 	else
 	{ // if the shader name is unknown, print an error message and return false
-		std::cerr << "[ERROR::RENDERER::SetShader] Unknown shader name provided: '"
-			<< name << "' " << std::endl;
+		std::cerr << "[ERROR::RENDERER::SetShader] Unknown shader name provided: '" << name << "' " << std::endl;
 		return false;
 	}
 
 	// if the shader was set successfully, print a success message and return true
-	std::cout << "[SUCCESS::RENDERER::SetShader] Shader with name '"
-		<< name << "' set successfully" << std::endl;
+	std::cout << "[SUCCESS::RENDERER::SetShader] Shader with name '" << name << "' set successfully" << std::endl;
 	return true;
 }
 
@@ -201,21 +191,22 @@ void Renderer::frame_start_config()
 
 	// update time attributes
 	GLfloat current_frame = static_cast<GLfloat>(get_time());
-	delta_time = current_frame - last_frame_time;
-	last_frame_time = current_frame;
+	delta_time            = current_frame - last_frame_time;
+	last_frame_time       = current_frame;
 
 	ensure_offscren_render_pass(); // ensure offscreen target matches current window size
 
-	auto core = Core::get_instance();
+	auto  core          = Core::get_instance();
 	auto& scene_manager = core->get_scene_manager();
-	auto& camera = scene_manager->get_camera();
+	auto& camera        = scene_manager->get_camera();
 
 	// perform all pre-render passes (cubemap generation, dynamic reflections, etc.)
 	// before binding the main render pass and setting up the main camera
 
 	// ensure the skybox is a valid cubemap texture early (needed for environment mapping)
 	// and update per-object dynamic environment maps (if any)
-	if (scene_manager->get_skybox()) convert_hdr_to_cubemap_if_needed();
+	if (scene_manager->get_skybox())
+		convert_hdr_to_cubemap_if_needed();
 	update_dynamic_env_maps();
 
 	// process pending picking request before main scene rendering
@@ -230,35 +221,34 @@ void Renderer::frame_start_config()
 void Renderer::render_scene()
 {
 	//// start measuring time for performance profiling
-	//auto start_time{ std::chrono::high_resolution_clock::now() };
+	// auto start_time{ std::chrono::high_resolution_clock::now() };
 
 	auto core = Core::get_instance(); // get the core instance
-	if (!core) // ensure the core instance is valid before proceeding
-	{ // if the core instance is null, print an error message and return
+	if (!core)                        // ensure the core instance is valid before proceeding
+	{                                 // if the core instance is null, print an error message and return
 		std::cerr << "[ERROR::RENDERER::render_scene] Core instance is null" << std::endl;
 		return;
 	}
 
 	// get the node manager, scene manager, and camera from the core instance
-	auto& node_manager = core->get_node_manager();
+	auto& node_manager  = core->get_node_manager();
 	auto& scene_manager = core->get_scene_manager();
-	auto& camera = scene_manager->get_camera();
+	auto& camera        = scene_manager->get_camera();
 
 	// ensure camera and shaders are valid before proceeding
-	if (!camera || !shape_model_shader || !assimp_model_shader || !single_albedo_shader
-		|| !screen_quad_shader || !picking_shader || !skybox_shader || !equirect_to_cubemap_shader
-		|| !reflective_shader || !refractive_shader)
+	if (!camera || !shape_model_shader || !assimp_model_shader || !single_albedo_shader || !screen_quad_shader || !picking_shader ||
+	    !skybox_shader || !equirect_to_cubemap_shader || !reflective_shader || !refractive_shader)
 	{ // if any of them are null, print an error message and return
-		std::cerr << "[ERROR::RENDERER::render_scene] Camera or shaders aren't set up correctly"
-			<< std::endl;
+		std::cerr << "[ERROR::RENDERER::render_scene] Camera or shaders aren't set up correctly" << std::endl;
 		return;
 	}
 
 	// compute view and projection transformations
 	glm::mat4 projection = glm::perspective(
-		glm::radians(camera->get_zoom()),
-		static_cast<GLfloat>(core->get_screen_width()) / static_cast<GLfloat>(core->get_screen_height()),
-		0.1f, 100.0f);
+	    glm::radians(camera->get_zoom()),
+	    static_cast<GLfloat>(core->get_screen_width()) / static_cast<GLfloat>(core->get_screen_height()),
+	    0.1f,
+	    100.0f);
 	glm::mat4 view = camera->get_view_matrix();
 
 	// transpose of the upper-left 3x3 submatrix of the view matrix, used for environment mapping
@@ -281,25 +271,23 @@ void Renderer::render_scene()
 	shape_model_shader->use();
 	shape_model_shader->set_float("u_material.shininess", 32.0f); // shininess factor for the material
 	assimp_model_shader->use();
-	assimp_model_shader->set_int("u_material.albedo_map", 0);		// set albedo map to texture unit 0
-	assimp_model_shader->set_int("u_material.metallic_map", 1);	// set metallic map to texture unit 1
+	assimp_model_shader->set_int("u_material.albedo_map", 0);      // set albedo map to texture unit 0
+	assimp_model_shader->set_int("u_material.metallic_map", 1);    // set metallic map to texture unit 1
 	assimp_model_shader->set_float("u_material.shininess", 32.0f); // set shininess factor for the material
 
 	// set constant uniforms for the reflective and refractive shaders
 	reflective_shader->use();
 	reflective_shader->set_mat3("u_inv_view_rot", inv_view_rot); // set inverse view rotation matrix
-	reflective_shader->set_int("u_skybox", 0); // set skybox texture unit to 0
+	reflective_shader->set_int("u_skybox", 0);                   // set skybox texture unit to 0
 	refractive_shader->use();
 	refractive_shader->set_mat3("u_inv_view_rot", inv_view_rot); // set inverse view rotation matrix
-	refractive_shader->set_float("u_ratio", 1.00f / 1.52f); // air to glass refraction index ratio
-	refractive_shader->set_int("u_skybox", 0); // set skybox texture unit to 0
+	refractive_shader->set_float("u_ratio", 1.00f / 1.52f);      // air to glass refraction index ratio
+	refractive_shader->set_int("u_skybox", 0);                   // set skybox texture unit to 0
 
 	// set light uniforms
 	auto& lights = node_manager->get_nodes(Node_Type::LIGHT);
 	GLint point_light_idx{}, spotlight_idx{}, directional_light_idx{};
-	std::for_each(lights.begin(), lights.end(),
-				  [&](const std::shared_ptr<Node>& node)
-	{
+	std::for_each(lights.begin(), lights.end(), [&](const std::shared_ptr<Node>& node) {
 		// dynamically cast the node to a Light object
 		auto light = dynamic_cast<Light*>(node.get());
 
@@ -317,9 +305,8 @@ void Renderer::render_scene()
 				shape_model_shader->use();
 				// vertex shader uniforms
 				shape_model_shader->set_vec3(
-					"u_directional_light_dir[" + std::to_string(directional_light_idx) + "]",
-					directional_light->get_direction()
-				);
+				    "u_directional_light_dir[" + std::to_string(directional_light_idx) + "]",
+				    directional_light->get_direction());
 				// fragment shader uniforms
 				shape_model_shader->set_vec3(prefix + "ambient", directional_light->get_ambient());
 				shape_model_shader->set_vec3(prefix + "diffuse", directional_light->get_diffuse());
@@ -329,9 +316,8 @@ void Renderer::render_scene()
 				assimp_model_shader->use();
 				// vertex shader uniforms
 				assimp_model_shader->set_vec3(
-					"u_directional_light_dir[" + std::to_string(directional_light_idx) + "]",
-					directional_light->get_direction()
-				);
+				    "u_directional_light_dir[" + std::to_string(directional_light_idx) + "]",
+				    directional_light->get_direction());
 				// fragment shader uniforms
 				assimp_model_shader->set_vec3(prefix + "ambient", directional_light->get_ambient());
 				assimp_model_shader->set_vec3(prefix + "diffuse", directional_light->get_diffuse());
@@ -351,10 +337,7 @@ void Renderer::render_scene()
 				// activate the shape model shader program
 				shape_model_shader->use();
 				// vertex shader uniforms
-				shape_model_shader->set_vec3(
-					"u_point_light_pos[" + std::to_string(point_light_idx) + "]",
-					point_light->get_position()
-				);
+				shape_model_shader->set_vec3("u_point_light_pos[" + std::to_string(point_light_idx) + "]", point_light->get_position());
 				// fragment shader uniforms
 				shape_model_shader->set_vec3(prefix + "ambient", point_light->get_ambient());
 				shape_model_shader->set_vec3(prefix + "diffuse", point_light->get_diffuse());
@@ -366,10 +349,7 @@ void Renderer::render_scene()
 				// activate the assimp model shader program
 				assimp_model_shader->use();
 				// vertex shader uniforms
-				assimp_model_shader->set_vec3(
-					"u_point_light_pos[" + std::to_string(point_light_idx) + "]",
-					point_light->get_position()
-				);
+				assimp_model_shader->set_vec3("u_point_light_pos[" + std::to_string(point_light_idx) + "]", point_light->get_position());
 				// fragment shader uniforms
 				assimp_model_shader->set_vec3(prefix + "ambient", point_light->get_ambient());
 				assimp_model_shader->set_vec3(prefix + "diffuse", point_light->get_diffuse());
@@ -392,14 +372,8 @@ void Renderer::render_scene()
 				// activate the shape model shader program
 				shape_model_shader->use();
 				// vertex shader uniforms
-				shape_model_shader->set_vec3(
-					"u_spotlight_pos[" + std::to_string(spotlight_idx) + "]",
-					spotlight->get_position()
-				);
-				shape_model_shader->set_vec3(
-					"u_spotlight_dir[" + std::to_string(spotlight_idx) + "]",
-					spotlight->get_direction()
-				);
+				shape_model_shader->set_vec3("u_spotlight_pos[" + std::to_string(spotlight_idx) + "]", spotlight->get_position());
+				shape_model_shader->set_vec3("u_spotlight_dir[" + std::to_string(spotlight_idx) + "]", spotlight->get_direction());
 				// fragment shader uniforms
 				shape_model_shader->set_vec3(prefix + "ambient", spotlight->get_ambient());
 				shape_model_shader->set_vec3(prefix + "diffuse", spotlight->get_diffuse());
@@ -414,14 +388,8 @@ void Renderer::render_scene()
 				assimp_model_shader->use();
 				// vertex shader uniforms
 				assimp_model_shader->set_vec3(prefix + "ambient", spotlight->get_ambient());
-				assimp_model_shader->set_vec3(
-					"u_spotlight_pos[" + std::to_string(spotlight_idx) + "]",
-					spotlight->get_position()
-				);
-				assimp_model_shader->set_vec3(
-					"u_spotlight_dir[" + std::to_string(spotlight_idx) + "]",
-					spotlight->get_direction()
-				);
+				assimp_model_shader->set_vec3("u_spotlight_pos[" + std::to_string(spotlight_idx) + "]", spotlight->get_position());
+				assimp_model_shader->set_vec3("u_spotlight_dir[" + std::to_string(spotlight_idx) + "]", spotlight->get_direction());
 				// fragment shader uniforms
 				assimp_model_shader->set_vec3(prefix + "diffuse", spotlight->get_diffuse());
 				assimp_model_shader->set_vec3(prefix + "specular", spotlight->get_specular());
@@ -436,15 +404,12 @@ void Renderer::render_scene()
 			break;
 			case Light_Type::UNDEFINED:
 				// if the light type is undefined, print a message and return
-				std::cerr << "[ERROR::RENDERER::render_scene] Light type is undefined for light: "
-					<< light->get_name() << std::endl;
+				std::cerr << "[ERROR::RENDERER::render_scene] Light type is undefined for light: " << light->get_name() << std::endl;
 				return;
 			default:
 				// if the light type is unknown, print an error message and return
-				std::cerr << "[ERROR::RENDERER::render_scene] Unknown light type for light: "
-					<< light->get_name() << std::endl;
+				std::cerr << "[ERROR::RENDERER::render_scene] Unknown light type for light: " << light->get_name() << std::endl;
 				return;
-
 		}
 	});
 	shape_model_shader->use();
@@ -458,23 +423,22 @@ void Renderer::render_scene()
 
 	// flatten scene graph into a single list of drawable nodes
 	std::vector<std::shared_ptr<Node>> drawable_nodes;
-	auto& all_nodes = node_manager->get_nodes(Node_Type::MODEL);
+	auto&                              all_nodes = node_manager->get_nodes(Node_Type::MODEL);
 
 	// define a recursive lambda function to traverse the scene graph and collect drawable nodes,
 	// which are nodes that are visible and not pure containers (i.e., they have geometry to render)
-	std::function<void(const std::shared_ptr<Node>&)> collect_drawable_nodes
-		= [&](const std::shared_ptr<Node>& node)
-	{
-		if (!node) return; // if the node is null, return
-		if (!node->get_is_visible()) return; // skip invisible nodes
+	std::function<void(const std::shared_ptr<Node>&)> collect_drawable_nodes = [&](const std::shared_ptr<Node>& node) {
+		if (!node)
+			return; // if the node is null, return
+		if (!node->get_is_visible())
+			return; // skip invisible nodes
 
 		// if the node is not a pure container, add it to the list of drawables
 		if (node->get_type() != Node_Type::COMPOSITE_MODEL)
 			drawable_nodes.push_back(node);
 
 		// recursively collect drawable nodes from the children of the current node
-		for (const auto& child : node->get_children())
-			collect_drawable_nodes(child);
+		for (const auto& child : node->get_children()) collect_drawable_nodes(child);
 	};
 
 	// start collecting drawable nodes from all root nodes in the scene graph
@@ -498,9 +462,7 @@ void Renderer::render_scene()
 
 	// sort transparent nodes back-to-front based on their distance to the camera for correct blending
 	const auto& camera_pos = camera->get_position();
-	std::sort(transparent_nodes.begin(), transparent_nodes.end(),
-			  [&](const std::shared_ptr<Node>& a, const std::shared_ptr<Node>& b)
-	{
+	std::sort(transparent_nodes.begin(), transparent_nodes.end(), [&](const std::shared_ptr<Node>& a, const std::shared_ptr<Node>& b) {
 		// compute the distance from the camera to each node using their world positions
 		float dist_a = glm::length(camera_pos - a->get_world_position());
 		float dist_b = glm::length(camera_pos - b->get_world_position());
@@ -524,7 +486,8 @@ void Renderer::render_scene()
 		// render the skybox only if the texture is a cubemap now
 		if (skybox_texture && skybox_texture->get_texture_type() == Texture_Type::CUBEMAP)
 		{ // if the skybox texture is now a cubemap, render the skybox
-			if (!skybox_vao) init_skybox_cube(); // initialize the skybox cube if not done yet
+			if (!skybox_vao)
+				init_skybox_cube(); // initialize the skybox cube if not done yet
 			render_skybox_cube(skybox_texture, view, projection);
 		}
 		else if (skybox_texture && skybox_texture->get_texture_type() == Texture_Type::HDR_EQUIRECTANGULAR)
@@ -533,13 +496,14 @@ void Renderer::render_scene()
 			static uint32_t warn_counter = 0;
 			if ((warn_counter++ % 240) == 0)
 				std::cerr << "[WARNING::RENDERER::render_scene] "
-				"Skybox still HDR (conversion pending)" << std::endl;
+				             "Skybox still HDR (conversion pending)"
+				          << std::endl;
 		}
 	}
 
 	// transparent pass: render all transparent nodes after opaque geometry and skybox
-	// to ensure correct blending with the background and other geometry, and to allow depth testing 
-	// against the opaque geometry and skybox (but not against other transparent nodes, 
+	// to ensure correct blending with the background and other geometry, and to allow depth testing
+	// against the opaque geometry and skybox (but not against other transparent nodes,
 	// which is why they are sorted back-to-front)
 	glDepthMask(GL_FALSE); // disable depth writing for transparent pass to allow blending with background
 	for (const auto& node : transparent_nodes) render_node(node);
@@ -556,7 +520,8 @@ void Renderer::render_scene()
 	{
 		// dynamically cast the node to a Light object
 		auto light = std::dynamic_pointer_cast<Light>(node);
-		if (!light) continue; // if the cast fails, skip to the next node
+		if (!light)
+			continue; // if the cast fails, skip to the next node
 
 		// set up the single albedo shader for rendering light gizmos
 		single_albedo_shader->use();
@@ -566,7 +531,8 @@ void Renderer::render_scene()
 		auto gizmo = light->get_gizmo();
 		if (gizmo)
 		{
-			if (!gizmo->get_is_visible()) continue; // skip invisible gizmos
+			if (!gizmo->get_is_visible())
+				continue; // skip invisible gizmos
 
 			// set the model matrix and albedo color for the light gizmo
 			single_albedo_shader->set_mat4("u_model", gizmo->get_model_matrix());
@@ -594,7 +560,6 @@ void Renderer::render_scene()
 					}
 				}
 			}
-
 		}
 	}
 
@@ -608,46 +573,54 @@ void Renderer::render_scene()
 	composite_to_screen();
 
 	//// stop measuring time for performance profiling
-	//auto end_time{ std::chrono::high_resolution_clock::now() };
+	// auto end_time{ std::chrono::high_resolution_clock::now() };
 
 	//// calculate the elapsed time in milliseconds and store it in the elapsed_time variable
-	//auto elapsed_time = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
+	// auto elapsed_time = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
 
 	//// print the elapsed time for rendering the scene with a counter to avoid spamming the console
-	//static uint32_t render_counter = 0;
-	//if ((render_counter++ % 60) == 0) // print every 60 frames
+	// static uint32_t render_counter = 0;
+	// if ((render_counter++ % 60) == 0) // print every 60 frames
 	//	std::cout << "[PROFILER::RENDERER::render_scene] Scene rendered in "
 	//	<< elapsed_time << " ms" << std::endl;
 }
 
-void Renderer::frame_end_config() const { swap_buffers(); }
+void Renderer::frame_end_config() const
+{
+	swap_buffers();
+}
 
 void Renderer::register_model_for_dynamic_env_map_capture(std::uint32_t model_id, GLuint resolution)
 {
-	auto& entry = dynamic_env_maps[model_id]; // get or create the dynamic env map entry
-	entry.resolution = resolution; // set the resolution for the dynamic env map
-	entry.has_prev_cubemap = false; // initially, there is no valid previous cubemap
+	auto& entry            = dynamic_env_maps[model_id]; // get or create the dynamic env map entry
+	entry.resolution       = resolution;                 // set the resolution for the dynamic env map
+	entry.has_prev_cubemap = false;                      // initially, there is no valid previous cubemap
 
 	std::cout << "[INFO::RENDERER::register_model_for_dynamic_env_map_capture] "
-		"Registered dynamic environment map for model id " << model_id
-		<< " with resolution " << resolution << std::endl;
+	             "Registered dynamic environment map for model id "
+	          << model_id << " with resolution " << resolution << std::endl;
 }
 
 void Renderer::unregister_model_for_dynamic_env_map_capture(std::uint32_t model_id)
 {
 	auto it = dynamic_env_maps.find(model_id); // find the dynamic env map entry by model id
-	if (it == dynamic_env_maps.end()) return; // if not found, return
+	if (it == dynamic_env_maps.end())
+		return; // if not found, return
 
-	auto& entry = it->second; // get the dynamic env map entry
-	entry.has_prev_cubemap = false; // explicitly mark previous cubemap as invalid before deletion
+	auto& entry            = it->second; // get the dynamic env map entry
+	entry.has_prev_cubemap = false;      // explicitly mark previous cubemap as invalid before deletion
 	// delete the FBO, RBO, and cubemap texture associated with the dynamic env map entry if they exist
-	if (entry.fbo) glDeleteFramebuffers(1, &entry.fbo);
-	if (entry.rbo) glDeleteRenderbuffers(1, &entry.rbo);
-	if (entry.cubemap_tex_id) glDeleteTextures(1, &entry.cubemap_tex_id);
+	if (entry.fbo)
+		glDeleteFramebuffers(1, &entry.fbo);
+	if (entry.rbo)
+		glDeleteRenderbuffers(1, &entry.rbo);
+	if (entry.cubemap_tex_id)
+		glDeleteTextures(1, &entry.cubemap_tex_id);
 	dynamic_env_maps.erase(it); // remove the entry from the map
 
 	std::cout << "[INFO::RENDERER::unregister_model_for_dynamic_env_map_capture] "
-		"Unregistered dynamic environment map for model id " << model_id << std::endl;
+	             "Unregistered dynamic environment map for model id "
+	          << model_id << std::endl;
 }
 
 // Protected Methods
@@ -660,7 +633,8 @@ void Renderer::render_node(const std::shared_ptr<Node>& node)
 		return;
 	}
 
-	if (!node->get_is_visible()) return; // if the node is not visible, skip rendering
+	if (!node->get_is_visible())
+		return; // if the node is not visible, skip rendering
 
 	// auxiliary shared pointer to the shader program used for rendering the node and its children (if any)
 	std::shared_ptr<Shader> render_shader;
@@ -675,10 +649,10 @@ void Renderer::render_node(const std::shared_ptr<Node>& node)
 		{
 			switch (node->get_type()) // use the appropriate shader based on the node type
 			{
-				// for container-only nodes (COMPOSITE_MODEL), we don't need to set a shader 
+				// for container-only nodes (COMPOSITE_MODEL), we don't need to set a shader
 				// as they don't have their own meshes to render
 
-				// COMPOSITE_ASSIMP_MODEL nodes have their own meshes, 
+				// COMPOSITE_ASSIMP_MODEL nodes have their own meshes,
 				// so they are handled as regular ASSIMP_MODEL nodes here
 				case Node_Type::COMPOSITE_ASSIMP_MODEL:
 				case Node_Type::ASSIMP_MODEL:
@@ -689,7 +663,7 @@ void Renderer::render_node(const std::shared_ptr<Node>& node)
 					render_shader->set_float("u_material.base_opacity", node->get_albedo().a);
 				}
 				break;
-				// COMPOSITE_SHAPE_MODEL nodes have their own meshes, 
+				// COMPOSITE_SHAPE_MODEL nodes have their own meshes,
 				// so they are handled as regular SHAPE_MODEL nodes here
 				case Node_Type::COMPOSITE_SHAPE_MODEL:
 				case Node_Type::SHAPE_MODEL:
@@ -702,17 +676,15 @@ void Renderer::render_node(const std::shared_ptr<Node>& node)
 				break;
 				default:
 					// if the node type is unknown, print an error message and return
-					std::cerr << "[ERROR::RENDERER::render_node] Unknown node type for " << node->get_name()
-						<< std::endl;
+					std::cerr << "[ERROR::RENDERER::render_node] Unknown node type for " << node->get_name() << std::endl;
 					return;
 			}
 
 			// set the polygon mode to fill for regular nodes
 			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-
 		}
 		break;
-		// gizmos for light sources (DIRECTIONAL_LIGHT, POINT_LIGHT, SPOTLIGHT) 
+		// gizmos for light sources (DIRECTIONAL_LIGHT, POINT_LIGHT, SPOTLIGHT)
 		// are all rendered with the single albedo shader and in wireframe mode
 		case Gizmo_Type::DIRECTIONAL_LIGHT:
 		case Gizmo_Type::POINT_LIGHT:
@@ -728,17 +700,17 @@ void Renderer::render_node(const std::shared_ptr<Node>& node)
 		}
 		break;
 		default: // if the gizmo type is unknown, print an error message and return
-			std::cerr << "[ERROR::RENDERER::render_node] Unknown gizmo type for node: " << node->get_name()
-				<< std::endl;
+			std::cerr << "[ERROR::RENDERER::render_node] Unknown gizmo type for node: " << node->get_name() << std::endl;
 			return;
 	}
 
 	if (render_shader)
 	{ // if the node has a valid shader to render with, finish setting up the shader and render the node
 		// handle two-sided nodes by disabling face culling temporarily if needed
-		const GLboolean cull_was_enabled = glIsEnabled(GL_CULL_FACE);
-		const bool need_disable_culling = node->get_is_two_sided();
-		if (need_disable_culling && cull_was_enabled) glDisable(GL_CULL_FACE);
+		const GLboolean cull_was_enabled     = glIsEnabled(GL_CULL_FACE);
+		const bool      need_disable_culling = node->get_is_two_sided();
+		if (need_disable_culling && cull_was_enabled)
+			glDisable(GL_CULL_FACE);
 
 		// set the node matrix for the current node (hierarchical world transformation)
 		render_shader->set_mat4("u_model", node->get_world_model_matrix());
@@ -747,29 +719,31 @@ void Renderer::render_node(const std::shared_ptr<Node>& node)
 		node->draw(*render_shader);
 
 		// re-enable face culling if it was previously enabled
-		if (need_disable_culling && cull_was_enabled) glEnable(GL_CULL_FACE);
+		if (need_disable_culling && cull_was_enabled)
+			glEnable(GL_CULL_FACE);
 	}
 }
 
 void Renderer::ensure_offscren_render_pass()
 {
 	// get the core instance and screen dimensions
-	auto core = Core::get_instance();
-	const int width = core->get_screen_width();
+	auto      core   = Core::get_instance();
+	const int width  = core->get_screen_width();
 	const int height = core->get_screen_height();
 
-	if (width <= 0 || height <= 0) return; // ensure valid dimensions
+	if (width <= 0 || height <= 0)
+		return; // ensure valid dimensions
 
-	// if the dimensions have changed or the FBO is not created yet, 
+	// if the dimensions have changed or the FBO is not created yet,
 	// recreate the offscreen render pass with the new dimensions
 	if (width != offscreen_width || height != offscreen_height || main_render_pass->get_fbo_id() == 0)
 	{
 		// reset the specification and set new values
 		Render_Pass_Specification spec{};
-		spec.width = width;
-		spec.height = height;
+		spec.width                  = width;
+		spec.height                 = height;
 		spec.color_attachment_count = 1;
-		spec.has_depth_attachment = true;
+		spec.has_depth_attachment   = true;
 		spec.has_stencil_attachment = true;
 		// enable depth texture as it is needed later for depth-aware outline composite
 		// (to sample the selected object's depth in the main scene)
@@ -777,13 +751,13 @@ void Renderer::ensure_offscren_render_pass()
 
 		// create the main render pass with the new specification and dimensions
 		main_render_pass->create(spec);
-		offscreen_width = width;
+		offscreen_width  = width;
 		offscreen_height = height;
 
 		// print a message indicating the offscreen render pass has been recreated
 		std::cout << "[INFO::RENDERER::ensure_offscren_render_pass] "
-			"\nOffscreen render pass recreated with updated dimensions:\n"
-			<< main_render_pass->get_specification_str() << std::endl;
+		             "\nOffscreen render pass recreated with updated dimensions:\n"
+		          << main_render_pass->get_specification_str() << std::endl;
 	}
 
 	init_screen_quad(); // initialize the screen quad if it hasn't been initialized yet
@@ -791,7 +765,8 @@ void Renderer::ensure_offscren_render_pass()
 
 void Renderer::init_screen_quad()
 {
-	if (screen_quad_vao) return; // if the screen quad VAO is already initialized, return
+	if (screen_quad_vao)
+		return; // if the screen quad VAO is already initialized, return
 
 	// create the screen quad VAO, VBO, and EBO
 	glGenVertexArrays(1, &screen_quad_vao);
@@ -802,13 +777,17 @@ void Renderer::init_screen_quad()
 
 	// bind the VBO and EBO, and send the screen quad vertex and index data to the GPU
 	glBindBuffer(GL_ARRAY_BUFFER, screen_quad_vbo);
-	glBufferData(GL_ARRAY_BUFFER,
-				 static_cast<GLsizeiptr>(screen_quad_vertices_vector.size() * sizeof(GLfloat)),
-				 screen_quad_vertices_vector.data(), GL_STATIC_DRAW);
+	glBufferData(
+	    GL_ARRAY_BUFFER,
+	    static_cast<GLsizeiptr>(screen_quad_vertices_vector.size() * sizeof(GLfloat)),
+	    screen_quad_vertices_vector.data(),
+	    GL_STATIC_DRAW);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, screen_quad_ebo);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER,
-				 static_cast<GLsizeiptr>(screen_quad_indices_vector.size() * sizeof(GLuint)),
-				 screen_quad_indices_vector.data(), GL_STATIC_DRAW);
+	glBufferData(
+	    GL_ELEMENT_ARRAY_BUFFER,
+	    static_cast<GLsizeiptr>(screen_quad_indices_vector.size() * sizeof(GLuint)),
+	    screen_quad_indices_vector.data(),
+	    GL_STATIC_DRAW);
 
 	// set the vertex attribute pointers for the screen quad
 	// compute a local stride for the vertex attributes (5 floats per vertex: 3 pos, 2 tex coords)
@@ -826,8 +805,8 @@ void Renderer::init_screen_quad()
 void Renderer::composite_to_screen()
 {
 	// get the core instance and screen dimensions
-	auto core = Core::get_instance();
-	const GLuint width = core->get_screen_width();
+	auto         core   = Core::get_instance();
+	const GLuint width  = core->get_screen_width();
 	const GLuint height = core->get_screen_height();
 
 	// get the selection manager from the core instance
@@ -853,8 +832,8 @@ void Renderer::composite_to_screen()
 	main_render_pass->unbind();
 
 	// draw the offscreen color texture to the back buffer via a screen quad
-	glViewport(0, 0, width, height); // set the viewport to the screen dimensions
-	glDisable(GL_DEPTH_TEST); // depth test is not needed for screen quad rendering
+	glViewport(0, 0, width, height);           // set the viewport to the screen dimensions
+	glDisable(GL_DEPTH_TEST);                  // depth test is not needed for screen quad rendering
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); // ensure we are in fill mode for the screen quad
 
 	// clear the default framebuffer color (keep depth and stencil buffers intact)
@@ -898,7 +877,8 @@ void Renderer::composite_to_screen()
 		else
 		{ // if the picking texture is not available, print a warning and bind the main color texture instead
 			std::cerr << "[WARNING::RENDERER::composite_to_screen] Picking texture not available, "
-				"binding main render pass color texture instead" << std::endl;
+			             "binding main render pass color texture instead"
+			          << std::endl;
 			glBindTexture(GL_TEXTURE_2D, main_render_pass->get_texture_id(0));
 		}
 	}
@@ -909,17 +889,16 @@ void Renderer::composite_to_screen()
 
 	// local variables for outline parameters
 	// there is only and outline if there is a selected node and the outline mask texture is available
-	const bool has_outline =
-		selection_manager->get_selected_node_id() != 0 && selection_manager->get_outline_mask_texture_id() != 0;
-	glm::vec3 outline_color{ 0.0f };
-	GLuint outline_thickness = 0;
+	const bool has_outline = selection_manager->get_selected_node_id() != 0 && selection_manager->get_outline_mask_texture_id() != 0;
+	glm::vec3  outline_color{ 0.0f };
+	GLuint     outline_thickness = 0;
 
 	auto& params = selection_manager->get_outline_params(); // get the outline parameters
 	if (screen_debug_params.debug_mode <= 1 && has_outline)
 	{
 		// if debug mode is either v_normal mode (1) or Inverted Colors mode (2)
 		// and there is a selection, use the outline parameters from the selection manager
-		outline_color = params.color;
+		outline_color     = params.color;
 		outline_thickness = params.thickness;
 	}
 
@@ -938,7 +917,7 @@ void Renderer::composite_to_screen()
 	}
 
 	// inform the shader if depth textures are available and set a small bias to avoid z-fighting
-	// (need at least the scene depth texture for depth-aware outline rendering, 
+	// (need at least the scene depth texture for depth-aware outline rendering,
 	// outline depth is tested within the shader if available)
 	const bool depth = scene_depth_tex != 0;
 	screen_quad_shader->set_int("u_has_depth_textures", depth ? 1 : 0);
@@ -981,11 +960,9 @@ void Renderer::init_skybox_cube()
 	// bind and set skybox VAO, VBO, and EBO
 	glBindVertexArray(skybox_vao);
 	glBindBuffer(GL_ARRAY_BUFFER, skybox_vbo);
-	glBufferData(GL_ARRAY_BUFFER, skybox_positions_vector.size() * sizeof(GLfloat),
-				 skybox_positions_vector.data(), GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, skybox_positions_vector.size() * sizeof(GLfloat), skybox_positions_vector.data(), GL_STATIC_DRAW);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, skybox_ebo);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, skybox_indices_vector.size() * sizeof(GLuint),
-				 skybox_indices_vector.data(), GL_STATIC_DRAW);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, skybox_indices_vector.size() * sizeof(GLuint), skybox_indices_vector.data(), GL_STATIC_DRAW);
 
 	// set the vertex attribute pointers
 	glEnableVertexAttribArray(0);
@@ -994,25 +971,25 @@ void Renderer::init_skybox_cube()
 	glBindVertexArray(0); // unbind the VAO after setting it up
 }
 
-void Renderer::render_skybox_cube(std::shared_ptr<Texture> skybox_texture,
-								  glm::mat4& view, glm::mat4& projection)
+void Renderer::render_skybox_cube(std::shared_ptr<Texture> skybox_texture, glm::mat4& view, glm::mat4& projection)
 {
 	// disable depth writing for the skybox to prevent it from overwriting
 	// the depth values of the scene's objects (skybox is rendered at the farthest depth),
 	// and set the depth function to GL_LEQUAL to ensure the skybox is rendered
 	// correctly when depth values are equal (skybox depth is 1.0) - avoids z-fighting
-	glDepthMask(GL_FALSE); glDepthFunc(GL_LEQUAL);
+	glDepthMask(GL_FALSE);
+	glDepthFunc(GL_LEQUAL);
 
 	// disable face culling for skybox rendering since camera is inside the cube
-	// looking at the interior (back) faces. This ensures the skybox is rendered correctly, 
+	// looking at the interior (back) faces. This ensures the skybox is rendered correctly,
 	// and avoids winding order ambiguity when rendering from the inside
 	glDisable(GL_CULL_FACE);
 
 	// set view and projection matrices for the skybox shader
 	skybox_shader->use();
-	// for the skybox, remove the translation from the view matrix, since the skybox 
-	// should always be centered and appear infinitely far away, 
-	// so we cast the mat4 to a mat3 and back to a mat4 to remove the translation component. 
+	// for the skybox, remove the translation from the view matrix, since the skybox
+	// should always be centered and appear infinitely far away,
+	// so we cast the mat4 to a mat3 and back to a mat4 to remove the translation component.
 	// This way, the skybox will not move when the camera moves
 	// and will only rotate based on the camera's orientation
 	glm::mat4 view_no_translation = glm::mat4(glm::mat3(view)); // remove translation with a mat3 cast
@@ -1028,7 +1005,8 @@ void Renderer::render_skybox_cube(std::shared_ptr<Texture> skybox_texture,
 	glDrawElements(GL_TRIANGLES, skybox_index_count, GL_UNSIGNED_INT, 0);
 
 	// reset depth function and re-enable depth writing after rendering the skybox
-	glDepthFunc(GL_LESS); glDepthMask(GL_TRUE);
+	glDepthFunc(GL_LESS);
+	glDepthMask(GL_TRUE);
 
 	// re-enable face culling after skybox rendering
 	glEnable(GL_CULL_FACE);
@@ -1039,26 +1017,30 @@ void Renderer::render_skybox_cube(std::shared_ptr<Texture> skybox_texture,
 void Renderer::convert_hdr_to_cubemap_if_needed()
 {
 	// get the core instance, the scene manager, and the current skybox and check if it exists
-	auto core = Core::get_instance();
+	auto  core          = Core::get_instance();
 	auto& scene_manager = core->get_scene_manager();
-	auto& skybox = scene_manager->get_skybox();
-	if (!skybox) return; // if no skybox is set, return
+	auto& skybox        = scene_manager->get_skybox();
+	if (!skybox)
+		return; // if no skybox is set, return
 
 	// in case the skybox is not HDR, there is nothing to convert, so return
-	if (skybox->get_texture_type() != Texture_Type::HDR_EQUIRECTANGULAR) return;
+	if (skybox->get_texture_type() != Texture_Type::HDR_EQUIRECTANGULAR)
+		return;
 
 	if (hdr_source_tex_id != skybox->get_texture_id())
 	{ // if the HDR source texture has changed, reset the converted flag
-		hdr_source_tex_id = skybox->get_texture_id();
+		hdr_source_tex_id        = skybox->get_texture_id();
 		hdr_to_cubemap_converted = false;
 	}
 	// only convert if not converted yet, otherwise return
-	if (hdr_to_cubemap_converted) return;
+	if (hdr_to_cubemap_converted)
+		return;
 
 	if (!equirect_to_cubemap_shader)
 	{ // if the equirectangular to cubemap shader is not set, print an error message and return
 		std::cerr << "[ERROR::RENDERER::convert_hdr_to_cubemap_if_needed] "
-			"Equirectangular to Cubemap Shader not set" << std::endl;
+		             "Equirectangular to Cubemap Shader not set"
+		          << std::endl;
 		return;
 	}
 
@@ -1099,8 +1081,7 @@ void Renderer::convert_hdr_to_cubemap_if_needed()
 	glGenTextures(1, &env_cubemap);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, env_cubemap);
 	for (unsigned int i{}; i < 6; ++i) // allocate space for the 6 faces of the cubemap
-		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB16F, capture_size, capture_size, 0,
-					 GL_RGB, GL_FLOAT, nullptr);
+		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB16F, capture_size, capture_size, 0, GL_RGB, GL_FLOAT, nullptr);
 	// set the cubemap texture parameters
 	// set wrapping to clamp to edge to prevent seams
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -1112,18 +1093,19 @@ void Renderer::convert_hdr_to_cubemap_if_needed()
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 	// view/projection matrices for capturing data onto the 6 cubemap face directions
-	glm::mat4 capture_proj = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
-	glm::mat4 capture_views[] =
-	{ // 6 view matrices for the 6 faces of the cubemap (right, left, top, bottom, front, back)
-		glm::lookAt(glm::vec3(0.0f), glm::vec3(1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),		// +X
-		glm::lookAt(glm::vec3(0.0f), glm::vec3(-1.0f, 0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),		// -X
-		glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f,  1.0f,  0.0f), glm::vec3(0.0f,  0.0f,  1.0f)),		// +Y
-		glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f, -1.0f,  0.0f), glm::vec3(0.0f,  0.0f, -1.0f)),		// -Y
-		glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f,  0.0f,  1.0f), glm::vec3(0.0f, -1.0f,  0.0f)),		// +Z
-		glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f,  0.0f, -1.0f), glm::vec3(0.0f, -1.0f,  0.0f))		// -Z
+	glm::mat4 capture_proj    = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
+	glm::mat4 capture_views[] = {
+		// 6 view matrices for the 6 faces of the cubemap (right, left, top, bottom, front, back)
+		glm::lookAt(glm::vec3(0.0f), glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f)),  // +X
+		glm::lookAt(glm::vec3(0.0f), glm::vec3(-1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f)), // -X
+		glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)),   // +Y
+		glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f)), // -Y
+		glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, -1.0f, 0.0f)),  // +Z
+		glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, -1.0f, 0.0f))  // -Z
 	};
 
-	if (!skybox_vao) init_skybox_cube(); // initialize the skybox cube if not done yet
+	if (!skybox_vao)
+		init_skybox_cube(); // initialize the skybox cube if not done yet
 
 	// activate the equirectangular to cubemap shader and set uniforms for conversion
 	equirect_to_cubemap_shader->use();
@@ -1144,10 +1126,9 @@ void Renderer::convert_hdr_to_cubemap_if_needed()
 	{ // for each of the 6 faces of the cubemap, render the scene using the capture view
 		equirect_to_cubemap_shader->set_mat4("u_view", capture_views[i]);
 		// attach the face of the cubemap texture to the correponding FBO color attachment
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-							   GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, env_cubemap, 0);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // clear the necessary buffers
-		glBindVertexArray(skybox_vao); // bind the skybox VAO
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, env_cubemap, 0);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);                   // clear the necessary buffers
+		glBindVertexArray(skybox_vao);                                        // bind the skybox VAO
 		glDrawElements(GL_TRIANGLES, skybox_index_count, GL_UNSIGNED_INT, 0); // render the skybox cube
 	}
 
@@ -1162,14 +1143,13 @@ void Renderer::convert_hdr_to_cubemap_if_needed()
 
 	// replace skybox with new cubemap texture
 	GLuint old_hdr = skybox->get_texture_id(); // store old HDR texture id for deletion after replacement
-	scene_manager->set_skybox(std::make_shared<Texture>("Skybox Cubemap From HDR",
-														env_cubemap, Texture_Type::CUBEMAP));
+	scene_manager->set_skybox(std::make_shared<Texture>("Skybox Cubemap From HDR", env_cubemap, Texture_Type::CUBEMAP));
 	// delete old HDR texture as it is no longer needed
 	glDeleteTextures(1, &old_hdr);
 	hdr_to_cubemap_converted = true; // mark as converted to avoid redundant conversions
 
-	std::cout << "[SUCCESS::RENDERER::convert_hdr_to_cubemap_if_needed] Converted HDR (src texId = "
-		<< hdr_source_tex_id << ") to cubemap (texId = " << env_cubemap << ")" << std::endl;
+	std::cout << "[SUCCESS::RENDERER::convert_hdr_to_cubemap_if_needed] Converted HDR (src texId = " << hdr_source_tex_id
+	          << ") to cubemap (texId = " << env_cubemap << ")" << std::endl;
 
 	// reset source id so a new HDR selection triggers fresh conversion logic properly
 	hdr_source_tex_id = env_cubemap; // the active skybox is now the cubemap
@@ -1178,22 +1158,25 @@ void Renderer::convert_hdr_to_cubemap_if_needed()
 void Renderer::update_dynamic_env_maps()
 {
 	//// start measuring time for performance profiling
-	//auto start_time{ std::chrono::high_resolution_clock::now() };
+	// auto start_time{ std::chrono::high_resolution_clock::now() };
 
 	// if already capturing or no dynamic env maps, return
-	if (is_capturing_dynamic_env_map || dynamic_env_maps.empty()) return;
+	if (is_capturing_dynamic_env_map || dynamic_env_maps.empty())
+		return;
 
-	auto core = Core::get_instance(); // get the core instance
-	auto& node_manager = core->get_node_manager(); // get the node manager
-	auto& models = node_manager->get_nodes(Node_Type::MODEL); // get the models from the node manager
-	if (models.empty()) return; // if no models, return
+	auto  core         = Core::get_instance();                      // get the core instance
+	auto& node_manager = core->get_node_manager();                  // get the node manager
+	auto& models       = node_manager->get_nodes(Node_Type::MODEL); // get the models from the node manager
+	if (models.empty())
+		return; // if no models, return
 
 	// ensure a skybox cubemap exists for the dynamic env map captures
 	auto& skybox_texture = core->get_scene_manager()->get_skybox();
-	if (skybox_texture) convert_hdr_to_cubemap_if_needed();
+	if (skybox_texture)
+		convert_hdr_to_cubemap_if_needed();
 
 	// flip buffers at the start of the update
-	// (this makes last frame's "write" buffer -cubemap_tex_id- 
+	// (this makes last frame's "write" buffer -cubemap_tex_id-
 	// this frame's "read" buffer -prev_cubemap_tex_id-)
 	for (auto& [id, entry] : dynamic_env_maps)
 	{
@@ -1210,11 +1193,13 @@ void Renderer::update_dynamic_env_maps()
 		// dynamically cast the node to a Model object
 		auto model = dynamic_cast<Node*>(node.get());
 		// if the cast fails or the model has a gizmo, skip to next model
-		if (!model || model->get_gizmo_type() != Gizmo_Type::NONE) continue;
+		if (!model || model->get_gizmo_type() != Gizmo_Type::NONE)
+			continue;
 
 		// check if the model has a registered dynamic env map
 		auto it = dynamic_env_maps.find(model->get_id());
-		if (it == dynamic_env_maps.end()) continue; // if not found, skip to next model
+		if (it == dynamic_env_maps.end())
+			continue; // if not found, skip to next model
 
 		auto& entry = it->second; // get the dynamic env map entry
 		// dynamically cast the model to a shared pointer for passing to the capture function
@@ -1226,20 +1211,19 @@ void Renderer::update_dynamic_env_maps()
 	is_capturing_dynamic_env_map = false; // reset capturing flag after processing all models
 
 	//// stop measuring time for performance profiling
-	//auto end_time{ std::chrono::high_resolution_clock::now() };
+	// auto end_time{ std::chrono::high_resolution_clock::now() };
 
 	//// calculate the elapsed time in milliseconds and store it in the elapsed_time variable
-	//auto elapsed_time = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
+	// auto elapsed_time = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
 
 	//// print the elapsed time for the dynamic env map update with a counter to avoid spamming the console
-	//static uint32_t render_counter = 0;
-	//if ((render_counter++ % 60) == 0) // print every 60 frames
+	// static uint32_t render_counter = 0;
+	// if ((render_counter++ % 60) == 0) // print every 60 frames
 	//	std::cout << "[PROFILER::RENDERER::update_dynamic_env_maps] Dynamic env map update took "
 	//	<< elapsed_time << " ms" << std::endl;
 }
 
-void Renderer::capture_dynamic_env_map_for_model(const std::shared_ptr<Node>& model,
-												 Dynamic_Env_Map_Entry& entry)
+void Renderer::capture_dynamic_env_map_for_model(const std::shared_ptr<Node>& model, Dynamic_Env_Map_Entry& entry)
 {
 	// lazy initialization of cubemap texture, FBO, and RBO for the dynamic env map entry
 	if (!entry.initialized)
@@ -1248,8 +1232,16 @@ void Renderer::capture_dynamic_env_map_for_model(const std::shared_ptr<Node>& mo
 		glGenTextures(1, &entry.cubemap_tex_id);
 		glBindTexture(GL_TEXTURE_CUBE_MAP, entry.cubemap_tex_id);
 		for (unsigned int i = 0; i < 6; ++i)
-			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB16F,
-						 entry.resolution, entry.resolution, 0, GL_RGB, GL_FLOAT, nullptr);
+			glTexImage2D(
+			    GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
+			    0,
+			    GL_RGB16F,
+			    entry.resolution,
+			    entry.resolution,
+			    0,
+			    GL_RGB,
+			    GL_FLOAT,
+			    nullptr);
 		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
@@ -1260,8 +1252,16 @@ void Renderer::capture_dynamic_env_map_for_model(const std::shared_ptr<Node>& mo
 		glGenTextures(1, &entry.prev_cubemap_tex_id);
 		glBindTexture(GL_TEXTURE_CUBE_MAP, entry.prev_cubemap_tex_id);
 		for (unsigned int i = 0; i < 6; ++i)
-			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB16F,
-						 entry.resolution, entry.resolution, 0, GL_RGB, GL_FLOAT, nullptr);
+			glTexImage2D(
+			    GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
+			    0,
+			    GL_RGB16F,
+			    entry.resolution,
+			    entry.resolution,
+			    0,
+			    GL_RGB,
+			    GL_FLOAT,
+			    nullptr);
 		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
@@ -1272,40 +1272,39 @@ void Renderer::capture_dynamic_env_map_for_model(const std::shared_ptr<Node>& mo
 		glGenFramebuffers(1, &entry.fbo);
 		glGenRenderbuffers(1, &entry.rbo);
 
-		entry.initialized = true; // mark the entry as initialized
+		entry.initialized      = true;  // mark the entry as initialized
 		entry.has_prev_cubemap = false; // no previous cubemap yet (no data captured)
 	}
 
 	GLint prev_fbo{}, prev_viewport[4];
 	glGetIntegerv(GL_FRAMEBUFFER_BINDING, &prev_fbo); // save currently bound FBO
-	glGetIntegerv(GL_VIEWPORT, prev_viewport); // save current viewport
+	glGetIntegerv(GL_VIEWPORT, prev_viewport);        // save current viewport
 
-	glBindFramebuffer(GL_FRAMEBUFFER, entry.fbo); // bind the dynamic env map FBO
-	glBindRenderbuffer(GL_RENDERBUFFER, entry.rbo); // bind the RBO
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24,
-						  entry.resolution, entry.resolution); // configure RBO storage
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
-							  GL_RENDERBUFFER, entry.rbo); // attach RBO to FBO depth attachment
+	glBindFramebuffer(GL_FRAMEBUFFER, entry.fbo);                                                     // bind the dynamic env map FBO
+	glBindRenderbuffer(GL_RENDERBUFFER, entry.rbo);                                                   // bind the RBO
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, entry.resolution, entry.resolution); // configure RBO storage
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, entry.rbo);       // attach RBO to FBO depth attachment
 	glDrawBuffer(GL_COLOR_ATTACHMENT0); // select color attachment 0 for rendering
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{ // validate FBO completeness, if incomplete, print error, restore FBO, and return
 		std::cerr << "[ERROR::RENDERER::capture_dynamic_env_map_for_model] "
-			"Dynamic Env Map FBO incomplete for model id " << model->get_id() << std::endl;
+		             "Dynamic Env Map FBO incomplete for model id "
+		          << model->get_id() << std::endl;
 		glBindFramebuffer(GL_FRAMEBUFFER, prev_fbo); // restore previous FBO
 		return;
 	}
 
 	// set up capture projection and views for the 6 cubemap faces
-	glm::mat4 capture_proj = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
-	const glm::vec3 pos = model->get_position(); // get the model's position for the capture
-	glm::mat4 capture_views[] =
-	{ // 6 view matrices for the 6 faces of the cubemap (right, left, top, bottom, front, back)
-		glm::lookAt(pos, pos + glm::vec3(1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),	// +X
-		glm::lookAt(pos, pos + glm::vec3(-1.0f, 0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),	// -X
-		glm::lookAt(pos, pos + glm::vec3(0.0f,  1.0f,  0.0f), glm::vec3(0.0f,  0.0f,  1.0f)),	// +Y
-		glm::lookAt(pos, pos + glm::vec3(0.0f, -1.0f,  0.0f), glm::vec3(0.0f,  0.0f, -1.0f)),	// -Y
-		glm::lookAt(pos, pos + glm::vec3(0.0f,  0.0f,  1.0f), glm::vec3(0.0f, -1.0f,  0.0f)),	// +Z
-		glm::lookAt(pos, pos + glm::vec3(0.0f,  0.0f, -1.0f), glm::vec3(0.0f, -1.0f,  0.0f))	// -Z
+	glm::mat4       capture_proj    = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
+	const glm::vec3 pos             = model->get_position(); // get the model's position for the capture
+	glm::mat4       capture_views[] = {
+		// 6 view matrices for the 6 faces of the cubemap (right, left, top, bottom, front, back)
+		glm::lookAt(pos, pos + glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f)),  // +X
+		glm::lookAt(pos, pos + glm::vec3(-1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f)), // -X
+		glm::lookAt(pos, pos + glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)),   // +Y
+		glm::lookAt(pos, pos + glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f)), // -Y
+		glm::lookAt(pos, pos + glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, -1.0f, 0.0f)),  // +Z
+		glm::lookAt(pos, pos + glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, -1.0f, 0.0f))  // -Z
 	};
 
 	glViewport(0, 0, entry.resolution, entry.resolution); // set viewport to capture resolution
@@ -1314,8 +1313,7 @@ void Renderer::capture_dynamic_env_map_for_model(const std::shared_ptr<Node>& mo
 	for (GLuint i{}; i < 6; ++i)
 	{
 		// attach the face of the cubemap texture to the FBO color attachment
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-							   GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, entry.cubemap_tex_id, 0);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, entry.cubemap_tex_id, 0);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // clear necessary buffers
 
 		// render the scene for the current capture view, excluding the model itself
@@ -1331,16 +1329,18 @@ void Renderer::capture_dynamic_env_map_for_model(const std::shared_ptr<Node>& mo
 	glViewport(prev_viewport[0], prev_viewport[1], prev_viewport[2], prev_viewport[3]);
 }
 
-void Renderer::render_scene_for_env_map_capture(const glm::mat4& capture_views, const glm::mat4& capture_proj,
-												const std::shared_ptr<Node>& exclude_model)
+void Renderer::render_scene_for_env_map_capture(
+    const glm::mat4&             capture_views,
+    const glm::mat4&             capture_proj,
+    const std::shared_ptr<Node>& exclude_model)
 {
-	auto core = Core::get_instance(); // get the core instance
-	auto& node_manager = core->get_node_manager(); // get the node manager
+	auto  core          = Core::get_instance();      // get the core instance
+	auto& node_manager  = core->get_node_manager();  // get the node manager
 	auto& scene_manager = core->get_scene_manager(); // get the scene manager
 
 	// pre-compute uniforms common to all shaders used for env map capture
-	GLfloat refraction_index_ratio = 1.00f / 1.52f; // air to glass refraction index ratio
-	glm::mat3 inv_view_rot = glm::transpose(glm::mat3(capture_views)); // inverse of rotation part of view matrix
+	GLfloat   refraction_index_ratio = 1.00f / 1.52f;                            // air to glass refraction index ratio
+	glm::mat3 inv_view_rot           = glm::transpose(glm::mat3(capture_views)); // inverse of rotation part of view matrix
 
 	// set parameters on shaders that are used for the env map capture
 	shape_model_shader->use();
@@ -1367,7 +1367,7 @@ void Renderer::render_scene_for_env_map_capture(const glm::mat4& capture_views, 
 	refractive_shader->set_int("u_skybox", 0);
 
 	// set light uniforms
-	auto& lights = node_manager->get_nodes(Node_Type::LIGHT); // get lights from the node manager
+	auto& lights = node_manager->get_nodes(Node_Type::LIGHT);          // get lights from the node manager
 	GLint point_light_idx{}, spotlight_idx{}, directional_light_idx{}; // light type indices
 	for (const auto& node : lights)
 	{ // iterate over the lights and set their parameters in the shaders
@@ -1378,21 +1378,17 @@ void Renderer::render_scene_for_env_map_capture(const glm::mat4& capture_views, 
 		{
 			case Light_Type::DIRECTIONAL_LIGHT:
 			{
-				auto dl = dynamic_cast<Directional_Light*>(light);
+				auto        dl     = dynamic_cast<Directional_Light*>(light);
 				std::string prefix = "u_directional_lights[" + std::to_string(directional_light_idx) + "].";
 				shape_model_shader->use();
-				shape_model_shader->set_vec3(
-					"u_directional_light_dir[" + std::to_string(directional_light_idx) + "]",
-					dl->get_direction()
-				);
+				shape_model_shader->set_vec3("u_directional_light_dir[" + std::to_string(directional_light_idx) + "]", dl->get_direction());
 				shape_model_shader->set_vec3(prefix + "ambient", dl->get_ambient());
 				shape_model_shader->set_vec3(prefix + "diffuse", dl->get_diffuse());
 				shape_model_shader->set_vec3(prefix + "specular", dl->get_specular());
 				assimp_model_shader->use();
 				assimp_model_shader->set_vec3(
-					"u_directional_light_dir[" + std::to_string(directional_light_idx) + "]",
-					dl->get_direction()
-				);
+				    "u_directional_light_dir[" + std::to_string(directional_light_idx) + "]",
+				    dl->get_direction());
 				assimp_model_shader->set_vec3(prefix + "ambient", dl->get_ambient());
 				assimp_model_shader->set_vec3(prefix + "diffuse", dl->get_diffuse());
 				assimp_model_shader->set_vec3(prefix + "specular", dl->get_specular());
@@ -1401,13 +1397,10 @@ void Renderer::render_scene_for_env_map_capture(const glm::mat4& capture_views, 
 			break;
 			case Light_Type::POINT_LIGHT:
 			{
-				auto pl = dynamic_cast<Point_Light*>(light);
+				auto        pl     = dynamic_cast<Point_Light*>(light);
 				std::string prefix = "u_point_lights[" + std::to_string(point_light_idx) + "].";
 				shape_model_shader->use();
-				shape_model_shader->set_vec3(
-					"u_point_light_pos[" + std::to_string(point_light_idx) + "]",
-					pl->get_position()
-				);
+				shape_model_shader->set_vec3("u_point_light_pos[" + std::to_string(point_light_idx) + "]", pl->get_position());
 				shape_model_shader->set_vec3(prefix + "ambient", pl->get_ambient());
 				shape_model_shader->set_vec3(prefix + "diffuse", pl->get_diffuse());
 				shape_model_shader->set_vec3(prefix + "specular", pl->get_specular());
@@ -1415,10 +1408,7 @@ void Renderer::render_scene_for_env_map_capture(const glm::mat4& capture_views, 
 				shape_model_shader->set_float(prefix + "linear", pl->get_linear());
 				shape_model_shader->set_float(prefix + "quadratic", pl->get_quadratic());
 				assimp_model_shader->use();
-				assimp_model_shader->set_vec3(
-					"u_point_light_pos[" + std::to_string(point_light_idx) + "]",
-					pl->get_position()
-				);
+				assimp_model_shader->set_vec3("u_point_light_pos[" + std::to_string(point_light_idx) + "]", pl->get_position());
 				assimp_model_shader->set_vec3(prefix + "ambient", pl->get_ambient());
 				assimp_model_shader->set_vec3(prefix + "diffuse", pl->get_diffuse());
 				assimp_model_shader->set_vec3(prefix + "specular", pl->get_specular());
@@ -1430,16 +1420,11 @@ void Renderer::render_scene_for_env_map_capture(const glm::mat4& capture_views, 
 			break;
 			case Light_Type::SPOTLIGHT:
 			{
-				auto sl = dynamic_cast<Spotlight*>(light);
+				auto        sl     = dynamic_cast<Spotlight*>(light);
 				std::string prefix = "u_spotlights[" + std::to_string(spotlight_idx) + "].";
 				shape_model_shader->use();
-				shape_model_shader->set_vec3(
-					"u_spotlight_pos[" + std::to_string(spotlight_idx) + "]",
-					sl->get_position()
-				);
-				shape_model_shader->set_vec3(
-					"u_spotlight_dir[" + std::to_string(spotlight_idx) + "]", sl->get_direction()
-				);
+				shape_model_shader->set_vec3("u_spotlight_pos[" + std::to_string(spotlight_idx) + "]", sl->get_position());
+				shape_model_shader->set_vec3("u_spotlight_dir[" + std::to_string(spotlight_idx) + "]", sl->get_direction());
 				shape_model_shader->set_vec3(prefix + "ambient", sl->get_ambient());
 				shape_model_shader->set_vec3(prefix + "diffuse", sl->get_diffuse());
 				shape_model_shader->set_vec3(prefix + "specular", sl->get_specular());
@@ -1449,13 +1434,8 @@ void Renderer::render_scene_for_env_map_capture(const glm::mat4& capture_views, 
 				shape_model_shader->set_float(prefix + "inner_cutoff", sl->get_inner_cutoff());
 				shape_model_shader->set_float(prefix + "outer_cutoff", sl->get_outer_cutoff());
 				assimp_model_shader->use();
-				assimp_model_shader->set_vec3(
-					"u_spotlight_pos[" + std::to_string(spotlight_idx) + "]",
-					sl->get_position()
-				);
-				assimp_model_shader->set_vec3(
-					"u_spotlight_dir[" + std::to_string(spotlight_idx) + "]", sl->get_direction()
-				);
+				assimp_model_shader->set_vec3("u_spotlight_pos[" + std::to_string(spotlight_idx) + "]", sl->get_position());
+				assimp_model_shader->set_vec3("u_spotlight_dir[" + std::to_string(spotlight_idx) + "]", sl->get_direction());
 				assimp_model_shader->set_vec3(prefix + "ambient", sl->get_ambient());
 				assimp_model_shader->set_vec3(prefix + "diffuse", sl->get_diffuse());
 				assimp_model_shader->set_vec3(prefix + "specular", sl->get_specular());
@@ -1467,8 +1447,7 @@ void Renderer::render_scene_for_env_map_capture(const glm::mat4& capture_views, 
 				spotlight_idx++;
 			}
 			break;
-			default:
-				break;
+			default: break;
 		}
 	}
 	// set the number of lights of each type in the shader
@@ -1489,22 +1468,27 @@ void Renderer::render_scene_for_env_map_capture(const glm::mat4& capture_views, 
 		auto model = dynamic_cast<Node*>(node.get());
 
 		// skip excluded model (the one for which we are capturing the env map) and gizmos early
-		if (exclude_model && model == exclude_model.get()) continue;
-		if (model->get_gizmo_type() != Gizmo_Type::NONE) continue;
+		if (exclude_model && model == exclude_model.get())
+			continue;
+		if (model->get_gizmo_type() != Gizmo_Type::NONE)
+			continue;
 
 		// render the model for enviroment map capture, using recursive rendering for composite models
 		if (model->is_composite())
 		{ // if the model is composite, render all its child models recursively in a depth-first traversal
 			std::vector<std::shared_ptr<Node>> stack{ model->get_children() };
 			while (!stack.empty())
-			{ // process models in the stack until empty
+			{                                       // process models in the stack until empty
 				auto& current_model = stack.back(); // get the model at the top of the stack
-				stack.pop_back(); // remove the model from the stack
+				stack.pop_back();                   // remove the model from the stack
 
 				// if the current model is null, excluded, or a gizmo, skip it
-				if (!current_model) continue;
-				if (exclude_model && current_model == exclude_model) continue;
-				if (current_model->get_gizmo_type() != Gizmo_Type::NONE) continue;
+				if (!current_model)
+					continue;
+				if (exclude_model && current_model == exclude_model)
+					continue;
+				if (current_model->get_gizmo_type() != Gizmo_Type::NONE)
+					continue;
 
 				if (current_model->is_composite())
 				{ // if the current model is composite, add its children to the stack for further processing
@@ -1515,7 +1499,7 @@ void Renderer::render_scene_for_env_map_capture(const glm::mat4& capture_views, 
 				// leaf model rendering based on the model type (child models)
 				std::shared_ptr<Shader> render_shader;
 
-				switch (current_model->get_type())// use the appropriate shader based on the model type
+				switch (current_model->get_type()) // use the appropriate shader based on the model type
 				{
 					case Node_Type::COMPOSITE_MODEL: // basic composite models do not have their own meshes
 					{
@@ -1540,7 +1524,7 @@ void Renderer::render_scene_for_env_map_capture(const glm::mat4& capture_views, 
 					case Node_Type::SHAPE_MODEL:
 					{
 						render_shader = shape_model_shader; // use the shape model shader
-						render_shader->use(); // activate the current shader program
+						render_shader->use();               // activate the current shader program
 						// set the color of the shape based on the model's albedo (RGBA)
 						render_shader->set_vec4("u_material.albedo", current_model->get_albedo());
 					}
@@ -1548,7 +1532,8 @@ void Renderer::render_scene_for_env_map_capture(const glm::mat4& capture_views, 
 					default:
 						// if the model type is unknown, print an error message and return
 						std::cerr << "[ERROR::RENDERER::render_scene_for_env_map_capture] "
-							"Unknown model type for " << current_model->get_name() << std::endl;
+						             "Unknown model type for "
+						          << current_model->get_name() << std::endl;
 						return;
 
 						// set the polygon mode to fill for regular models
@@ -1568,7 +1553,7 @@ void Renderer::render_scene_for_env_map_capture(const glm::mat4& capture_views, 
 		else
 		{ // leaf model rendering based on the model type (non-composite models)
 			std::shared_ptr<Shader> render_shader;
-			switch (model->get_type())// use the appropriate shader based on the model type
+			switch (model->get_type()) // use the appropriate shader based on the model type
 			{
 				case Node_Type::COMPOSITE_MODEL: // basic composite models do not have their own meshes
 				{
@@ -1593,7 +1578,7 @@ void Renderer::render_scene_for_env_map_capture(const glm::mat4& capture_views, 
 				case Node_Type::SHAPE_MODEL:
 				{
 					render_shader = shape_model_shader; // use the shape model shader
-					render_shader->use(); // activate the current shader program
+					render_shader->use();               // activate the current shader program
 					// set the color of the shape based on the model's albedo (RGBA)
 					render_shader->set_vec4("u_material.albedo", model->get_albedo());
 				}
@@ -1601,7 +1586,8 @@ void Renderer::render_scene_for_env_map_capture(const glm::mat4& capture_views, 
 				default:
 					// if the model type is unknown, print an error message and return
 					std::cerr << "[ERROR::RENDERER::render_scene_for_env_map_capture] "
-						"Unknown model type for " << model->get_name() << std::endl;
+					             "Unknown model type for "
+					          << model->get_name() << std::endl;
 					return;
 			}
 
@@ -1619,10 +1605,10 @@ void Renderer::render_scene_for_env_map_capture(const glm::mat4& capture_views, 
 	auto& skybox_texture = scene_manager->get_skybox();
 	if (skybox_texture && skybox_texture->get_texture_type() == Texture_Type::CUBEMAP)
 	{ // only render if skybox is a cubemap
-		if (!skybox_vao) init_skybox_cube(); // initialize skybox cube if not done yet
+		if (!skybox_vao)
+			init_skybox_cube(); // initialize skybox cube if not done yet
 		// render the skybox cube using the skybox shader and the provided view and projection matrices
 		// (const_cast is used here to match the function signature)
-		render_skybox_cube(skybox_texture, const_cast<glm::mat4&>(capture_views),
-						   const_cast<glm::mat4&>(capture_proj));
+		render_skybox_cube(skybox_texture, const_cast<glm::mat4&>(capture_views), const_cast<glm::mat4&>(capture_proj));
 	}
 }

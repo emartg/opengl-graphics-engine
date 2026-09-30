@@ -1,13 +1,13 @@
 /*
-* HEX_PYRAMID.h
-* This file defines the vertex data for a simple hexagonal pyramid,
-* both in array and vector form.
-* Vertices are replicated for each face, so that each face can have
-* different normals and texture coordinates.
-* The vertex data is separated into position, normal, and texture coordinate data, but there is also
-* an array and a vector with the interleaved vertex data to test the Shape_Model constructors that take
-* interleaved vertex data directly.
-*/
+ * HEX_PYRAMID.h
+ * This file defines the vertex data for a simple hexagonal pyramid,
+ * both in array and vector form.
+ * Vertices are replicated for each face, so that each face can have
+ * different normals and texture coordinates.
+ * The vertex data is separated into position, normal, and texture coordinate data, but there is also
+ * an array and a vector with the interleaved vertex data to test the Shape_Model constructors that take
+ * interleaved vertex data directly.
+ */
 
 #pragma once
 
@@ -25,6 +25,8 @@ constexpr float HEX_HEIGHT = 1.0f;
 
 // Forward direction of the hexagonal pyramid defined below
 constexpr glm::vec3 HEX_PYRAMID_FORWARD{ 0.0f, -1.0f, 0.0f }; // facing down along the negative Y-axis
+
+// clang-format off
 
 // Hexagonal base vertices (duplicated per face with apex)
 const GLfloat hex_pyramid_positions_array[] = {
@@ -149,19 +151,12 @@ const GLfloat hex_pyramid_vertices_array[] = {
 	 1.0f,					0.0f
 };
 
+// clang-format on
+
 // Hexagonal pyramid data in vector form
-const std::vector<GLfloat> hex_pyramid_positions_vector{
-	std::begin(hex_pyramid_positions_array), std::end(hex_pyramid_positions_array)
-};
-const std::vector<GLfloat> hex_pyramid_normals_vector{
-	std::begin(hex_pyramid_normals_array), std::end(hex_pyramid_normals_array)
-};
-const std::vector<GLfloat> hex_pyramid_tex_coords_vector{
-	std::begin(hex_pyramid_tex_coords_array), std::end(hex_pyramid_tex_coords_array)
-};
-const std::vector<GLuint> hex_pyramid_indices_vector{
-	std::begin(hex_pyramid_indices_array), std::end(hex_pyramid_indices_array)
-};
-const std::vector<GLfloat> hex_pyramid_vertices_vector{
-	std::begin(hex_pyramid_vertices_array), std::end(hex_pyramid_vertices_array)
-};
+const std::vector<GLfloat> hex_pyramid_positions_vector{ std::begin(hex_pyramid_positions_array), std::end(hex_pyramid_positions_array) };
+const std::vector<GLfloat> hex_pyramid_normals_vector{ std::begin(hex_pyramid_normals_array), std::end(hex_pyramid_normals_array) };
+const std::vector<GLfloat> hex_pyramid_tex_coords_vector{ std::begin(hex_pyramid_tex_coords_array),
+                                                          std::end(hex_pyramid_tex_coords_array) };
+const std::vector<GLuint>  hex_pyramid_indices_vector{ std::begin(hex_pyramid_indices_array), std::end(hex_pyramid_indices_array) };
+const std::vector<GLfloat> hex_pyramid_vertices_vector{ std::begin(hex_pyramid_vertices_array), std::end(hex_pyramid_vertices_array) };

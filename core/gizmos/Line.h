@@ -1,8 +1,8 @@
 /*
-* Line.h
-* This file defines a Line class, which is used to represent a line segment in 3D space
-* and and provides methods for rendering and manipulating the line.
-*/
+ * Line.h
+ * This file defines a Line class, which is used to represent a line segment in 3D space
+ * and and provides methods for rendering and manipulating the line.
+ */
 
 #pragma once
 
@@ -42,5 +42,4 @@ private:
 	// ---------------
 	// Initializes the buffer objects/arrays
 	void setup_line(const std::vector<GLfloat>& vertices);
-
 };

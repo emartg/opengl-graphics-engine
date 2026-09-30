@@ -1,9 +1,9 @@
 /*
-* Camera.h
-* This file defines the Camera class (a derived class of Node),
-* which is used to process input and calculate the corresponding Euler Angles,
-* vectors, and Matrices for use in OpenGL.
-*/
+ * Camera.h
+ * This file defines the Camera class (a derived class of Node),
+ * which is used to process input and calculate the corresponding Euler Angles,
+ * vectors, and Matrices for use in OpenGL.
+ */
 
 #pragma once
 
@@ -16,9 +16,15 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-// Enumeration that defines several possible options for camera movement. 
+// Enumeration that defines several possible options for camera movement.
 // Used as abstraction to stay away from window-system specific input methods
-enum class Camera_Movement { FORWARD, BACKWARD, LEFT, RIGHT };
+enum class Camera_Movement
+{
+	FORWARD,
+	BACKWARD,
+	LEFT,
+	RIGHT
+};
 
 class Camera : public Node
 {
@@ -26,14 +32,23 @@ public:
 	// Constructors
 	// ------------
 	// Constructor with vectors
-	Camera(const std::string& name,
-		   const glm::vec3 position = POSITION, const glm::vec3 up = UP,
-		   const GLfloat yaw = YAW, const GLfloat pitch = PITCH);
+	Camera(
+	    const std::string& name,
+	    const glm::vec3    position = POSITION,
+	    const glm::vec3    up       = UP,
+	    const GLfloat      yaw      = YAW,
+	    const GLfloat      pitch    = PITCH);
 	// Constructor with scalar values
-	Camera(const std::string& name,
-		   const GLfloat pos_x, const GLfloat pos_y, const GLfloat pos_z,
-		   const GLfloat up_x, const GLfloat up_y, const GLfloat up_z,
-		   const GLfloat yaw = YAW, const GLfloat pitch = PITCH);
+	Camera(
+	    const std::string& name,
+	    const GLfloat      pos_x,
+	    const GLfloat      pos_y,
+	    const GLfloat      pos_z,
+	    const GLfloat      up_x,
+	    const GLfloat      up_y,
+	    const GLfloat      up_z,
+	    const GLfloat      yaw   = YAW,
+	    const GLfloat      pitch = PITCH);
 
 	// Destructor
 	// ----------
@@ -58,11 +73,11 @@ public:
 	glm::vec3 get_up() const { return up; }
 	glm::vec3 get_right() const { return right; }
 	glm::vec3 get_world_up() const { return world_up; }
-	GLfloat get_yaw() const { return yaw; }
-	GLfloat get_pitch() const { return pitch; }
-	GLfloat get_movement_speed() const { return movement_speed; }
-	GLfloat get_mouse_sensitivity() const { return mouse_sensitivity; }
-	GLfloat get_zoom() const { return zoom; }
+	GLfloat   get_yaw() const { return yaw; }
+	GLfloat   get_pitch() const { return pitch; }
+	GLfloat   get_movement_speed() const { return movement_speed; }
+	GLfloat   get_mouse_sensitivity() const { return mouse_sensitivity; }
+	GLfloat   get_zoom() const { return zoom; }
 
 	// Setters
 	void set_yaw(GLfloat yaw) { this->yaw = yaw; }
@@ -79,11 +94,10 @@ public:
 	// This method is intended to be used for camera translation
 	void process_mouse_translation(GLfloat xoffset, GLfloat yoffset, GLfloat sensitivity = 0.1f);
 	// Processes input received from a mouse right-click drag event.
-	// Expects the offset values in both the x and y directions, the sensitivity of the mouse movement, 
-	// and whether the user wants to constrain the pitch. 
+	// Expects the offset values in both the x and y directions, the sensitivity of the mouse movement,
+	// and whether the user wants to constrain the pitch.
 	// This method is intended to be used for camera rotation
-	void process_mouse_rotation(GLfloat xoffset, GLfloat yoffset, GLfloat sensitivity = 0.1f,
-								GLboolean constrain_pitch = true);
+	void process_mouse_rotation(GLfloat xoffset, GLfloat yoffset, GLfloat sensitivity = 0.1f, GLboolean constrain_pitch = true);
 	// Processes input received from a mouse scroll-wheel event.
 	// Expects the offset value in the y direction and the sensitivity of the scroll
 	void process_mouse_scroll(GLfloat yoffset, GLfloat sensitivity = 1.0f);
@@ -113,24 +127,23 @@ private:
 	// initial values for camera reset
 	glm::vec3 initial_position;
 	glm::vec3 initial_up;
-	GLfloat initial_yaw;
-	GLfloat initial_pitch;
+	GLfloat   initial_yaw;
+	GLfloat   initial_pitch;
 
 	// Private Static Attributes
 	// -------------------------
 	// default values for the camera attributes
-	static constexpr glm::vec3 POSITION = glm::vec3{ 16.0f, 6.0f, 16.0f };
-	static constexpr glm::vec3 FRONT = glm::vec3{ 0.0f, 0.0f, -1.0f };
-	static constexpr glm::vec3 UP = glm::vec3{ 0.0f, 1.0f, 0.0f };
-	static constexpr GLfloat YAW = -135.0f;
-	static constexpr GLfloat PITCH = -10.0f;
-	static constexpr GLfloat SPEED = 2.5f;
-	static constexpr GLfloat SENSITIVITY = 0.1f;
-	static constexpr GLfloat ZOOM = 45.0f;
+	static constexpr glm::vec3 POSITION    = glm::vec3{ 16.0f, 6.0f, 16.0f };
+	static constexpr glm::vec3 FRONT       = glm::vec3{ 0.0f, 0.0f, -1.0f };
+	static constexpr glm::vec3 UP          = glm::vec3{ 0.0f, 1.0f, 0.0f };
+	static constexpr GLfloat   YAW         = -135.0f;
+	static constexpr GLfloat   PITCH       = -10.0f;
+	static constexpr GLfloat   SPEED       = 2.5f;
+	static constexpr GLfloat   SENSITIVITY = 0.1f;
+	static constexpr GLfloat   ZOOM        = 45.0f;
 
 	// Private Methods
 	// ---------------
 	// Recalculates the front, right and up vectors from the camera's (updated) Euler Angles
 	void recalculate_vectors();
-
 };

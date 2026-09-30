@@ -1,8 +1,8 @@
 /*
-* Scene_Manager.h
-* This file defines the Scene_Manager class, which is responsible for managing the scene,
-* including the camera and other scene-related objects.
-*/
+ * Scene_Manager.h
+ * This file defines the Scene_Manager class, which is responsible for managing the scene,
+ * including the camera and other scene-related objects.
+ */
 
 #pragma once
 
@@ -33,7 +33,7 @@ public:
 	// --------------
 	// Getters
 	const std::shared_ptr<Camera>& get_camera() const { return camera; }
-	std::shared_ptr<Texture>& get_skybox() { return skybox; }
+	std::shared_ptr<Texture>&      get_skybox() { return skybox; }
 	// Setters
 	void set_camera(std::shared_ptr<Camera> camera) { this->camera = std::move(camera); }
 	void set_skybox(std::shared_ptr<Texture> skybox) { this->skybox = std::move(skybox); }
@@ -50,7 +50,6 @@ public:
 	void clear_skybox();
 
 private:
-	std::shared_ptr<Camera> camera;
+	std::shared_ptr<Camera>  camera;
 	std::shared_ptr<Texture> skybox;
-
 };

@@ -1,8 +1,8 @@
 /*
-* String_Utils.h
-* This file defines the String_Utils class, which provides static utility methods
-* whose functionality revolves around string manipulation and formatting.
-*/
+ * String_Utils.h
+ * This file defines the String_Utils class, which provides static utility methods
+ * whose functionality revolves around string manipulation and formatting.
+ */
 
 #pragma once
 

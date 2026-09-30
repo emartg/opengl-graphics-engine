@@ -1,13 +1,13 @@
 /*
-* DECAHEDRON.h
-* This file defines the vertex data for a simple decahedron (pentagonal bipyramid),
-* both in array and vector form.
-* Vertices are replicated for each face, so that each face can have
-* different normals and texture coordinates.
-* The vertex data is separated into position, normal, and texture coordinate data, but there is also
-* an array and a vector with the interleaved vertex data to test the Shape_Model constructors that take
-* interleaved vertex data directly.
-*/
+ * DECAHEDRON.h
+ * This file defines the vertex data for a simple decahedron (pentagonal bipyramid),
+ * both in array and vector form.
+ * Vertices are replicated for each face, so that each face can have
+ * different normals and texture coordinates.
+ * The vertex data is separated into position, normal, and texture coordinate data, but there is also
+ * an array and a vector with the interleaved vertex data to test the Shape_Model constructors that take
+ * interleaved vertex data directly.
+ */
 
 #pragma once
 
@@ -17,6 +17,8 @@
 
 // Number of vertices and indices in the decahedron (10 triangles x 3 vertices)
 const GLuint decahedron_vertex_count = 30, decahedron_index_count = 30;
+
+// clang-format off
 
 // Decahedron vertex position data (pentagonal bipyramid: top, bottom, 5 base vertices)
 const GLfloat decahedron_positions_array[] = {
@@ -153,19 +155,11 @@ const GLfloat decahedron_vertices_array[] = {
 	0.0f,    0.0f,   1.0f,			0.0f,		-0.707f,	0.707f,			1.0f,	0.0f
 };
 
+// clang-format on
+
 // Decahedron data in vector form
-const std::vector<GLfloat> decahedron_positions_vector{
-	std::begin(decahedron_positions_array), std::end(decahedron_positions_array)
-};
-const std::vector<GLfloat> decahedron_normals_vector{
-	std::begin(decahedron_normals_array), std::end(decahedron_normals_array)
-};
-const std::vector<GLfloat> decahedron_tex_coords_vector{
-	std::begin(decahedron_tex_coords_array), std::end(decahedron_tex_coords_array)
-};
-const std::vector<GLuint> decahedron_indices_vector{
-	std::begin(decahedron_index_array), std::end(decahedron_index_array)
-};
-const std::vector<GLfloat> decahedron_vertices_vector{
-	std::begin(decahedron_vertices_array), std::end(decahedron_vertices_array)
-};
+const std::vector<GLfloat> decahedron_positions_vector{ std::begin(decahedron_positions_array), std::end(decahedron_positions_array) };
+const std::vector<GLfloat> decahedron_normals_vector{ std::begin(decahedron_normals_array), std::end(decahedron_normals_array) };
+const std::vector<GLfloat> decahedron_tex_coords_vector{ std::begin(decahedron_tex_coords_array), std::end(decahedron_tex_coords_array) };
+const std::vector<GLuint>  decahedron_indices_vector{ std::begin(decahedron_index_array), std::end(decahedron_index_array) };
+const std::vector<GLfloat> decahedron_vertices_vector{ std::begin(decahedron_vertices_array), std::end(decahedron_vertices_array) };

@@ -1,41 +1,45 @@
 /*
-* Shader.cpp
-* This file implements the Shader class (a derived class of Node),
-* which is used to read, compile, and link shaders to a shader program.
-* It also provides methods to set uniform variables in the shader program.
-*/
+ * Shader.cpp
+ * This file implements the Shader class (a derived class of Node),
+ * which is used to read, compile, and link shaders to a shader program.
+ * It also provides methods to set uniform variables in the shader program.
+ */
 
 #include "Shader.h"
 
 // Constructors
 // ------------
-Shader::Shader(const std::string& name,
-			   const std::string& vertex_path,
-			   const std::string& fragment_path,
-			   const GLboolean deferred_compilation)
-	: Node(name, Node_Type::SHADER), // set the node type to SHADER
-	shader_program_id{}, // initialize the id to 0
-	vertex_shader_path{ vertex_path },
-	geometry_shader_path{ "" },
-	fragment_shader_path{ fragment_path }
+Shader::Shader(
+    const std::string& name,
+    const std::string& vertex_path,
+    const std::string& fragment_path,
+    const GLboolean    deferred_compilation) :
+    Node(name, Node_Type::SHADER), // set the node type to SHADER
+    shader_program_id{},           // initialize the id to 0
+    vertex_shader_path{ vertex_path },
+    geometry_shader_path{ "" },
+    fragment_shader_path{ fragment_path }
 {
 	// compile the shader if deferred_compilation is set to false
-	if (!deferred_compilation) compile();
+	if (!deferred_compilation)
+		compile();
 }
 
-Shader::Shader(const std::string& name,
-			   const std::string& vertex_path,
-			   const std::string& geometryPath,
-			   const std::string& fragment_path,
-			   const GLboolean deferred_compilation)
-	: Node(name, Node_Type::SHADER), // set the node type to SHADER
-	shader_program_id{}, // initialize the id to 0
-	vertex_shader_path{ vertex_path },
-	geometry_shader_path{ geometryPath },
-	fragment_shader_path{ fragment_path }
+Shader::Shader(
+    const std::string& name,
+    const std::string& vertex_path,
+    const std::string& geometryPath,
+    const std::string& fragment_path,
+    const GLboolean    deferred_compilation) :
+    Node(name, Node_Type::SHADER), // set the node type to SHADER
+    shader_program_id{},           // initialize the id to 0
+    vertex_shader_path{ vertex_path },
+    geometry_shader_path{ geometryPath },
+    fragment_shader_path{ fragment_path }
 {
 	// compile the shader if deferred_compilation is set to false
-	if (!deferred_compilation) compile();
+	if (!deferred_compilation)
+		compile();
 }
 
 // Public Methods
@@ -43,9 +47,9 @@ Shader::Shader(const std::string& name,
 bool Shader::compile()
 {
 	// retrieve the vertex/geometry/fragment shader source code from the file paths
-	std::string vertex_shader_src_code;
-	std::string geometry_shader_src_code;
-	std::string fragment_shader_src_code;
+	std::string   vertex_shader_src_code;
+	std::string   geometry_shader_src_code;
+	std::string   fragment_shader_src_code;
 	std::ifstream vertex_shader_file;
 	std::ifstream geometry_shader_file;
 	std::ifstream fragment_shader_file;
@@ -84,7 +88,7 @@ bool Shader::compile()
 		return false; // if file reading failed, return false
 	}
 	// convert strings to GLchar pointers
-	const GLchar* vertex_shader_code = vertex_shader_src_code.c_str();
+	const GLchar* vertex_shader_code   = vertex_shader_src_code.c_str();
 	const GLchar* geometry_shader_code = nullptr;
 	if (!geometry_shader_path.empty())
 		geometry_shader_code = geometry_shader_src_code.c_str();
@@ -148,8 +152,7 @@ bool Shader::compile()
 		return false;
 	}
 
-	std::cout << "[SUCCESS::SHADER::compile] Shader with name '" << name
-		<< "' compiled and linked successfully" << std::endl;
+	std::cout << "[SUCCESS::SHADER::compile] Shader with name '" << name << "' compiled and linked successfully" << std::endl;
 	return true; // return true if compilation and linking were successful
 }
 
@@ -190,21 +193,19 @@ void Shader::set_vec4(const std::string& name, const glm::vec4& vec) const
 
 void Shader::set_mat3(const std::string& name, const glm::mat3& mat) const
 {
-	glUniformMatrix3fv(glGetUniformLocation(shader_program_id, name.c_str()), 1, GL_FALSE,
-					   glm::value_ptr(mat));
+	glUniformMatrix3fv(glGetUniformLocation(shader_program_id, name.c_str()), 1, GL_FALSE, glm::value_ptr(mat));
 }
 
 void Shader::set_mat4(const std::string& name, const glm::mat4& mat) const
 {
-	glUniformMatrix4fv(glGetUniformLocation(shader_program_id, name.c_str()), 1, GL_FALSE,
-					   glm::value_ptr(mat));
+	glUniformMatrix4fv(glGetUniformLocation(shader_program_id, name.c_str()), 1, GL_FALSE, glm::value_ptr(mat));
 }
 
 // Private Methods
 // ---------------
 bool Shader::check_compilation_linking_errors(GLuint shader, std::string type) const
 {
-	GLint success; // variable to store the success status of the compilation/linking process
+	GLint  success;        // variable to store the success status of the compilation/linking process
 	GLchar info_log[1024]; // buffer to store the information log in case of errors
 
 	if (type != "PROGRAM")
@@ -213,8 +214,7 @@ bool Shader::check_compilation_linking_errors(GLuint shader, std::string type) c
 		if (!success)
 		{ // if compilation failed, retrieve the info log, print it, and return false
 			glGetShaderInfoLog(shader, 1024, NULL, info_log);
-			std::cerr << "[ERROR::SHADER::compile] Shader compilation error of type: " << type << "\n"
-				<< info_log << std::endl;
+			std::cerr << "[ERROR::SHADER::compile] Shader compilation error of type: " << type << "\n" << info_log << std::endl;
 			return false;
 		}
 	}
@@ -224,8 +224,7 @@ bool Shader::check_compilation_linking_errors(GLuint shader, std::string type) c
 		if (!success)
 		{ // if linking the program failed, retrieve the info log, print it, and return false
 			glGetProgramInfoLog(shader, 1024, NULL, info_log);
-			std::cerr << "[ERROR::SHADER::compile] Shader linking error of type: " << type << "\n"
-				<< info_log << std::endl;
+			std::cerr << "[ERROR::SHADER::compile] Shader linking error of type: " << type << "\n" << info_log << std::endl;
 			return false;
 		}
 	}
