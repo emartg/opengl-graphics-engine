@@ -168,14 +168,14 @@ On Ubuntu/Debian, install the toolchain and the dependencies with:
 sudo apt install build-essential clang ninja-build cmake libglfw3-dev libassimp-dev libglm-dev libgl-dev
 ```
 
-The configure, build, and run with the GCC or Clang presets
+Then configure, build, and run with the GCC or Clang presets:
 
 ```bash
 # Configure and build Debug with GCC (use ninja-clang-debug for Clang)
 cmake --preset ninja-gcc-debug
-cmake --build ninja-gcc-debug
+cmake --build --preset ninja-gcc-debug
 
-# # Run (the working directory does not matter)
+# Run (the working directory does not matter)
 ./out/build/ninja-gcc-debug/bin/App
 ```
 
@@ -184,15 +184,15 @@ are only listed on the OS they apply to (Windows presets on Windows, Linux prese
 so VS Code and `cmake --list-presets` only show usable configurations.
 
 From Windows, the Linux build can be tested through WSL2 (Windows Subsystem for Linux):
-install Ubuntu with `wsl --install`, clone the repository inside the WSL file system (e.g., `~/scr`),
+install Ubuntu with `wsl --install`, clone the repository inside the WSL file system (e.g., `~/src`),
 and follow the steps above. WSLg displays the window on the Windows desktop, and the OpenGL context is
-provided by Mesa (hardware-accelerated through the D3D12 backend, or by the `llvmpipe`software renderer).
-VS Code can open the WSL folder directly with the **WSL** extension (`code.` from the WSL terminal).
+provided by Mesa (hardware-accelerated through the D3D12 backend, or by the `llvmpipe` software renderer).
+VS Code can open the WSL folder directly with the **WSL** extension (`code .` from the WSL terminal).
 
 ## Using the Engine from Another CMake Project
 
 The Engine can be consumed by another CMake project (e.g., a simulator that includes this repository as a Git submodule)
-through `add_subdirectory()`. In that case, only the `Core` library is built by default (`ENGINE_BUILD_APP`defaults
+through `add_subdirectory()`. In that case, only the `Core` library is built by default (`ENGINE_BUILD_APP` defaults
 to `OFF` when the Engine is not the top-level project), and the consumer keeps
 its own C++ standard, build type, and output directories.
 
@@ -200,7 +200,7 @@ its own C++ standard, build type, and output directories.
 # Consumer CMakeLists.txt
 add_subdirectory(Engine) # path to the Engine sources (e.g., a Git submodule)
 
-add executable(My_App main.cpp)
+add_executable(My_App main.cpp)
 target_link_libraries(My_App PRIVATE Engine::Core)
 ```
 
@@ -212,7 +212,7 @@ to the Engine root:
 #include "core/camera/Camera.h"
 ```
 
-The Engine root directory is exposed to consumers in the `ENGINE_ROOT_DIR` variable (e.g., locate the Engine's resources).
+The Engine root directory is exposed to consumers in the `ENGINE_ROOT_DIR` variable (e.g., to locate the Engine's resources).
 
 ## Building with CMake Presets from the Command Line
 

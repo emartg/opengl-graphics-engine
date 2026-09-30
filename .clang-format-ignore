@@ -1,0 +1,5 @@
+# Files excluded from clang-format (third-party code, kept as provided by its authors)
+
+external/**
+core/glad.c
+core/stb_image.cpp

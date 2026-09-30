@@ -46,7 +46,7 @@ target_include_directories(App PRIVATE
 )
 
 # Link libraries to the App executable
-target_link_libraries(App PRIVATE Core ${ENGINE_GLFW_TARGET})
+target_link_libraries(App PRIVATE Engine::Core ${ENGINE_GLFW_TARGET})
 target_compile_features(App PRIVATE cxx_std_20)
 
 # Stage the bundled runtime dependencies (DLLs) beside the executable for local runs.

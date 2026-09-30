@@ -84,6 +84,7 @@
       "name": "mingw-gcc-vcpkg-debug",
       "displayName": "MinGW Makefiles GCC + vcpkg Debug (UCRT)",
       "generator": "MinGW Makefiles",
+      "inherits": "windows-only",
       "binaryDir": "${sourceDir}/out/build/mingw-gcc-vcpkg-debug",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",

@@ -71,7 +71,7 @@ cmake --preset ninja-msvc-debug
 cmake --build --preset ninja-msvc-debug
 
 # Run (resources are located automatically, whatever the working directory)
-./out/build/ninja-gcc-debug/bin/App
+./out/build/ninja-msvc-debug/bin/App.exe
 ```
 
 In VS Code, install **CMake Tools** and **C/C++**, select the `Ninja MSVC x64 Debug` or `Ninja MSVC x64 Release` configure preset, configure the project, set `App` as the build target, and use **CMake: Build** or the `Debug App (CMake)` launch configuration. Visual Studio can use the same Ninja configurations through `CMakeSettings.json`, while native Visual Studio or other generators should use their own descriptive build directory. See the [Build Instructions](docs/build_instructions.md) for the complete IDE and CLI workflows.
@@ -115,11 +115,11 @@ and use the GCC or Clang presets (`ninja-gcc-debug`, `ninja-clang-debug`, and th
 sudo apt install build-essential clang ninja-build cmake libglfw3-dev libassimp-dev libglm-dev libgl-dev
 cmake --preset ninja-gcc-debug
 cmake --build --preset ninja-gcc-debug
-cd out/build/ninja-gcc-debug/bin && ./App
+./out/build/ninja-gcc-debug/bin/App
 ```
 
 The Engine can also be consumed by other CMake projects (e.g., as a Git submodule)
-with `add_subdirectory()` and the `Engine:Core` target; ser [Using the Engine from
+with `add_subdirectory()` and the `Engine::Core` target; see [Using the Engine from
 Another CMake Project](docs/build_instructions.md#using-the-engine-from-another-cmake-project).
 
 ---

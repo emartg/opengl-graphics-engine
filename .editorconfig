@@ -1,5 +1,6 @@
-[*]
 root = true
+
+[*]
 charset = utf-8
 indent_style = tab
 indent_size = 4
@@ -7,6 +8,9 @@ tab_width = 4
 insert_final_newline = true
 trim_trailing_whitespace = true
 
+
+# C++ specific settings
+[*.{cpp,hpp,cxx,hxx,cc,h,hh}]
 cpp_indent_braces=false
 cpp_indent_multi_line_relative_to=innermost_parenthesis
 cpp_indent_within_parentheses=indent
@@ -68,3 +72,12 @@ cpp_space_pointer_reference_alignment=left
 cpp_space_around_ternary_operator=insert
 
 cpp_wrap_preserve_blocks=one_liners
+
+# JSON and YAML (e.g., CMake presets, GitHub Actions workflows): YAML does not allow tabs for indentation
+[*.{json,yml,yaml}]
+indent_style = space
+indent_size = 2
+
+# Markdown: two trailing spaces are a hard line break, so they must not be trimmed
+[*.md]
+trim_trailing_whitespace = false
