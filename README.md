@@ -3,6 +3,8 @@
 
 [![Language](https://img.shields.io/badge/C%2B%2B-20-blue.svg)](https://isocpp.org/)
 [![OpenGL](https://img.shields.io/badge/OpenGL-4.5-red.svg)](https://www.opengl.org/)
+[![CI](https://github.com/emartg/opengl-graphics-engine/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/emartg/opengl-graphics-engine/actions/workflows/ci.yml)
+[![CMake](https://img.shields.io/badge/CMake-≥3.21-brightgreen.svg)](https://cmake.org/)
 [![CMake](https://img.shields.io/badge/CMake-≥3.20-brightgreen.svg)](https://cmake.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 

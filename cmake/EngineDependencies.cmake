@@ -130,6 +130,22 @@ if(ENGINE_BUILD_PLATFORM)
     target_compile_features(engine_imgui PUBLIC cxx_std_17)
 endif()
 
+# Copies the bundled runtime dependencies (DLLs) beside the executable of the given target after each build,
+# so that it can be run from the build tree. It only applies to Windows builds with the bundled dependencies;
+# otherwise, the runtime dependencies are found by the system or provided by the package manager.
+# It is a function (functions are global in CMake), so consumers of the Engine can use it for their executables
+function(engine_stage_runtime_dependencies target)
+    if(WIN32 AND ENGINE_USE_BUNDLED_DEPS)
+        file(GLOB _engine_runtime_dlls CONFIGURE_DEPENDS "${ENGINE_ROOT_DIR}/external/dlls/*.dll")
+        if(_engine_runtime_dlls)
+            add_custom_command(TARGET ${target} POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different ${_engine_runtime_dlls} "$<TARGET_FILE_DIR:${target}>"
+                COMMENT "Copying the bundled runtime dependencies beside ${target}"
+            )
+        endif()
+    endif()
+endfunction()
+
 set(ENGINE_GLFW_TARGET "${_engine_glfw_target}" CACHE INTERNAL "Resolved GLFW target")
 set(ENGINE_OPENGL_TARGET "${_engine_opengl_target}" CACHE INTERNAL "Resolved OpenGL target")
 set(ENGINE_ASSIMP_TARGET "${_engine_assimp_target}" CACHE INTERNAL "Resolved Assimp target")

@@ -1,0 +1,118 @@
+# Continuous integration of the Engine: builds the Core, Platform, and App on Linux (GCC and Clang)
+# and Windows (MSVC), runs the smoke tests on Linux with a virtual display and Mesa's software
+# OpenGL 4.5 renderer, builds and runs the consumer test, and checks the code formatting
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# Cancel the previous runs of the same branch or pull request when a new commit is pushed
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  # Code formatting with the same clang-format version used to format the repository
+  format:
+    name: Format (clang-format 23)
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Install clang-format
+        run: pipx install clang-format==23.1.1
+
+      - name: Check the formatting
+        run: |
+          git ls-files 'app/*.cpp' 'app/*.h' 'core/*.c' 'core/*.cpp' 'core/*.h' \
+                       'platform/*.cpp' 'platform/*.h' 'tests/*.cpp' 'tests/*.h' \
+            | grep -v -x -e 'core/glad.c' -e 'core/stb_image.cpp' \
+            | xargs clang-format --style=file --dry-run --Werror
+
+  # Linux builds with the system packages, and smoke test of the App
+  linux:
+    name: Linux (${{ matrix.preset }})
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        preset: [ninja-gcc-debug, ninja-clang-release]
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Install the dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            ninja-build libglfw3-dev libassimp-dev libglm-dev libgl-dev \
+            xvfb libgl1-mesa-dri mesa-utils
+
+      - name: Configure
+        run: cmake --preset ${{ matrix.preset }} -DENGINE_BUILD_TESTS=ON
+
+      - name: Build
+        run: cmake --build --preset ${{ matrix.preset }}
+
+      - name: Show the OpenGL renderer of the virtual display
+        run: xvfb-run -a glxinfo -B
+
+      - name: Run the smoke test
+        run: xvfb-run -a -s "-screen 0 1600x1000x24" ctest --test-dir out/build/${{ matrix.preset }} --output-on-failure
+
+  # Standalone project consuming the Engine through add_subdirectory() (as the X-ray simulator does)
+  consumer-linux:
+    name: Consumer test (Linux)
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Install the dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            ninja-build libglfw3-dev libassimp-dev libglm-dev libgl-dev \
+            xvfb libgl1-mesa-dri
+
+      - name: Configure
+        run: cmake -S tests/consumer -B out/build/consumer -G Ninja -DCMAKE_BUILD_TYPE=Debug -DENGINE_USE_BUNDLED_DEPS=OFF
+
+      - name: Build
+        run: cmake --build out/build/consumer
+
+      - name: Run the consumer test
+        run: xvfb-run -a -s "-screen 0 1600x1000x24" ctest --test-dir out/build/consumer --output-on-failure
+
+  # Windows build with MSVC and the bundled dependencies (build only: the runners have no OpenGL 4.5 support)
+  windows-msvc:
+    name: Windows (ninja-msvc-debug)
+    runs-on: windows-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Set up the MSVC developer environment
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Configure
+        # the compilers are set explicitly, since the runners also provide MinGW's GCC in the PATH
+        run: cmake --preset ninja-msvc-debug -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl
+
+      - name: Build
+        run: cmake --build --preset ninja-msvc-debug
+
+      - name: Build the consumer test
+        run: |
+          cmake -S tests/consumer -B out/build/consumer -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl -DENGINE_USE_BUNDLED_DEPS=ON
+          cmake --build out/build/consumer

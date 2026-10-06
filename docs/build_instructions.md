@@ -301,6 +301,47 @@ ctest --test-dir out/build/ninja-gcc-debug --output-on-failure
 
 On Windows, use the corresponding preset (e.g., `ninja-msvc-debug`). Visual Studio generators are multi-configuration, so they also need the configuration: `ctest --test-dir out/build/vs2026-msvc-debug -C Debug --output-on-failure`. The smoke test opens a window, so it requires a display with OpenGL 4.5 support; on a headless Linux machine it can run in a virtual X server with Mesa's software renderer (e.g., `xvfb-run -a ctest --test-dir out/build/ninja-gcc-debug --output-on-failure`).
 
+## Continuous Integration
+
+Every push to `main` and every pull request runs the GitHub Actions workflow in `.github/workflows/ci.yml` (it can also be started manually from the **Actions** tab). Its jobs run in parallel:
+
+- **Format:** checks the formatting of every C++ source file with clang-format 23.1.1, the version used to format the repository (`clang-format --style=file --dry-run --Werror`).
+- **Linux:** configures and builds the `ninja-gcc-debug` and `ninja-clang-release` presets with the system packages, and runs the smoke test in a virtual X server (Xvfb) with Mesa's `llvmpipe` software renderer (OpenGL 4.5).
+- **Consumer test (Linux):** builds and runs `tests/consumer`, a standalone project that consumes the Engine with `add_subdirectory()` and links `Engine::Platform` (as the X-ray simulator does), and checks that the sample App is not built for consumers.
+- **Windows:** configures and builds the `ninja-msvc-debug` preset with MSVC and the bundled dependencies, and builds the consumer test. The smoke tests do not run on Windows, since the GitHub-hosted Windows runners provide no OpenGL 4.5 driver.
+
+The consumer test can also be run locally. It is a separate CMake project, so the compiler (and, for MinGW, the vcpkg toolchain) must be selected explicitly, as the presets do for the Engine. Each compiler needs its own build directory: delete a directory (or configure it with `cmake --fresh`) before reusing it with another compiler.
+
+On Linux:
+
+```bash
+cmake -S tests/consumer -B out/build/consumer-gcc -G Ninja -DCMAKE_BUILD_TYPE=Debug -DENGINE_USE_BUNDLED_DEPS=OFF
+cmake --build out/build/consumer-gcc
+ctest --test-dir out/build/consumer-gcc --output-on-failure
+```
+
+On Windows with MSVC and the bundled dependencies, from a Visual Studio Developer PowerShell (so that `cl.exe` is available; otherwise CMake may select another compiler found in the `PATH`, such as MinGW's GCC):
+
+```powershell
+cmake -S tests/consumer -B out/build/consumer-msvc -G Ninja -DCMAKE_BUILD_TYPE=Debug `
+  -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl
+cmake --build out/build/consumer-msvc
+ctest --test-dir out/build/consumer-msvc --output-on-failure
+```
+
+On Windows with MinGW and vcpkg, from an ordinary PowerShell (with the same environment as the `mingw-gcc-vcpkg-*` presets):
+
+```powershell
+cmake -S tests/consumer -B out/build/consumer-mingw -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Debug `
+  -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ `
+  -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" `
+  -DVCPKG_TARGET_TRIPLET=x64-mingw-dynamic -DENGINE_USE_BUNDLED_DEPS=OFF
+cmake --build out/build/consumer-mingw
+ctest --test-dir out/build/consumer-mingw --output-on-failure
+```
+
+Applications that consume the Engine can call `engine_stage_runtime_dependencies(<target>)` (defined in `cmake/EngineDependencies.cmake`) to copy the bundled runtime DLLs beside their executable on Windows, as the App and the consumer test do.
+
 ## Clean Build
 
 To clean all generated files:
