@@ -1,7 +1,7 @@
 # Continuous integration of the Engine: builds the Core, Platform, and App on Linux (GCC and Clang)
-# and Windows (MSVC, and MinGW's GCC with vcpkg), runs the smoke tests on Linux with a virtual
-# display and Mesa's software OpenGL 4.5 renderer, builds and runs the consumer test, and checks
-# the code formatting
+# and Windows (MSVC, and MinGW's GCC with vcpkg), runs the unit tests on every platform and the smoke
+# tests on Linux with a virtual display and Mesa's software OpenGL 4.5 renderer, builds and runs the
+# consumer test, and checks the code formatting
 
 name: CI
 
@@ -38,7 +38,7 @@ jobs:
             | grep -v -x -e 'core/glad.c' -e 'core/stb_image.cpp' \
             | xargs clang-format --style=file --dry-run --Werror
 
-  # Linux builds with the system packages, and smoke test of the App
+  # Linux builds with the system packages, unit tests, and smoke test of the Ap
   linux:
     name: Linux (${{ matrix.preset }})
     runs-on: ubuntu-24.04
@@ -61,12 +61,12 @@ jobs:
         run: cmake --preset ${{ matrix.preset }} -DENGINE_BUILD_TESTS=ON
 
       - name: Build
-        run: cmake --build --preset ${{ matrix.preset }}
+        run: cmake --build --preset ${{ matrix.preset }} --target App Engine_Unit_Tests
 
       - name: Show the OpenGL renderer of the virtual display
         run: xvfb-run -a glxinfo -B
 
-      - name: Run the smoke test
+      - name: Run the unit and smoke tests
         run: xvfb-run -a -s "-screen 0 1600x1000x24" ctest --test-dir out/build/${{ matrix.preset }} --output-on-failure
 
   # Standalone project consuming the Engine through add_subdirectory()
@@ -93,7 +93,8 @@ jobs:
       - name: Run the consumer test
         run: xvfb-run -a -s "-screen 0 1600x1000x24" ctest --test-dir out/build/consumer --output-on-failure
 
-  # Windows build with MSVC and the bundled dependencies (build only: the runners have no OpenGL 4.5 support)
+  # Windows build with MSVC and the bundled dependencies, and unit tests
+  # (the smoke tests do not run: the runners have no OpenGL 4.5 support)
   windows-msvc:
     name: Windows (ninja-msvc-debug)
     runs-on: windows-latest
@@ -108,10 +109,13 @@ jobs:
 
       - name: Configure
         # the compilers are set explicitly, since the runners also provide MinGW's GCC in the PATH
-        run: cmake --preset ninja-msvc-debug -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl
+        run: cmake --preset ninja-msvc-debug -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl -DENGINE_BUILD_TESTS=ON
 
       - name: Build
-        run: cmake --build --preset ninja-msvc-debug
+        run: cmake --build --preset ninja-msvc-debug --target App Engine_Unit_Tests
+
+      - name: Run the unit tests
+        run: ctest --test-dir out/build/ninja-msvc-debug -L unit --output-on-failure
 
       - name: Build the consumer test
         run: |
@@ -120,7 +124,7 @@ jobs:
 
   # Windows build with MinGW's GCC and the dependencies built by vcpkg (manifest mode, see vcpkg.json).
   # The vcpkg packages are stored in a binary cache, so they are only built from source when the
-  # manifest or the compiler changes (build only, as the MSVC job)
+  # manifest or the compiler changes (unit tests only, as in the MSVC job)
   windows-mingw:
     name: Windows (mingw-gcc-vcpkg-release)
     runs-on: windows-latest
@@ -168,7 +172,7 @@ jobs:
 
       - name: Configure
         # vcpkg installs the dependencies of the manifest during the configuration (from the cache when available)
-        run: cmake --preset mingw-gcc-vcpkg-release
+        run: cmake --preset mingw-gcc-vcpkg-release -DENGINE_BUILD_TESTS=ON
 
       - name: Save the vcpkg binary cache
         # saved even if a later step fails, so that the dependencies are not built again on the next run
@@ -179,7 +183,10 @@ jobs:
           key: vcpkg-${{ env.VCPKG_TRIPLET }}-gcc-${{ steps.mingw.outputs.gcc-version }}-${{ hashFiles('vcpkg.json') }}
 
       - name: Build
-        run: cmake --build --preset mingw-gcc-vcpkg-release --parallel
+        run: cmake --build --preset mingw-gcc-vcpkg-release --parallel --target App Engine_Unit_Tests
+
+      - name: Run the unit tests
+        run: ctest --test-dir out/build/mingw-gcc-vcpkg-release -L unit --output-on-failure
 
       - name: Build the consumer test
         # the consumer test is a separate project, so it uses the manifest and the packages installed for the Engine

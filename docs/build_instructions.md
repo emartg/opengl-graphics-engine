@@ -286,21 +286,32 @@ For a Debug build, replace `Release` with `Debug` and use a separate directory, 
 
 Do not reuse a build directory previously configured with MinGW, Visual Studio, or another generator. Use a new directory or remove the old CMake cache first.
 
-## Command-Line Options and Smoke Test
+## Command-Line Options and Tests
 
 The App accepts the following command-line options:
 
 - `--frames N` (or `--frames=N`): render `N` frames of the example scene and exit. The main loop does not wait for user input in this mode, so it can run unattended.
 - `-h`, `--help`: print the usage and exit.
 
-With the `ENGINE_BUILD_TESTS` option enabled, the build registers a smoke test in CTest that runs `App --frames 120`. The test fails if the App exits with an error code (e.g., the OpenGL 4.5 context cannot be created, or a built-in shader fails to compile) or prints any `[ERROR` message:
+With the `ENGINE_BUILD_TESTS` option enabled, the build registers two kinds of tests in CTest:
+
+- **Unit tests** (label `unit`): the `Engine_Unit_Tests` executable, written with [GoogleTest](https://github.com/google/googletest), tests the Core classes that do not require an OpenGL context (e.g., `String_Utils`, `File_System_Utils`, and `Random`), so they run on any machine. GoogleTest is taken from an installed package if one is found (e.g., `libgtest-dev` on Linux), and is otherwise downloaded (pinned version and hash) during the configuration.
+- **Smoke test** (label `smoke`): runs `App --frames 120`, and fails if the App exits with an error code (e.g., the OpenGL 4.5 context cannot be created, or a built-in shader fails to compile) or prints any `[ERROR` message.
+
+The build presets only build the App, so the unit test executable must be requested explicitly:
 
 ```bash
 # Configure with tests enabled, build, and run the tests (Linux example)
 cmake --preset ninja-gcc-debug -DENGINE_BUILD_TESTS=ON
-cmake --build --preset ninja-gcc-debug
+cmake --build --preset ninja-gcc-debug --target App Engine_Unit_Tests
 ctest --test-dir out/build/ninja-gcc-debug --output-on-failure
+
+# Run only the unit tests, or only the smoke test
+ctest --test-dir out/build/ninja-gcc-debug -L unit --output-on-failure
+ctest --test-dir out/build/ninja-gcc-debug -L smoke --output-on-failure
 ```
+
+The unit test executable can also be run directly (e.g., `out/build/ninja-gcc-debug/bin/Engine_Unit_Tests`), which accepts GoogleTest's options, such as `--gtest_filter=StringUtilsTest.*`.
 
 On Windows, use the corresponding preset (e.g., `ninja-msvc-debug`). Visual Studio generators are multi-configuration, so they also need the configuration: `ctest --test-dir out/build/vs2026-msvc-debug -C Debug --output-on-failure`. The smoke test opens a window, so it requires a display with OpenGL 4.5 support; on a headless Linux machine it can run in a virtual X server with Mesa's software renderer (e.g., `xvfb-run -a ctest --test-dir out/build/ninja-gcc-debug --output-on-failure`).
 
@@ -309,10 +320,10 @@ On Windows, use the corresponding preset (e.g., `ninja-msvc-debug`). Visual Stud
 Every push to `main` and every pull request runs the GitHub Actions workflow in `.github/workflows/ci.yml` (it can also be started manually from the **Actions** tab). Its jobs run in parallel:
 
 - **Format:** checks the formatting of every C++ source file with clang-format 23.1.1, the version used to format the repository (`clang-format --style=file --dry-run --Werror`).
-- **Linux:** configures and builds the `ninja-gcc-debug` and `ninja-clang-release` presets with the system packages, and runs the smoke test in a virtual X server (Xvfb) with Mesa's `llvmpipe` software renderer (OpenGL 4.5).
+- **Linux:** configures and builds the `ninja-gcc-debug` and `ninja-clang-release` presets with the system packages, and runs the unit tests and the smoke test in a virtual X server (Xvfb) with Mesa's `llvmpipe` software renderer (OpenGL 4.5).
 - **Consumer test (Linux):** builds and runs `tests/consumer`, a standalone project that consumes the Engine with `add_subdirectory()` and links `Engine::Platform` (as the X-ray simulator does), and checks that the sample App is not built for consumers.
-- **Windows:** configures and builds the `ninja-msvc-debug` preset with MSVC and the bundled dependencies, and builds the consumer test. The smoke tests do not run on Windows, since the GitHub-hosted Windows runners provide no OpenGL 4.5 driver.
-- **Windows (MinGW):** configures and builds the `mingw-gcc-vcpkg-release` preset with MinGW's GCC and the dependencies of `vcpkg.json`, and builds the consumer test. vcpkg is checked out at the manifest's `builtin-baseline`, and the built packages are kept in the GitHub Actions cache, so they are only rebuilt when the manifest or the compiler version changes.
+- **Windows:** configures and builds the `ninja-msvc-debug` preset with MSVC and the bundled dependencies, runs the unit tests, and builds the consumer test. The smoke tests do not run on Windows, since the GitHub-hosted Windows runners provide no OpenGL 4.5 driver.
+- **Windows (MinGW):** configures and builds the `mingw-gcc-vcpkg-release` preset with MinGW's GCC and the dependencies of `vcpkg.json`, runs the unit tests, and builds the consumer test. vcpkg is checked out at the manifest's `builtin-baseline`, and the built packages are kept in the GitHub Actions cache, so they are only rebuilt when the manifest or the compiler version changes.
 
 The consumer test can also be run locally. It is a separate CMake project, so the compiler (and, for MinGW, the vcpkg toolchain) must be selected explicitly, as the presets do for the Engine. Each compiler needs its own build directory: delete a directory (or configure it with `cmake --fresh`) before reusing it with another compiler.
 

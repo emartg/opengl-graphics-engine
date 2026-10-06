@@ -45,6 +45,7 @@ if(ENGINE_BUILD_TESTS)
 	set_tests_properties(App_Smoke_Test PROPERTIES
 		FAIL_REGULAR_EXPRESSION "\\[ERROR"
 		TIMEOUT 300
+		LABELS smoke
 	)
 endif()
 
