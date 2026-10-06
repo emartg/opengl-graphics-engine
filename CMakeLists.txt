@@ -30,6 +30,11 @@ endif()
 
 include(GNUInstallDirs)
 
+# Enable testing with CTest (the tests are registered by the subdirectories, e.g., the App smoke test)
+if(ENGINE_BUILD_TESTS)
+	enable_testing()
+endif()
+
 # Gather every binary in the same directories (only when Engine is the top-level project
 # so that consumers decide where their own binaries are placed)
 if (PROJECT_IS_TOP_LEVEL)

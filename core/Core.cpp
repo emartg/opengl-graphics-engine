@@ -235,20 +235,34 @@ bool Core::init()
 	return true;
 }
 
-void Core::run()
+void Core::run(std::uint64_t max_frames)
 {
 	std::cout << "[INFO::CORE::run] Starting main loop..." << std::endl;
+	if (max_frames > 0)
+		std::cout << "[INFO::CORE::run] The main loop will stop after " << max_frames << " frames" << std::endl;
+
+	std::uint64_t frame_count{ 0 }; // number of frames rendered so far
 	while (!renderer->should_close())
 	{
-		// always wait for events first: the renderer fully blocks until an event occurs,
+		// without a frame limit, wait for events first: the renderer fully blocks until an event occurs,
 		// and when that happens, the renderer processes frames but throttles the frame rate,
-		// reducing CPU / GPU usage and improving performance
-		renderer->wait_for_events();
+		// reducing CPU / GPU usage and improving performance.
+		// With a frame limit (e.g., automated tests without user input), never block, so that frames keep
+		// being rendered (the events are still polled at the start of every frame)
+		if (max_frames == 0)
+			renderer->wait_for_events();
 
 		renderer->frame_start_config(); // start of the frame configuration
 		renderer->render_scene();       // composite the scene
 		renderer->render_gui();         // render the GUI
 		renderer->frame_end_config();   // end of the frame configuration
+
+		// stop once the requested number of frames has been rendered (if there is a frame limit)
+		if (max_frames > 0 && ++frame_count >= max_frames)
+		{
+			std::cout << "[INFO::CORE::run] Frame limit reached (" << frame_count << " frames)" << std::endl;
+			break;
+		}
 	}
 }
 

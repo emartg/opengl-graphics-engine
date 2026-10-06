@@ -30,14 +30,15 @@ A **modular, extensible 3D graphics engine** built from scratch with OpenGL 4.5.
 
 ## Architecture Overview
 
-The engine is split into two CMake modules:
+The engine is split into three CMake modules:
 
 | Module | Description |
 | ------ | ----------- |
 | **`core`** | Static library containing all rendering logic, scene management, shaders, and resource handling. Dependencies: OpenGL, GLAD, GLM, stb_image, Assimp. |
-| **`app`** | Executable that provides the window, input handling, and GUI (GLFW, ImGui). It instantiates the `core` and demonstrates its usage. |
+| **`platform`** | Static library providing the reusable window, input, and ImGui integration layer. It depends on `core`, GLFW, ImGui, and ImGuiFileDialog. |
+| **`app`** | Executable containing the scene editor and example scenes. It depends on `platform` (and receives `core` transitively). |
 
-This separation allows the `core` to be reused in other projects without pulling GUI or windowing dependencies.
+This separation allows the `core` to be reused in other projects without pulling GUI or windowing dependencies, while applications that need a window can reuse `platform`.
 
 For a detailed class diagram and pipeline description, see the [Architecture Guide](docs/architecture.md).
 

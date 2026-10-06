@@ -5,7 +5,7 @@ This document provides detailed steps to compile and run the OpenGL Graphics Eng
 
 ## Prerequisites
 
-- **Operating System:** Windows (tested on Windows 11) or Linux (tested on Ubuntu 24.04). macOS is not supported, since it only provides OpenGL up to 4.1.
+- **Operating System:** Windows (tested on Windows 11) or Linux (tested on Ubuntu 26.04). macOS is not supported, since it only provides OpenGL up to 4.1.
 - **GPU and drivers:** OpenGL 4.5 core profile support (any NVIDIA, AMD, or Intel GPU with current drivers on Windows or Linux, or a recent Mesa on Linux, including the `llvmpipe` software renderer).
 - **Compiler:** MSVC from Visual Studio 2022/2026, or GCC from a MinGW installation on Windows; GCC or Clang on Linux.
 - **CMake:** ≥ 3.21 (≥ 3.25 to use the presets in `CMakePresets.json`).
@@ -282,6 +282,24 @@ out\build\manual-ninja-msvc-release\bin\App.exe
 For a Debug build, replace `Release` with `Debug` and use a separate directory, for example `out/build/manual-ninja-msvc-debug`. With Ninja, `--config Release` is optional because Ninja is a single-configuration generator; `CMAKE_BUILD_TYPE` selects the configuration during configure.
 
 Do not reuse a build directory previously configured with MinGW, Visual Studio, or another generator. Use a new directory or remove the old CMake cache first.
+
+## Command-Line Options and Smoke Test
+
+The App accepts the following command-line options:
+
+- `--frames N` (or `--frames=N`): render `N` frames of the example scene and exit. The main loop does not wait for user input in this mode, so it can run unattended.
+- `-h`, `--help`: print the usage and exit.
+
+With the `ENGINE_BUILD_TESTS` option enabled, the build registers a smoke test in CTest that runs `App --frames 120`. The test fails if the App exits with an error code (e.g., the OpenGL 4.5 context cannot be created, or a built-in shader fails to compile) or prints any `[ERROR` message:
+
+```bash
+# Configure with tests enabled, build, and run the tests (Linux example)
+cmake --preset ninja-gcc-debug -DENGINE_BUILD_TESTS=ON
+cmake --build --preset ninja-gcc-debug
+ctest --test-dir out/build/ninja-gcc-debug --output-on-failure
+```
+
+On Windows, use the corresponding preset (e.g., `ninja-msvc-debug`). Visual Studio generators are multi-configuration, so they also need the configuration: `ctest --test-dir out/build/vs2026-msvc-debug -C Debug --output-on-failure`. The smoke test opens a window, so it requires a display with OpenGL 4.5 support; on a headless Linux machine it can run in a virtual X server with Mesa's software renderer (e.g., `xvfb-run -a ctest --test-dir out/build/ninja-gcc-debug --output-on-failure`).
 
 ## Clean Build
 

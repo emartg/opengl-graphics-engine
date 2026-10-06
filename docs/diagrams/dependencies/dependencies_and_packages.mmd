@@ -1,0 +1,53 @@
+flowchart LR
+    subgraph Engine["Engine project"]
+        direction TB
+        Core["<b>Engine::Core</b><br/><i>Static library</i><br/><br/>Scene graph<br/>Rendering and resources<br/>Math and geometry"]
+        Platform["<b>Engine::Platform</b><br/><i>Static library</i><br/><br/>Window and OpenGL context<br/>Input callbacks<br/>ImGui integration"]
+        App["<b>App</b><br/><i>Executable</i><br/><br/>Scene editor<br/>Example and test scenes"]
+
+        Core -->|target dependency| Platform
+        Platform -->|target dependency| App
+    end
+
+    subgraph CoreDeps["Core dependencies"]
+        direction TB
+        OpenGL["OpenGL 4.5"]
+        GLM["GLM"]
+        Assimp["Assimp"]
+        GLAD["GLAD"]
+        STB["stb_image"]
+    end
+
+    subgraph PlatformDeps["Platform dependencies"]
+        direction TB
+        GLFW["GLFW"]
+        ImGui["Dear ImGui"]
+        FileDialog["ImGuiFileDialog"]
+    end
+
+    OpenGL -->|links to| Core
+    GLM -->|links to| Core
+    Assimp -->|links to| Core
+    GLAD -->|links to| Core
+    STB -->|links to| Core
+
+    GLFW -->|links to| Platform
+    ImGui -->|links to| Platform
+    FileDialog -->|links to| Platform
+
+    subgraph Legend["Legend"]
+        direction TB
+        Target["Target dependency"]
+        External["External library"]
+    end
+
+    classDef module fill:#d9eaf7,stroke:#1f4e79,stroke-width:2px,color:#111;
+    classDef coreDependency fill:#e8f4e8,stroke:#388e3c,stroke-width:2px,color:#111;
+    classDef platformDependency fill:#fff1dc,stroke:#d97706,stroke-width:2px,color:#111;
+    classDef legendTarget fill:#d9eaf7,stroke:#1f4e79,stroke-width:2px,color:#111;
+    classDef legendExternal fill:#e8f4e8,stroke:#388e3c,stroke-width:2px,color:#111;
+    class Core,Platform,App module;
+    class OpenGL,GLM,Assimp,GLAD,STB coreDependency;
+    class GLFW,ImGui,FileDialog platformDependency;
+    class Target legendTarget;
+    class External legendExternal;

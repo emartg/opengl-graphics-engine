@@ -44,5 +44,16 @@ if(WIN32 AND ENGINE_USE_BUNDLED_DEPS)
 	install(FILES ${ENGINE_RUNTIME_DLLS} DESTINATION ${CMAKE_INSTALL_BINDIR})
 endif()
 
+# Smoke test: render a fixed number of frames of the example scene and exit.
+# It fails if the App exits with an error code or prints an error message, and it requires a display
+# with OpenGL 4.5 support (e.g., a virtual X server with Mesa's llvmpipe software renderer on Linux)
+if(ENGINE_BUILD_TESTS)
+	add_test(NAME App_Smoke_Test COMMAND App --frames 120)
+	set_tests_properties(App_Smoke_Test PROPERTIES
+		FAIL_REGULAR_EXPRESSION "\\[ERROR"
+		TIMEOUT 300
+	)
+endif()
+
 install(TARGETS App RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 install(DIRECTORY ${ENGINE_ROOT_DIR}/resources/ DESTINATION ${CMAKE_INSTALL_DATADIR}/EngineProject/resources)

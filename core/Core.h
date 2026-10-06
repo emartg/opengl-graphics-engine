@@ -14,6 +14,7 @@
 #include <vector>
 #include <memory>
 #include <filesystem>
+#include <cstdint>
 
 #include <glad/glad.h> // holds all OpenGL type declarations
 #include <stb_image.h>
@@ -121,8 +122,10 @@ public:
 	// Initializes the core engine (OpenGL, window, GUI, etc.), locates the resources directory,
 	// and compiles the built-in shaders required by the renderer
 	bool init();
-	// Runs the main loop of the engine until the renderer signals that the window should close
-	void run();
+	// Runs the main loop of the engine until the renderer signals that the window should close or,
+	// if max_frames is greater than 0, until that number of frames has been rendered (e.g., for automated
+	// tests without user input, in which case the loop does not wait for events between frames)
+	void run(std::uint64_t max_frames = 0);
 	// Frees resources in the correct order and shuts down the engine, destroying the Core instance
 	void shutdown();
 

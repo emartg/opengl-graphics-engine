@@ -12,11 +12,17 @@
  * - GLFW_Renderer is used as the renderer implementation for the Core engine.
  * - The application uses the Core library to manage nodes, input, and scene
  * management.
+ * Command-line options:
+ * - --frames N: render N frames and exit (e.g., for automated smoke tests).
+ * - --help: print the usage and exit.
  */
 
+#include <charconv>
+#include <cstdint>
 #include <filesystem>
 #include <memory>
 #include <sstream>
+#include <string_view>
 #include <utility>
 
 #include "CUBE.h"
@@ -39,10 +45,25 @@
 
 #include "platform/renderer/GLFW_Renderer.h"
 
+// Command-line options of the application
+struct App_Options
+{
+	std::uint64_t max_frames{ 0 };    // number of frames to render before exiting (0 means no limit)
+	bool          show_help{ false }; // whether the usage was requested
+};
+
+// Parses the command-line arguments into the given options.
+// Returns true if the arguments are valid, false otherwise (with error messages)
+bool parse_command_line(int argc, char** argv, App_Options& options);
+
+// Prints the command-line usage of the application
+void print_usage(const char* program_name);
+
 // Initializes the Core engine (which also compiles its built-in shaders) and
-// sets up the renderer. Returns true if initialization was successful, false
-// otherwise (with error messages)
-bool initialize_core(Core* engine);
+// sets up the renderer. If interactive is true, waits for the user to press
+// Enter before exiting when the initialization fails.
+// Returns true if initialization was successful, false otherwise (with error messages)
+bool initialize_core(Core* engine, bool interactive);
 
 // Sets up an example scene with a camera, lights, a shape, an Assimp model, and
 // a skybox
@@ -60,12 +81,27 @@ void setup_test_scene_reflective_stress(Core* engine, int num_shapes = 100);
 
 int main(int argc, char** argv)
 {
+	// parse the command-line options
+	App_Options options;
+	if (!parse_command_line(argc, argv, options))
+	{ // if the arguments are not valid, print the usage and exit with an error code
+		print_usage(argv[0]);
+		return -1;
+	}
+	if (options.show_help)
+	{ // if the usage was requested, print it and exit
+		print_usage(argv[0]);
+		return 0;
+	}
+
 	std::cout << "[INFO::main] Starting the application..." << std::endl;
 
 	Core* engine = Core::get_instance(); // retrieve the singleton instance of
 										 // the Core class
 
-	if (!initialize_core(engine))
+	// the application is interactive unless it renders a fixed number of frames (e.g., automated tests)
+	const bool interactive = options.max_frames == 0;
+	if (!initialize_core(engine, interactive))
 	{ // if initialization failed, exit with an error code
 		return -1;
 	}
@@ -82,8 +118,8 @@ int main(int argc, char** argv)
 	// setup_test_scene_geometric_stress_2(engine);
 	// setup_test_scene_reflective_stress(engine);
 
-	engine->run(); // run the main loop of the engine, which will render the
-				   // scene and handle events
+	engine->run(options.max_frames); // run the main loop of the engine, which will render the
+									 // scene and handle events
 
 	engine->shutdown(); // clean up resources in the correct order and shut down
 						// the engine
@@ -93,7 +129,62 @@ int main(int argc, char** argv)
 	return 0;
 }
 
-bool initialize_core(Core* engine)
+bool parse_command_line(int argc, char** argv, App_Options& options)
+{
+	for (int i{ 1 }; i < argc; i++)
+	{ // iterate through the arguments (the first one is the program name)
+		std::string_view argument{ argv[i] };
+		std::string_view value;
+
+		if (argument == "--help" || argument == "-h")
+		{ // usage requested
+			options.show_help = true;
+			continue;
+		}
+		else if (argument == "--frames")
+		{ // number of frames as the next argument (e.g., "--frames 120")
+			if (i + 1 >= argc)
+			{ // if there is no next argument, print an error message and return false
+				std::cerr << "[ERROR::main::parse_command_line] Missing value for --frames" << std::endl;
+				return false;
+			}
+			value = argv[++i];
+		}
+		else if (argument.starts_with("--frames="))
+		{ // number of frames in the same argument (e.g., "--frames=120")
+			value = argument.substr(std::string_view{ "--frames=" }.size());
+		}
+		else
+		{ // if the argument is unknown, print an error message and return false
+			std::cerr << "[ERROR::main::parse_command_line] Unknown argument: " << argument << std::endl;
+			return false;
+		}
+
+		// convert the value to a positive integer (the whole value must be a number)
+		std::uint64_t frames{ 0 };
+		auto [end, error] = std::from_chars(value.data(), value.data() + value.size(), frames);
+		if (error != std::errc{} || end != value.data() + value.size() || frames == 0)
+		{ // if the value is not a positive integer, print an error message and return false
+			std::cerr << "[ERROR::main::parse_command_line] Invalid number of frames: '" << value << "' (expected a positive integer)"
+					  << std::endl;
+			return false;
+		}
+		options.max_frames = frames;
+	}
+
+	return true;
+}
+
+void print_usage(const char* program_name)
+{
+	std::cout << "Usage: " << program_name << " [options]\n"
+			  << "Options:\n"
+			  << "  --frames N, --frames=N  Render N frames and exit (e.g., for automated smoke tests)\n"
+			  << "  -h, --help              Print this help and exit" << std::endl;
+}
+
+
+bool initialize_core(Core* engine, bool interactive)
 {
 	// create a GLFW_Renderer instance with the application's GUI, and set it as the renderer for the engine
 	GLFW_Renderer* renderer = new GLFW_Renderer();
@@ -110,9 +201,11 @@ bool initialize_core(Core* engine)
 		// the engine, then prompt the user to exit
 		std::cerr << "[ERROR::main] Failed to initialize the Core engine" << std::endl;
 		engine->shutdown();
-		// wait until the user presses a key before exiting
-		std::cout << "[INFO::main] Enter any key and press Enter to exit" << std::endl;
-		std::cin.get();
+		if (interactive)
+		{ // wait until the user presses a key before exiting
+			std::cout << "[INFO::main] Enter any key and press Enter to exit" << std::endl;
+			std::cin.get();
+		}
 		return false; // indicate that the program should exit with an error
 					  // code
 	}
