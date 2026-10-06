@@ -24,7 +24,8 @@ For OpenGL (GLAD), `stb_image`, and ImGui, the required files are either generat
 
 The default MSVC presets use the repository's matching dependencies in `external/`. The `mingw-gcc-vcpkg-*` presets use GCC and the `x64-mingw-dynamic` vcpkg triplet. vcpkg is a package manager and CMake toolchain integration; it is not a compiler.
 
-For MinGW, install MinGW with GCC and install the dependencies into the same vcpkg installation:
+```markdown
+For MinGW, install MinGW with GCC and clone vcpkg. The dependencies are declared in the `vcpkg.json` manifest, so vcpkg builds and installs them into the build directory during the first configuration (they are not installed manually). The manifest's `builtin-baseline` pins the versions of the packages, so the vcpkg clone must contain that commit (update it with `git -C $env:VCPKG_ROOT pull` and run `bootstrap-vcpkg.bat` again if CMake reports that the baseline cannot be found).
 
 ```powershell
 vcpkg install glfw3:x64-mingw-dynamic assimp:x64-mingw-dynamic glm:x64-mingw-dynamic
@@ -155,6 +156,8 @@ cmake --build --preset mingw-gcc-vcpkg-release --parallel
 ```
 
 The preset expands `$env{VCPKG_ROOT}` when configuring, so no developer-specific path is committed to the repository. Use `cmake --fresh` after changing compiler or dependency locations because CMake caches the toolchain file. Do not reuse a build directory configured for a different generator or compiler.
+
+The first configuration builds GLFW, Assimp, and their dependencies from source, which can take 20 to 30 minutes. vcpkg stores the built packages in its binary cache (by default in `%LOCALAPPDATA%\vcpkg\archives`), so later configurations, including those of new build directories, restore them in seconds.
 
 For Visual Studio 2026, use the generator name reported by `cmake --help` and a directory such as `out/build/vs2026-msvc-debug`. Do not reuse a directory configured for another generator or compiler.
 
@@ -309,6 +312,7 @@ Every push to `main` and every pull request runs the GitHub Actions workflow in 
 - **Linux:** configures and builds the `ninja-gcc-debug` and `ninja-clang-release` presets with the system packages, and runs the smoke test in a virtual X server (Xvfb) with Mesa's `llvmpipe` software renderer (OpenGL 4.5).
 - **Consumer test (Linux):** builds and runs `tests/consumer`, a standalone project that consumes the Engine with `add_subdirectory()` and links `Engine::Platform` (as the X-ray simulator does), and checks that the sample App is not built for consumers.
 - **Windows:** configures and builds the `ninja-msvc-debug` preset with MSVC and the bundled dependencies, and builds the consumer test. The smoke tests do not run on Windows, since the GitHub-hosted Windows runners provide no OpenGL 4.5 driver.
+- **Windows (MinGW):** configures and builds the `mingw-gcc-vcpkg-release` preset with MinGW's GCC and the dependencies of `vcpkg.json`, and builds the consumer test. vcpkg is checked out at the manifest's `builtin-baseline`, and the built packages are kept in the GitHub Actions cache, so they are only rebuilt when the manifest or the compiler version changes.
 
 The consumer test can also be run locally. It is a separate CMake project, so the compiler (and, for MinGW, the vcpkg toolchain) must be selected explicitly, as the presets do for the Engine. Each compiler needs its own build directory: delete a directory (or configure it with `cmake --fresh`) before reusing it with another compiler.
 
@@ -335,7 +339,7 @@ On Windows with MinGW and vcpkg, from an ordinary PowerShell (with the same envi
 cmake -S tests/consumer -B out/build/consumer-mingw -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Debug `
   -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ `
   -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" `
-  -DVCPKG_TARGET_TRIPLET=x64-mingw-dynamic -DENGINE_USE_BUNDLED_DEPS=OFF
+  -DVCPKG_TARGET_TRIPLET=x64-mingw-dynamic -DVCPKG_MANIFEST_DIR="$PWD" -DENGINE_USE_BUNDLED_DEPS=OFF
 cmake --build out/build/consumer-mingw
 ctest --test-dir out/build/consumer-mingw --output-on-failure
 ```
@@ -359,7 +363,7 @@ Remove-Item -Recurse -Force out\build
 
 ## Troubleshooting
 
-- **GLFW or Assimp not found with MinGW:** Check that `VCPKG_ROOT` points to the vcpkg installation containing `x64-mingw-dynamic`, not a Visual Studio-only vcpkg installation. Run `vcpkg install glfw3:x64-mingw-dynamic assimp:x64-mingw-dynamic glm:x64-mingw-dynamic`, then run `cmake --fresh --preset mingw-gcc-vcpkg-debug`.
+- **GLFW or Assimp not found with MinGW:** Check that `VCPKG_ROOT` points to a vcpkg Git clone (not a Visual Studio-only vcpkg installation) that contains the `builtin-baseline` commit of `vcpkg.json`, and that the vcpkg output of the configuration reports no build errors. Then run `cmake --fresh --preset mingw-gcc-vcpkg-debug`.
 - **Environment value looks correct but CMake uses another path:** The current terminal may have inherited a stale `VCPKG_ROOT`. Run `$env:VCPKG_ROOT = [Environment]::GetEnvironmentVariable("VCPKG_ROOT", "User")`, or close and reopen VS Code.
 - **GLAD errors:** `core/glad.c` and `external/include/glad/glad.h` are generated with glad 0.1.36 for OpenGL 4.5 Core, without extensions. If they are missing, regenerate them from the [GLAD service](https://glad.dav1d.de/#profile=core&language=c&specification=gl&loader=on&api=gl%3D4.5) or with `pip install glad==0.1.36` and `python -m glad --profile=core --api="gl=4.5" --generator=c --spec=gl --extensions="" --out-path <dir>`.
 - **Failed to create GLFW window:** The engine requires an OpenGL 4.5 core profile context. Update the GPU drivers, and check the version reported by the GPU (e.g., with the `glxinfo -B` command on Linux, or tools such as GPU Caps Viewer or OpenGL Extensions Viewer on Windows). Remote desktop sessions and some virtual machines only provide older OpenGL versions.

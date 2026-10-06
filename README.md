@@ -78,10 +78,9 @@ cmake --build --preset ninja-msvc-debug
 
 In VS Code, install **CMake Tools** and **C/C++**, select the `Ninja MSVC x64 Debug` or `Ninja MSVC x64 Release` configure preset, configure the project, set `App` as the build target, and use **CMake: Build** or the `Debug App (CMake)` launch configuration. Visual Studio can use the same Ninja configurations through `CMakeSettings.json`, while native Visual Studio or other generators should use their own descriptive build directory. See the [Build Instructions](docs/build_instructions.md) for the complete IDE and CLI workflows.
 
-For MinGW, use the `mingw-gcc-vcpkg-debug` or `mingw-gcc-vcpkg-release` preset. These presets use the MinGW Makefiles generator, GCC, and vcpkg's `x64-mingw-dynamic` triplet. Before configuring, install the matching packages and set `MINGW_ROOT` and `VCPKG_ROOT` as user environment variables:
+For MinGW, use the `mingw-gcc-vcpkg-debug` or `mingw-gcc-vcpkg-release` preset. These presets use the MinGW Makefiles generator, GCC, and vcpkg's `x64-mingw-dynamic` triplet. The dependencies are declared in `vcpkg.json` (vcpkg manifest mode), so vcpkg builds and installs them during the first configuration. Before configuring, set `MINGW_ROOT` and `VCPKG_ROOT` as user environment variables:
 
 ```powershell
-vcpkg install glfw3:x64-mingw-dynamic assimp:x64-mingw-dynamic glm:x64-mingw-dynamic
 [Environment]::SetEnvironmentVariable("MINGW_ROOT", "C:\path\to\mingw64", "User")
 [Environment]::SetEnvironmentVariable("VCPKG_ROOT", "C:\path\to\vcpkg", "User")
 ```
@@ -95,7 +94,7 @@ cmake --fresh --preset mingw-gcc-vcpkg-debug
 cmake --build --preset mingw-gcc-vcpkg-debug --parallel
 ```
 
-Use the release preset for Release builds. If CMake reports that GLFW or Assimp is missing, verify that `VCPKG_ROOT` points to the vcpkg installation containing `x64-mingw-dynamic`, then reconfigure with `cmake --fresh`. Avoid using a Visual Studio Developer PowerShell for this preset if it injects a different `VCPKG_ROOT`.
+Use the release preset for Release builds. If CMake reports that GLFW or Assimp is missing, verify that VCPKG_ROOT points to an up-to-date vcpkg Git clone that contains the builtin-baseline commit of vcpkg.json, then reconfigure with `cmake --fresh`. Avoid using a Visual Studio Developer PowerShell for this preset if it injects a different `VCPKG_ROOT`.
 
 Alternatively, build directly with CMake from a Visual Studio Developer PowerShell. Keep manual builds under `out/build/` and use a fresh directory when changing compilers or generators:
 

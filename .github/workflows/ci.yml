@@ -1,6 +1,7 @@
 # Continuous integration of the Engine: builds the Core, Platform, and App on Linux (GCC and Clang)
-# and Windows (MSVC), runs the smoke tests on Linux with a virtual display and Mesa's software
-# OpenGL 4.5 renderer, builds and runs the consumer test, and checks the code formatting
+# and Windows (MSVC, and MinGW's GCC with vcpkg), runs the smoke tests on Linux with a virtual
+# display and Mesa's software OpenGL 4.5 renderer, builds and runs the consumer test, and checks
+# the code formatting
 
 name: CI
 
@@ -116,3 +117,72 @@ jobs:
         run: |
           cmake -S tests/consumer -B out/build/consumer -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl -DENGINE_USE_BUNDLED_DEPS=ON
           cmake --build out/build/consumer
+
+  # Windows build with MinGW's GCC and the dependencies built by vcpkg (manifest mode, see vcpkg.json).
+  # The vcpkg packages are stored in a binary cache, so they are only built from source when the
+  # manifest or the compiler changes (build only, as the MSVC job)
+  windows-mingw:
+    name: Windows (mingw-gcc-vcpkg-release)
+    runs-on: windows-latest
+    timeout-minutes: 90
+    env:
+      VCPKG_TRIPLET: x64-mingw-dynamic
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v7
+
+      - name: Set up the MinGW toolchain
+        id: mingw
+        shell: pwsh
+        run: |
+          # use the MinGW-w64 installation of the runner image (if present) before any other GCC in the PATH
+          if (Test-Path "C:\mingw64\bin\gcc.exe") {
+            "C:\mingw64\bin" | Out-File -FilePath $env:GITHUB_PATH -Append
+            $env:Path = "C:\mingw64\bin;$env:Path"
+          }
+          # vcpkg's MinGW toolchain requires the target-prefixed compiler (x86_64-w64-mingw32-gcc)
+          Get-Command gcc, g++, x86_64-w64-mingw32-gcc, mingw32-make | Format-Table Name, Source -AutoSize
+          gcc --version
+          "gcc-version=$(gcc -dumpfullversion)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+
+      - name: Set up vcpkg at the baseline of the manifest
+        shell: pwsh
+        run: |
+          $baseline = (Get-Content vcpkg.json -Raw | ConvertFrom-Json).'builtin-baseline'
+          $vcpkgRoot = Join-Path $env:RUNNER_TEMP "vcpkg"
+          git init --quiet $vcpkgRoot
+          git -C $vcpkgRoot fetch --quiet --depth 1 https://github.com/microsoft/vcpkg.git $baseline
+          git -C $vcpkgRoot checkout --quiet FETCH_HEAD
+          & "$vcpkgRoot\bootstrap-vcpkg.bat" -disableMetrics
+          "VCPKG_ROOT=$vcpkgRoot" | Out-File -FilePath $env:GITHUB_ENV -Append
+          "VCPKG_BINARY_SOURCES=clear;files,$env:RUNNER_TEMP\vcpkg-binary-cache,readwrite" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+      - name: Restore the vcpkg binary cache
+        id: vcpkg-cache
+        uses: actions/cache/restore@v5
+        with:
+          path: ${{ runner.temp }}\vcpkg-binary-cache
+          key: vcpkg-${{ env.VCPKG_TRIPLET }}-gcc-${{ steps.mingw.outputs.gcc-version }}-${{ hashFiles('vcpkg.json') }}
+          restore-keys: |
+            vcpkg-${{ env.VCPKG_TRIPLET }}-gcc-${{ steps.mingw.outputs.gcc-version }}-
+
+      - name: Configure
+        # vcpkg installs the dependencies of the manifest during the configuration (from the cache when available)
+        run: cmake --preset mingw-gcc-vcpkg-release
+
+      - name: Save the vcpkg binary cache
+        # saved even if a later step fails, so that the dependencies are not built again on the next run
+        if: ${{ !cancelled() && steps.vcpkg-cache.outputs.cache-hit != 'true' }}
+        uses: actions/cache/save@v5
+        with:
+          path: ${{ runner.temp }}\vcpkg-binary-cache
+          key: vcpkg-${{ env.VCPKG_TRIPLET }}-gcc-${{ steps.mingw.outputs.gcc-version }}-${{ hashFiles('vcpkg.json') }}
+
+      - name: Build
+        run: cmake --build --preset mingw-gcc-vcpkg-release --parallel
+
+      - name: Build the consumer test
+        # the consumer test is a separate project, so it uses the manifest and the packages installed for the Engine
+        run: |
+          cmake -S tests/consumer -B out/build/consumer -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" -DVCPKG_TARGET_TRIPLET=${{ env.VCPKG_TRIPLET }} -DVCPKG_MANIFEST_DIR="${{ github.workspace }}" -DVCPKG_INSTALLED_DIR="${{ github.workspace }}/out/build/mingw-gcc-vcpkg-release/vcpkg_installed" -DENGINE_USE_BUNDLED_DEPS=OFF
+          cmake --build out/build/consumer --parallel
