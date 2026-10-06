@@ -1,7 +1,7 @@
-# Continuous integration of the Engine: builds the Core, Platform, and App on Linux (GCC and Clang)
-# and Windows (MSVC, and MinGW's GCC with vcpkg), runs the unit tests on every platform and the smoke
-# tests on Linux with a virtual display and Mesa's software OpenGL 4.5 renderer, builds and runs the
-# consumer test, and checks the code formatting
+# Continuous integration of the Engine: builds the Core, Platform, and App on Linux (GCC and Clang,
+# with the system packages) and Windows (MSVC and MinGW's GCC, with vcpkg), runs the unit tests on
+# every platform and the smoke tests on Linux with a virtual display and Mesa's software OpenGL 4.5
+# renderer, builds and runs the consumer test, and checks the code formatting
 
 name: CI
 
@@ -93,50 +93,44 @@ jobs:
       - name: Run the consumer test
         run: xvfb-run -a -s "-screen 0 1600x1000x24" ctest --test-dir out/build/consumer --output-on-failure
 
-  # Windows build with MSVC and the bundled dependencies, and unit tests
-  # (the smoke tests do not run: the runners have no OpenGL 4.5 support)
-  windows-msvc:
-    name: Windows (ninja-msvc-debug)
+  # Windows builds with MSVC and MinGW's GCC, with the dependencies built by vcpkg (manifest mode, see
+  # vcpkg.json), and unit tests (the smoke tests do not run: the runners have no OpenGL 4.5 support).
+  # The vcpkg packages are stored in a binary cache, so they are only built from source when the
+  # manifest or the compiler changes
+  windows:
+    name: Windows (${{ matrix.preset }})
     runs-on: windows-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - preset: ninja-msvc-debug
+            toolchain: msvc
+            triplet: x64-windows
+            generator: Ninja
+            build-type: Debug
+            c-compiler: cl
+            cxx-compiler: cl
+          - preset: mingw-gcc-vcpkg-release
+            toolchain: mingw
+            triplet: x64-mingw-dynamic
+            generator: MinGW Makefiles
+            build-type: Release
+            c-compiler: gcc
+            cxx-compiler: g++
     steps:
       - name: Check out the repository
         uses: actions/checkout@v7
 
       - name: Set up the MSVC developer environment
+        if: matrix.toolchain == 'msvc'
         uses: ilammy/msvc-dev-cmd@v1
         with:
           arch: x64
 
-      - name: Configure
-        # the compilers are set explicitly, since the runners also provide MinGW's GCC in the PATH
-        run: cmake --preset ninja-msvc-debug -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl -DENGINE_BUILD_TESTS=ON
-
-      - name: Build
-        run: cmake --build --preset ninja-msvc-debug --target App Engine_Unit_Tests
-
-      - name: Run the unit tests
-        run: ctest --test-dir out/build/ninja-msvc-debug -L unit --output-on-failure
-
-      - name: Build the consumer test
-        run: |
-          cmake -S tests/consumer -B out/build/consumer -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl -DENGINE_USE_BUNDLED_DEPS=ON
-          cmake --build out/build/consumer
-
-  # Windows build with MinGW's GCC and the dependencies built by vcpkg (manifest mode, see vcpkg.json).
-  # The vcpkg packages are stored in a binary cache, so they are only built from source when the
-  # manifest or the compiler changes (unit tests only, as in the MSVC job)
-  windows-mingw:
-    name: Windows (mingw-gcc-vcpkg-release)
-    runs-on: windows-latest
-    timeout-minutes: 90
-    env:
-      VCPKG_TRIPLET: x64-mingw-dynamic
-    steps:
-      - name: Check out the repository
-        uses: actions/checkout@v7
-
       - name: Set up the MinGW toolchain
-        id: mingw
+        if: matrix.toolchain == 'mingw'
         shell: pwsh
         run: |
           # use the MinGW-w64 installation of the runner image (if present) before any other GCC in the PATH
@@ -147,9 +141,18 @@ jobs:
           # vcpkg's MinGW toolchain requires the target-prefixed compiler (x86_64-w64-mingw32-gcc)
           Get-Command gcc, g++, x86_64-w64-mingw32-gcc, mingw32-make | Format-Table Name, Source -AutoSize
           gcc --version
-          "gcc-version=$(gcc -dumpfullversion)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+
+      - name: Identify the compiler version
+        # part of the key of the vcpkg binary cache, so that packages built by another compiler version are not reused
+        id: compiler
+        shell: pwsh
+        run: |
+          if ("${{ matrix.toolchain }}" -eq "msvc") { $version = "msvc-$env:VCToolsVersion" } else { $version = "gcc-$(gcc -dumpfullversion)" }
+          Write-Output "Compiler: $version"
+          "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
 
       - name: Set up vcpkg at the baseline of the manifest
+        # after the MSVC developer environment, which may set VCPKG_ROOT to the vcpkg instance of Visual Studio
         shell: pwsh
         run: |
           $baseline = (Get-Content vcpkg.json -Raw | ConvertFrom-Json).'builtin-baseline'
@@ -166,13 +169,13 @@ jobs:
         uses: actions/cache/restore@v5
         with:
           path: ${{ runner.temp }}\vcpkg-binary-cache
-          key: vcpkg-${{ env.VCPKG_TRIPLET }}-gcc-${{ steps.mingw.outputs.gcc-version }}-${{ hashFiles('vcpkg.json') }}
+          key: vcpkg-${{ matrix.triplet }}-${{ steps.compiler.outputs.version }}-${{ hashFiles('vcpkg.json') }}
           restore-keys: |
-            vcpkg-${{ env.VCPKG_TRIPLET }}-gcc-${{ steps.mingw.outputs.gcc-version }}-
+            vcpkg-${{ matrix.triplet }}-${{ steps.compiler.outputs.version }}-
 
       - name: Configure
         # vcpkg installs the dependencies of the manifest during the configuration (from the cache when available)
-        run: cmake --preset mingw-gcc-vcpkg-release -DENGINE_BUILD_TESTS=ON
+        run: cmake --preset ${{ matrix.preset }} -DENGINE_BUILD_TESTS=ON
 
       - name: Save the vcpkg binary cache
         # saved even if a later step fails, so that the dependencies are not built again on the next run
@@ -180,16 +183,16 @@ jobs:
         uses: actions/cache/save@v5
         with:
           path: ${{ runner.temp }}\vcpkg-binary-cache
-          key: vcpkg-${{ env.VCPKG_TRIPLET }}-gcc-${{ steps.mingw.outputs.gcc-version }}-${{ hashFiles('vcpkg.json') }}
+          key: vcpkg-${{ matrix.triplet }}-${{ steps.compiler.outputs.version }}-${{ hashFiles('vcpkg.json') }}
 
       - name: Build
-        run: cmake --build --preset mingw-gcc-vcpkg-release --parallel --target App Engine_Unit_Tests
+        run: cmake --build --preset ${{ matrix.preset }} --parallel --target App Engine_Unit_Tests
 
       - name: Run the unit tests
-        run: ctest --test-dir out/build/mingw-gcc-vcpkg-release -L unit --output-on-failure
+        run: ctest --test-dir out/build/${{ matrix.preset }} -L unit --output-on-failure
 
       - name: Build the consumer test
         # the consumer test is a separate project, so it uses the manifest and the packages installed for the Engine
         run: |
-          cmake -S tests/consumer -B out/build/consumer -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" -DVCPKG_TARGET_TRIPLET=${{ env.VCPKG_TRIPLET }} -DVCPKG_MANIFEST_DIR="${{ github.workspace }}" -DVCPKG_INSTALLED_DIR="${{ github.workspace }}/out/build/mingw-gcc-vcpkg-release/vcpkg_installed" -DENGINE_USE_BUNDLED_DEPS=OFF
+          cmake -S tests/consumer -B out/build/consumer -G "${{ matrix.generator }}" -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} -DCMAKE_C_COMPILER=${{ matrix.c-compiler }} -DCMAKE_CXX_COMPILER=${{ matrix.cxx-compiler }} -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" -DVCPKG_TARGET_TRIPLET=${{ matrix.triplet }} -DVCPKG_MANIFEST_DIR="${{ github.workspace }}" -DVCPKG_INSTALLED_DIR="${{ github.workspace }}/out/build/${{ matrix.preset }}/vcpkg_installed" -DENGINE_USE_BUNDLED_DEPS=OFF
           cmake --build out/build/consumer --parallel

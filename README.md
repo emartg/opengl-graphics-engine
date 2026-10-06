@@ -50,14 +50,16 @@ For a detailed class diagram and pipeline description, see the [Architecture Gui
 | Library | Version | Purpose |
 | ------- | ------- | ------- |
 | OpenGL | 4.5 Core | Graphics API |
-| GLFW | 3.4 | Window creation, input, context |
+| GLFW | 3.5.1 | Window creation, input, context |
 | GLAD | 0.1.36 | OpenGL extension loading |
-| GLM | 0.9.8.5 | Vector/matrix mathematics |
+| GLM | 1.0.3 | Vector/matrix mathematics |
 | stb_image | 2.30 | Image loading (`.jpg`, `.png`, etc.) |
 | Dear ImGui | 1.91.6 | Immediate-mode GUI |
-| Assimp | 6.0.2 | 3D model import |
+| Assimp | 6.0.5 | 3D model import |
 
-CMake (≥3.20) with Ninja generator is recommended, but any generator works.
+On Windows, GLFW, GLM, and Assimp are built by [vcpkg](https://github.com/microsoft/vcpkg) from the `vcpkg.json` manifest (the versions above); on Linux, the versions of the system packages are used.
+
+CMake (≥3.21, or ≥3.25 to use the presets) with the Ninja generator is recommended, but any generator works.
 
 ---
 
@@ -66,7 +68,7 @@ CMake (≥3.20) with Ninja generator is recommended, but any generator works.
 See the detailed [Build Instructions](docs/build_instructions.md) for platform-specific steps. In short:
 
 ```bash
-# Configure the default Ninja/MSVC x64 Debug preset
+# Configure the default Ninja/MSVC x64 Debug preset (vcpkg builds the dependencies on the first configuration)
 cmake --preset ninja-msvc-debug
 
 # Build App and its dependencies
@@ -76,16 +78,16 @@ cmake --build --preset ninja-msvc-debug
 ./out/build/ninja-msvc-debug/bin/App.exe
 ```
 
-In VS Code, install **CMake Tools** and **C/C++**, select the `Ninja MSVC x64 Debug` or `Ninja MSVC x64 Release` configure preset, configure the project, set `App` as the build target, and use **CMake: Build** or the `Debug App (CMake)` launch configuration. Visual Studio can use the same Ninja configurations through `CMakeSettings.json`, while native Visual Studio or other generators should use their own descriptive build directory. See the [Build Instructions](docs/build_instructions.md) for the complete IDE and CLI workflows.
+In VS Code, install **CMake Tools** and **C/C++**, select the `Ninja MSVC x64 + vcpkg Debug` or `Ninja MSVC x64 + vcpkg Release` configure preset, configure the project, set `App` as the build target, and use **CMake: Build** or the `Debug App (CMake)` launch configuration. Visual Studio uses the same presets from `CMakePresets.json`, while native Visual Studio or other generators use their own descriptive build directory. See the [Build Instructions](docs/build_instructions.md) for the complete IDE and CLI workflows.
 
-For MinGW, use the `mingw-gcc-vcpkg-debug` or `mingw-gcc-vcpkg-release` preset. These presets use the MinGW Makefiles generator, GCC, and vcpkg's `x64-mingw-dynamic` triplet. The dependencies are declared in `vcpkg.json` (vcpkg manifest mode), so vcpkg builds and installs them during the first configuration. Before configuring, set `MINGW_ROOT` and `VCPKG_ROOT` as user environment variables:
+Every Windows preset uses vcpkg: the dependencies are declared in `vcpkg.json` (vcpkg manifest mode), so vcpkg builds and installs them during the first configuration (`x64-windows` triplet with MSVC, `x64-mingw-dynamic` with MinGW). Before configuring, clone and bootstrap [vcpkg](https://github.com/microsoft/vcpkg), and set `VCPKG_ROOT` (and, for MinGW, `MINGW_ROOT`) as user environment variables:
 
 ```powershell
-[Environment]::SetEnvironmentVariable("MINGW_ROOT", "C:\path\to\mingw64", "User")
 [Environment]::SetEnvironmentVariable("VCPKG_ROOT", "C:\path\to\vcpkg", "User")
+[Environment]::SetEnvironmentVariable("MINGW_ROOT", "C:\path\to\mingw64", "User")
 ```
 
-Restart VS Code after changing these variables. In a new ordinary PowerShell terminal, configure and build with:
+Restart VS Code after changing these variables. For MinGW, use the `mingw-gcc-vcpkg-debug` or `mingw-gcc-vcpkg-release` preset, which use the MinGW Makefiles generator and GCC. In a new ordinary PowerShell terminal, configure and build with:
 
 ```powershell
 $env:Path = "$env:MINGW_ROOT\bin;$env:Path"
@@ -94,7 +96,7 @@ cmake --fresh --preset mingw-gcc-vcpkg-debug
 cmake --build --preset mingw-gcc-vcpkg-debug --parallel
 ```
 
-Use the release preset for Release builds. If CMake reports that GLFW or Assimp is missing, verify that VCPKG_ROOT points to an up-to-date vcpkg Git clone that contains the builtin-baseline commit of vcpkg.json, then reconfigure with `cmake --fresh`. Avoid using a Visual Studio Developer PowerShell for this preset if it injects a different `VCPKG_ROOT`.
+Use the release preset for Release builds. If CMake reports that GLFW or Assimp is missing, verify that `VCPKG_ROOT` points to an up-to-date vcpkg Git clone that contains the `builtin-baseline` commit of `vcpkg.json`, then reconfigure with `cmake --fresh`. A Visual Studio Developer PowerShell may set `VCPKG_ROOT` to the vcpkg instance of Visual Studio; restore your own with `$env:VCPKG_ROOT = [Environment]::GetEnvironmentVariable("VCPKG_ROOT", "User")`.
 
 Alternatively, build directly with CMake from a Visual Studio Developer PowerShell. Keep manual builds under `out/build/` and use a fresh directory when changing compilers or generators:
 
@@ -102,7 +104,10 @@ Alternatively, build directly with CMake from a Visual Studio Developer PowerShe
 cmake -S . -B out/build/manual-ninja-msvc-release -G Ninja `
   -DCMAKE_BUILD_TYPE=Release `
   -DCMAKE_C_COMPILER=cl `
-  -DCMAKE_CXX_COMPILER=cl
+  -DCMAKE_CXX_COMPILER=cl `
+  -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" `
+  -DVCPKG_TARGET_TRIPLET=x64-windows `
+  -DENGINE_USE_BUNDLED_DEPS=OFF
 cmake --build out/build/manual-ninja-msvc-release --parallel
 out/build/manual-ninja-msvc-release\bin\App.exe
 ```
