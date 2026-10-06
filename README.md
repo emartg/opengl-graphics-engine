@@ -5,7 +5,6 @@
 [![OpenGL](https://img.shields.io/badge/OpenGL-4.5-red.svg)](https://www.opengl.org/)
 [![CI](https://github.com/emartg/opengl-graphics-engine/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/emartg/opengl-graphics-engine/actions/workflows/ci.yml)
 [![CMake](https://img.shields.io/badge/CMake-≥3.21-brightgreen.svg)](https://cmake.org/)
-[![CMake](https://img.shields.io/badge/CMake-≥3.20-brightgreen.svg)](https://cmake.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 A **modular, extensible 3D graphics engine** built from scratch with OpenGL 4.5. Initially developed as a Bachelor's Thesis (TFG), it serves as a lightweight prototyping platform for real-time rendering, featuring a composite scene graph, lighting, model import, an immediate-mode GUI editor, among other functionalities.

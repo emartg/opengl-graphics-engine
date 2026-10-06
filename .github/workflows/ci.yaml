@@ -68,7 +68,7 @@ jobs:
       - name: Run the smoke test
         run: xvfb-run -a -s "-screen 0 1600x1000x24" ctest --test-dir out/build/${{ matrix.preset }} --output-on-failure
 
-  # Standalone project consuming the Engine through add_subdirectory() (as the X-ray simulator does)
+  # Standalone project consuming the Engine through add_subdirectory()
   consumer-linux:
     name: Consumer test (Linux)
     runs-on: ubuntu-24.04
