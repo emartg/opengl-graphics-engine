@@ -1,5 +1,5 @@
 /*
- * File_System_Utils_Test.cpp
+ * FileSystemUtilsTest.cpp
  * This file contains the unit tests of the File_System_Utils class: the location of the
  * running executable, and the selection of the first existing directory from a list of candidates.
  */
@@ -17,7 +17,7 @@ namespace fs = std::filesystem;
 
 // Executable Directory
 // --------------------
-TEST(File_System_Utils_Test, get_executable_directory_returns_the_directory_of_the_test_executable)
+TEST(FileSystemUtilsTest, get_executable_directory_returns_the_directory_of_the_test_executable)
 {
 	const fs::path executable_directory = File_System_Utils::get_executable_directory();
 

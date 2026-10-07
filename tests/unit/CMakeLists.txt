@@ -2,8 +2,9 @@
 ## They test the Core's classes that do not require an OpenGL context or a window,
 ## so they run on every platform and CI runner (unlike the App smoke test)
 
-## Test suites and test names follow GoogleTest's naming convention (PascalCase, without underscores),
-## since GoogleTest builds a class name from them by joining them with an underscore
+## Test files, test suites, and test names follow GoogleTest's naming convention (PascalCase, without
+## underscores, e.g., StringUtilsTest.cpp and StringUtilsTest.ToUppercaseConvertsOnlyLetters), since
+## GoogleTest builds a class name from the suite and test names by joining them with an underscore
 
 # GoogleTest: use an installed package if available (e.g., a system package), and otherwise
 # download a pinned release (the hash guarantees that the downloaded archive is the expected one)

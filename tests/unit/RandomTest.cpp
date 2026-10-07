@@ -1,5 +1,5 @@
 /*
- * Random_Test.cpp
+ * RandomTest.cpp
  * This file contains the unit tests of the Random class. Since the generated values are random,
  * the tests check the properties that every generated value must satisfy (ranges, lengths, etc.)
  * over a large number of samples.
@@ -18,7 +18,7 @@ namespace
 	constexpr float TOLERANCE{ 1e-4f };   // tolerance of the floating-point comparisons
 } // namespace
 
-TEST(Random_Test, generate_random_float_stays_within_the_range)
+TEST(RandomTest, generate_random_float_stays_within_the_range)
 {
 	const Random random{};
 	for (int i = 0; i < SAMPLE_COUNT; ++i)
@@ -29,7 +29,7 @@ TEST(Random_Test, generate_random_float_stays_within_the_range)
 	}
 }
 
-TEST(Random_Test, generate_random_color_has_normalized_components_and_is_opaque)
+TEST(RandomTest, generate_random_color_has_normalized_components_and_is_opaque)
 {
 	const Random random{};
 	for (int i = 0; i < SAMPLE_COUNT; ++i)
@@ -44,7 +44,7 @@ TEST(Random_Test, generate_random_color_has_normalized_components_and_is_opaque)
 	}
 }
 
-TEST(Random_Test, generate_random_direction_is_a_unit_vector)
+TEST(RandomTest, generate_random_direction_is_a_unit_vector)
 {
 	const Random random{};
 	for (int i = 0; i < SAMPLE_COUNT; ++i)
@@ -53,7 +53,7 @@ TEST(Random_Test, generate_random_direction_is_a_unit_vector)
 	}
 }
 
-TEST(Random_Test, generate_random_rotation_is_a_unit_quaternion)
+TEST(RandomTest, generate_random_rotation_is_a_unit_quaternion)
 {
 	const Random random{};
 	for (int i = 0; i < SAMPLE_COUNT; ++i)
@@ -63,7 +63,7 @@ TEST(Random_Test, generate_random_rotation_is_a_unit_quaternion)
 	}
 }
 
-TEST(Random_Test, generate_random_rotation_with_an_axis_stays_within_the_angle_range)
+TEST(RandomTest, generate_random_rotation_with_an_axis_stays_within_the_angle_range)
 {
 	const Random    random{};
 	const glm::vec3 axis{ 0.0f, 2.0f, 0.0f }; // not normalized on purpose (the method normalizes it)
