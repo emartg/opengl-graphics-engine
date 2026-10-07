@@ -1,0 +1,101 @@
+# Release packaging of the Engine: builds the App with MSVC in Release mode (with the dependencies
+# built by vcpkg), installs it with its DLLs, the MSVC runtime, and the resources, and zips it.
+# When a release is published, the package is attached to it; when the workflow is started manually
+# (Actions > Release > Run workflow), the package is uploaded as an artifact of the run instead,
+# so that it can be checked before publishing a release
+
+name: Release
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+# Write access to the repository contents is required to attach the package to the release
+permissions:
+  contents: write
+
+jobs:
+  windows-package:
+    name: Windows package (MSVC Release)
+    runs-on: windows-latest
+    timeout-minutes: 90
+    env:
+      PRESET: ninja-msvc-release
+      TRIPLET: x64-windows
+    steps:
+      - name: Check out the repository
+        # the release event checks out the tag of the release; a manual run, the selected branch
+        uses: actions/checkout@v7
+
+      - name: Set up the MSVC developer environment
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Identify the compiler version
+        # part of the key of the vcpkg binary cache, as in the CI workflow
+        id: compiler
+        shell: pwsh
+        run: |
+          $version = "msvc-$env:VCToolsVersion"
+          Write-Output "Compiler: $version"
+          "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+
+      - name: Set up vcpkg at the baseline of the manifest
+        # after the MSVC developer environment, which may set VCPKG_ROOT to the vcpkg instance of Visual Studio
+        shell: pwsh
+        run: |
+          $baseline = (Get-Content vcpkg.json -Raw | ConvertFrom-Json).'builtin-baseline'
+          $vcpkgRoot = Join-Path $env:RUNNER_TEMP "vcpkg"
+          git init --quiet $vcpkgRoot
+          git -C $vcpkgRoot fetch --quiet --depth 1 https://github.com/microsoft/vcpkg.git $baseline
+          git -C $vcpkgRoot checkout --quiet FETCH_HEAD
+          & "$vcpkgRoot\bootstrap-vcpkg.bat" -disableMetrics
+          "VCPKG_ROOT=$vcpkgRoot" | Out-File -FilePath $env:GITHUB_ENV -Append
+          "VCPKG_BINARY_SOURCES=clear;files,$env:RUNNER_TEMP\vcpkg-binary-cache,readwrite" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+      - name: Restore the vcpkg binary cache
+        # the cache saved by the CI workflow on main (x64-windows contains the Debug and Release packages);
+        # it is only restored, so the dependencies are built from source if it is missing
+        uses: actions/cache/restore@v5
+        with:
+          path: ${{ runner.temp }}\vcpkg-binary-cache
+          key: vcpkg-${{ env.TRIPLET }}-${{ steps.compiler.outputs.version }}-${{ hashFiles('vcpkg.json') }}
+          restore-keys: |
+            vcpkg-${{ env.TRIPLET }}-${{ steps.compiler.outputs.version }}-
+
+      - name: Configure
+        run: cmake --preset ${{ env.PRESET }}
+
+      - name: Build
+        run: cmake --build --preset ${{ env.PRESET }} --parallel --target App
+
+      - name: Install and zip the package
+        # the package is named after the release tag, or after the commit for manual runs
+        # (e.g., opengl-graphics-engine-v0.9.0-windows-x64), and only contains the App component:
+        # bin\App.exe with its DLLs, share\EngineProject\resources, and the license
+        id: package
+        shell: pwsh
+        run: |
+          if ("${{ github.event_name }}" -eq "release") { $version = "${{ github.event.release.tag_name }}" } else { $version = "dev-$("${{ github.sha }}".Substring(0, 7))" }
+          $name = "opengl-graphics-engine-$version-windows-x64"
+          $staging = "out/package/$name"
+          cmake --install out/build/${{ env.PRESET }} --component App --prefix $staging
+          Copy-Item LICENSE, README.md, CHANGELOG.md -Destination $staging
+          Get-ChildItem -Recurse -File $staging | Select-Object -ExpandProperty FullName
+          Compress-Archive -Path $staging -DestinationPath "out/package/$name.zip"
+          "name=$name" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+
+      - name: Upload the package as an artifact of the run
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v7
+        with:
+          path: out/package/${{ steps.package.outputs.name }}.zip
+          archive: false
+
+      - name: Attach the package to the release
+        if: github.event_name == 'release'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${{ github.event.release.tag_name }}" "out/package/${{ steps.package.outputs.name }}.zip" --clobber --repo "${{ github.repository }}"

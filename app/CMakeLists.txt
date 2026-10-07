@@ -34,8 +34,17 @@ engine_stage_runtime_dependencies(App)
 if(WIN32)
 	install(DIRECTORY "$<TARGET_FILE_DIR:App>/"
 		DESTINATION ${CMAKE_INSTALL_BINDIR}
+		COMPONENT App
 		FILES_MATCHING PATTERN "*.dll"
 	)
+endif()
+
+# Install the MSVC runtime libraries beside the executable too, so that the installed App runs on
+# computers without the Visual C++ Redistributable (e.g., the package attached to the releases)
+if(MSVC)
+	set(CMAKE_INSTALL_SYSTEM_RUNTIME_DESTINATION ${CMAKE_INSTALL_BINDIR})
+	set(CMAKE_INSTALL_SYSTEM_RUNTIME_COMPONENT App)
+	include(InstallRequiredSystemLibraries)
 endif()
 
 # Smoke test: render a fixed number of frames of the example scene and exit.
@@ -50,5 +59,7 @@ if(ENGINE_BUILD_TESTS)
 	)
 endif()
 
-install(TARGETS App RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
-install(DIRECTORY ${ENGINE_ROOT_DIR}/resources/ DESTINATION ${CMAKE_INSTALL_DATADIR}/EngineProject/resources)
+# Install the App and the resources in the App component, so that they can be installed without the
+# Core and Platform libraries (e.g., cmake --install <build dir> --component App)
+install(TARGETS App RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT App)
+install(DIRECTORY ${ENGINE_ROOT_DIR}/resources/ DESTINATION ${CMAKE_INSTALL_DATADIR}/EngineProject/resources COMPONENT App)

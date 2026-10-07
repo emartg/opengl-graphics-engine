@@ -13,6 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - `Engine::Core` and `Engine::Platform` libraries, consumable by other CMake projects with `add_subdirectory()`, with a `Gui_Layer` interface for application GUIs.
 - Runtime lookup of the resources directory, so the App runs from any working directory.
 - GitHub Actions CI: formatting check, Linux (GCC and Clang), Windows (MSVC and MinGW), unit tests, App smoke test, and consumer test.
+- GitHub Actions release workflow, which attaches a Windows package of the App (with its DLLs, the MSVC runtime, and the resources) to each published release.
 - GoogleTest unit tests for `String_Utils`, `File_System_Utils`, `Random`, `Bounding_Box`, and `Frustum`.
 - `--frames N` command-line option to render a fixed number of frames and exit.
 - Frustum culling, with the `Bounding_Box` and `Frustum` classes.
