@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-10-08
+
 ### Added
 
 - Cross-platform CMake presets: Ninja/MSVC, Visual Studio 2022 and 2026, MinGW Makefiles with GCC, and Ninja with GCC or Clang on Linux.
@@ -53,5 +55,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 See the [v0.8.1 release](https://github.com/emartg/opengl-graphics-engine/releases/tag/v0.8.1). Earlier versions are documented in their [GitHub releases](https://github.com/emartg/opengl-graphics-engine/releases).
 
-[Unreleased]: https://github.com/emartg/opengl-graphics-engine/compare/v0.8.1...HEAD
+[Unreleased]: https://github.com/emartg/opengl-graphics-engine/compare/v0.9.0...HEAD
+[0.9.0]: https://github.com/emartg/opengl-graphics-engine/compare/v0.8.1...v0.9.0
 [0.8.1]: https://github.com/emartg/opengl-graphics-engine/releases/tag/v0.8.1
