@@ -41,6 +41,7 @@
 #include "core/model/Assimp_Model.h"
 #include "core/model/Model.h"
 #include "core/model/Shape_Model.h"
+#include "core/utils/random/Random.h"
 #include "core/utils/string/String_Utils.h"
 
 #include "platform/renderer/GLFW_Renderer.h"
@@ -978,6 +979,8 @@ void setup_test_scene_refractive_2(Core* engine)
 
 void setup_test_scene_geometric_stress_1(Core* engine, const int num_shapes)
 {
+	Random random{}; // random number generator for the colors, positions, and rotations of the shapes
+
 	// retrieve the node manager and scene manager from the engine
 	auto& node_manager  = engine->get_node_manager();
 	auto& scene_manager = engine->get_scene_manager();
@@ -1024,22 +1027,22 @@ void setup_test_scene_geometric_stress_1(Core* engine, const int num_shapes)
 			cube_vertices_vector,
 			cube_indices_vector,
 			glm::vec4{
-				static_cast<float>(rand()) / RAND_MAX, // random red component
-				static_cast<float>(rand()) / RAND_MAX, // random green component
-				static_cast<float>(rand()) / RAND_MAX, // random blue component
-				1.0f                                   // uniform alpha component (fully opaque)
+				random.generate_random_float(0.0f, 1.0f), // random red component
+				random.generate_random_float(0.0f, 1.0f), // random green component
+				random.generate_random_float(0.0f, 1.0f), // random blue component
+				1.0f                                      // uniform alpha component (fully opaque)
 			},
 			glm::vec3{
-				static_cast<float>(rand()) / RAND_MAX * 30.0f - 10.0f, // random x position
-				static_cast<float>(rand()) / RAND_MAX * 30.0f - 10.0f, // random y position
-				static_cast<float>(rand()) / RAND_MAX * 30.0f - 10.0f  // random z position
+				random.generate_random_float(-10.0f, 20.0f), // random x position
+				random.generate_random_float(-10.0f, 20.0f), // random y position
+				random.generate_random_float(-10.0f, 20.0f)  // random z position
 			},
 			glm::quat(
 				glm::radians(
 					glm::vec3{
-						static_cast<float>(rand()) / RAND_MAX * 360.0f, // random x rotation
-						static_cast<float>(rand()) / RAND_MAX * 360.0f, // random y rotation
-						static_cast<float>(rand()) / RAND_MAX * 360.0f  // random z rotation
+						random.generate_random_float(0.0f, 360.0f), // random x rotation
+						random.generate_random_float(0.0f, 360.0f), // random y rotation
+						random.generate_random_float(0.0f, 360.0f)  // random z rotation
 					})),
 			glm::vec3{ 0.5f } // uniform scale
 		);
@@ -1070,6 +1073,8 @@ void setup_test_scene_geometric_stress_1(Core* engine, const int num_shapes)
 
 void setup_test_scene_geometric_stress_2(Core* engine, const int num_shapes)
 {
+	Random random{}; // random number generator for the colors, positions, and rotations of the shapes
+
 	// retrieve the node manager and scene manager from the engine
 	auto& node_manager  = engine->get_node_manager();
 	auto& scene_manager = engine->get_scene_manager();
@@ -1116,22 +1121,22 @@ void setup_test_scene_geometric_stress_2(Core* engine, const int num_shapes)
 			cube_vertices_vector,
 			cube_indices_vector,
 			glm::vec4{
-				static_cast<float>(rand()) / RAND_MAX, // random red component
-				static_cast<float>(rand()) / RAND_MAX, // random green component
-				static_cast<float>(rand()) / RAND_MAX, // random blue component
-				static_cast<float>(rand()) / RAND_MAX  // random alpha component
+				random.generate_random_float(0.0f, 1.0f), // random red component
+				random.generate_random_float(0.0f, 1.0f), // random green component
+				random.generate_random_float(0.0f, 1.0f), // random blue component
+				random.generate_random_float(0.0f, 1.0f)  // random alpha component
 			},
 			glm::vec3{
-				static_cast<float>(rand()) / RAND_MAX * 30.0f - 10.0f, // random x position
-				static_cast<float>(rand()) / RAND_MAX * 30.0f - 10.0f, // random y position
-				static_cast<float>(rand()) / RAND_MAX * 30.0f - 10.0f  // random z position
+				random.generate_random_float(-10.0f, 20.0f), // random x position
+				random.generate_random_float(-10.0f, 20.0f), // random y position
+				random.generate_random_float(-10.0f, 20.0f)  // random z position
 			},
 			glm::quat(
 				glm::radians(
 					glm::vec3{
-						static_cast<float>(rand()) / RAND_MAX * 360.0f, // random x rotation
-						static_cast<float>(rand()) / RAND_MAX * 360.0f, // random y rotation
-						static_cast<float>(rand()) / RAND_MAX * 360.0f  // random z rotation
+						random.generate_random_float(0.0f, 360.0f), // random x rotation
+						random.generate_random_float(0.0f, 360.0f), // random y rotation
+						random.generate_random_float(0.0f, 360.0f)  // random z rotation
 					})),
 			glm::vec3{ 0.5f } // uniform scale
 		);
@@ -1162,6 +1167,8 @@ void setup_test_scene_geometric_stress_2(Core* engine, const int num_shapes)
 
 void setup_test_scene_reflective_stress(Core* engine, const int num_shapes)
 {
+	Random random{}; // random number generator for the colors, positions, and rotations of the shapes
+
 	// retrieve the node manager and scene manager from the engine
 	auto& node_manager  = engine->get_node_manager();
 	auto& scene_manager = engine->get_scene_manager();
@@ -1209,16 +1216,16 @@ void setup_test_scene_reflective_stress(Core* engine, const int num_shapes)
 			cube_indices_vector,
 			glm::vec4{ 0.8f, 0.8f, 0.8f, 1.0f }, // albedo (default)
 			glm::vec3{
-				static_cast<float>(rand()) / RAND_MAX * 30.0f - 10.0f, // random x position
-				static_cast<float>(rand()) / RAND_MAX * 30.0f - 10.0f, // random y position
-				static_cast<float>(rand()) / RAND_MAX * 30.0f - 10.0f  // random z position
+				random.generate_random_float(-10.0f, 20.0f), // random x position
+				random.generate_random_float(-10.0f, 20.0f), // random y position
+				random.generate_random_float(-10.0f, 20.0f)  // random z position
 			},
 			glm::quat(
 				glm::radians(
 					glm::vec3{
-						static_cast<float>(rand()) / RAND_MAX * 360.0f, // random x rotation
-						static_cast<float>(rand()) / RAND_MAX * 360.0f, // random y rotation
-						static_cast<float>(rand()) / RAND_MAX * 360.0f  // random z rotation
+						random.generate_random_float(0.0f, 360.0f), // random x rotation
+						random.generate_random_float(0.0f, 360.0f), // random y rotation
+						random.generate_random_float(0.0f, 360.0f)  // random z rotation
 					})),
 			glm::vec3{ 0.5f } // uniform scale
 		);

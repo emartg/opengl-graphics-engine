@@ -2,7 +2,7 @@
  * RandomTest.cpp
  * This file contains the unit tests of the Random class. Since the generated values are random,
  * the tests check the properties that every generated value must satisfy (ranges, lengths, etc.)
- * over a large number of samples.
+ * over a large number of samples, and that a fixed seed reproduces the same sequence.
  */
 
 #include <glm/glm.hpp>
@@ -18,9 +18,9 @@ namespace
 	constexpr float TOLERANCE{ 1e-4f };   // tolerance of the floating-point comparisons
 } // namespace
 
-TEST(RandomTest, generate_random_float_stays_within_the_range)
+TEST(RandomTest, GenerateRandomFloatStaysWithinTheRange)
 {
-	const Random random{};
+	Random random{};
 	for (int i = 0; i < SAMPLE_COUNT; ++i)
 	{
 		const float value = random.generate_random_float(-2.5f, 4.0f);
@@ -29,9 +29,9 @@ TEST(RandomTest, generate_random_float_stays_within_the_range)
 	}
 }
 
-TEST(RandomTest, generate_random_color_has_normalized_components_and_is_opaque)
+TEST(RandomTest, GenerateRandomColorHasNormalizedComponentsAndIsOpaque)
 {
-	const Random random{};
+	Random random{};
 	for (int i = 0; i < SAMPLE_COUNT; ++i)
 	{
 		const glm::vec4 color = random.generate_random_color();
@@ -44,18 +44,38 @@ TEST(RandomTest, generate_random_color_has_normalized_components_and_is_opaque)
 	}
 }
 
-TEST(RandomTest, generate_random_direction_is_a_unit_vector)
+TEST(RandomTest, GenerateRandomPositionStaysWithinTheDistanceRange)
 {
-	const Random random{};
+	Random          random{};
+	const glm::vec3 target{ 5.0f, -3.0f, 2.0f };
+	bool            has_negative_offset{ false }; // whether any position lies on the negative side of the target
+	for (int i = 0; i < SAMPLE_COUNT; ++i)
+	{
+		const glm::vec3 position = random.generate_random_position(target, 2.0f, 6.0f);
+		const float     distance = glm::distance(position, target);
+
+		EXPECT_GE(distance, 2.0f - TOLERANCE);
+		EXPECT_LE(distance, 6.0f + TOLERANCE);
+
+		const glm::vec3 offset = position - target;
+		has_negative_offset |= offset.x < 0.0f || offset.y < 0.0f || offset.z < 0.0f;
+	}
+	// the positions are spread in every direction around the target (not only on the positive side)
+	EXPECT_TRUE(has_negative_offset);
+}
+
+TEST(RandomTest, GenerateRandomDirectionIsAUnitVector)
+{
+	Random random{};
 	for (int i = 0; i < SAMPLE_COUNT; ++i)
 	{
 		EXPECT_NEAR(glm::length(random.generate_random_direction()), 1.0f, TOLERANCE);
 	}
 }
 
-TEST(RandomTest, generate_random_rotation_is_a_unit_quaternion)
+TEST(RandomTest, GenerateRandomRotationIsAUnitQuaternion)
 {
-	const Random random{};
+	Random random{};
 	for (int i = 0; i < SAMPLE_COUNT; ++i)
 	{
 		EXPECT_NEAR(glm::length(random.generate_random_rotation()), 1.0f, TOLERANCE);
@@ -63,9 +83,9 @@ TEST(RandomTest, generate_random_rotation_is_a_unit_quaternion)
 	}
 }
 
-TEST(RandomTest, generate_random_rotation_with_an_axis_stays_within_the_angle_range)
+TEST(RandomTest, GenerateRandomRotationWithAnAxisStaysWithinTheAngleRange)
 {
-	const Random    random{};
+	Random          random{};
 	const glm::vec3 axis{ 0.0f, 2.0f, 0.0f }; // not normalized on purpose (the method normalizes it)
 	for (int i = 0; i < SAMPLE_COUNT; ++i)
 	{
@@ -76,4 +96,27 @@ TEST(RandomTest, generate_random_rotation_with_an_axis_stays_within_the_angle_ra
 		EXPECT_LE(angle, 60.0f + TOLERANCE);
 		EXPECT_NEAR(glm::dot(glm::axis(rotation), glm::vec3{ 0.0f, 1.0f, 0.0f }), 1.0f, TOLERANCE);
 	}
+}
+
+TEST(RandomTest, SameSeedGeneratesTheSameSequence)
+{
+	Random first{ 42u };
+	Random second{ 42u };
+	for (int i = 0; i < SAMPLE_COUNT; ++i)
+	{
+		EXPECT_EQ(first.generate_random_float(0.0f, 1.0f), second.generate_random_float(0.0f, 1.0f));
+	}
+}
+
+TEST(RandomTest, DifferentSeedsGenerateDifferentSequences)
+{
+	Random first{ 1u };
+	Random second{ 2u };
+	int    equal_values{ 0 };
+	for (int i = 0; i < SAMPLE_COUNT; ++i)
+	{
+		if (first.generate_random_float(0.0f, 1.0f) == second.generate_random_float(0.0f, 1.0f))
+			++equal_values;
+	}
+	EXPECT_LT(equal_values, SAMPLE_COUNT);
 }

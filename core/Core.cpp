@@ -171,10 +171,6 @@ std::string Core::get_resource_path(const std::string& relative_path) const
 
 bool Core::init()
 {
-	// use the current time as seed for the random number generator
-	// (to get different positions, colors, etc. each run)
-	srand(static_cast<unsigned int>(time(0)));
-
 	// locate the resources directory before anything is loaded from it
 	if (!resolve_resources_dir())
 	{ // if the resources directory is not found, print an error message and return false
