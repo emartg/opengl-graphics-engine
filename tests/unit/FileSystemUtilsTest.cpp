@@ -17,7 +17,7 @@ namespace fs = std::filesystem;
 
 // Executable Directory
 // --------------------
-TEST(FileSystemUtilsTest, get_executable_directory_returns_the_directory_of_the_test_executable)
+TEST(FileSystemUtilsTest, GetExecutableDirectoryReturnsTheDirectoryOfTheTestExecutable)
 {
 	const fs::path executable_directory = File_System_Utils::get_executable_directory();
 
@@ -64,17 +64,17 @@ protected:
 	}
 };
 
-TEST_F(FindFirstExistingDirectoryTest, returns_an_empty_path_when_there_are_no_candidates)
+TEST_F(FindFirstExistingDirectoryTest, ReturnsAnEmptyPathWhenThereAreNoCandidates)
 {
 	EXPECT_TRUE(File_System_Utils::find_first_existing_directory({}).empty());
 }
 
-TEST_F(FindFirstExistingDirectoryTest, returns_an_empty_path_when_no_candidate_exists)
+TEST_F(FindFirstExistingDirectoryTest, ReturnsAnEmptyPathWhenNoCandidateExists)
 {
 	EXPECT_TRUE(File_System_Utils::find_first_existing_directory({ missing_dir }).empty());
 }
 
-TEST_F(FindFirstExistingDirectoryTest, returns_the_first_existing_candidate_in_order)
+TEST_F(FindFirstExistingDirectoryTest, ReturnsTheFirstExistingCandidateInOrder)
 {
 	const fs::path result = File_System_Utils::find_first_existing_directory({ missing_dir, second_dir, first_dir });
 
@@ -82,7 +82,7 @@ TEST_F(FindFirstExistingDirectoryTest, returns_the_first_existing_candidate_in_o
 	EXPECT_TRUE(fs::equivalent(result, second_dir));
 }
 
-TEST_F(FindFirstExistingDirectoryTest, skips_empty_paths_and_regular_files)
+TEST_F(FindFirstExistingDirectoryTest, SkipsEmptyPathsAndRegularFiles)
 {
 	const fs::path result = File_System_Utils::find_first_existing_directory({ fs::path{}, regular_file, first_dir });
 
@@ -90,7 +90,7 @@ TEST_F(FindFirstExistingDirectoryTest, skips_empty_paths_and_regular_files)
 	EXPECT_TRUE(fs::equivalent(result, first_dir));
 }
 
-TEST_F(FindFirstExistingDirectoryTest, normalizes_the_returned_path)
+TEST_F(FindFirstExistingDirectoryTest, NormalizesTheReturnedPath)
 {
 	// "second/../first" exists, and is returned as the canonical path of "first"
 	const fs::path result = File_System_Utils::find_first_existing_directory({ second_dir / ".." / "first" });
