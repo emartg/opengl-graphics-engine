@@ -107,6 +107,9 @@ public:
 	std::size_t get_instanced_node_count() const { return instanced_node_count; }
 	std::size_t get_instanced_draw_call_count() const { return instanced_draw_call_count; }
 
+	// number of lights uploaded to the light buffer in the last frame
+	std::size_t get_light_count() const { return light_count_last_frame; }
+
 	// Setters
 	virtual void set_callback_functions() const = 0;
 	virtual void set_viewport(int width, int height) const;
@@ -179,6 +182,12 @@ protected:
 	std::size_t instanced_node_count{ 0 };      // nodes drawn with instancing
 	std::size_t instanced_draw_call_count{ 0 }; // instanced draw calls (one per group of nodes sharing a geometry)
 
+	// light buffer: a shader storage buffer with all the lights of the scene in world space (any number of them),
+	// uploaded once per frame and read by the lit shaders from the binding point LIGHT_BUFFER_BINDING
+	static constexpr GLuint LIGHT_BUFFER_BINDING{ 0 };
+	GLuint                  light_ssbo{ 0 };
+	std::size_t             light_count_last_frame{ 0 };
+
 	// buffers for the skybox cube
 	GLuint skybox_vao{}, skybox_vbo{}, skybox_ebo{};
 
@@ -210,6 +219,9 @@ protected:
 	// Renders the opaque nodes: the shape models that share a geometry (untextured, single-sided, and with
 	// a single mesh) are drawn with one instanced draw call per geometry, and the other nodes one by one
 	void render_opaque_nodes(const std::vector<std::shared_ptr<Node>>& nodes);
+
+	// Uploads the lights of the scene to the light buffer (in world space, sorted by type), and binds it
+	void upload_lights();
 
 	// Ensures the offscreen render pass is created with the current window size
 	void ensure_offscren_render_pass();

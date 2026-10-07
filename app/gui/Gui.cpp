@@ -809,6 +809,8 @@ void GUI::draw_debug_window()
 			"Instanced Objects: %zu (%zu draw calls)",
 			renderer->get_instanced_node_count(),
 			renderer->get_instanced_draw_call_count());
+		// display the number of lights in the light buffer
+		ImGui::TextWrapped("Lights: %zu", renderer->get_light_count());
 
 		// display the screen texture debug mode currently in use and the values of its parameters
 		ImGui::TextWrapped("Screen Texture Debug Mode: %s", debug_modes[debug_mode_idx].c_str());

@@ -14,6 +14,8 @@
 
 #include "Renderer.h"
 
+#include <cstddef>
+#include <cstring>
 #include <functional>
 
 #include "SKYBOX.h"      // skybox vertex data
@@ -103,6 +105,11 @@ void Renderer::release_resources()
 	if (instance_vbo)
 		glDeleteBuffers(1, &instance_vbo);
 	instance_vbo = 0;
+
+	// delete the light buffer if created, and reset its id
+	if (light_ssbo)
+		glDeleteBuffers(1, &light_ssbo);
+	light_ssbo = 0;
 }
 
 void Renderer::config_opengl() const
@@ -226,6 +233,9 @@ void Renderer::frame_start_config()
 	// perform all pre-render passes (cubemap generation, dynamic reflections, etc.)
 	// before binding the main render pass and setting up the main camera
 
+	// upload the lights of the scene to the light buffer, used by the lit shaders in every pass of the frame
+	upload_lights();
+
 	// ensure the skybox is a valid cubemap texture early (needed for environment mapping)
 	// and update per-object dynamic environment maps (if any)
 	if (scene_manager->get_skybox())
@@ -307,142 +317,8 @@ void Renderer::render_scene()
 	refractive_shader->set_float("u_ratio", 1.00f / 1.52f);      // air to glass refraction index ratio
 	refractive_shader->set_int("u_skybox", 0);                   // set skybox texture unit to 0
 
-	// set light uniforms
+	// lights of the scene (their data is uploaded to the light buffer by upload_lights(), in frame_start_config())
 	auto& lights = node_manager->get_nodes(Node_Type::LIGHT);
-	GLint point_light_idx{}, spotlight_idx{}, directional_light_idx{};
-	std::for_each(lights.begin(), lights.end(), [&](const std::shared_ptr<Node>& node) {
-		// dynamically cast the node to a Light object
-		auto light = dynamic_cast<Light*>(node.get());
-
-		switch (light->get_light_type()) // switch based on the light type
-		{
-			case Light_Type::DIRECTIONAL_LIGHT:
-			{
-				// dynamically cast the light to a Directional_Light object
-				auto directional_light = dynamic_cast<Directional_Light*>(light);
-
-				// prefix for fragment shader uniforms
-				std::string prefix = "u_directional_lights[" + std::to_string(directional_light_idx) + "].";
-
-				// activate the shape model shader program
-				shape_model_shader->use();
-				// vertex shader uniforms
-				shape_model_shader->set_vec3(
-					"u_directional_light_dir[" + std::to_string(directional_light_idx) + "]",
-					directional_light->get_direction());
-				// fragment shader uniforms
-				shape_model_shader->set_vec3(prefix + "ambient", directional_light->get_ambient());
-				shape_model_shader->set_vec3(prefix + "diffuse", directional_light->get_diffuse());
-				shape_model_shader->set_vec3(prefix + "specular", directional_light->get_specular());
-
-				// activate the assimp model shader program
-				assimp_model_shader->use();
-				// vertex shader uniforms
-				assimp_model_shader->set_vec3(
-					"u_directional_light_dir[" + std::to_string(directional_light_idx) + "]",
-					directional_light->get_direction());
-				// fragment shader uniforms
-				assimp_model_shader->set_vec3(prefix + "ambient", directional_light->get_ambient());
-				assimp_model_shader->set_vec3(prefix + "diffuse", directional_light->get_diffuse());
-				assimp_model_shader->set_vec3(prefix + "specular", directional_light->get_specular());
-
-				directional_light_idx++; // increment the directional light index for the next iteration
-			}
-			break;
-			case Light_Type::POINT_LIGHT:
-			{
-				// dynamically cast the light to a Point_Light object
-				auto point_light = dynamic_cast<Point_Light*>(light);
-
-				// prefix for fragment shader uniforms
-				std::string prefix = "u_point_lights[" + std::to_string(point_light_idx) + "].";
-
-				// activate the shape model shader program
-				shape_model_shader->use();
-				// vertex shader uniforms
-				shape_model_shader->set_vec3("u_point_light_pos[" + std::to_string(point_light_idx) + "]", point_light->get_position());
-				// fragment shader uniforms
-				shape_model_shader->set_vec3(prefix + "ambient", point_light->get_ambient());
-				shape_model_shader->set_vec3(prefix + "diffuse", point_light->get_diffuse());
-				shape_model_shader->set_vec3(prefix + "specular", point_light->get_specular());
-				shape_model_shader->set_float(prefix + "constant", point_light->get_constant());
-				shape_model_shader->set_float(prefix + "linear", point_light->get_linear());
-				shape_model_shader->set_float(prefix + "quadratic", point_light->get_quadratic());
-
-				// activate the assimp model shader program
-				assimp_model_shader->use();
-				// vertex shader uniforms
-				assimp_model_shader->set_vec3("u_point_light_pos[" + std::to_string(point_light_idx) + "]", point_light->get_position());
-				// fragment shader uniforms
-				assimp_model_shader->set_vec3(prefix + "ambient", point_light->get_ambient());
-				assimp_model_shader->set_vec3(prefix + "diffuse", point_light->get_diffuse());
-				assimp_model_shader->set_vec3(prefix + "specular", point_light->get_specular());
-				assimp_model_shader->set_float(prefix + "constant", point_light->get_constant());
-				assimp_model_shader->set_float(prefix + "linear", point_light->get_linear());
-				assimp_model_shader->set_float(prefix + "quadratic", point_light->get_quadratic());
-
-				point_light_idx++; // increment the point light index for the next iteration
-			}
-			break;
-			case Light_Type::SPOTLIGHT:
-			{
-				// dynamically cast the light to a Spotlight object
-				auto spotlight = dynamic_cast<Spotlight*>(light);
-
-				// prefix for fragment shader uniforms
-				std::string prefix = "u_spotlights[" + std::to_string(spotlight_idx) + "].";
-
-				// activate the shape model shader program
-				shape_model_shader->use();
-				// vertex shader uniforms
-				shape_model_shader->set_vec3("u_spotlight_pos[" + std::to_string(spotlight_idx) + "]", spotlight->get_position());
-				shape_model_shader->set_vec3("u_spotlight_dir[" + std::to_string(spotlight_idx) + "]", spotlight->get_direction());
-				// fragment shader uniforms
-				shape_model_shader->set_vec3(prefix + "ambient", spotlight->get_ambient());
-				shape_model_shader->set_vec3(prefix + "diffuse", spotlight->get_diffuse());
-				shape_model_shader->set_vec3(prefix + "specular", spotlight->get_specular());
-				shape_model_shader->set_float(prefix + "constant", spotlight->get_constant());
-				shape_model_shader->set_float(prefix + "linear", spotlight->get_linear());
-				shape_model_shader->set_float(prefix + "quadratic", spotlight->get_quadratic());
-				shape_model_shader->set_float(prefix + "inner_cutoff", spotlight->get_inner_cutoff());
-				shape_model_shader->set_float(prefix + "outer_cutoff", spotlight->get_outer_cutoff());
-
-				// activate the assimp model shader program
-				assimp_model_shader->use();
-				// vertex shader uniforms
-				assimp_model_shader->set_vec3(prefix + "ambient", spotlight->get_ambient());
-				assimp_model_shader->set_vec3("u_spotlight_pos[" + std::to_string(spotlight_idx) + "]", spotlight->get_position());
-				assimp_model_shader->set_vec3("u_spotlight_dir[" + std::to_string(spotlight_idx) + "]", spotlight->get_direction());
-				// fragment shader uniforms
-				assimp_model_shader->set_vec3(prefix + "diffuse", spotlight->get_diffuse());
-				assimp_model_shader->set_vec3(prefix + "specular", spotlight->get_specular());
-				assimp_model_shader->set_float(prefix + "constant", spotlight->get_constant());
-				assimp_model_shader->set_float(prefix + "linear", spotlight->get_linear());
-				assimp_model_shader->set_float(prefix + "quadratic", spotlight->get_quadratic());
-				assimp_model_shader->set_float(prefix + "inner_cutoff", spotlight->get_inner_cutoff());
-				assimp_model_shader->set_float(prefix + "outer_cutoff", spotlight->get_outer_cutoff());
-
-				spotlight_idx++; // increment the spotlight index for the next iteration
-			}
-			break;
-			case Light_Type::UNDEFINED:
-				// if the light type is undefined, print a message and return
-				std::cerr << "[ERROR::RENDERER::render_scene] Light type is undefined for light: " << light->get_name() << std::endl;
-				return;
-			default:
-				// if the light type is unknown, print an error message and return
-				std::cerr << "[ERROR::RENDERER::render_scene] Unknown light type for light: " << light->get_name() << std::endl;
-				return;
-		}
-	});
-	shape_model_shader->use();
-	shape_model_shader->set_int("u_directional_light_count", directional_light_idx);
-	shape_model_shader->set_int("u_point_light_count", point_light_idx);
-	shape_model_shader->set_int("u_spotlight_count", spotlight_idx);
-	assimp_model_shader->use();
-	assimp_model_shader->set_int("u_directional_light_count", directional_light_idx);
-	assimp_model_shader->set_int("u_point_light_count", point_light_idx);
-	assimp_model_shader->set_int("u_spotlight_count", spotlight_idx);
 
 	// flatten scene graph into a single list of drawable nodes
 	std::vector<std::shared_ptr<Node>> drawable_nodes;
@@ -759,6 +635,107 @@ void Renderer::render_node(const std::shared_ptr<Node>& node)
 		if (need_disable_culling && cull_was_enabled)
 			glEnable(GL_CULL_FACE);
 	}
+}
+
+void Renderer::upload_lights()
+{
+	// light data, laid out as the Light_Data struct of the lit shaders (std430: each vec4 takes 16 bytes)
+	struct Light_Data
+	{
+		glm::vec4 position;    // xyz: world-space position (point lights and spotlights), w: light type
+		glm::vec4 direction;   // xyz: world-space direction (directional lights and spotlights)
+		glm::vec4 ambient;     // rgb: ambient component
+		glm::vec4 diffuse;     // rgb: diffuse component
+		glm::vec4 specular;    // rgb: specular component
+		glm::vec4 attenuation; // x: constant, y: linear, z: quadratic factor (point lights and spotlights)
+		glm::vec4 cutoffs;     // x: inner, y: outer cut-off (spotlights)
+	};
+	static_assert(sizeof(Light_Data) == 7 * sizeof(glm::vec4), "Light_Data must match the std430 layout of the shaders");
+
+	// light types, as defined in the lit shaders
+	constexpr float DIRECTIONAL_LIGHT{ 0.0f };
+	constexpr float POINT_LIGHT{ 1.0f };
+	constexpr float SPOTLIGHT{ 2.0f };
+
+	// gather the lights sorted by type (directional lights, point lights, and spotlights, in their order within the
+	// scene), so that the shaders accumulate their contributions in the same order as before
+	std::vector<Light_Data> directional_lights, point_lights, spotlights;
+	for (const auto& node : Core::get_instance()->get_node_manager()->get_nodes(Node_Type::LIGHT))
+	{
+		auto light = dynamic_cast<Light*>(node.get());
+		if (!light)
+			continue;
+
+		switch (light->get_light_type())
+		{
+			case Light_Type::DIRECTIONAL_LIGHT:
+			{
+				auto directional_light = dynamic_cast<Directional_Light*>(light);
+				directional_lights.push_back(
+					Light_Data{ glm::vec4{ 0.0f, 0.0f, 0.0f, DIRECTIONAL_LIGHT },
+								glm::vec4{ directional_light->get_direction(), 0.0f },
+								glm::vec4{ directional_light->get_ambient(), 0.0f },
+								glm::vec4{ directional_light->get_diffuse(), 0.0f },
+								glm::vec4{ directional_light->get_specular(), 0.0f },
+								glm::vec4{ 0.0f },
+								glm::vec4{ 0.0f } });
+			}
+			break;
+			case Light_Type::POINT_LIGHT:
+			{
+				auto point_light = dynamic_cast<Point_Light*>(light);
+				point_lights.push_back(
+					Light_Data{ glm::vec4{ point_light->get_position(), POINT_LIGHT },
+								glm::vec4{ 0.0f },
+								glm::vec4{ point_light->get_ambient(), 0.0f },
+								glm::vec4{ point_light->get_diffuse(), 0.0f },
+								glm::vec4{ point_light->get_specular(), 0.0f },
+								glm::vec4{ point_light->get_constant(), point_light->get_linear(), point_light->get_quadratic(), 0.0f },
+								glm::vec4{ 0.0f } });
+			}
+			break;
+			case Light_Type::SPOTLIGHT:
+			{
+				auto spotlight = dynamic_cast<Spotlight*>(light);
+				spotlights.push_back(
+					Light_Data{ glm::vec4{ spotlight->get_position(), SPOTLIGHT },
+								glm::vec4{ spotlight->get_direction(), 0.0f },
+								glm::vec4{ spotlight->get_ambient(), 0.0f },
+								glm::vec4{ spotlight->get_diffuse(), 0.0f },
+								glm::vec4{ spotlight->get_specular(), 0.0f },
+								glm::vec4{ spotlight->get_constant(), spotlight->get_linear(), spotlight->get_quadratic(), 0.0f },
+								glm::vec4{ spotlight->get_inner_cutoff(), spotlight->get_outer_cutoff(), 0.0f, 0.0f } });
+			}
+			break;
+			default:
+				// lights of an undefined or unknown type are skipped
+				std::cerr << "[ERROR::RENDERER::upload_lights] Unknown light type for light: " << light->get_name() << std::endl;
+				break;
+		}
+	}
+
+	// buffer contents: the number of lights (padded to 16 bytes, the alignment of the struct array that follows
+	// it in the std430 layout), followed by the lights
+	const GLint            light_count = static_cast<GLint>(directional_lights.size() + point_lights.size() + spotlights.size());
+	std::vector<std::byte> buffer_data(16 + light_count * sizeof(Light_Data));
+	std::memcpy(buffer_data.data(), &light_count, sizeof(light_count));
+	std::size_t offset{ 16 };
+	for (const auto* group : { &directional_lights, &point_lights, &spotlights })
+	{
+		std::memcpy(buffer_data.data() + offset, group->data(), group->size() * sizeof(Light_Data));
+		offset += group->size() * sizeof(Light_Data);
+	}
+
+	// upload the data (reallocating the storage every frame, so that the driver does not wait for the previous
+	// frame's draw calls) and bind the buffer to the binding point read by the shaders
+	if (!light_ssbo)
+		glGenBuffers(1, &light_ssbo);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, light_ssbo);
+	glBufferData(GL_SHADER_STORAGE_BUFFER, buffer_data.size(), buffer_data.data(), GL_STREAM_DRAW);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, LIGHT_BUFFER_BINDING, light_ssbo);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+
+	light_count_last_frame = static_cast<std::size_t>(light_count);
 }
 
 void Renderer::render_opaque_nodes(const std::vector<std::shared_ptr<Node>>& nodes)
@@ -1508,99 +1485,8 @@ void Renderer::render_scene_for_env_map_capture(
 	refractive_shader->set_mat3("u_inv_view_rot", inv_view_rot);
 	refractive_shader->set_int("u_skybox", 0);
 
-	// set light uniforms
-	auto& lights = node_manager->get_nodes(Node_Type::LIGHT);          // get lights from the node manager
-	GLint point_light_idx{}, spotlight_idx{}, directional_light_idx{}; // light type indices
-	for (const auto& node : lights)
-	{ // iterate over the lights and set their parameters in the shaders
-		// dynamically cast the node to a Light object
-		auto light = dynamic_cast<Light*>(node.get());
-
-		switch (light->get_light_type()) // set light parameters based on light type
-		{
-			case Light_Type::DIRECTIONAL_LIGHT:
-			{
-				auto        dl     = dynamic_cast<Directional_Light*>(light);
-				std::string prefix = "u_directional_lights[" + std::to_string(directional_light_idx) + "].";
-				shape_model_shader->use();
-				shape_model_shader->set_vec3("u_directional_light_dir[" + std::to_string(directional_light_idx) + "]", dl->get_direction());
-				shape_model_shader->set_vec3(prefix + "ambient", dl->get_ambient());
-				shape_model_shader->set_vec3(prefix + "diffuse", dl->get_diffuse());
-				shape_model_shader->set_vec3(prefix + "specular", dl->get_specular());
-				assimp_model_shader->use();
-				assimp_model_shader->set_vec3(
-					"u_directional_light_dir[" + std::to_string(directional_light_idx) + "]",
-					dl->get_direction());
-				assimp_model_shader->set_vec3(prefix + "ambient", dl->get_ambient());
-				assimp_model_shader->set_vec3(prefix + "diffuse", dl->get_diffuse());
-				assimp_model_shader->set_vec3(prefix + "specular", dl->get_specular());
-				directional_light_idx++;
-			}
-			break;
-			case Light_Type::POINT_LIGHT:
-			{
-				auto        pl     = dynamic_cast<Point_Light*>(light);
-				std::string prefix = "u_point_lights[" + std::to_string(point_light_idx) + "].";
-				shape_model_shader->use();
-				shape_model_shader->set_vec3("u_point_light_pos[" + std::to_string(point_light_idx) + "]", pl->get_position());
-				shape_model_shader->set_vec3(prefix + "ambient", pl->get_ambient());
-				shape_model_shader->set_vec3(prefix + "diffuse", pl->get_diffuse());
-				shape_model_shader->set_vec3(prefix + "specular", pl->get_specular());
-				shape_model_shader->set_float(prefix + "constant", pl->get_constant());
-				shape_model_shader->set_float(prefix + "linear", pl->get_linear());
-				shape_model_shader->set_float(prefix + "quadratic", pl->get_quadratic());
-				assimp_model_shader->use();
-				assimp_model_shader->set_vec3("u_point_light_pos[" + std::to_string(point_light_idx) + "]", pl->get_position());
-				assimp_model_shader->set_vec3(prefix + "ambient", pl->get_ambient());
-				assimp_model_shader->set_vec3(prefix + "diffuse", pl->get_diffuse());
-				assimp_model_shader->set_vec3(prefix + "specular", pl->get_specular());
-				assimp_model_shader->set_float(prefix + "constant", pl->get_constant());
-				assimp_model_shader->set_float(prefix + "linear", pl->get_linear());
-				assimp_model_shader->set_float(prefix + "quadratic", pl->get_quadratic());
-				point_light_idx++;
-			}
-			break;
-			case Light_Type::SPOTLIGHT:
-			{
-				auto        sl     = dynamic_cast<Spotlight*>(light);
-				std::string prefix = "u_spotlights[" + std::to_string(spotlight_idx) + "].";
-				shape_model_shader->use();
-				shape_model_shader->set_vec3("u_spotlight_pos[" + std::to_string(spotlight_idx) + "]", sl->get_position());
-				shape_model_shader->set_vec3("u_spotlight_dir[" + std::to_string(spotlight_idx) + "]", sl->get_direction());
-				shape_model_shader->set_vec3(prefix + "ambient", sl->get_ambient());
-				shape_model_shader->set_vec3(prefix + "diffuse", sl->get_diffuse());
-				shape_model_shader->set_vec3(prefix + "specular", sl->get_specular());
-				shape_model_shader->set_float(prefix + "constant", sl->get_constant());
-				shape_model_shader->set_float(prefix + "linear", sl->get_linear());
-				shape_model_shader->set_float(prefix + "quadratic", sl->get_quadratic());
-				shape_model_shader->set_float(prefix + "inner_cutoff", sl->get_inner_cutoff());
-				shape_model_shader->set_float(prefix + "outer_cutoff", sl->get_outer_cutoff());
-				assimp_model_shader->use();
-				assimp_model_shader->set_vec3("u_spotlight_pos[" + std::to_string(spotlight_idx) + "]", sl->get_position());
-				assimp_model_shader->set_vec3("u_spotlight_dir[" + std::to_string(spotlight_idx) + "]", sl->get_direction());
-				assimp_model_shader->set_vec3(prefix + "ambient", sl->get_ambient());
-				assimp_model_shader->set_vec3(prefix + "diffuse", sl->get_diffuse());
-				assimp_model_shader->set_vec3(prefix + "specular", sl->get_specular());
-				assimp_model_shader->set_float(prefix + "constant", sl->get_constant());
-				assimp_model_shader->set_float(prefix + "linear", sl->get_linear());
-				assimp_model_shader->set_float(prefix + "quadratic", sl->get_quadratic());
-				assimp_model_shader->set_float(prefix + "inner_cutoff", sl->get_inner_cutoff());
-				assimp_model_shader->set_float(prefix + "outer_cutoff", sl->get_outer_cutoff());
-				spotlight_idx++;
-			}
-			break;
-			default: break;
-		}
-	}
-	// set the number of lights of each type in the shader
-	shape_model_shader->use();
-	shape_model_shader->set_int("u_directional_light_count", directional_light_idx);
-	shape_model_shader->set_int("u_point_light_count", point_light_idx);
-	shape_model_shader->set_int("u_spotlight_count", spotlight_idx);
-	assimp_model_shader->use();
-	assimp_model_shader->set_int("u_directional_light_count", directional_light_idx);
-	assimp_model_shader->set_int("u_point_light_count", point_light_idx);
-	assimp_model_shader->set_int("u_spotlight_count", spotlight_idx);
+	// the lights are read from the light buffer, uploaded once per frame by upload_lights() in world space,
+	// and transformed to view space by the shaders with the capture view matrix
 
 	// render all models in the scene except the excluded model
 	auto& models = node_manager->get_nodes(Node_Type::MODEL); // get models from the node manager

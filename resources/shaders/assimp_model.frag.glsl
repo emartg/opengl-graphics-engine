@@ -1,11 +1,6 @@
 #version 450 core
 out vec4 FragColor;
 
-// maximum number of lights in the scene (same as in the vertex shader)
-#define MAX_DIR_LIGHTS_COUNT	3
-#define MAX_POINT_LIGHTS_COUNT	3
-#define MAX_SPOTLIGHTS_COUNT	3
-
 // structs to hold light properties
 struct Directional_Light
 {
@@ -65,21 +60,31 @@ in vec3 v_frag_pos;
 in vec3 v_normal;
 in vec2 v_tex_coords;
 
-// statically sized arrays of light attributes in view space passed from the vertex shader
-in vec3 v_directional_light_dir[MAX_DIR_LIGHTS_COUNT];
-in vec3 v_point_light_pos[MAX_POINT_LIGHTS_COUNT];
-in vec3 v_spotlight_pos[MAX_SPOTLIGHTS_COUNT];
-in vec3 v_spotlight_dir[MAX_SPOTLIGHTS_COUNT];
+// lights of the scene, read from a shader storage buffer (binding point 0) filled by the renderer
+// every frame, in world space (sorted by type: directional lights, point lights, and spotlights)
+#define DIRECTIONAL_LIGHT	0
+#define POINT_LIGHT			1
+#define SPOTLIGHT			2
 
-// number of lights currently in the scene
-uniform int u_directional_light_count;
-uniform int u_point_light_count;
-uniform int u_spotlight_count;
+struct Light_Data
+{
+	vec4 position;		// xyz: position (point lights and spotlights), w: light type
+	vec4 direction;		// xyz: direction (directional lights and spotlights)
+	vec4 ambient;		// rgb: ambient component
+	vec4 diffuse;		// rgb: diffuse component
+	vec4 specular;		// rgb: specular component
+	vec4 attenuation;	// x: constant, y: linear, z: quadratic factor (point lights and spotlights)
+	vec4 cutoffs;		// x: inner, y: outer cut-off (spotlights)
+};
 
-// statically sized arrays of light structs
-uniform Directional_Light u_directional_lights[MAX_DIR_LIGHTS_COUNT]; 
-uniform Point_Light u_point_lights[MAX_POINT_LIGHTS_COUNT];
-uniform Spotlight u_spotlights[MAX_SPOTLIGHTS_COUNT];
+layout(std430, binding = 0) readonly buffer Light_Buffer
+{
+	int light_count;		// number of lights in the scene
+	Light_Data lights[];	// lights of the scene (as many as light_count)
+};
+
+// view matrix, used to transform the lights from world space to view space
+uniform mat4 u_view;
 
 // material properties struct
 uniform Material u_material;
@@ -115,20 +120,36 @@ void main()
 	// initialize fragment color
 	vec3 result = vec3(0.0);
 
-	// loop through all directional lights and accumulate their contributions
-	for (int i = 0; i < u_directional_light_count; i++)
-		result  += compute_directional_light_component(u_directional_lights[i], v_directional_light_dir[i],
-													   normal, view_dir);
+	// loop through all the lights and accumulate their contributions, transforming their attributes
+	// from world space to view space (directions are not translated, so their w component is 0.0)
+	for (int i = 0; i < light_count; i++)
+	{
+		Light_Data light = lights[i];
+		int light_type   = int(light.position.w);
 
-	// loop through all point lights and accumulate their contributions
-	for (int i = 0; i < u_point_light_count; i++)
-		result  += compute_point_light_component(u_point_lights[i], v_point_light_pos[i], 
-												 normal, v_frag_pos, view_dir);
-
-	// loop through all spotlights and accumulate their contributions
-	for (int i = 0; i < u_spotlight_count; i++)
-		result  += compute_spotlight_component(u_spotlights[i], v_spotlight_pos[i], v_spotlight_dir[i], 
-											   normal, v_frag_pos, view_dir);
+		if (light_type == DIRECTIONAL_LIGHT)
+		{
+			Directional_Light directional_light = Directional_Light(light.ambient.rgb, light.diffuse.rgb, light.specular.rgb);
+			vec3 light_dir = vec3(u_view * vec4(light.direction.xyz, 0.0));
+			result += compute_directional_light_component(directional_light, light_dir, normal, view_dir);
+		}
+		else if (light_type == POINT_LIGHT)
+		{
+			Point_Light point_light = Point_Light(light.ambient.rgb, light.diffuse.rgb, light.specular.rgb,
+												  light.attenuation.x, light.attenuation.y, light.attenuation.z);
+			vec3 light_pos = vec3(u_view * vec4(light.position.xyz, 1.0));
+			result += compute_point_light_component(point_light, light_pos, normal, v_frag_pos, view_dir);
+		}
+		else if (light_type == SPOTLIGHT)
+		{
+			Spotlight spotlight = Spotlight(light.ambient.rgb, light.diffuse.rgb, light.specular.rgb,
+											light.attenuation.x, light.attenuation.y, light.attenuation.z,
+											light.cutoffs.x, light.cutoffs.y);
+			vec3 light_pos = vec3(u_view * vec4(light.position.xyz, 1.0));
+			vec3 light_dir = vec3(u_view * vec4(light.direction.xyz, 0.0));
+			result += compute_spotlight_component(spotlight, light_pos, light_dir, normal, v_frag_pos, view_dir);
+		}
+	}
 
 	// get final opacity either from the opacity map (if it exists) or from the base opacity uniform
 	float opacity = get_opacity_component();
