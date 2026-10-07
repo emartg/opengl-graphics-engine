@@ -381,6 +381,20 @@ cmake --build out/build/consumer-mingw
 ctest --test-dir out/build/consumer-mingw --output-on-failure
 ```
 
+Each job has a time limit (10 minutes for formatting, 30 minutes for Linux builds, and 90 minutes for Windows builds, where vcpkg may build the dependencies from source), so a stalled job fails instead of running for hours.
+
+## Release Packages
+
+The `.github/workflows/release.yml` workflow builds the `ninja-msvc-release` preset and packages the App for Windows: when a release is published on GitHub, it attaches `opengl-graphics-engine-<tag>-windows-x64.zip` to it, and when it is started manually (**Actions** > **Release** > **Run workflow**), it uploads the package as an artifact of the run, to check it before a release.
+
+The package is the installation of the `App` component, which contains the App, its DLLs (including the MSVC runtime, so the Visual C++ Redistributable is not required), and the resources, but not the Core and Platform libraries. The same package can be created locally from a Release build:
+
+```powershell
+cmake --install out/build/ninja-msvc-release --component App --prefix out/package/opengl-graphics-engine
+```
+
+The App is then run from `out/package/opengl-graphics-engine/bin`, and uses the resources of `share/EngineProject/resources`.
+
 ## Clean Build
 
 To clean all generated files:

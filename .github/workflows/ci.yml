@@ -24,6 +24,7 @@ jobs:
   format:
     name: Format (clang-format 23)
     runs-on: ubuntu-24.04
+    timeout-minutes: 10
     steps:
       - name: Check out the repository
         uses: actions/checkout@v7
@@ -38,10 +39,11 @@ jobs:
             | grep -v -x -e 'core/glad.c' -e 'core/stb_image.cpp' \
             | xargs clang-format --style=file --dry-run --Werror
 
-  # Linux builds with the system packages, unit tests, and smoke test of the Ap
+  # Linux builds with the system packages, unit tests, and smoke test of the App
   linux:
     name: Linux (${{ matrix.preset }})
     runs-on: ubuntu-24.04
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
@@ -51,9 +53,10 @@ jobs:
         uses: actions/checkout@v7
 
       - name: Install the dependencies
+        # retries and a network timeout, so that an unresponsive package mirror does not stall the job
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
+          sudo apt-get -o Acquire::Retries=3 -o Acquire::http::Timeout=30 update
+          sudo apt-get -o Acquire::Retries=3 -o Acquire::http::Timeout=30 install -y --no-install-recommends \
             ninja-build libglfw3-dev libassimp-dev libglm-dev libgl-dev \
             xvfb libgl1-mesa-dri mesa-utils
 
@@ -73,14 +76,16 @@ jobs:
   consumer-linux:
     name: Consumer test (Linux)
     runs-on: ubuntu-24.04
+    timeout-minutes: 30
     steps:
       - name: Check out the repository
         uses: actions/checkout@v7
 
       - name: Install the dependencies
+        # retries and a network timeout, so that an unresponsive package mirror does not stall the job
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
+          sudo apt-get -o Acquire::Retries=3 -o Acquire::http::Timeout=30 update
+          sudo apt-get -o Acquire::Retries=3 -o Acquire::http::Timeout=30 install -y --no-install-recommends \
             ninja-build libglfw3-dev libassimp-dev libglm-dev libgl-dev \
             xvfb libgl1-mesa-dri
 

@@ -46,3 +46,4 @@ The project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html): 
    - Update the status of the README and the [Limitations](limitations.md) and [Future Work](future_work.md) documents if needed.
 2. Merge the pull request once the CI passes.
 3. On GitHub, draft a new release: create the tag (`v0.9.0`) on `main` when publishing, use the title `Release v0.9.0 - <Highlights>`, write the release notes (Overview, sections per area, Upgrade Notes when needed, Summary, and the full changelog link), and mark it as a pre-release before v1.0.0.
+4. Publishing the release starts the Release workflow, which attaches the Windows package (`opengl-graphics-engine-<tag>-windows-x64.zip`) to it a few minutes later. Before the release, the package can be checked by starting the workflow manually (**Actions** > **Release** > **Run workflow**), which uploads it as an artifact of the run.
