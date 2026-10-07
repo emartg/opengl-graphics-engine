@@ -23,7 +23,7 @@ endif()
 add_executable(Consumer_Test main.cpp)
 target_link_libraries(Consumer_Test PRIVATE Engine::Platform)
 
-# Copy the Engine's bundled runtime dependencies (DLLs) beside the executable (Windows only)
+# Copy the runtime dependencies (DLLs) beside the executable (MinGW only, see the function)
 engine_stage_runtime_dependencies(Consumer_Test)
 
 # Run test: create a window, render a few frames with a custom GUI layer, and exit.

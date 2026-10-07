@@ -24,17 +24,18 @@ target_include_directories(App PRIVATE
 target_link_libraries(App PRIVATE Engine::Platform)
 target_compile_features(App PRIVATE cxx_std_20)
 
-# Stage the bundled runtime dependencies (DLLs) beside the executable for local runs (Windows only).
+# Stage the runtime dependencies (DLLs) beside the executable for local runs (MinGW only, see the function).
 # Resources are not copied: the Core locates them at runtime (beside the executable, in the
 # installation layout, in the working directory, or in the Engine's source tree for development builds).
 engine_stage_runtime_dependencies(App)
 
-# Install the bundled runtime dependencies beside the installed executable too
-if(WIN32 AND ENGINE_USE_BUNDLED_DEPS)
-	file(GLOB ENGINE_RUNTIME_DLLS CONFIGURE_DEPENDS
-		"${ENGINE_ROOT_DIR}/external/dlls/*.dll"
+# Install the runtime dependencies (DLLs) staged beside the executable, by vcpkg (MSVC) or by
+# engine_stage_runtime_dependencies (MinGW), beside the installed executable too (Windows only)
+if(WIN32)
+	install(DIRECTORY "$<TARGET_FILE_DIR:App>/"
+		DESTINATION ${CMAKE_INSTALL_BINDIR}
+		FILES_MATCHING PATTERN "*.dll"
 	)
-	install(FILES ${ENGINE_RUNTIME_DLLS} DESTINATION ${CMAKE_INSTALL_BINDIR})
 endif()
 
 # Smoke test: render a fixed number of frames of the example scene and exit.

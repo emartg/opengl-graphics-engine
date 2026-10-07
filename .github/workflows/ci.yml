@@ -85,7 +85,7 @@ jobs:
             xvfb libgl1-mesa-dri
 
       - name: Configure
-        run: cmake -S tests/consumer -B out/build/consumer -G Ninja -DCMAKE_BUILD_TYPE=Debug -DENGINE_USE_BUNDLED_DEPS=OFF
+        run: cmake -S tests/consumer -B out/build/consumer -G Ninja -DCMAKE_BUILD_TYPE=Debug
 
       - name: Build
         run: cmake --build out/build/consumer
@@ -194,5 +194,5 @@ jobs:
       - name: Build the consumer test
         # the consumer test is a separate project, so it uses the manifest and the packages installed for the Engine
         run: |
-          cmake -S tests/consumer -B out/build/consumer -G "${{ matrix.generator }}" -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} -DCMAKE_C_COMPILER=${{ matrix.c-compiler }} -DCMAKE_CXX_COMPILER=${{ matrix.cxx-compiler }} -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" -DVCPKG_TARGET_TRIPLET=${{ matrix.triplet }} -DVCPKG_MANIFEST_DIR="${{ github.workspace }}" -DVCPKG_INSTALLED_DIR="${{ github.workspace }}/out/build/${{ matrix.preset }}/vcpkg_installed" -DENGINE_USE_BUNDLED_DEPS=OFF
+          cmake -S tests/consumer -B out/build/consumer -G "${{ matrix.generator }}" -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} -DCMAKE_C_COMPILER=${{ matrix.c-compiler }} -DCMAKE_CXX_COMPILER=${{ matrix.cxx-compiler }} -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" -DVCPKG_TARGET_TRIPLET=${{ matrix.triplet }} -DVCPKG_MANIFEST_DIR="${{ github.workspace }}" -DVCPKG_INSTALLED_DIR="${{ github.workspace }}/out/build/${{ matrix.preset }}/vcpkg_installed"
           cmake --build out/build/consumer --parallel

@@ -106,8 +106,7 @@ cmake -S . -B out/build/manual-ninja-msvc-release -G Ninja `
   -DCMAKE_C_COMPILER=cl `
   -DCMAKE_CXX_COMPILER=cl `
   -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" `
-  -DVCPKG_TARGET_TRIPLET=x64-windows `
-  -DENGINE_USE_BUNDLED_DEPS=OFF
+  -DVCPKG_TARGET_TRIPLET=x64-windows
 cmake --build out/build/manual-ninja-msvc-release --parallel
 out/build/manual-ninja-msvc-release\bin\App.exe
 ```

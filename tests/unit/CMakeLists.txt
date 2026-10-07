@@ -37,7 +37,7 @@ target_compile_definitions(Engine_Unit_Tests PRIVATE
 	ENGINE_UNIT_TESTS_EXECUTABLE_NAME="$<TARGET_FILE_NAME:Engine_Unit_Tests>"
 )
 
-# Copy the Engine's bundled runtime dependencies (DLLs) beside the executable (Windows only)
+# Copy the runtime dependencies (DLLs) beside the executable (MinGW only, see the function)
 engine_stage_runtime_dependencies(Engine_Unit_Tests)
 
 # Register every GoogleTest test as a CTest test with the "unit" label. The tests are listed when

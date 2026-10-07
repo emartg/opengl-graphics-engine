@@ -1,107 +1,27 @@
 # Resolve third-party dependencies and expose stable targets to the project.
+#
+# GLFW, GLM, and Assimp are located through the CMake packages they install (find_package in CONFIG mode),
+# which are provided by vcpkg on Windows (see vcpkg.json) and by the system packages on Linux.
+# GLAD, stb_image, ImGui, and ImGuiFileDialog are part of the source tree (external/include and core/).
 
 find_package(OpenGL REQUIRED)
 
-if(TARGET OpenGL::GL)
-    set(_engine_opengl_target OpenGL::GL)
-elseif(TARGET OpenGL::OpenGL)
-    set(_engine_opengl_target OpenGL::OpenGL)
-else()
-    message(FATAL_ERROR "OpenGL was found, but no usable imported target was provided")
-endif()
-
-find_package(glm CONFIG QUIET)
-if(NOT TARGET glm::glm)
-    find_package(GLM QUIET)
-endif()
-if(NOT TARGET glm::glm)
-    if(EXISTS "${PROJECT_SOURCE_DIR}/external/include/glm/glm.hpp")
-        add_library(engine_glm INTERFACE)
-        target_include_directories(engine_glm INTERFACE "${PROJECT_SOURCE_DIR}/external/include")
-        add_library(glm::glm ALIAS engine_glm)
-    else()
-        message(FATAL_ERROR "GLM was not found. Install GLM or ensure external/include/glm is available.")
+# Resolves a required dependency installed as a CMake package, with a common error message
+# that explains how to provide it on each platform
+macro(engine_find_package package)
+    find_package(${package} CONFIG QUIET)
+    if(NOT ${package}_FOUND)
+        message(FATAL_ERROR "${package} was not found.\n"
+            "On Windows, use a preset (or the vcpkg toolchain: -DCMAKE_TOOLCHAIN_FILE=<vcpkg-root>/scripts/buildsystems/vcpkg.cmake), "
+            "so that vcpkg installs the dependencies of vcpkg.json. "
+            "On Linux, install the development packages (e.g., libglfw3-dev, libassimp-dev, and libglm-dev).\n"
+            "If the build directory was configured before without vcpkg, reconfigure it from scratch (cmake --fresh).")
     endif()
-endif()
+endmacro()
 
-find_package(glfw3 CONFIG QUIET)
-if(NOT TARGET glfw AND NOT TARGET glfw3 AND NOT TARGET glfw::glfw AND NOT TARGET glfw3::glfw3)
-    if(MINGW)
-        find_package(PkgConfig QUIET)
-        if(PkgConfig_FOUND)
-            pkg_check_modules(GLFW3 QUIET IMPORTED_TARGET glfw3)
-        endif()
-    endif()
-
-    if(NOT TARGET PkgConfig::GLFW3)
-        find_package(GLFW3 QUIET)
-        if(GLFW3_FOUND)
-            add_library(engine_glfw UNKNOWN IMPORTED)
-            set_target_properties(engine_glfw PROPERTIES
-                IMPORTED_LOCATION "${GLFW3_LIBRARY}"
-                INTERFACE_INCLUDE_DIRECTORIES "${GLFW3_INCLUDE_DIR}"
-            )
-            add_library(glfw ALIAS engine_glfw)
-        endif()
-    endif()
-endif()
-
-# The bundled GLFW library is distributed without its PDB file, so MSVC Debug links report
-# warning LNK4099 for every GLFW object (they are linked without debug information).
-# Ignore it for the bundled library only, and for every target that links it
-cmake_path(IS_PREFIX ENGINE_ROOT_DIR "${GLFW3_LIBRARY}" _engine_glfw_is_bundled)
-if(MSVC AND TARGET engine_glfw AND _engine_glfw_is_bundled)
-    set_property(TARGET engine_glfw APPEND PROPERTY INTERFACE_LINK_OPTIONS "/IGNORE:4099")
-endif()
-
-if(TARGET glfw)
-    set(_engine_glfw_target glfw)
-elseif(TARGET glfw3)
-    set(_engine_glfw_target glfw3)
-elseif(TARGET glfw3::glfw3)
-    set(_engine_glfw_target glfw3::glfw3)
-elseif(TARGET glfw::glfw)
-    set(_engine_glfw_target glfw::glfw)
-elseif(TARGET PkgConfig::GLFW3)
-    set(_engine_glfw_target PkgConfig::GLFW3)
-else()
-    message(FATAL_ERROR "GLFW was not found.\n"
-        "Please install GLFW (e.g. vcpkg: 'vcpkg install glfw3' or your system package manager), or provide GLFW3_LIBRARY and GLFW3_INCLUDE_DIR variables.\n"
-        "CMake search paths: CMAKE_PREFIX_PATH='${CMAKE_PREFIX_PATH}'\n"
-        "If using vcpkg, ensure CMake toolchain is set via -DCMAKE_TOOLCHAIN_FILE=<vcpkg-root>/scripts/buildsystems/vcpkg.cmake.")
-endif()
-
-find_package(assimp CONFIG QUIET)
-if(NOT TARGET assimp::assimp AND NOT TARGET assimp)
-    if(MINGW)
-        find_package(PkgConfig QUIET)
-        if(PkgConfig_FOUND)
-            pkg_check_modules(ASSIMP QUIET IMPORTED_TARGET assimp)
-        endif()
-    endif()
-
-    if(NOT TARGET PkgConfig::ASSIMP)
-        find_package(Assimp QUIET)
-        if(ASSIMP_FOUND)
-            add_library(engine_assimp UNKNOWN IMPORTED)
-            set_target_properties(engine_assimp PROPERTIES
-                IMPORTED_LOCATION "${ASSIMP_LIBRARY}"
-                INTERFACE_INCLUDE_DIRECTORIES "${ASSIMP_INCLUDE_DIR}"
-            )
-            add_library(assimp::assimp ALIAS engine_assimp)
-        endif()
-    endif()
-endif()
-
-if(TARGET assimp::assimp)
-    set(_engine_assimp_target assimp::assimp)
-elseif(TARGET assimp)
-    set(_engine_assimp_target assimp)
-elseif(TARGET PkgConfig::ASSIMP)
-    set(_engine_assimp_target PkgConfig::ASSIMP)
-else()
-    message(FATAL_ERROR "Assimp was not found. Install Assimp or configure ASSIMP_LIBRARY and ASSIMP_INCLUDE_DIR.")
-endif()
+engine_find_package(glm)    # target: glm::glm
+engine_find_package(glfw3)  # target: glfw
+engine_find_package(assimp) # target: assimp::assimp
 
 add_library(engine_glad STATIC "${PROJECT_SOURCE_DIR}/core/glad.c")
 target_include_directories(engine_glad PUBLIC "${PROJECT_SOURCE_DIR}/external/include")
@@ -126,26 +46,28 @@ if(ENGINE_BUILD_PLATFORM)
         "${_engine_imgui_file_dialog_dir}"
         "${PROJECT_SOURCE_DIR}/external/include"
     )
-    target_link_libraries(engine_imgui PUBLIC ${_engine_glfw_target} ${_engine_opengl_target})
+    target_link_libraries(engine_imgui PUBLIC glfw OpenGL::GL)
     target_compile_features(engine_imgui PUBLIC cxx_std_17)
 endif()
 
-# Copies the bundled runtime dependencies (DLLs) beside the executable of the given target after each build,
-# so that it can be run from the build tree. It only applies to Windows builds with the bundled dependencies;
-# otherwise, the runtime dependencies are found by the system or provided by the package manager.
+# Copies the runtime dependencies (DLLs) built by vcpkg beside the executable of the given target after
+# each build, so that it can be run from the build tree. It is only needed with MinGW: with MSVC, vcpkg
+# already copies the DLLs used by each executable, and on Linux the shared libraries are found by the system.
 # It is a function (functions are global in CMake), so consumers of the Engine can use it for their executables
 function(engine_stage_runtime_dependencies target)
-    if(WIN32 AND ENGINE_USE_BUNDLED_DEPS)
-        file(GLOB _engine_runtime_dlls CONFIGURE_DEPENDS "${ENGINE_ROOT_DIR}/external/dlls/*.dll")
-        if(_engine_runtime_dlls)
+    if(MINGW AND DEFINED VCPKG_INSTALLED_DIR AND DEFINED VCPKG_TARGET_TRIPLET)
+        # every DLL installed by vcpkg (including the dependencies of Assimp, e.g., zlib), for each configuration
+        set(_engine_vcpkg_dir "${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}")
+        file(GLOB _engine_release_dlls "${_engine_vcpkg_dir}/bin/*.dll")
+        file(GLOB _engine_debug_dlls "${_engine_vcpkg_dir}/debug/bin/*.dll")
+        if(_engine_release_dlls AND _engine_debug_dlls)
             add_custom_command(TARGET ${target} POST_BUILD
-                COMMAND ${CMAKE_COMMAND} -E copy_if_different ${_engine_runtime_dlls} "$<TARGET_FILE_DIR:${target}>"
-                COMMENT "Copying the bundled runtime dependencies beside ${target}"
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                    "$<IF:$<CONFIG:Debug>,${_engine_debug_dlls},${_engine_release_dlls}>"
+                    "$<TARGET_FILE_DIR:${target}>"
+                COMMAND_EXPAND_LISTS
+                COMMENT "Copying the runtime dependencies installed by vcpkg beside ${target}"
             )
         endif()
     endif()
 endfunction()
-
-set(ENGINE_GLFW_TARGET "${_engine_glfw_target}" CACHE INTERNAL "Resolved GLFW target")
-set(ENGINE_OPENGL_TARGET "${_engine_opengl_target}" CACHE INTERNAL "Resolved OpenGL target")
-set(ENGINE_ASSIMP_TARGET "${_engine_assimp_target}" CACHE INTERNAL "Resolved Assimp target")

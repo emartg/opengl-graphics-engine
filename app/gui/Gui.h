@@ -12,7 +12,9 @@
 
 #include <iostream>
 #include <memory>
+#include <string>
 #include <unordered_set>
+#include <vector>
 
 #include <glm/glm.hpp>
 #define GLM_ENABLE_EXPERIMENTAL

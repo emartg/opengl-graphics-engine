@@ -14,6 +14,8 @@
 
 #include "Renderer.h"
 
+#include <functional>
+
 #include "SKYBOX.h"      // skybox vertex data
 #include "SCREEN_QUAD.h" // screen-quad vertex data
 #include "Render_Pass.h"

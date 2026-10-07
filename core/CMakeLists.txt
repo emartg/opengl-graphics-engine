@@ -26,7 +26,7 @@ add_library(Engine::Core ALIAS Core)
 
 # Include directories for the Core library:
 # - the Engine root directory, so that Core headers can be included as "core/<path>/<header>.h"
-# - the external headers (GLAD, GLM, stb_image, etc.)
+# - the headers of the dependencies included in the source tree (GLAD, KHR, and stb_image)
 target_include_directories(Core PUBLIC
 	$<BUILD_INTERFACE:${ENGINE_ROOT_DIR}>
 	$<BUILD_INTERFACE:${ENGINE_ROOT_DIR}/external/include>
@@ -34,9 +34,9 @@ target_include_directories(Core PUBLIC
 
 # Link libraries to the Core library
 target_link_libraries(Core PUBLIC
-	${ENGINE_OPENGL_TARGET}
+	OpenGL::GL
 	glm::glm
-	${ENGINE_ASSIMP_TARGET}
+	assimp::assimp
 	engine_glad
 	engine_stb_image
 )

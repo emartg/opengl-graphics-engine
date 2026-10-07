@@ -15,14 +15,12 @@ This document provides detailed steps to compile and run the OpenGL Graphics Eng
 
 ## Dependency Resolution
 
-The engine depends on GLFW, GLM, and Assimp, which are located with CMake's `find_package` (the custom `Find*.cmake` scripts in `cmake/modules` are used when a library provides no CMake package). OpenGL (GLAD), `stb_image`, and ImGui are part of the source tree: GLAD is generated, and stb_image and ImGui are included as sources.
+The engine depends on GLFW, GLM, and Assimp, which are located with CMake's `find_package` through the CMake packages they install. OpenGL (GLAD), `stb_image`, ImGui, and ImGuiFileDialog are part of the source tree (in `external/include` and `core/`): GLAD is generated, and the others are included as sources.
 
 The libraries are provided by:
 
 - **Windows (every preset):** vcpkg. The dependencies are declared in the `vcpkg.json` manifest (vcpkg manifest mode), so vcpkg builds and installs them into the build directory during the first configuration, for the preset's triplet: `x64-windows` with MSVC, and `x64-mingw-dynamic` with MinGW. The manifest's `builtin-baseline` pins the versions of the packages, so every machine and the CI use the same ones. vcpkg is a package manager and CMake toolchain integration; it is not a compiler.
 - **Linux:** the system packages (see [Linux with GCC or Clang](#linux-with-gcc-or-clang)).
-
-The MSVC libraries checked into `external/` (GLFW and a Debug build of Assimp) are no longer used by the presets.
 
 Clone and bootstrap vcpkg once (any location works):
 
@@ -48,13 +46,21 @@ $env:MINGW_ROOT
 Test-Path "$env:VCPKG_ROOT\scripts\buildsystems\vcpkg.cmake"
 ```
 
-The first configuration of each triplet builds GLFW, Assimp, and their dependencies from source, in Debug and Release, which can take 10 to 30 minutes. vcpkg stores the built packages in its binary cache (by default in `%LOCALAPPDATA%\vcpkg\archives`), so later configurations, including those of new build directories and of other presets with the same triplet, restore them in seconds. With MSVC, vcpkg also copies the required DLLs beside each executable after it is built.
+The first configuration of each triplet builds GLFW, Assimp, and their dependencies from source, in Debug and Release, which can take 10 to 30 minutes. vcpkg stores the built packages in its binary cache (by default in `%LOCALAPPDATA%\vcpkg\archives`), so later configurations, including those of new build directories and of other presets with the same triplet, restore them in seconds. With MSVC, vcpkg also copies the required DLLs beside each executable after it is built; with MinGW, the Engine's build does it (see `engine_stage_runtime_dependencies` in [Using the Engine from Another CMake Project](#using-the-engine-from-another-cmake-project)).
 
-A Visual Studio Developer PowerShell can set `VCPKG_ROOT` to the vcpkg instance bundled with Visual Studio in the current process. If that happens, restore your own before configuring:
+The commands that use Ninja with MSVC must run in a Visual Studio Developer PowerShell, which adds `cl.exe`, the Windows SDK, and the MSVC libraries to the environment of the current terminal (VS Code's CMake Tools does it automatically for the presets, but not for its integrated terminal). The Developer PowerShell shortcut of the Start menu targets x86 by default, so enter an x64 one from any PowerShell (including VS Code's terminal) instead:
 
 ```powershell
+# Enter the x64 developer environment of the latest Visual Studio, keeping the current directory
+$vsPath = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath
+Import-Module "$vsPath\Common7\Tools\Microsoft.VisualStudio.DevShell.dll"
+Enter-VsDevShell -VsInstallPath $vsPath -SkipAutomaticLocation -DevCmdArguments "-arch=x64 -host_arch=x64"
+
+# The developer environment may set VCPKG_ROOT to the vcpkg instance of Visual Studio: restore your own
 $env:VCPKG_ROOT = [Environment]::GetEnvironmentVariable("VCPKG_ROOT", "User")
 ```
+
+The environment only applies to the current terminal, so repeat these commands in every new terminal (`Get-Command cl` shows whether it is active). The Visual Studio generators locate MSVC by themselves, so they do not need it.
 
 CMake only reads the toolchain file when a build directory is configured for the first time. Build directories configured before the presets used vcpkg (or without `VCPKG_ROOT`) must be reconfigured from scratch: run **CMake: Delete Cache and Reconfigure** in VS Code, or `cmake --fresh --preset <preset>`, or delete the build directory.
 
@@ -167,8 +173,7 @@ For Visual Studio 2026, use the generator name reported by `cmake --help` and a 
 
 ## Linux with GCC or Clang
 
-The Linux presets use Ninja and the system packages for GLFW, Assimp, and GLM
-(the binaries in `external/` are built with MSVC, so `ENGINE_USE_BUNDLED_DEPS` is disabled).
+The Linux presets use Ninja and the system packages for GLFW, Assimp, and GLM.
 On Ubuntu/Debian, install the toolchain and the dependencies with:
 
 ```bash
@@ -251,6 +256,18 @@ int main()
 
 The Platform library is built by default (`ENGINE_BUILD_PLATFORM`); consumers that only need the Core library can disable it to skip building it and ImGui (GLFW is still located at configuration time).
 
+The consumer must provide the Engine's dependencies (GLFW, GLM, and Assimp) as CMake packages. On Linux, the system packages are enough. On Windows, use the vcpkg toolchain, and either declare the dependencies in the consumer's own `vcpkg.json` (recommended, so that the consumer can add its own dependencies) or point vcpkg to the Engine's manifest with `-DVCPKG_MANIFEST_DIR=<engine-root>`:
+
+```json
+{
+  "name": "my-app",
+  "builtin-baseline": "<same baseline as the Engine's vcpkg.json>",
+  "dependencies": [ "assimp", "glfw3", "glm" ]
+}
+```
+
+With MinGW, vcpkg does not copy the DLLs beside the executables, so consumers should call `engine_stage_runtime_dependencies(<target>)` (defined in `cmake/EngineDependencies.cmake`) for each executable, as the App, the unit tests, and the consumer test do. It copies the DLLs installed by vcpkg (Debug or Release ones, depending on the configuration) after each build, and does nothing with MSVC, whose DLLs are copied by vcpkg, or on Linux.
+
 ## Building with CMake Presets from the Command Line
 
 The preset workflow can also be run entirely from a Visual Studio Developer PowerShell:
@@ -282,8 +299,7 @@ cmake -S . -B out/build/manual-ninja-msvc-release -G Ninja `
    -DCMAKE_C_COMPILER=cl `
    -DCMAKE_CXX_COMPILER=cl `
    -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" `
-   -DVCPKG_TARGET_TRIPLET=x64-windows `
-   -DENGINE_USE_BUNDLED_DEPS=OFF
+   -DVCPKG_TARGET_TRIPLET=x64-windows
 
 # Build App and its dependencies
 cmake --build out/build/manual-ninja-msvc-release --parallel
@@ -339,20 +355,19 @@ The consumer test can also be run locally. It is a separate CMake project, so th
 On Linux:
 
 ```bash
-cmake -S tests/consumer -B out/build/consumer-gcc -G Ninja -DCMAKE_BUILD_TYPE=Debug -DENGINE_USE_BUNDLED_DEPS=OFF
+cmake -S tests/consumer -B out/build/consumer-gcc -G Ninja -DCMAKE_BUILD_TYPE=Debug
 cmake --build out/build/consumer-gcc
 ctest --test-dir out/build/consumer-gcc --output-on-failure
 ```
 
-On Windows with MSVC and vcpkg, from a Visual Studio Developer PowerShell (so that `cl.exe` is available; otherwise CMake may select another compiler found in the `PATH`, such as MinGW's GCC), with `VCPKG_ROOT` pointing to your vcpkg clone:
+On Windows with MSVC and vcpkg, from an ordinary PowerShell with `VCPKG_ROOT` pointing to your vcpkg clone (the Visual Studio generator locates MSVC by itself, so no Developer PowerShell is needed; use `"Visual Studio 17 2022"` for Visual Studio 2022):
 
 ```powershell
-cmake -S tests/consumer -B out/build/consumer-msvc -G Ninja -DCMAKE_BUILD_TYPE=Debug `
-  -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl `
+cmake -S tests/consumer -B out/build/consumer-msvc -G "Visual Studio 18 2026" -A x64 `
   -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" `
-  -DVCPKG_TARGET_TRIPLET=x64-windows -DVCPKG_MANIFEST_DIR="$PWD" -DENGINE_USE_BUNDLED_DEPS=OFF
-cmake --build out/build/consumer-msvc
-ctest --test-dir out/build/consumer-msvc --output-on-failure
+  -DVCPKG_TARGET_TRIPLET=x64-windows -DVCPKG_MANIFEST_DIR="$PWD"
+cmake --build out/build/consumer-msvc --config Debug
+ctest --test-dir out/build/consumer-msvc -C Debug --output-on-failure
 ```
 
 On Windows with MinGW and vcpkg, from an ordinary PowerShell (with the same environment as the `mingw-gcc-vcpkg-*` presets, including `$env:MINGW_ROOT\bin` in the `PATH`):
@@ -361,16 +376,10 @@ On Windows with MinGW and vcpkg, from an ordinary PowerShell (with the same envi
 cmake -S tests/consumer -B out/build/consumer-mingw -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Debug `
   -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ `
   -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" `
-  -DVCPKG_TARGET_TRIPLET=x64-mingw-dynamic -DVCPKG_MANIFEST_DIR="$PWD" -DENGINE_USE_BUNDLED_DEPS=OFF
+  -DVCPKG_TARGET_TRIPLET=x64-mingw-dynamic -DVCPKG_MANIFEST_DIR="$PWD"
 cmake --build out/build/consumer-mingw
-
-# vcpkg does not copy the DLLs beside MinGW executables: add the Debug DLLs of the
-# dependencies to the PATH of this terminal before running the test
-$env:Path = "$PWD\out\build\consumer-mingw\vcpkg_installed\x64-mingw-dynamic\debug\bin;$env:Path"
 ctest --test-dir out/build/consumer-mingw --output-on-failure
 ```
-
-With MSVC, vcpkg copies the runtime DLLs beside every executable after it is built. Applications that consume the Engine with its bundled dependencies (`ENGINE_USE_BUNDLED_DEPS`, not used by the presets) can call `engine_stage_runtime_dependencies(<target>)` (defined in `cmake/EngineDependencies.cmake`) to copy the bundled DLLs beside their executable, as the App and the consumer test do.
 
 ## Clean Build
 
@@ -395,6 +404,6 @@ Remove-Item -Recurse -Force out\build
 - **Environment value looks correct but CMake uses another path:** The current terminal may have inherited a stale `VCPKG_ROOT`. Run `$env:VCPKG_ROOT = [Environment]::GetEnvironmentVariable("VCPKG_ROOT", "User")`, or close and reopen VS Code.
 - **GLAD errors:** `core/glad.c` and `external/include/glad/glad.h` are generated with glad 0.1.36 for OpenGL 4.5 Core, without extensions. If they are missing, regenerate them from the [GLAD service](https://glad.dav1d.de/#profile=core&language=c&specification=gl&loader=on&api=gl%3D4.5) or with `pip install glad==0.1.36` and `python -m glad --profile=core --api="gl=4.5" --generator=c --spec=gl --extensions="" --out-path <dir>`.
 - **Failed to create GLFW window:** The engine requires an OpenGL 4.5 core profile context. Update the GPU drivers, and check the version reported by the GPU (e.g., with the `glxinfo -B` command on Linux, or tools such as GPU Caps Viewer or OpenGL Extensions Viewer on Windows). Remote desktop sessions and some virtual machines only provide older OpenGL versions.
-- **DLL missing when running an executable:** With MSVC, vcpkg copies the DLLs beside the executable after each build; rebuild the target if they are missing. With MinGW, the DLLs are not copied: add `out\build\<preset>\vcpkg_installed\x64-mingw-dynamic\bin` (or `...\x64-mingw-dynamic\debug\bin` for Debug builds) and `$env:MINGW_ROOT\bin` to the `PATH` before running it.
+- **DLL missing when running an executable:** With MSVC, vcpkg copies the DLLs beside the executable after each build, and with MinGW, `engine_stage_runtime_dependencies` does; rebuild the target if they are missing. MinGW executables also need the MinGW runtime DLLs (e.g., `libstdc++-6.dll`), so run them with `$env:MINGW_ROOT\bin` in the `PATH`.
 
 For additional help, consult the main [README](../README.md) or raise an issue in the repository (if you have one).

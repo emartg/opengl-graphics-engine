@@ -20,10 +20,7 @@
       "name": "vcpkg",
       "description": "Resolve the dependencies of vcpkg.json with vcpkg (requires the VCPKG_ROOT environment variable)",
       "hidden": true,
-      "toolchainFile": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
-      "cacheVariables": {
-        "ENGINE_USE_BUNDLED_DEPS": "OFF"
-      }
+      "toolchainFile": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
     },
     {
       "name": "linux-only",
@@ -122,8 +119,7 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "CMAKE_C_COMPILER": "gcc",
-        "CMAKE_CXX_COMPILER": "g++",
-        "ENGINE_USE_BUNDLED_DEPS": "OFF"
+        "CMAKE_CXX_COMPILER": "g++"
       }
     },
     {
@@ -144,8 +140,7 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "CMAKE_C_COMPILER": "clang",
-        "CMAKE_CXX_COMPILER": "clang++",
-        "ENGINE_USE_BUNDLED_DEPS": "OFF"
+        "CMAKE_CXX_COMPILER": "clang++"
       }
     },
     {

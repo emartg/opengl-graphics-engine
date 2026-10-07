@@ -17,7 +17,7 @@ add_library(Engine::Platform ALIAS Platform)
 target_link_libraries(Platform PUBLIC
 	Engine::Core
 	engine_imgui
-	${ENGINE_GLFW_TARGET}
+	glfw
 )
 target_compile_features(Platform PUBLIC cxx_std_20)
 

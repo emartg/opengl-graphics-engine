@@ -21,7 +21,6 @@ endif()
 option(ENGINE_BUILD_APP "Build the sample application" ${PROJECT_IS_TOP_LEVEL})
 option(ENGINE_BUILD_PLATFORM "Build the Platform library (GLFW window, input, and ImGui)" ON)
 option(ENGINE_BUILD_TESTS "Build engine tests" OFF)
-option(ENGINE_USE_BUNDLED_DEPS "Allow the repository's dependency fallback" ON)
 
 # Set default build type to Debug if not specified (single-configuration generators only, like Makefile or Ninja)
 if(PROJECT_IS_TOP_LEVEL AND NOT CMAKE_CONFIGURATION_TYPES AND NOT CMAKE_BUILD_TYPE)
@@ -46,7 +45,6 @@ endif()
 # Set root directory of the Engine sources, usable by consumers (e.g., to locate the Engine's resources)
 set (ENGINE_ROOT_DIR "${PROJECT_SOURCE_DIR}" CACHE INTERNAL "Root directory of the Engine sources")
 
-list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/modules")
 include("${PROJECT_SOURCE_DIR}/cmake/EngineDependencies.cmake")
 
 # The sample application requires the Platform library
