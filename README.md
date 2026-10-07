@@ -26,6 +26,9 @@ A **modular, extensible 3D graphics engine** built from scratch with OpenGL 4.5.
   - *Debug* - visualisation modes (Normal, Inverted Colors, Picking Colors, Grid Overlay) and performance stats.
   - *Creation* - instantiate primitives (cube, sphere, cylinder, cone, plane) or import models/skyboxes.
 - **Efficient Event-Driven Loop** - Blocks on idle using `glfwWaitEvents()`, reducing CPU usage to near zero when inactive.
+- **Rendering Performance** - Frustum culling, geometries shared between identical meshes, instanced rendering of repeated shapes, and a shader storage buffer for any number of lights.
+- **Reusable Libraries** - `Engine::Core` and `Engine::Platform` can be consumed by other CMake projects (e.g., as a Git submodule).
+- **Cross-Platform Builds & CI** - Windows (MSVC, MinGW) and Linux (GCC, Clang) builds, checked by GitHub Actions on every pull request and push to `main` (unit tests on both platforms, smoke tests on Linux).
 
 ---
 
@@ -157,21 +160,21 @@ See other captures in the subfolder [Images](docs/images/).
 
 ## Current Status
 
-This engine is a **beta prototype** (v0.8.0) - functional and usable, but not production-ready. Known limitations include:
+This engine is a **beta prototype** (v0.9.0) - functional and usable, but not production-ready. Known limitations include:
 
-- No instanced rendering or frustum culling (performance drops with >1000 opaque objects).
+- No shadows, normal mapping, or physically based materials yet.
 - Transparent objects become expensive (>500 objects).
 - Dynamic environment maps are computationally heavy (>10 reflective objects).
 - Shader/material assignment is hard-coded (no data-driven material system).
 - Limited animation and material import from Assimp.
 
-See the full [Limitations and Known Issues](docs/limitations.md) document for a comprehensive list.
+See the full [Limitations and Known Issues](docs/limitations.md) document for a comprehensive list, and the [Changelog](CHANGELOG.md) for the changes of each version.
 
 ---
 
 ## Future Roadmap
 
-Short-term optimisations (instancing, frustum culling, order-independent transparency) and longer-term features (data-driven materials, full Assimp support, multi-camera, post-processing, PBR) are outlined in the [Future Work](docs/future_work.md) document.
+The planned releases (deferred shading and shadows, normal mapping and PBR, order-independent transparency and particles, editor improvements) and longer-term features are outlined in the [Future Work](docs/future_work.md) document. The development and release process is described in the [Development Workflow](docs/development_workflow.md) document.
 
 ---
 
