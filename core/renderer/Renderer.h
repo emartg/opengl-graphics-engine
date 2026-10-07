@@ -19,6 +19,7 @@
 #include <algorithm>
 #include <memory>
 #include <chrono>
+#include <cstddef>
 #include <cstdint>
 #include <unordered_map>
 
@@ -96,6 +97,11 @@ public:
 
 	virtual Screen_Debug_Params& get_screen_debug_params() { return screen_debug_params; }
 
+	bool get_is_frustum_culling_enabled() const { return is_frustum_culling_enabled; }
+	// number of drawable nodes in the scene, and number of them skipped by frustum culling, in the last frame
+	std::size_t get_drawable_node_count() const { return drawable_node_count; }
+	std::size_t get_culled_node_count() const { return culled_node_count; }
+
 	// Setters
 	virtual void set_callback_functions() const = 0;
 	virtual void set_viewport(int width, int height) const;
@@ -103,6 +109,8 @@ public:
 	virtual void set_window_should_close() const = 0;
 
 	virtual void set_screen_debug_params(const Screen_Debug_Params& params) { screen_debug_params = params; }
+
+	void set_is_frustum_culling_enabled(bool is_enabled) { is_frustum_culling_enabled = is_enabled; }
 
 	// Assigns the shader program with the specified name to the appropriate member variable
 	// for further use in the renderer.
@@ -152,6 +160,11 @@ protected:
 
 	// screen debug parameters for testing screen-to-texture rendering
 	Screen_Debug_Params screen_debug_params;
+
+	// frustum culling: whether the nodes outside the camera's view are skipped, and statistics of the last frame
+	bool        is_frustum_culling_enabled{ true };
+	std::size_t drawable_node_count{ 0 }; // nodes with geometry to draw (visible and not pure containers)
+	std::size_t culled_node_count{ 0 };   // drawable nodes skipped because they are outside the camera's view
 
 	// buffers for the skybox cube
 	GLuint skybox_vao{}, skybox_vbo{}, skybox_ebo{};

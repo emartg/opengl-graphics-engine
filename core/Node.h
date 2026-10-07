@@ -18,6 +18,8 @@
 #define GLM_ENABLE_EXPERIMENTAL   // enable experimental features in GLM
 #include <glm/gtx/quaternion.hpp> // for quaternion operations
 
+#include "utils/geometry/Bounding_Box.h"
+
 // Forward declarations of classes to avoid cyclic includes and allow virtual interfaces and pointers
 class Shader;
 class Mesh;
@@ -162,8 +164,11 @@ public:
 	glm::mat4 get_rotation_matrix() const;
 	glm::mat4 get_scale_matrix() const;
 
-	// Gets the size of the node's bounding box
-	glm::vec3 get_bounding_box_size() const { return bounding_box_max - bounding_box_min; }
+	// Gets the bounding box of the node's own meshes, in local space (invalid if the node has no meshes)
+	Bounding_Box get_local_bounding_box() const;
+	// Gets the bounding box of the node's own meshes, in world space (taking into account the hierarchical
+	// transformations), or an invalid box if the node has no meshes
+	Bounding_Box get_world_bounding_box() const;
 
 	// Getter and setter for the parent node (weak pointer to avoid circular references)
 	virtual std::shared_ptr<Node> get_parent() const { return parent.lock(); }
@@ -220,8 +225,7 @@ protected:
 	std::vector<std::shared_ptr<Node>> children; // vector of shared pointers to the children nodes
 
 	// metadata attributes
-	Gizmo_Type gizmo_type;                             // type of gizmo, if any
-	glm::vec3  bounding_box_min{}, bounding_box_max{}; // bounding box of the node
+	Gizmo_Type gizmo_type; // type of gizmo, if any
 
 	// behavioral flags
 	bool is_draggable;  // whether the node can be dragged in the scene graph

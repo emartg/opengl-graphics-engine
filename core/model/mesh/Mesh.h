@@ -14,6 +14,8 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+#include "../../utils/geometry/Bounding_Box.h"
+
 // Forward declaration of classes to avoid cyclic includes and allow virtual interfaces and pointers
 class Shader;
 class Texture;
@@ -55,7 +57,9 @@ public:
 	void bind_textures(Shader& shader) const;
 
 	// Getters
-	std::vector<Vertex> get_vertices() const { return vertices; }
+	const std::vector<Vertex>& get_vertices() const { return vertices; }
+	// Returns the bounding box of the vertices, in the local space of the mesh
+	const Bounding_Box& get_bounding_box() const { return bounding_box; }
 
 private:
 	// Private Attributes
@@ -64,6 +68,7 @@ private:
 	std::vector<GLuint>                   indices;
 	std::vector<std::shared_ptr<Texture>> textures;
 	GLuint                                vao{ 0 }, vbo{ 0 }, ebo{ 0 };
+	Bounding_Box                          bounding_box; // bounding box of the vertices (local space)
 
 	// Private Methods
 	// ---------------

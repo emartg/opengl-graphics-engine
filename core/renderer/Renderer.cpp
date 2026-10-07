@@ -30,6 +30,8 @@
 #include "../model/Model.h"
 #include "../shader/Shader.h"
 #include "../texture/Texture.h"
+#include "../utils/geometry/Bounding_Box.h"
+#include "../utils/geometry/Frustum.h"
 #include "../managers/Node_Manager.h"
 #include "../managers/Scene_Manager.h"
 #include "../managers/Selection_Manager.h"
@@ -460,6 +462,20 @@ void Renderer::render_scene()
 	{
 		if (node && !node->get_parent())
 			collect_drawable_nodes(node);
+	}
+
+	// frustum culling: skip the nodes whose bounding box is completely outside the camera's view
+	// (nodes without a valid bounding box, i.e., without meshes, are kept, since they cannot be tested)
+	drawable_node_count = drawable_nodes.size();
+	culled_node_count   = 0;
+	if (is_frustum_culling_enabled)
+	{
+		const Frustum frustum{ projection * view };
+		std::erase_if(drawable_nodes, [&frustum](const std::shared_ptr<Node>& node) {
+			const Bounding_Box bounding_box = node->get_world_bounding_box();
+			return bounding_box.is_valid() && !frustum.intersects(bounding_box);
+		});
+		culled_node_count = drawable_node_count - drawable_nodes.size();
 	}
 
 	// separate all drawable nodes into opaque and transparent lists for correct rendering order

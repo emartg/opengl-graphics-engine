@@ -64,7 +64,4 @@ private:
 
 	// Loads the material textures of a mesh
 	std::vector<std::shared_ptr<Texture>> load_material_textures(aiMaterial* mat, aiTextureType type, Texture_Type texture_type);
-
-	// Calculates the bounding box of the model based on the vertices of the meshes
-	void calculate_bounding_box();
 };

@@ -84,9 +84,6 @@ void Assimp_Model::load_assimp_model(std::string const& path)
 	// process the root node (recursively process all of its children)
 	process_node(scene->mRootNode, scene);
 
-	// calculate the bounding box of the model based on the vertices of the meshes
-	calculate_bounding_box();
-
 	std::cout << "[SUCCESS::ASSIMPMODEL::load_assimp_model] Model loaded successfully from:\n\t" << path << std::endl;
 }
 
@@ -290,29 +287,4 @@ std::vector<std::shared_ptr<Texture>> Assimp_Model::load_material_textures(aiMat
 	}
 
 	return loaded_textures;
-}
-
-void Assimp_Model::calculate_bounding_box()
-{
-	if (meshes.empty())
-		return; // if there are no meshes, return early
-
-	// initialize the bounding box minimum and maximum points to extreme values
-	bounding_box_min = glm::vec3(std::numeric_limits<float>::max());
-	bounding_box_max = glm::vec3(std::numeric_limits<float>::min());
-
-	// iterate over all meshes and their vertices to calculate the bounding box values
-	for (const auto& mesh : meshes)
-	{
-		for (const auto& vertex : mesh->get_vertices())
-		{
-			bounding_box_min.x = std::min(bounding_box_min.x, vertex.position.x);
-			bounding_box_min.y = std::min(bounding_box_min.y, vertex.position.y);
-			bounding_box_min.z = std::min(bounding_box_min.z, vertex.position.z);
-
-			bounding_box_max.x = std::max(bounding_box_max.x, vertex.position.x);
-			bounding_box_max.y = std::max(bounding_box_max.y, vertex.position.y);
-			bounding_box_max.z = std::max(bounding_box_max.z, vertex.position.z);
-		}
-	}
 }

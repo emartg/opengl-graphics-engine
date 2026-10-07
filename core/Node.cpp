@@ -100,6 +100,21 @@ const glm::vec3 Node::get_world_position() const
 	return glm::vec3(world_model_matrix[3]); // return the translation part
 }
 
+Bounding_Box Node::get_local_bounding_box() const
+{
+	// combine the bounding boxes of the node's own meshes (children are not included)
+	Bounding_Box bounding_box;
+	for (const auto& mesh : meshes)
+		if (mesh)
+			bounding_box.expand(mesh->get_bounding_box());
+	return bounding_box;
+}
+
+Bounding_Box Node::get_world_bounding_box() const
+{
+	return get_local_bounding_box().transformed(get_world_model_matrix());
+}
+
 void Node::add_child(const std::shared_ptr<Node>& child)
 {
 	if (!child)

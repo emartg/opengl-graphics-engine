@@ -793,6 +793,15 @@ void GUI::draw_debug_window()
 		ImGui::TextWrapped("FPS: %.1f", ImGui::GetIO().Framerate);
 		ImGui::TextWrapped("Frame Time: %.3f ms/frame", 1000.0f / ImGui::GetIO().Framerate);
 
+		// display the number of drawn nodes, and how many of them were skipped by frustum culling
+		const std::size_t drawable_node_count = renderer->get_drawable_node_count();
+		const std::size_t culled_node_count   = renderer->get_culled_node_count();
+		ImGui::TextWrapped(
+			"Drawn Objects: %zu / %zu (%zu culled)",
+			drawable_node_count - culled_node_count,
+			drawable_node_count,
+			culled_node_count);
+
 		// display the screen texture debug mode currently in use and the values of its parameters
 		ImGui::TextWrapped("Screen Texture Debug Mode: %s", debug_modes[debug_mode_idx].c_str());
 		switch (debug_mode_idx)
@@ -833,6 +842,11 @@ void GUI::draw_debug_window()
 		ImGui::PushFont(bold_font);
 		ImGui::Text("RENDERING SETTINGS");
 		ImGui::PopFont();
+
+		// toggle frustum culling (e.g., to compare the frame time with and without it)
+		bool is_frustum_culling_enabled = renderer->get_is_frustum_culling_enabled();
+		if (ImGui::Checkbox("Frustum Culling", &is_frustum_culling_enabled))
+			renderer->set_is_frustum_culling_enabled(is_frustum_culling_enabled);
 
 		ImGui::Text("Screen Texture Debug Mode");
 		ImGui::SameLine(); // keep the combo box on the same line as the label

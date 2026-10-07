@@ -15,6 +15,9 @@ Mesh::Mesh(std::vector<Vertex> vertices, std::vector<GLuint> indices, std::vecto
 	indices{ indices },
 	textures{ textures }
 {
+	// compute the bounding box of the mesh from its vertices (e.g., for frustum culling)
+	for (const auto& vertex : this->vertices) bounding_box.expand(vertex.position);
+
 	setup_mesh();
 }
 
