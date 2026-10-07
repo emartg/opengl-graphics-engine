@@ -1,6 +1,8 @@
 /*
  * Mesh.h
  * This file defines the Mesh class, which is used to store mesh data and render it.
+ * A mesh combines a geometry (vertices and indices on the GPU), shared with every mesh
+ * that has identical data, and its own textures.
  */
 
 #pragma once
@@ -11,43 +13,25 @@
 #include <memory>
 
 #include <glad/glad.h> // holds all OpenGL type declarations
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
 
-#include "../../utils/geometry/Bounding_Box.h"
+#include "Mesh_Geometry.h" // also defines the Vertex struct
 
 // Forward declaration of classes to avoid cyclic includes and allow virtual interfaces and pointers
 class Shader;
 class Texture;
-
-// Struct that defines a single vertex of the mesh
-struct Vertex
-{
-	glm::vec3 position;
-	glm::vec3 normal;
-	glm::vec2 tex_coords;
-};
 
 class Mesh
 {
 public:
 	// Constructors
 	// ------------
+	// Creates the mesh, reusing the geometry of an existing mesh with identical vertices and indices (if any)
 	Mesh(std::vector<Vertex> vertices, std::vector<GLuint> indices, std::vector<std::shared_ptr<Texture>> textures);
-	Mesh(const Mesh&) = delete; // copy constructor (a mesh owns its buffer objects, which cannot be shared)
-
-	// Operator overloads
-	// ------------------
-	Mesh& operator=(const Mesh&) = delete; // copy assignment operator (a mesh owns its buffer objects)
-
-	// Destructor
-	// ----------
-	// Deletes the buffer objects/arrays of the mesh (requires the OpenGL context to be current)
-	~Mesh();
 
 	// Public Methods
 	// --------------
-	// Deletes all the buffer objects/arrays (safe to call more than once)
+	// Releases the mesh's reference to its geometry (whose buffer objects are deleted once no mesh uses it);
+	// safe to call more than once
 	void deallocate_resources();
 
 	// Renders the mesh
@@ -57,21 +41,14 @@ public:
 	void bind_textures(Shader& shader) const;
 
 	// Getters
-	const std::vector<Vertex>& get_vertices() const { return vertices; }
+	const std::shared_ptr<Mesh_Geometry>& get_geometry() const { return geometry; }
+	const std::vector<Vertex>&            get_vertices() const;
 	// Returns the bounding box of the vertices, in the local space of the mesh
-	const Bounding_Box& get_bounding_box() const { return bounding_box; }
+	const Bounding_Box& get_bounding_box() const;
 
 private:
 	// Private Attributes
 	// ------------------
-	std::vector<Vertex>                   vertices;
-	std::vector<GLuint>                   indices;
+	std::shared_ptr<Mesh_Geometry>        geometry; // geometry on the GPU (shared by meshes with identical data)
 	std::vector<std::shared_ptr<Texture>> textures;
-	GLuint                                vao{ 0 }, vbo{ 0 }, ebo{ 0 };
-	Bounding_Box                          bounding_box; // bounding box of the vertices (local space)
-
-	// Private Methods
-	// ---------------
-	// Initializes all the buffer objects/arrays
-	void setup_mesh();
 };

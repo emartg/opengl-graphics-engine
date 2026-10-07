@@ -1,6 +1,8 @@
 /*
  * Mesh.cpp
  * This file implements the Mesh class, which is used to store mesh data and render it.
+ * A mesh combines a geometry (vertices and indices on the GPU), shared with every mesh
+ * that has identical data, and its own textures.
  */
 
 #include "Mesh.h"
@@ -11,49 +13,33 @@
 // Constructors
 // ------------
 Mesh::Mesh(std::vector<Vertex> vertices, std::vector<GLuint> indices, std::vector<std::shared_ptr<Texture>> textures) :
-	vertices{ vertices },
-	indices{ indices },
+	geometry{ Mesh_Geometry::get_or_create(vertices, indices) },
 	textures{ textures }
-{
-	// compute the bounding box of the mesh from its vertices (e.g., for frustum culling)
-	for (const auto& vertex : this->vertices) bounding_box.expand(vertex.position);
-
-	setup_mesh();
-}
-
-// Destructor
-// ----------
-Mesh::~Mesh()
-{
-	deallocate_resources();
-}
+{}
 
 // Public methods
 // --------------
 void Mesh::deallocate_resources()
 {
-	if (vao == 0 && vbo == 0 && ebo == 0)
-		return; // nothing to delete (the resources were never allocated or have already been deleted)
-
-	glDeleteVertexArrays(1, &vao);
-	glDeleteBuffers(1, &vbo);
-	glDeleteBuffers(1, &ebo);
-
-	// reset the ids, so that the resources are not deleted twice
-	vao = 0;
-	vbo = 0;
-	ebo = 0;
+	geometry.reset();
 }
 
 void Mesh::draw() const
 {
-	// draw mesh
-	glBindVertexArray(vao);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-	glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
+	if (geometry)
+		geometry->draw();
+}
 
-	// unbind the VAO
-	glBindVertexArray(0);
+const std::vector<Vertex>& Mesh::get_vertices() const
+{
+	static const std::vector<Vertex> no_vertices; // returned once the geometry has been released
+	return geometry ? geometry->get_vertices() : no_vertices;
+}
+
+const Bounding_Box& Mesh::get_bounding_box() const
+{
+	static const Bounding_Box no_bounding_box; // invalid box, returned once the geometry has been released
+	return geometry ? geometry->get_bounding_box() : no_bounding_box;
 }
 
 void Mesh::bind_textures(Shader& shader) const
@@ -135,41 +121,4 @@ void Mesh::bind_textures(Shader& shader) const
 	shader.set_int("u_material.has_opacity_map", opacity_idx >= 0 ? 1 : 0);
 
 	glActiveTexture(GL_TEXTURE0); // set the active texture unit back to 0 once all textures are bound
-}
-
-// Private Methods
-// ---------------
-void Mesh::setup_mesh()
-{
-	// create buffers/arrays
-	glGenVertexArrays(1, &vao);
-	glGenBuffers(1, &vbo);
-	glGenBuffers(1, &ebo);
-
-	// bind the VAO
-	glBindVertexArray(vao);
-
-	// bind the VBO and send the vertices to the GPU
-	glBindBuffer(GL_ARRAY_BUFFER, vbo);
-	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), &vertices[0], GL_STATIC_DRAW);
-
-	// bind the EBO and send the indices to the GPU
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(GLuint), &indices[0], GL_STATIC_DRAW);
-
-	// set the vertex attribute pointers
-	// vertex positions
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
-	// vertex normals
-	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, normal));
-	// vertex texture coords
-	glEnableVertexAttribArray(2);
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, tex_coords));
-
-	// unbind the VBO, EBO, and VAO
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-	glBindVertexArray(0);
 }

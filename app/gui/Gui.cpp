@@ -28,6 +28,7 @@
 #include "core/light/Spotlight.h"
 #include "core/model/Shape_Model.h"
 #include "core/model/Assimp_Model.h"
+#include "core/model/mesh/Mesh_Geometry.h"
 #include "core/managers/Node_Manager.h"
 #include "core/managers/Selection_Manager.h"
 #include "core/managers/Scene_Manager.h"
@@ -688,7 +689,7 @@ void GUI::draw_debug_window()
 		auto  renderer = Core::get_instance()->get_renderer();
 		auto& params   = renderer->get_screen_debug_params();
 		// vector of strings that represent the different debug modes
-		std::vector<std::string> debug_modes    = { "normal", "Inverted Colors", "Picking Colors", "Solid Color", "Grid Overlay" };
+		std::vector<std::string> debug_modes    = { "Normal", "Inverted Colors", "Picking Colors", "Solid Color", "Grid Overlay" };
 		int                      debug_mode_idx = static_cast<int>(params.debug_mode); // current debug mode index
 		bool                     params_changed{ false }; // dirty flag to check if any of the params were changed
 
@@ -801,6 +802,8 @@ void GUI::draw_debug_window()
 			drawable_node_count - culled_node_count,
 			drawable_node_count,
 			culled_node_count);
+		// display the number of distinct geometries stored on the GPU (shared by meshes with identical data)
+		ImGui::TextWrapped("Mesh Geometries: %zu", Mesh_Geometry::get_live_count());
 
 		// display the screen texture debug mode currently in use and the values of its parameters
 		ImGui::TextWrapped("Screen Texture Debug Mode: %s", debug_modes[debug_mode_idx].c_str());
