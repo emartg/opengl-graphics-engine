@@ -18,13 +18,28 @@ Mesh::Mesh(std::vector<Vertex> vertices, std::vector<GLuint> indices, std::vecto
 	setup_mesh();
 }
 
+// Destructor
+// ----------
+Mesh::~Mesh()
+{
+	deallocate_resources();
+}
+
 // Public methods
 // --------------
 void Mesh::deallocate_resources()
 {
+	if (vao == 0 && vbo == 0 && ebo == 0)
+		return; // nothing to delete (the resources were never allocated or have already been deleted)
+
 	glDeleteVertexArrays(1, &vao);
 	glDeleteBuffers(1, &vbo);
 	glDeleteBuffers(1, &ebo);
+
+	// reset the ids, so that the resources are not deleted twice
+	vao = 0;
+	vbo = 0;
+	ebo = 0;
 }
 
 void Mesh::draw() const

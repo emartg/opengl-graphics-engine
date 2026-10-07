@@ -32,6 +32,21 @@ public:
 	// Constructors
 	// ------------
 	Mesh(std::vector<Vertex> vertices, std::vector<GLuint> indices, std::vector<std::shared_ptr<Texture>> textures);
+	Mesh(const Mesh&) = delete; // copy constructor (a mesh owns its buffer objects, which cannot be shared)
+
+	// Operator overloads
+	// ------------------
+	Mesh& operator=(const Mesh&) = delete; // copy assignment operator (a mesh owns its buffer objects)
+
+	// Destructor
+	// ----------
+	// Deletes the buffer objects/arrays of the mesh (requires the OpenGL context to be current)
+	~Mesh();
+
+	// Public Methods
+	// --------------
+	// Deletes all the buffer objects/arrays (safe to call more than once)
+	void deallocate_resources();
 
 	// Public Methods
 	// --------------
@@ -53,7 +68,7 @@ private:
 	std::vector<Vertex>                   vertices;
 	std::vector<GLuint>                   indices;
 	std::vector<std::shared_ptr<Texture>> textures;
-	GLuint                                vao, vbo, ebo;
+	GLuint                                vao{ 0 }, vbo{ 0 }, ebo{ 0 };
 
 	// Private Methods
 	// ---------------
