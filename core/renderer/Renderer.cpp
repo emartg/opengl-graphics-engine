@@ -28,6 +28,8 @@
 #include "../light/Point_Light.h"
 #include "../light/Spotlight.h"
 #include "../model/Model.h"
+#include "../model/mesh/Mesh.h"
+#include "../model/mesh/Mesh_Geometry.h"
 #include "../shader/Shader.h"
 #include "../texture/Texture.h"
 #include "../utils/geometry/Bounding_Box.h"
@@ -96,6 +98,11 @@ void Renderer::release_resources()
 			glDeleteTextures(1, &entry.prev_cubemap_tex_id);
 	}
 	dynamic_env_maps.clear();
+
+	// delete the instance buffer if created, and reset its id
+	if (instance_vbo)
+		glDeleteBuffers(1, &instance_vbo);
+	instance_vbo = 0;
 }
 
 void Renderer::config_opengl() const
@@ -500,7 +507,7 @@ void Renderer::render_scene()
 	});
 
 	// opaque pass: render all opaque geometry first to ensure correct depth testing and early z-culling
-	for (const auto& node : opaque_nodes) render_node(node);
+	render_opaque_nodes(opaque_nodes);
 
 	// skybox pass: render the skybox after opaque geometry, but before transparent geometry rendering
 	// (this ensures the skybox is rendered behind all opaque geometry, but does not interfere with
@@ -751,6 +758,111 @@ void Renderer::render_node(const std::shared_ptr<Node>& node)
 		// re-enable face culling if it was previously enabled
 		if (need_disable_culling && cull_was_enabled)
 			glEnable(GL_CULL_FACE);
+	}
+}
+
+void Renderer::render_opaque_nodes(const std::vector<std::shared_ptr<Node>>& nodes)
+{
+	instanced_node_count      = 0;
+	instanced_draw_call_count = 0;
+
+	// per-instance data of a node drawn with instancing (read by the shape model shader as vertex attributes)
+	struct Instance_Data
+	{
+		glm::mat4 model;  // world model matrix (attribute locations 3 to 6)
+		glm::vec4 albedo; // albedo color (attribute location 7)
+	};
+
+	// group of nodes sharing a geometry
+	struct Instance_Group
+	{
+		Mesh_Geometry*                     geometry{ nullptr };
+		std::vector<std::shared_ptr<Node>> nodes;
+	};
+
+	// group the shape models that can be drawn with instancing by geometry (in order of first appearance),
+	// and render every other node (and every node, if instancing is disabled) one by one
+	std::vector<Instance_Group>                     groups;
+	std::unordered_map<Mesh_Geometry*, std::size_t> group_indices; // index of each geometry's group
+	for (const auto& node : nodes)
+	{
+		const bool  is_shape_model  = node->get_type() == Node_Type::SHAPE_MODEL || node->get_type() == Node_Type::COMPOSITE_SHAPE_MODEL;
+		const auto& meshes          = node->get_meshes();
+		const bool  is_instanceable = is_instancing_enabled && is_shape_model && node->get_gizmo_type() == Gizmo_Type::NONE &&
+			!node->get_is_two_sided() && meshes.size() == 1 && meshes[0] && meshes[0]->get_geometry() && !meshes[0]->has_textures();
+		if (!is_instanceable)
+		{
+			render_node(node);
+			continue;
+		}
+
+		Mesh_Geometry* geometry = meshes[0]->get_geometry().get();
+		auto [it, inserted]     = group_indices.try_emplace(geometry, groups.size());
+		if (inserted)
+			groups.push_back(Instance_Group{ geometry, {} });
+		groups[it->second].nodes.push_back(node);
+	}
+
+	for (const auto& group : groups)
+	{
+		// a geometry used by a single node is rendered as usual (instancing would not save any draw call)
+		if (group.nodes.size() < 2)
+		{
+			render_node(group.nodes.front());
+			continue;
+		}
+
+		// gather the per-instance data of the group
+		std::vector<Instance_Data> instances;
+		instances.reserve(group.nodes.size());
+		for (const auto& node : group.nodes) instances.push_back(Instance_Data{ node->get_world_model_matrix(), node->get_albedo() });
+
+		// upload the per-instance data (the buffer is created on first use, and its storage is reallocated every
+		// time, so that the driver does not have to wait for the previous draw calls that read it)
+		if (!instance_vbo)
+			glGenBuffers(1, &instance_vbo);
+		glBindBuffer(GL_ARRAY_BUFFER, instance_vbo);
+		glBufferData(GL_ARRAY_BUFFER, instances.size() * sizeof(Instance_Data), instances.data(), GL_STREAM_DRAW);
+
+		// bind the shared geometry and add the per-instance attributes to it (advancing once per instance):
+		// a mat4 attribute takes four locations, one per column
+		glBindVertexArray(group.geometry->get_vao());
+		for (GLuint column = 0; column < 4; ++column)
+		{
+			const GLuint location = 3 + column;
+			glEnableVertexAttribArray(location);
+			glVertexAttribPointer(
+				location,
+				4,
+				GL_FLOAT,
+				GL_FALSE,
+				sizeof(Instance_Data),
+				(void*)(offsetof(Instance_Data, model) + column * sizeof(glm::vec4)));
+			glVertexAttribDivisor(location, 1);
+		}
+		glEnableVertexAttribArray(7);
+		glVertexAttribPointer(7, 4, GL_FLOAT, GL_FALSE, sizeof(Instance_Data), (void*)offsetof(Instance_Data, albedo));
+		glVertexAttribDivisor(7, 1);
+
+		// draw all the instances with a single draw call
+		shape_model_shader->use();
+		shape_model_shader->set_bool("u_instanced", GL_TRUE);
+		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+		glDrawElementsInstanced(
+			GL_TRIANGLES,
+			group.geometry->get_index_count(),
+			GL_UNSIGNED_INT,
+			0,
+			static_cast<GLsizei>(instances.size()));
+		shape_model_shader->set_bool("u_instanced", GL_FALSE);
+
+		// remove the per-instance attributes from the geometry, which is also drawn without instancing
+		for (GLuint location = 3; location <= 7; ++location) glDisableVertexAttribArray(location);
+		glBindVertexArray(0);
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+		instanced_node_count += group.nodes.size();
+		++instanced_draw_call_count;
 	}
 }
 

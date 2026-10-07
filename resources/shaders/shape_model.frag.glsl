@@ -56,6 +56,8 @@ struct Material
 in vec3 v_frag_pos;
 in vec3 v_normal;
 in vec2 v_tex_coords;
+// albedo of the instance, passed from the vertex shader (only used with instanced rendering)
+flat in vec4 v_instance_albedo;
 
 // statically sized arrays of light attributes in view space passed from the vertex shader
 in vec3 v_directional_light_dir[MAX_DIR_LIGHTS_COUNT];
@@ -76,6 +78,12 @@ uniform Spotlight u_spotlights[MAX_SPOTLIGHTS_COUNT];
 // material properties struct
 uniform Material u_material;
 
+// whether the shape is drawn with instancing (albedo of the instance) or alone (albedo of the material)
+uniform bool u_instanced;
+
+// albedo of the fragment, set at the start of main() (from the instance or from the material)
+vec4 albedo;
+
 // Calculates the color of a single directional light given the light properties 
 // (including the direction), the normal, and the view direction (all in view space)
 vec3 compute_directional_light_component(Directional_Light light, vec3 directional_light_dir, 
@@ -94,6 +102,9 @@ vec3 compute_spotlight_component(Spotlight light, vec3 spotlight_pos, vec3 spotl
 
 void main()
 {
+	// albedo of the instance, or of the material when the shape is drawn alone
+	albedo = u_instanced ? v_instance_albedo : u_material.albedo;
+
 	// light properties
 	vec3 normal     = normalize(v_normal);
 	vec3 view_dir	= normalize(-v_frag_pos);	// since lighting is being calculated in view space,
@@ -118,7 +129,7 @@ void main()
 											   normal, v_frag_pos, view_dir);
 
 	// set the fragment color
-	FragColor	= vec4(result, u_material.albedo.a);
+	FragColor	= vec4(result, albedo.a);
 }
 
 vec3 compute_directional_light_component(Directional_Light light, vec3 directional_light_dir, 
@@ -134,7 +145,7 @@ vec3 compute_directional_light_component(Directional_Light light, vec3 direction
 	float spec			= pow(max(dot(view_dir, reflect_dir), 0.0), u_material.shininess);
 
 	// get RGB components of albedo
-	vec3 albedo_rgb	= u_material.albedo.rgb;
+	vec3 albedo_rgb	= albedo.rgb;
 	
 	// combine results
 	vec3 ambient    = light.ambient * albedo_rgb;
@@ -161,7 +172,7 @@ vec3 compute_point_light_component(Point_Light light, vec3 point_light_pos,
 						  + light.quadratic * (distance * distance));
 
 	// get RGB components of albedo
-	vec3 albedo_rgb = u_material.albedo.rgb;
+	vec3 albedo_rgb = albedo.rgb;
 
 	// combine results
 	vec3 ambient    = light.ambient * albedo_rgb;
@@ -196,7 +207,7 @@ vec3 compute_spotlight_component(Spotlight light, vec3 spotlight_pos, vec3 spotl
 	float intensity = clamp((theta - light.outer_cutoff) / epsilon, 0.0, 1.0);
 
 	// get RGB components of albedo
-	vec3 albedo_rgb = u_material.albedo.rgb;
+	vec3 albedo_rgb = albedo.rgb;
 
 	// combine results
 	vec3 ambient    = light.ambient * albedo_rgb;

@@ -42,6 +42,7 @@ public:
 
 	// Getters
 	const std::shared_ptr<Mesh_Geometry>& get_geometry() const { return geometry; }
+	bool                                  has_textures() const { return !textures.empty(); }
 	const std::vector<Vertex>&            get_vertices() const;
 	// Returns the bounding box of the vertices, in the local space of the mesh
 	const Bounding_Box& get_bounding_box() const;

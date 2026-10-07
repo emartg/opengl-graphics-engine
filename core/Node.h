@@ -170,6 +170,9 @@ public:
 	// transformations), or an invalid box if the node has no meshes
 	Bounding_Box get_world_bounding_box() const;
 
+	// Gets the meshes of the node itself (empty for pure composite nodes)
+	const std::vector<std::shared_ptr<Mesh>>& get_meshes() const { return meshes; }
+
 	// Getter and setter for the parent node (weak pointer to avoid circular references)
 	virtual std::shared_ptr<Node> get_parent() const { return parent.lock(); }
 	virtual void                  set_parent(const std::shared_ptr<Node>& parent) { this->parent = parent; }

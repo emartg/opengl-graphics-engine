@@ -102,6 +102,11 @@ public:
 	std::size_t get_drawable_node_count() const { return drawable_node_count; }
 	std::size_t get_culled_node_count() const { return culled_node_count; }
 
+	bool get_is_instancing_enabled() const { return is_instancing_enabled; }
+	// number of nodes drawn with instancing, and number of instanced draw calls used for them, in the last frame
+	std::size_t get_instanced_node_count() const { return instanced_node_count; }
+	std::size_t get_instanced_draw_call_count() const { return instanced_draw_call_count; }
+
 	// Setters
 	virtual void set_callback_functions() const = 0;
 	virtual void set_viewport(int width, int height) const;
@@ -111,6 +116,7 @@ public:
 	virtual void set_screen_debug_params(const Screen_Debug_Params& params) { screen_debug_params = params; }
 
 	void set_is_frustum_culling_enabled(bool is_enabled) { is_frustum_culling_enabled = is_enabled; }
+	void set_is_instancing_enabled(bool is_enabled) { is_instancing_enabled = is_enabled; }
 
 	// Assigns the shader program with the specified name to the appropriate member variable
 	// for further use in the renderer.
@@ -166,6 +172,13 @@ protected:
 	std::size_t drawable_node_count{ 0 }; // nodes with geometry to draw (visible and not pure containers)
 	std::size_t culled_node_count{ 0 };   // drawable nodes skipped because they are outside the camera's view
 
+	// instanced rendering: whether opaque shapes sharing a geometry are drawn with a single draw call,
+	// the buffer with their per-instance data, and statistics of the last frame
+	bool        is_instancing_enabled{ true };
+	GLuint      instance_vbo{ 0 };
+	std::size_t instanced_node_count{ 0 };      // nodes drawn with instancing
+	std::size_t instanced_draw_call_count{ 0 }; // instanced draw calls (one per group of nodes sharing a geometry)
+
 	// buffers for the skybox cube
 	GLuint skybox_vao{}, skybox_vbo{}, skybox_ebo{};
 
@@ -193,6 +206,10 @@ protected:
 	// Renders a single node (i.e., only its own meshes if it has any, without rendering its children)
 	// with the appropriate shader program
 	void render_node(const std::shared_ptr<Node>& node);
+
+	// Renders the opaque nodes: the shape models that share a geometry (untextured, single-sided, and with
+	// a single mesh) are drawn with one instanced draw call per geometry, and the other nodes one by one
+	void render_opaque_nodes(const std::vector<std::shared_ptr<Node>>& nodes);
 
 	// Ensures the offscreen render pass is created with the current window size
 	void ensure_offscren_render_pass();

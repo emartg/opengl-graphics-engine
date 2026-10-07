@@ -804,6 +804,11 @@ void GUI::draw_debug_window()
 			culled_node_count);
 		// display the number of distinct geometries stored on the GPU (shared by meshes with identical data)
 		ImGui::TextWrapped("Mesh Geometries: %zu", Mesh_Geometry::get_live_count());
+		// display the number of objects drawn with instancing, and the number of draw calls used for them
+		ImGui::TextWrapped(
+			"Instanced Objects: %zu (%zu draw calls)",
+			renderer->get_instanced_node_count(),
+			renderer->get_instanced_draw_call_count());
 
 		// display the screen texture debug mode currently in use and the values of its parameters
 		ImGui::TextWrapped("Screen Texture Debug Mode: %s", debug_modes[debug_mode_idx].c_str());
@@ -850,6 +855,11 @@ void GUI::draw_debug_window()
 		bool is_frustum_culling_enabled = renderer->get_is_frustum_culling_enabled();
 		if (ImGui::Checkbox("Frustum Culling", &is_frustum_culling_enabled))
 			renderer->set_is_frustum_culling_enabled(is_frustum_culling_enabled);
+
+		// toggle instanced rendering (e.g., to compare the frame time with and without it)
+		bool is_instancing_enabled = renderer->get_is_instancing_enabled();
+		if (ImGui::Checkbox("Instancing", &is_instancing_enabled))
+			renderer->set_is_instancing_enabled(is_instancing_enabled);
 
 		ImGui::Text("Screen Texture Debug Mode");
 		ImGui::SameLine(); // keep the combo box on the same line as the label
