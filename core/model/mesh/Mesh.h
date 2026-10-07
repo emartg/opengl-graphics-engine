@@ -48,11 +48,6 @@ public:
 	// Deletes all the buffer objects/arrays (safe to call more than once)
 	void deallocate_resources();
 
-	// Public Methods
-	// --------------
-	// Deletes all the buffer objects/arrays
-	void deallocate_resources();
-
 	// Renders the mesh
 	void draw() const;
 
