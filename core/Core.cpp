@@ -237,16 +237,29 @@ void Core::run(std::uint64_t max_frames)
 	if (max_frames > 0)
 		std::cout << "[INFO::CORE::run] The main loop will stop after " << max_frames << " frames" << std::endl;
 
-	std::uint64_t frame_count{ 0 }; // number of frames rendered so far
+	// number of frames rendered without waiting for events, at startup and after each event: the GUI needs
+	// a few frames to settle some changes (e.g., new windows are laid out and become visible on the frame
+	// after they first appear), which would otherwise only be displayed after the next event
+	constexpr int FRAMES_AFTER_EVENT{ 3 };
+
+	std::uint64_t frame_count{ 0 };                     // number of frames rendered so far
+	int           pending_frames{ FRAMES_AFTER_EVENT }; // frames still to render before waiting for events again
 	while (!renderer->should_close())
 	{
-		// without a frame limit, wait for events first: the renderer fully blocks until an event occurs,
-		// and when that happens, the renderer processes frames but throttles the frame rate,
-		// reducing CPU / GPU usage and improving performance.
+		// without a frame limit, wait for events once the pending frames have been rendered: the renderer
+		// fully blocks until an event occurs, and when that happens, the renderer processes frames but
+		// throttles the frame rate, reducing CPU / GPU usage and improving performance.
 		// With a frame limit (e.g., automated tests without user input), never block, so that frames keep
 		// being rendered (the events are still polled at the start of every frame)
 		if (max_frames == 0)
-			renderer->wait_for_events();
+		{
+			if (pending_frames == 0)
+			{
+				renderer->wait_for_events();
+				pending_frames = FRAMES_AFTER_EVENT;
+			}
+			--pending_frames;
+		}
 
 		renderer->frame_start_config(); // start of the frame configuration
 		renderer->render_scene();       // composite the scene

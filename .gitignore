@@ -428,6 +428,9 @@ CMakeUserPresets.json
 # Information about the structure of the Project
 *tree*
 
+# Dear ImGui settings (window positions and sizes, saved per user in the working directory at runtime)
+imgui.ini
+
 
 ## Files and directories to keep
 
