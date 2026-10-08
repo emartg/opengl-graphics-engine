@@ -12,9 +12,9 @@
 #include <iostream>
 #include <memory>
 #include <algorithm>
-#include <array>
 
 #include "shader/Shader.h"
+#include "shader/Shader_Library.h"
 #include "texture/Texture.h"
 #include "gizmos/Line.h"               // for directional light gizmo rendering
 #include "gizmos/TRIANGLE_FAN_PLANE.h" // for directional light gizmo rendering
@@ -25,33 +25,6 @@
 #include "managers/Selection_Manager.h"
 #include "renderer/Renderer.h"
 #include "utils/file_system/File_System_Utils.h"
-
-// Built-in shader programs required by the renderer
-// -------------------------------------------------
-namespace
-{
-	// Names of the shader programs (as known by Renderer::set_shader_by_name) and file names of
-	// their stages, relative to the "shaders" subdirectory of the resources directory
-	// (an empty geometry file name means that the program has no geometry stage)
-	struct Builtin_Shader_Info
-	{
-		const char* name;
-		const char* vertex_file;
-		const char* geometry_file;
-		const char* fragment_file;
-	};
-	constexpr std::array<Builtin_Shader_Info, 9> BUILTIN_SHADERS{
-		{ { "Shape Model Shader", "shape_model.vert.glsl", "", "shape_model.frag.glsl" },
-		  { "Assimp Model Shader", "assimp_model.vert.glsl", "", "assimp_model.frag.glsl" },
-		  { "Single Albedo Shader", "single_albedo.vert.glsl", "", "single_albedo.frag.glsl" },
-		  { "Screen Quad Shader", "screen_quad.vert.glsl", "", "screen_quad.frag.glsl" },
-		  { "Picking Shader", "picking.vert.glsl", "", "picking.frag.glsl" },
-		  { "Skybox Shader", "skybox.vert.glsl", "", "skybox.frag.glsl" },
-		  { "Equirectangular to Cubemap Shader", "equirectangular_to_cubemap.vert.glsl", "", "equirectangular_to_cubemap.frag.glsl" },
-		  { "Reflective Shader", "reflective.vert.glsl", "", "reflective.frag.glsl" },
-		  { "Refractive Shader", "refractive.vert.glsl", "", "refractive.frag.glsl" } }
-	};
-}
 
 // Static Instance initialization
 // ------------------------------
@@ -64,7 +37,8 @@ Core::Core() :
 	node_manager{ std::make_shared<Node_Manager>() },
 	input_manager{ std::make_shared<Input_Manager>() },
 	scene_manager{ std::make_shared<Scene_Manager>() },
-	selection_manager{ std::make_shared<Selection_Manager>() }
+	selection_manager{ std::make_shared<Selection_Manager>() },
+	shader_library{ std::make_shared<Shader_Library>() }
 {}
 
 // Destructor
@@ -146,20 +120,19 @@ bool Core::resolve_resources_dir()
 	return true;
 }
 
-bool Core::compile_builtin_shaders()
+bool Core::load_shaders()
 {
-	// build the names and paths of the built-in shader programs
-	std::vector<std::string> shader_names, vertex_shader_paths, geometry_shader_paths, fragment_shader_paths;
-	for (const auto& shader_info : BUILTIN_SHADERS)
-	{
-		shader_names.emplace_back(shader_info.name);
-		vertex_shader_paths.push_back(get_resource_path(std::string("shaders/") + shader_info.vertex_file));
-		geometry_shader_paths.push_back(
-			*shader_info.geometry_file == '\0' ? std::string{} : get_resource_path(std::string("shaders/") + shader_info.geometry_file));
-		fragment_shader_paths.push_back(get_resource_path(std::string("shaders/") + shader_info.fragment_file));
-	}
+	// load the engine's shader programs, described by the descriptor files of the shaders directory
+	if (!shader_library->load_directory(resources_dir / "shaders"))
+		return false;
 
-	return compile_shaders(shader_names, vertex_shader_paths, geometry_shader_paths, fragment_shader_paths);
+	// give the renderer the shaders of its passes, and the selection manager the picking shader
+	if (!renderer->set_shaders(*shader_library))
+		return false;
+	if (selection_manager)
+		selection_manager->set_picking_shader(shader_library->get("Picking Shader"));
+
+	return true;
 }
 
 // Public Methods
@@ -219,10 +192,10 @@ bool Core::init()
 	// initialize the user interface
 	renderer->init_gui();
 
-	// compile the built-in shaders required by the renderer
-	if (!compile_builtin_shaders())
-	{ // if the built-in shaders fail to compile, print an error message and return false
-		std::cerr << "[ERROR::CORE::init] Failed to compile the built-in shaders" << std::endl;
+	// load the engine's shaders, required by the renderer
+	if (!load_shaders())
+	{ // if the shaders fail to load, print an error message and return false
+		std::cerr << "[ERROR::CORE::init] Failed to load the shaders" << std::endl;
 		return false;
 	}
 
@@ -283,10 +256,12 @@ void Core::shutdown()
 		renderer->shutdown_gui(); // the GUI must be shut down before the renderer
 
 		// release every OpenGL object while the OpenGL context still exists (i.e., before the renderer
-		// destroys the window): the selection render passes, the scene nodes, and the renderer's own objects
+		// destroys the window): the selection render passes, the scene nodes, the shader programs,
+		// and the renderer's own objects
 		selection_manager.reset();
 		scene_manager.reset();
 		node_manager.reset();
+		shader_library.reset();
 		renderer->release_resources();
 
 		delete renderer;    // destroy the renderer (and its window) before the Core instance
@@ -301,71 +276,6 @@ void Core::shutdown()
 	// destroy the Core instance itself and print a message to the console
 	destroy_instance();
 	std::cout << "[INFO::CORE::shutdown] Core shutdown complete" << std::endl;
-}
-
-bool Core::compile_shaders(
-	const std::vector<std::string>& shader_names,
-	const std::vector<std::string>& vertex_shader_paths,
-	const std::vector<std::string>& fragment_shader_paths)
-{
-	// delegate to the general overload with no geometry stage for any of the shaders
-	return compile_shaders(shader_names, vertex_shader_paths, std::vector<std::string>(shader_names.size()), fragment_shader_paths);
-}
-
-bool Core::compile_shaders(
-	const std::vector<std::string>& shader_names,
-	const std::vector<std::string>& vertex_shader_paths,
-	const std::vector<std::string>& geometry_shader_paths,
-	const std::vector<std::string>& fragment_shader_paths)
-{
-	size_t shader_count = shader_names.size(); // number of shaders to compile
-
-	// ensure the sizes of the input vectors match
-	if (vertex_shader_paths.size() != shader_count || geometry_shader_paths.size() != shader_count ||
-		fragment_shader_paths.size() != shader_count)
-	{ // if the sizes do not match, print an error message and return false
-		std::cerr << "[ERROR::CORE::compile_shaders] Mismatched shader names and paths sizes!" << std::endl;
-		return false;
-	}
-
-	for (size_t i{}; i < shader_count; i++)
-	{ // iterate through the shader names and paths
-		// create a new Shader object with the name and paths (an empty geometry shader path
-		// means that the program has no geometry stage), and compile it
-		auto shader = std::make_shared<Shader>(shader_names[i], vertex_shader_paths[i], geometry_shader_paths[i], fragment_shader_paths[i]);
-		if (!shader->compile()) // compile the shader
-		{                       // if the shader compilation fails, print an error message and return false
-			std::cerr << "[ERROR::CORE::compile_shaders] Failed to compile shader: " << shader_names[i] << std::endl;
-			return false;
-		}
-
-		// set the shader in the renderer by name
-		if (!renderer->set_shader_by_name(shader->get_name(), shader))
-		{ // if the shader was not set successfully, print an error message and return false
-			std::cerr << "[ERROR::CORE::compile_shaders] Failed to set shader with name '" << shader_names[i]
-					  << "' in the renderer (unknown name or null shader)" << std::endl;
-			return false;
-		}
-		else
-		{ // if the shader was set successfully, print a success message
-			std::cout << "[SUCCESS::CORE::compile_shaders] Shader with name '" << shader_names[i] << "' set successfully in the renderer"
-					  << std::endl;
-		}
-
-		// if this is the picking shader, set it in the selection manager
-		if (shader_names[i] == "Picking Shader" && selection_manager)
-		{
-			selection_manager->set_picking_shader(shader);
-			std::cout << "[INFO::CORE::compile_shaders] Picking Shader assigned to selection manager" << std::endl;
-		}
-
-		// add the compiled shader to the node manager
-		node_manager->add_node(std::move(shader));
-	}
-
-	// if all shaders are compiled successfully, print a success message and return true
-	std::cout << "[SUCCESS::CORE::compile_shaders] Shaders compiled successfully" << std::endl;
-	return true;
 }
 
 void Core::load_textures(

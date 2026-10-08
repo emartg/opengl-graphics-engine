@@ -1,0 +1,5 @@
+{
+  "name": "Refractive Shader",
+  "vertex": "refractive.vert.glsl",
+  "fragment": "refractive.frag.glsl"
+}

@@ -1,0 +1,5 @@
+{
+  "name": "Assimp Model Shader",
+  "vertex": "assimp_model.vert.glsl",
+  "fragment": "assimp_model.frag.glsl"
+}

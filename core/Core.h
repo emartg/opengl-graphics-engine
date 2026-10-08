@@ -29,6 +29,7 @@ class Node_Manager;
 class Input_Manager;
 class Scene_Manager;
 class Selection_Manager;
+class Shader_Library;
 
 class Core
 {
@@ -55,6 +56,9 @@ private:
 	std::shared_ptr<Scene_Manager>     scene_manager;
 	std::shared_ptr<Selection_Manager> selection_manager;
 
+	// library of the shader programs, loaded from the descriptor files of the resources directory
+	std::shared_ptr<Shader_Library> shader_library;
+
 	// screen settings
 	GLuint screen_width{ 1600 }, screen_height{ 1000 }; // default screen width and height
 
@@ -74,10 +78,10 @@ private:
 	// Returns true if the directory was found, false otherwise
 	bool resolve_resources_dir();
 
-	// Compiles the built-in shader programs required by the renderer, and registers them
-	// in the renderer and the node manager.
-	// Returns true if compilation and linking were successful, false otherwise
-	bool compile_builtin_shaders();
+	// Loads the shader programs described by the descriptor files of the "shaders" subdirectory of the
+	// resources directory into the shader library, and gives the renderer and the selection manager the
+	// shaders they use. Returns true if every shader was loaded and the required ones exist, false otherwise
+	bool load_shaders();
 
 public:
 	// Constructors
@@ -102,6 +106,7 @@ public:
 	const std::shared_ptr<Input_Manager>&     get_input_manager() const { return input_manager; }
 	const std::shared_ptr<Scene_Manager>&     get_scene_manager() const { return scene_manager; }
 	const std::shared_ptr<Selection_Manager>& get_selection_manager() const { return selection_manager; }
+	const std::shared_ptr<Shader_Library>&    get_shader_library() const { return shader_library; }
 
 	const GLuint&                get_screen_width() const { return screen_width; }
 	const GLuint&                get_screen_height() const { return screen_height; }
@@ -116,11 +121,11 @@ public:
 	void set_screen_width(GLuint width) { screen_width = width; }
 	void set_screen_height(GLuint height) { screen_height = height; }
 	// Sets the resources directory explicitly (must be called before init() to take effect on
-	// the built-in shaders); otherwise, it is located automatically during init()
+	// the engine's shaders); otherwise, it is located automatically during init()
 	void set_resources_dir(const std::filesystem::path& dir) { resources_dir = dir; }
 
 	// Initializes the core engine (OpenGL, window, GUI, etc.), locates the resources directory,
-	// and compiles the built-in shaders required by the renderer
+	// and loads the engine's shaders into the shader library
 	bool init();
 	// Runs the main loop of the engine until the renderer signals that the window should close or,
 	// if max_frames is greater than 0, until that number of frames has been rendered (e.g., for automated
@@ -128,20 +133,6 @@ public:
 	void run(std::uint64_t max_frames = 0);
 	// Frees resources in the correct order and shuts down the engine, destroying the Core instance
 	void shutdown();
-
-	// Creates the shader programs, and delegates the shader compilation and program linking to the renderer.
-	// The shader names must match the ones known by the renderer (see Renderer::set_shader_by_name),
-	// and empty geometry shader paths mean that the program has no geometry shader.
-	// Returns true if compilation and linking were successful, false otherwise
-	bool compile_shaders(
-		const std::vector<std::string>& shader_names,
-		const std::vector<std::string>& vertex_shader_paths,
-		const std::vector<std::string>& fragment_shader_paths);
-	bool compile_shaders(
-		const std::vector<std::string>& shader_names,
-		const std::vector<std::string>& vertex_shader_paths,
-		const std::vector<std::string>& geometry_shader_paths,
-		const std::vector<std::string>& fragment_shader_paths);
 
 	// Loads the textures and adds them to the engine
 	void load_textures(

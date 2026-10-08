@@ -17,6 +17,7 @@
 #include <cstddef>
 #include <cstring>
 #include <functional>
+#include <utility>
 
 #include "SKYBOX.h"      // skybox vertex data
 #include "SCREEN_QUAD.h" // screen-quad vertex data
@@ -33,6 +34,7 @@
 #include "../model/mesh/Mesh.h"
 #include "../model/mesh/Mesh_Geometry.h"
 #include "../shader/Shader.h"
+#include "../shader/Shader_Library.h"
 #include "../texture/Texture.h"
 #include "../utils/geometry/Bounding_Box.h"
 #include "../utils/geometry/Frustum.h"
@@ -174,43 +176,32 @@ void Renderer::set_clear_color(float r, float g, float b, float a) const
 	glClearColor(r, g, b, a); // alpha is optional, default is 1.0f
 }
 
-bool Renderer::set_shader_by_name(const std::string& name, const std::shared_ptr<Shader>& shader)
+bool Renderer::set_shaders(const Shader_Library& shader_library)
 {
-	if (!shader)
-	{ // if the shader is null, print an error message and return false
-		std::cerr << "[ERROR::RENDERER::SetShader] Shader is null for name: " << name << std::endl;
-		return false;
-	}
+	// names of the shaders used by the render passes, and the member variables that hold them
+	const std::pair<const char*, std::shared_ptr<Shader>*> required_shaders[]{
+		{ "Shape Model Shader", &shape_model_shader },
+		{ "Assimp Model Shader", &assimp_model_shader },
+		{ "Single Albedo Shader", &single_albedo_shader },
+		{ "Screen Quad Shader", &screen_quad_shader },
+		{ "Picking Shader", &picking_shader },
+		{ "Skybox Shader", &skybox_shader },
+		{ "Equirectangular to Cubemap Shader", &equirect_to_cubemap_shader },
+		{ "Reflective Shader", &reflective_shader },
+		{ "Refractive Shader", &refractive_shader },
+	};
 
-	// check if the shader name matches any of the known shaders, and if so,
-	// assign the shader to the corresponding member variable
-	if (strcmp(name.c_str(), "Shape Model Shader") == 0)
-		shape_model_shader = shader;
-	else if (strcmp(name.c_str(), "Assimp Model Shader") == 0)
-		assimp_model_shader = shader;
-	else if (strcmp(name.c_str(), "Single Albedo Shader") == 0)
-		single_albedo_shader = shader;
-	else if (strcmp(name.c_str(), "Screen Quad Shader") == 0)
-		screen_quad_shader = shader;
-	else if (strcmp(name.c_str(), "Picking Shader") == 0)
-		picking_shader = shader;
-	else if (strcmp(name.c_str(), "Skybox Shader") == 0)
-		skybox_shader = shader;
-	else if (strcmp(name.c_str(), "Equirectangular to Cubemap Shader") == 0)
-		equirect_to_cubemap_shader = shader;
-	else if (strcmp(name.c_str(), "Reflective Shader") == 0)
-		reflective_shader = shader;
-	else if (strcmp(name.c_str(), "Refractive Shader") == 0)
-		refractive_shader = shader;
-	else
-	{ // if the shader name is unknown, print an error message and return false
-		std::cerr << "[ERROR::RENDERER::SetShader] Unknown shader name provided: '" << name << "' " << std::endl;
-		return false;
+	bool has_all_shaders = true;
+	for (const auto& [name, member] : required_shaders)
+	{
+		*member = shader_library.get(name);
+		if (!*member)
+		{ // if the library does not have the shader, print an error message (and keep checking the rest)
+			std::cerr << "[ERROR::RENDERER::set_shaders] The shader library has no shader named '" << name << "'" << std::endl;
+			has_all_shaders = false;
+		}
 	}
-
-	// if the shader was set successfully, print a success message and return true
-	std::cout << "[SUCCESS::RENDERER::SetShader] Shader with name '" << name << "' set successfully" << std::endl;
-	return true;
+	return has_all_shaders;
 }
 
 void Renderer::frame_start_config()
@@ -288,13 +279,9 @@ void Renderer::render_scene()
 	// (i.e., the inverse matrix of the rotation part of the view matrix)
 	glm::mat3 inv_view_rot = glm::transpose(glm::mat3(view));
 
-	// set the view and projection matrices for each shader program
-	auto& shaders = node_manager->get_nodes(Node_Type::SHADER);
-	for (const auto& node : shaders)
+	// set the view and projection matrices for each shader program of the shader library
+	for (const auto& shader : core->get_shader_library()->get_shaders())
 	{
-		// dynamically cast the node to a Shader object
-		auto shader = std::dynamic_pointer_cast<Shader>(node);
-
 		shader->use();
 		shader->set_mat4("u_view", view);
 		shader->set_mat4("u_projection", projection);

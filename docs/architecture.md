@@ -10,9 +10,9 @@ The project is split into three top-level modules:
 1. **`core` (static library)** - Platform-agnostic rendering engine. It contains:
    - The scene graph and node system.
    - Render pipeline logic.
-   - Resource management (textures, shaders, buffers).
+   - Resource management (textures, shaders, buffers), with the shader programs loaded as assets from descriptor files.
    - Mathematical utilities and geometry primitives.
-   - Dependencies: OpenGL, GLAD, GLM, stb_image, Assimp.
+   - Dependencies: OpenGL, GLAD, GLM, stb_image, Assimp, nlohmann/json.
 
 2. **`platform` (static library)** - Platform layer, reusable by any application that needs a window. It contains:
    - Window creation and context management (`GLFW_Renderer`, the GLFW implementation of `Renderer`).
@@ -91,6 +91,7 @@ Next, each phase is described step-by-step.
 - **`Core`** - Singleton orchestrator. Initialises subsystems, manages the main loop, and delegates responsibilities.
 - **`Renderer`** - Abstract interface for rendering. `GLFW_Renderer` (in `platform`) is the concrete GLFW implementation.
 - **`Node`** - Base class for all scene entities. Implements the **Composite pattern** (parent-child hierarchy). Contains transform logic (position, rotation, scale) and virtual methods (`load()`, `draw()`, `deallocate_resources()`).
+- **`Shader_Library`** - Holds the shader programs as assets: it loads every descriptor file (`<name>.shader.json`, with the program's name and the files of its stages) of a directory, compiles the programs (resolving their `#include` directives with `Shader_Preprocessor`), finds them by name, and reloads them at runtime. The engine's shaders are described in `resources/shaders`, and applications can load their own directories.
 - **`Render_Pass`** - Encapsulates off-screen framebuffer management (FBO, attachments, resolution). Used for color picking and environment map captures.
 - **Managers** - Dedicated services:
   - `Scene_Manager` - holds the root node.

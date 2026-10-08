@@ -15,7 +15,7 @@ This document provides detailed steps to compile and run the OpenGL Graphics Eng
 
 ## Dependency Resolution
 
-The engine depends on GLFW, GLM, and Assimp, which are located with CMake's `find_package` through the CMake packages they install. OpenGL (GLAD), `stb_image`, ImGui, and ImGuiFileDialog are part of the source tree (in `external/include` and `core/`): GLAD is generated, and the others are included as sources.
+The engine depends on GLFW, GLM, Assimp, and nlohmann/json, which are located with CMake's `find_package` through the CMake packages they install. OpenGL (GLAD), `stb_image`, ImGui, and ImGuiFileDialog are part of the source tree (in `external/include` and `core/`): GLAD is generated, and the others are included as sources.
 
 The libraries are provided by:
 
@@ -173,11 +173,11 @@ For Visual Studio 2026, use the generator name reported by `cmake --help` and a 
 
 ## Linux with GCC or Clang
 
-The Linux presets use Ninja and the system packages for GLFW, Assimp, and GLM.
+The Linux presets use Ninja and the system packages for GLFW, Assimp, GLM, and nlohmann/json.
 On Ubuntu/Debian, install the toolchain and the dependencies with:
 
 ```bash
-sudo apt install build-essential clang ninja-build cmake libglfw3-dev libassimp-dev libglm-dev libgl-dev
+sudo apt install build-essential clang ninja-build cmake libglfw3-dev libassimp-dev libglm-dev nlohmann-json3-dev libgl-dev
 ```
 
 Then configure, build, and run with the GCC or Clang presets:
@@ -256,13 +256,13 @@ int main()
 
 The Platform library is built by default (`ENGINE_BUILD_PLATFORM`); consumers that only need the Core library can disable it to skip building it and ImGui (GLFW is still located at configuration time).
 
-The consumer must provide the Engine's dependencies (GLFW, GLM, and Assimp) as CMake packages. On Linux, the system packages are enough. On Windows, use the vcpkg toolchain, and either declare the dependencies in the consumer's own `vcpkg.json` (recommended, so that the consumer can add its own dependencies) or point vcpkg to the Engine's manifest with `-DVCPKG_MANIFEST_DIR=<engine-root>`:
+The consumer must provide the Engine's dependencies (GLFW, GLM, Assimp, and nlohmann/json) as CMake packages. On Linux, the system packages are enough. On Windows, use the vcpkg toolchain, and either declare the dependencies in the consumer's own `vcpkg.json` (recommended, so that the consumer can add its own dependencies) or point vcpkg to the Engine's manifest with `-DVCPKG_MANIFEST_DIR=<engine-root>`:
 
 ```json
 {
   "name": "my-app",
   "builtin-baseline": "<same baseline as the Engine's vcpkg.json>",
-  "dependencies": [ "assimp", "glfw3", "glm" ]
+  "dependencies": [ "assimp", "glfw3", "glm", "nlohmann-json" ]
 }
 ```
 

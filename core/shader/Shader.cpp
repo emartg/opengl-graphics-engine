@@ -46,6 +46,9 @@ Shader::Shader(
 // --------------
 bool Shader::compile()
 {
+	// the result of this compilation (until it succeeds, the shader keeps its previous program, if any)
+	last_compile_succeeded = false;
+
 	// load the source code of each stage from its file, resolving the #include directives
 	const Shader_Source vertex_shader_source = Shader_Preprocessor::load(vertex_shader_path);
 	const Shader_Source geometry_shader_source =
@@ -103,12 +106,14 @@ bool Shader::compile()
 		return false;
 	}
 	// shader program
-	shader_program_id = glCreateProgram();
-	glAttachShader(shader_program_id, vertex_shader);
+	// (it is linked into a new program, which replaces the current one only if linking succeeds,
+	// so that a shader that fails to recompile keeps working with its previous program)
+	const GLuint program = glCreateProgram();
+	glAttachShader(program, vertex_shader);
 	if (!geometry_shader_path.empty())
-		glAttachShader(shader_program_id, geometry_shader);
-	glAttachShader(shader_program_id, fragment_shader);
-	glLinkProgram(shader_program_id);
+		glAttachShader(program, geometry_shader);
+	glAttachShader(program, fragment_shader);
+	glLinkProgram(program);
 
 	// delete the shaders, as they're either linked into the program or no longer needed
 	// (they are only flagged for deletion until the program is deleted)
@@ -117,15 +122,27 @@ bool Shader::compile()
 		glDeleteShader(geometry_shader);
 	glDeleteShader(fragment_shader);
 
-	if (!check_compilation_linking_errors(shader_program_id, "PROGRAM", {}))
+	if (!check_compilation_linking_errors(program, "PROGRAM", {}))
 	{ // if linking the program failed, delete it and return false
-		glDeleteProgram(shader_program_id);
-		shader_program_id = 0;
+		glDeleteProgram(program);
 		return false;
 	}
 
+	// replace the previous program (if any) with the new one
+	if (shader_program_id)
+		glDeleteProgram(shader_program_id);
+	shader_program_id      = program;
+	last_compile_succeeded = true;
+
 	std::cout << "[SUCCESS::SHADER::compile] Shader with name '" << name << "' compiled and linked successfully" << std::endl;
 	return true; // return true if compilation and linking were successful
+}
+
+void Shader::deallocate_resources()
+{
+	if (shader_program_id)
+		glDeleteProgram(shader_program_id);
+	shader_program_id = 0;
 }
 
 void Shader::use() const

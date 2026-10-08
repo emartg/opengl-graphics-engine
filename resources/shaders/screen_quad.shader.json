@@ -1,0 +1,5 @@
+{
+  "name": "Screen Quad Shader",
+  "vertex": "screen_quad.vert.glsl",
+  "fragment": "screen_quad.frag.glsl"
+}

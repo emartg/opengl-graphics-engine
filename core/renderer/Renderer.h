@@ -31,6 +31,7 @@ class Core;
 class Node;
 class Render_Pass;
 class Shader;
+class Shader_Library;
 class Texture;
 
 enum class Buffer_Type
@@ -121,10 +122,9 @@ public:
 	void set_is_frustum_culling_enabled(bool is_enabled) { is_frustum_culling_enabled = is_enabled; }
 	void set_is_instancing_enabled(bool is_enabled) { is_instancing_enabled = is_enabled; }
 
-	// Assigns the shader program with the specified name to the appropriate member variable
-	// for further use in the renderer.
-	// Returns true if the shader was set successfully, false if the name is unknown or the shader is null
-	virtual bool set_shader_by_name(const std::string& name, const std::shared_ptr<Shader>& shader);
+	// Takes the shader programs used by the render passes from the shader library, by name (e.g., "Skybox Shader").
+	// Returns true if the library has all of them, false otherwise (printing the missing ones)
+	virtual bool set_shaders(const Shader_Library& shader_library);
 
 	// Releases the OpenGL objects owned by the renderer (render passes, buffers, etc.).
 	// It must be called while the OpenGL context still exists (i.e., before the window is destroyed);

@@ -38,7 +38,7 @@ The engine is split into three CMake modules:
 
 | Module | Description |
 | ------ | ----------- |
-| **`core`** | Static library containing all rendering logic, scene management, shaders, and resource handling. Dependencies: OpenGL, GLAD, GLM, stb_image, Assimp. |
+| **`core`** | Static library containing all rendering logic, scene management, shaders, and resource handling. Dependencies: OpenGL, GLAD, GLM, stb_image, Assimp, nlohmann/json. |
 | **`platform`** | Static library providing the reusable window, input, and ImGui integration layer. It depends on `core`, GLFW, ImGui, and ImGuiFileDialog. |
 | **`app`** | Executable containing the scene editor and example scenes. It depends on `platform` (and receives `core` transitively). |
 
@@ -59,8 +59,9 @@ For a detailed class diagram and pipeline description, see the [Architecture Gui
 | stb_image | 2.30 | Image loading (`.jpg`, `.png`, etc.) |
 | Dear ImGui | 1.91.6 | Immediate-mode GUI |
 | Assimp | 6.0.5 | 3D model import |
+| nlohmann/json | 3.12.0 | JSON parsing (shader descriptors) |
 
-On Windows, GLFW, GLM, and Assimp are built by [vcpkg](https://github.com/microsoft/vcpkg) from the `vcpkg.json` manifest (the versions above); on Linux, the versions of the system packages are used.
+On Windows, GLFW, GLM, Assimp, and nlohmann/json are built by [vcpkg](https://github.com/microsoft/vcpkg) from the `vcpkg.json` manifest (the versions above); on Linux, the versions of the system packages are used.
 
 CMake (≥3.21, or ≥3.25 to use the presets) with the Ninja generator is recommended, but any generator works.
 
@@ -116,11 +117,11 @@ out/build/manual-ninja-msvc-release\bin\App.exe
 
 For Debug, change `Release` to `Debug` and use a separate directory such as `out/build/manual-ninja-msvc-debug`. The preset and direct CLI workflows are equivalent; presets simply keep the default configuration choices in the repository.
 
-On Linux, install GLFW, Assimp, and GLM from the system package manager
+On Linux, install GLFW, Assimp, GLM, and nlohmann/json from the system package manager
 and use the GCC or Clang presets (`ninja-gcc-debug`, `ninja-clang-debug`, and their Release variants):
 
 ```bash
-sudo apt install build-essential clang ninja-build cmake libglfw3-dev libassimp-dev libglm-dev libgl-dev
+sudo apt install build-essential clang ninja-build cmake libglfw3-dev libassimp-dev libglm-dev nlohmann-json3-dev libgl-dev
 cmake --preset ninja-gcc-debug
 cmake --build --preset ninja-gcc-debug
 ./out/build/ninja-gcc-debug/bin/App

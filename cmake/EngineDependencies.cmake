@@ -1,6 +1,6 @@
 # Resolve third-party dependencies and expose stable targets to the project.
 #
-# GLFW, GLM, and Assimp are located through the CMake packages they install (find_package in CONFIG mode),
+# GLFW, GLM, Assimp, and nlohmann/json are located through the CMake packages they install (find_package in CONFIG mode),
 # which are provided by vcpkg on Windows (see vcpkg.json) and by the system packages on Linux.
 # GLAD, stb_image, ImGui, and ImGuiFileDialog are part of the source tree (external/include and core/).
 
@@ -14,14 +14,15 @@ macro(engine_find_package package)
         message(FATAL_ERROR "${package} was not found.\n"
             "On Windows, use a preset (or the vcpkg toolchain: -DCMAKE_TOOLCHAIN_FILE=<vcpkg-root>/scripts/buildsystems/vcpkg.cmake), "
             "so that vcpkg installs the dependencies of vcpkg.json. "
-            "On Linux, install the development packages (e.g., libglfw3-dev, libassimp-dev, and libglm-dev).\n"
+            "On Linux, install the development packages (e.g., libglfw3-dev, libassimp-dev, libglm-dev, and nlohmann-json3-dev).\n"
             "If the build directory was configured before without vcpkg, reconfigure it from scratch (cmake --fresh).")
     endif()
 endmacro()
 
-engine_find_package(glm)    # target: glm::glm
-engine_find_package(glfw3)  # target: glfw
-engine_find_package(assimp) # target: assimp::assimp
+engine_find_package(glm)           # target: glm::glm
+engine_find_package(glfw3)         # target: glfw
+engine_find_package(assimp)        # target: assimp::assimp
+engine_find_package(nlohmann_json) # target: nlohmann_json::nlohmann_json
 
 add_library(engine_glad STATIC "${PROJECT_SOURCE_DIR}/core/glad.c")
 target_include_directories(engine_glad PUBLIC "${PROJECT_SOURCE_DIR}/external/include")
