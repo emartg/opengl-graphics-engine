@@ -1692,18 +1692,20 @@ void GUI::draw_model_controls(Node* model)
 	ImGui::PushID(model->get_name().c_str());
 
 	// combo box to assign a material of the material library to the model at runtime, which replaces the materials
-	// of all its meshes (or to go back to "Default": the meshes' own materials, e.g., those of an imported model,
-	// or the default material)
+	// of all its meshes (or to go back to "Mesh Materials": the meshes' own materials, e.g., those of an imported
+	// model, or the default material). The entry is not named "Default", since the default material of the library
+	// is also listed, and ImGui identifies the items by their labels
 	const auto&       material_library = Core::get_instance()->get_material_library();
 	const auto&       material         = model->get_material();
-	const std::string preview          = material ? material->get_name() : "Default";
+	const std::string preview          = material ? material->get_name() : "Mesh Materials";
 	ImGui::Text("Material");
 	ImGui::SameLine(); // keep the combo box on the same line as the label
 	ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - BUTTON_WIDTH - ImGui::GetStyle().ItemSpacing.x);
 	if (ImGui::BeginCombo("##Material", preview.c_str()))
 	{
-		if (ImGui::Selectable("Default", !material))
+		if (ImGui::Selectable("Mesh Materials", !material))
 			model->set_material(nullptr);
+		ImGui::SetItemTooltip("Each mesh is drawn with its own material (e.g., an imported one) or the Default material");
 		for (const auto& library_material : material_library->get_materials())
 		{
 			const bool is_selected = library_material == material;

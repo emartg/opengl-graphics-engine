@@ -36,6 +36,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
+- The entry of the Material combo box of the Properties window that removes the material of an object was named "Default", like the default material, so both entries had the same ImGui identifier (reported as a conflict in Debug builds, and a click could select the other entry). It is now named "Mesh Materials".
 - The opacity maps of imported models were sampled from the texture unit of the albedo map.
 - The capture of dynamic environment maps skipped the own meshes of composite models and could draw their children twice.
 - The dynamic environment maps were captured every frame but never displayed (the reflective and refractive shaders were not used in the main pass), and they were captured from the local position of the objects instead of their world position.
