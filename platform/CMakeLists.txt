@@ -1,7 +1,7 @@
 ## CMakeLists.txt for the Platform library, that implements the window, OpenGL context,
 ## input, and ImGui integration of the Core renderer with GLFW.
-## It is used by the sample App and by any other application that needs a window
-## (e.g., the X-ray simulator), while the Core library remains independent of GLFW and ImGui
+## It is used by the sample App and by any other application that needs a window,
+## while the Core library remains independent of GLFW and ImGui
 
 # Collect header and source files
 file(GLOB_RECURSE PLATFORM_HEADERS CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/*.h)

@@ -1,7 +1,7 @@
 /*
  * main.cpp
  * This file is the entry point of the consumer test, a standalone application that uses the Engine
- * as an external dependency (like the X-ray simulator). It follows these steps:
+ * as an external dependency. It follows these steps:
  * - It creates a GLFW_Renderer with its own GUI layer, and initializes the Core engine.
  * - It sets up a minimal scene (a camera).
  * - It renders a fixed number of frames and shuts down the engine.

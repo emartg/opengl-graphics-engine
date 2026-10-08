@@ -16,9 +16,7 @@ Based on the experience gained and the limitations identified, the following imp
 | **v0.11.0** | Normal mapping, Physically Based Rendering (PBR), Screen Space Ambient Occlusion (SSAO), and post-processing (tone mapping, gamma correction). |
 | **v0.12.0** | Order-independent transparency, compute shaders, and particles. |
 | **v0.13.0** | Editor improvements: data-driven materials, multi-selection, viewport gizmos, and multi-camera support. |
-| **v1.0.0** | Stable interfaces, once the Engine has been used by the X-ray simulator. |
-
-The X-ray simulator (`xray-sim`), which consumes the Engine as a Git submodule together with gVirtualXray, starts after v0.10.0, in parallel with the following releases.
+| **v1.0.0** | Stable interfaces, once the Engine has been used by a real consumer project. |
 
 ## Short-Term (1 - 3 Months)
 
