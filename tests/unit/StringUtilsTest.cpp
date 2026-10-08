@@ -75,3 +75,18 @@ TEST(StringUtilsTest, GenerateIdPrefixedNameReturnsAnEmptyStringForANullNode)
 	const std::shared_ptr<Node> node{};
 	EXPECT_EQ(String_Utils::generate_id_prefixed_name(node), "");
 }
+
+TEST(StringUtilsTest, IsGlslIdentifierAcceptsLettersDigitsAndUnderscoresNotStartingWithADigit)
+{
+	for (const char* identifier : { "albedo_map", "_private", "map2", "A", "shininess" })
+		EXPECT_TRUE(String_Utils::is_glsl_identifier(identifier)) << identifier;
+	for (const char* text : { "", "1map", "base-color", "albedo map", "map.x", "map$" })
+		EXPECT_FALSE(String_Utils::is_glsl_identifier(text)) << text;
+}
+
+TEST(StringUtilsTest, IsGlslIdentifierRejectsTheReservedPrefixAndDoubleUnderscores)
+{
+	EXPECT_FALSE(String_Utils::is_glsl_identifier("gl_map"));
+	EXPECT_FALSE(String_Utils::is_glsl_identifier("albedo__map"));
+	EXPECT_TRUE(String_Utils::is_glsl_identifier("glossiness")); // only the "gl_" prefix is reserved
+}

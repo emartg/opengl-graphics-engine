@@ -143,17 +143,14 @@ bool Core::load_materials()
 	if (!material_library->load_directory(resources_dir / "materials", *shader_library))
 		return false;
 
-	// the renderer draws the objects without a material of their own with the default materials
-	bool has_default_materials = true;
-	for (const char* name : { Material_Library::DEFAULT_SHAPE_MATERIAL, Material_Library::DEFAULT_MODEL_MATERIAL })
+	// the renderer draws the meshes without a material of their own with the default material
+	if (!material_library->get(Material_Library::DEFAULT_MATERIAL))
 	{
-		if (!material_library->get(name))
-		{
-			std::cerr << "[ERROR::CORE::load_materials] The material library has no material named '" << name << "'" << std::endl;
-			has_default_materials = false;
-		}
+		std::cerr << "[ERROR::CORE::load_materials] The material library has no material named '" << Material_Library::DEFAULT_MATERIAL
+				  << "'" << std::endl;
+		return false;
 	}
-	return has_default_materials;
+	return true;
 }
 
 // Public Methods

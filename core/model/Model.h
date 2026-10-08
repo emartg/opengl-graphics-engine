@@ -59,6 +59,6 @@ public:
 
 	// Draws only its own meshes
 	void draw() const override;
-	// Draws only its own meshes with the specified shader (binds the textures before drawing)
+	// Draws only its own meshes with the specified shader, already set up by the caller
 	void draw(const Shader& shader) const override;
 };

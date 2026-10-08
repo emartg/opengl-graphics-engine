@@ -10,6 +10,7 @@
 #include <set>
 #include <sstream>
 #include <string>
+#include <vector>
 
 #include <gtest/gtest.h>
 
@@ -44,6 +45,29 @@ TEST(ShaderLibraryTest, ParsesTheOptionalGeometryStage)
 
 	ASSERT_TRUE(descriptor.has_value()) << error;
 	EXPECT_EQ(descriptor->geometry_path, fs::path("dir") / "a.geom");
+}
+
+TEST(ShaderLibraryTest, ParsesTheOptionalTextureSlotsInOrder)
+{
+	std::string error;
+	const auto  descriptor = Shader_Library::parse_descriptor(
+		R"({ "name": "T", "vertex": "a.vert", "fragment": "a.frag", "textures": [ "albedo_map", "opacity_map" ] })",
+		fs::path{},
+		error);
+
+	ASSERT_TRUE(descriptor.has_value()) << error;
+	EXPECT_EQ(descriptor->texture_slots, (std::vector<std::string>{ "albedo_map", "opacity_map" }));
+}
+
+TEST(ShaderLibraryTest, RejectsInvalidRepeatedOrNonIdentifierTextureSlots)
+{
+	for (const char* slots : { R"("albedo_map")", "[1]", R"([""])", R"(["albedo_map", "albedo_map"])", R"(["base-color"])", R"(["1map"])" })
+	{
+		std::string       error;
+		const std::string text = std::string(R"({ "name": "T", "vertex": "a.vert", "fragment": "a.frag", "textures": )") + slots + " }";
+		EXPECT_FALSE(Shader_Library::parse_descriptor(text, fs::path{}, error).has_value()) << slots;
+		EXPECT_FALSE(error.empty());
+	}
 }
 
 TEST(ShaderLibraryTest, RejectsInvalidJson)

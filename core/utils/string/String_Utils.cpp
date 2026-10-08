@@ -110,3 +110,15 @@ std::string String_Utils::to_clean_display_name(const std::string& filename)
 
 	return name;
 }
+
+bool String_Utils::is_glsl_identifier(const std::string& text)
+{
+	// the first character must be a letter or an underscore, and the rest letters, digits, or underscores
+	if (text.empty() || !(std::isalpha(static_cast<unsigned char>(text[0])) || text[0] == '_'))
+		return false;
+	const bool has_valid_characters =
+		std::all_of(text.begin(), text.end(), [](char c) { return std::isalnum(static_cast<unsigned char>(c)) || c == '_'; });
+
+	// the "gl_" prefix and two consecutive underscores are reserved by GLSL
+	return has_valid_characters && !text.starts_with("gl_") && text.find("__") == std::string::npos;
+}

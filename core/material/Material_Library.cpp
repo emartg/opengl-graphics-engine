@@ -2,14 +2,17 @@
  * Material_Library.cpp
  * This file implements the Material_Library class, which manages the materials of the engine as assets: each
  * material is described by a descriptor file (<name>.material.json) with its name, the name of its shader
- * (from the shader library), and the values of its parameters, so that materials are added or changed
- * without modifying the engine's code. The library loads every descriptor of a directory and finds the
- * materials by name.
+ * (from the shader library), the values of its parameters, and its textures, so that materials are added or
+ * changed without modifying the engine's code. The library loads every descriptor of a directory, holds the
+ * materials created by the engine (e.g., those of imported models), and finds the materials by name.
  */
 
 #include "Material_Library.h"
 
+#include "../shader/Shader.h"
 #include "../shader/Shader_Library.h"
+#include "../texture/Texture.h"
+#include "../utils/string/String_Utils.h"
 
 #include <algorithm>
 #include <fstream>
@@ -48,7 +51,8 @@ namespace
 
 // Public Static Methods
 // ---------------------
-std::optional<Material_Descriptor> Material_Library::parse_descriptor(const std::string& text, std::string& error)
+std::optional<Material_Descriptor>
+Material_Library::parse_descriptor(const std::string& text, const std::filesystem::path& base_dir, std::string& error)
 {
 	// parse the text without exceptions (a discarded value means that the text is not valid JSON)
 	const nlohmann::json json = nlohmann::json::parse(text, nullptr, false);
@@ -97,6 +101,12 @@ std::optional<Material_Descriptor> Material_Library::parse_descriptor(const std:
 		}
 		for (const auto& [parameter_name, json_value] : json["parameters"].items())
 		{
+			// the parameters become members of the shader's u_material struct, so their names must be GLSL identifiers
+			if (!String_Utils::is_glsl_identifier(parameter_name))
+			{
+				error = "The parameter name \"" + parameter_name + "\" is not a valid GLSL identifier";
+				return std::nullopt;
+			}
 			const auto value = to_material_value(json_value);
 			if (!value)
 			{
@@ -104,6 +114,30 @@ std::optional<Material_Descriptor> Material_Library::parse_descriptor(const std:
 				return std::nullopt;
 			}
 			descriptor.parameters[parameter_name] = *value;
+		}
+	}
+
+	// optional field: the image files of the textures, by texture slot (relative to the descriptor)
+	if (json.contains("textures"))
+	{
+		if (!json["textures"].is_object())
+		{
+			error = "The field \"textures\" must be an object";
+			return std::nullopt;
+		}
+		for (const auto& [slot, json_path] : json["textures"].items())
+		{
+			if (!String_Utils::is_glsl_identifier(slot))
+			{
+				error = "The texture slot \"" + slot + "\" is not a valid GLSL identifier";
+				return std::nullopt;
+			}
+			if (!json_path.is_string() || json_path.get<std::string>().empty())
+			{
+				error = "The texture \"" + slot + "\" must be a non-empty string (the path of an image file)";
+				return std::nullopt;
+			}
+			descriptor.texture_paths[slot] = base_dir / json_path.get<std::string>();
 		}
 	}
 
@@ -146,7 +180,7 @@ bool Material_Library::load_directory(const std::filesystem::path& dir, const Sh
 		std::stringstream text;
 		text << stream.rdbuf();
 		std::string error;
-		const auto  descriptor = parse_descriptor(text.str(), error);
+		const auto  descriptor = parse_descriptor(text.str(), file.parent_path(), error);
 		if (!descriptor)
 		{
 			std::cerr << "[ERROR::MATERIAL_LIBRARY::load_directory] Invalid material descriptor " << file.string() << ": " << error
@@ -174,15 +208,56 @@ bool Material_Library::load_directory(const std::filesystem::path& dir, const Sh
 			continue;
 		}
 
-		// create the material and add it to the library
-		materials.push_back(
-			std::make_shared<Material>(descriptor->name, std::move(shader), descriptor->parameters, descriptor->supports_instancing));
+		// create the material, with its textures (only for the slots of its shader)
+		auto material = std::make_shared<Material>(descriptor->name, shader, descriptor->parameters, descriptor->supports_instancing);
+		bool has_valid_textures = true;
+		for (const auto& [slot, path] : descriptor->texture_paths)
+		{
+			const auto& slots = shader->get_texture_slots();
+			if (std::find(slots.begin(), slots.end(), slot) == slots.end())
+			{
+				std::cerr << "[ERROR::MATERIAL_LIBRARY::load_directory] The material '" << descriptor->name
+						  << "' has a texture for the slot '" << slot << "', which the shader '" << descriptor->shader_name
+						  << "' does not have" << std::endl;
+				has_valid_textures = false;
+				continue;
+			}
+			auto texture = std::make_shared<Texture>(path.filename().string(), path.string(), Texture_Type::UNDEFINED);
+			if (texture->get_texture_id() == 0)
+			{
+				std::cerr << "[ERROR::MATERIAL_LIBRARY::load_directory] Failed to load the texture " << path.string()
+						  << " of the material '" << descriptor->name << "'" << std::endl;
+				has_valid_textures = false;
+				continue;
+			}
+			material->set_texture(slot, texture);
+		}
+		if (!has_valid_textures)
+		{
+			all_loaded = false;
+			continue;
+		}
+
+		// add the material to the library
+		materials.push_back(std::move(material));
 		++loaded_count;
 	}
 
 	std::cout << "[INFO::MATERIAL_LIBRARY::load_directory] Loaded " << loaded_count << " of " << files.size() << " materials from "
 			  << dir.string() << std::endl;
 	return all_loaded;
+}
+
+std::shared_ptr<Material> Material_Library::add(std::shared_ptr<Material> material)
+{
+	// find a unique name, adding a numeric suffix to the material's name if it is already in use
+	const std::string base_name = material->get_name();
+	std::string       name      = base_name;
+	for (int suffix = 2; get(name); ++suffix) name = base_name + " (" + std::to_string(suffix) + ")";
+	material->set_name(name);
+
+	materials.push_back(material);
+	return material;
 }
 
 std::shared_ptr<Material> Material_Library::get(const std::string& name) const

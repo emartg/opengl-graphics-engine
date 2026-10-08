@@ -1,5 +1,0 @@
-{
-  "name": "Shape Model Shader",
-  "vertex": "shape_model.vert.glsl",
-  "fragment": "shape_model.frag.glsl"
-}

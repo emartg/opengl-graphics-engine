@@ -71,8 +71,13 @@ public:
 	void use() const;
 
 	// Getters
-	GLuint      get_shader_program_id() const { return shader_program_id; }
-	bool        get_last_compile_succeeded() const { return last_compile_succeeded; }
+	GLuint get_shader_program_id() const { return shader_program_id; }
+	bool   get_last_compile_succeeded() const { return last_compile_succeeded; }
+	// names of the texture slots of the shader's materials (samplers of its u_material struct, see Material::apply)
+	const std::vector<std::string>& get_texture_slots() const { return texture_slots; }
+
+	// Setters
+	void        set_texture_slots(const std::vector<std::string>& slots) { texture_slots = slots; }
 	std::string get_vertex_shader_path() const { return vertex_shader_path; }
 	std::string get_geometry_shader_path() const { return geometry_shader_path; }
 	std::string get_fragment_shader_path() const { return fragment_shader_path; }
@@ -95,6 +100,8 @@ private:
 	std::string fragment_shader_path; // path to the fragment shader file
 
 	bool last_compile_succeeded{ false }; // whether the last compilation (or reload) succeeded
+
+	std::vector<std::string> texture_slots; // names of the texture slots of the shader's materials
 
 	// Private Methods
 	// ---------------

@@ -9,12 +9,14 @@
 #include "Shader_Library.h"
 
 #include "Shader.h"
+#include "../utils/string/String_Utils.h"
 
 #include <algorithm>
 #include <fstream>
 #include <iostream>
 #include <sstream>
 #include <system_error>
+#include <utility>
 
 #include <nlohmann/json.hpp>
 
@@ -61,12 +63,37 @@ Shader_Library::parse_descriptor(const std::string& text, const std::filesystem:
 		!read_string("fragment", true, fragment_file))
 		return std::nullopt;
 
+	// optional field: the names of the texture slots (an array of non-empty, unique strings)
+	std::vector<std::string> texture_slots;
+	if (json.contains("textures"))
+	{
+		const auto& slots = json["textures"];
+		const bool  valid = slots.is_array() && std::all_of(slots.begin(), slots.end(), [](const nlohmann::json& slot) {
+							   return slot.is_string() && String_Utils::is_glsl_identifier(slot.get<std::string>());
+							});
+		if (!valid)
+		{ // the slots become the names of members of the shader's u_material struct, so they must be GLSL identifiers
+			error = "The field \"textures\" must be an array of GLSL identifiers (e.g., \"albedo_map\")";
+			return std::nullopt;
+		}
+		for (const auto& slot : slots)
+		{
+			if (std::find(texture_slots.begin(), texture_slots.end(), slot.get<std::string>()) != texture_slots.end())
+			{
+				error = "The texture slot \"" + slot.get<std::string>() + "\" is repeated";
+				return std::nullopt;
+			}
+			texture_slots.push_back(slot.get<std::string>());
+		}
+	}
+
 	// resolve the stage files relative to the directory of the descriptor
 	Shader_Descriptor descriptor;
 	descriptor.name          = name;
 	descriptor.vertex_path   = base_dir / vertex_file;
 	descriptor.geometry_path = geometry_file.empty() ? std::filesystem::path{} : base_dir / geometry_file;
 	descriptor.fragment_path = base_dir / fragment_file;
+	descriptor.texture_slots = std::move(texture_slots);
 	return descriptor;
 }
 
@@ -130,6 +157,7 @@ bool Shader_Library::load_directory(const std::filesystem::path& dir)
 			descriptor->vertex_path.string(),
 			descriptor->geometry_path.string(),
 			descriptor->fragment_path.string());
+		shader->set_texture_slots(descriptor->texture_slots);
 		if (!shader->compile())
 		{
 			std::cerr << "[ERROR::SHADER_LIBRARY::load_directory] Failed to compile the shader '" << descriptor->name << "' ("

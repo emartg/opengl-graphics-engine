@@ -87,7 +87,7 @@ private:
 	bool load_shaders();
 	// Loads the materials described by the descriptor files of the "materials" subdirectory of the resources
 	// directory into the material library. Returns true if every material was loaded and the default
-	// materials exist, false otherwise
+	// material exists, false otherwise
 	bool load_materials();
 
 public:

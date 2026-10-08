@@ -58,4 +58,9 @@ public:
 	// - Replaces underscores with spaces
 	// - Capitalizes the first letter of each word (title case)
 	static std::string to_clean_display_name(const std::string& filename);
+
+	// Returns true if the text is a valid GLSL identifier that a program can declare (e.g., the name of a member
+	// of a uniform struct): a letter or underscore followed by letters, digits, or underscores, which does not
+	// start with the reserved "gl_" prefix nor contain two consecutive underscores (also reserved)
+	static bool is_glsl_identifier(const std::string& text);
 };

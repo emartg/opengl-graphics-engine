@@ -11,6 +11,9 @@
  *     "vertex": "skybox.vert.glsl",
  *     "fragment": "skybox.frag.glsl"
  * }
+ * A shader whose materials have textures lists its texture slots (optional): "textures": [ "albedo_map" ]. Each
+ * slot is a sampler of the shader's u_material struct, with a boolean u_material.has_<slot> that tells the shader
+ * whether the material has a texture for it (see Material::apply)
  */
 
 #pragma once
@@ -26,10 +29,11 @@ class Shader;
 // Contents of a shader descriptor file, with the paths of the stage files resolved
 struct Shader_Descriptor
 {
-	std::string           name;
-	std::filesystem::path vertex_path;
-	std::filesystem::path geometry_path; // empty if the program has no geometry stage
-	std::filesystem::path fragment_path;
+	std::string              name;
+	std::filesystem::path    vertex_path;
+	std::filesystem::path    geometry_path; // empty if the program has no geometry stage
+	std::filesystem::path    fragment_path;
+	std::vector<std::string> texture_slots; // names of the texture slots of the shader's materials (if any)
 };
 
 class Shader_Library
@@ -53,7 +57,8 @@ public:
 	// ---------------------
 	// Parses the text of a shader descriptor (JSON), resolving the stage files relative to the given base
 	// directory (the directory of the descriptor). Returns the descriptor, or an empty optional (and an error
-	// message) if the text is not valid JSON or lacks a required field ("name", "vertex", and "fragment")
+	// message) if the text is not valid JSON, lacks a required field ("name", "vertex", and "fragment"), or has
+	// a field of an invalid type
 	static std::optional<Shader_Descriptor>
 	parse_descriptor(const std::string& text, const std::filesystem::path& base_dir, std::string& error);
 

@@ -10,6 +10,7 @@
 
 #include <iostream>
 #include <algorithm>
+#include <map>
 #include <memory>
 
 #include <assimp/Importer.hpp>
@@ -20,6 +21,7 @@
 class Shader;
 class Mesh;
 class Texture;
+class Material;
 
 // Forward declaration of enum to avoid cyclic includes
 enum class Texture_Type;
@@ -33,7 +35,7 @@ public:
 	Assimp_Model(
 		const std::string& name,
 		std::string const& path,
-		const glm::vec4    albedo       = ALBEDO,
+		const glm::vec4    albedo       = DEFAULT_ALBEDO,
 		const glm::vec3    position     = POSITION,
 		const glm::quat    rotation     = ROTATION,
 		const glm::vec3    scale        = SCALE,
@@ -44,10 +46,19 @@ public:
 	// ----------
 	~Assimp_Model() = default;
 
+	// Public Constants
+	// ----------------
+	// default albedo color of imported models: white, since it tints the textures of their materials
+	static constexpr glm::vec4 DEFAULT_ALBEDO{ 1.0f };
+
 private:
 	// Private Attributes
 	// ------------------
 	std::string directory; // directory path of the model file for loading textures
+	std::string file_name; // name of the model file (without its directory), used to name its materials
+
+	// materials created while loading the model, by the index of their imported material (shared by its meshes)
+	std::map<unsigned int, std::shared_ptr<Material>> imported_materials;
 
 	// Private Methods
 	// ---------------
