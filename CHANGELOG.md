@@ -14,6 +14,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Reflective and refractive materials ("Chrome", "Mirror", "Glass", and "Dynamic Glass"), whose shaders sample an environment map: the skybox, or a cubemap captured every frame from the position of each object, as set by the material's `environment` field. The dynamic cubemaps are created and released automatically for the objects that use such materials.
 - Imported models create a material for each of their materials with textures (added to the material library, so that it can also be assigned to other objects).
 - Material assignment at runtime from the Properties window, and material parameters that each object can override for itself.
+- Material Editor window in the App (opened from the Creation window, or from the material of the selected object): it creates materials (with any shader of the library, starting with its parameters) and duplicates them, renames them, edits their parameters, textures, and environment map while the scene is rendered with them, marks those with unsaved changes, and saves them to (or reloads them from) their descriptor files.
+- Saving, reloading, duplication, and renaming of materials in `Material_Library`, and the material parameters of a shader, found from the active uniforms of its program (`Shader::get_uniforms`).
 - Shader programs as assets: each one is described by a `<name>.shader.json` file (its name and the files of its stages), loaded by the new `Shader_Library` from `resources/shaders` (applications can load their own directories).
 - Shader reloading at runtime from the Debug window (all shaders or one by one): a shader that fails to compile keeps its previous program.
 - nlohmann/json dependency (vcpkg `nlohmann-json`, Ubuntu `nlohmann-json3-dev`).
@@ -30,6 +32,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - The scenes of the App moved from `main.cpp` to `app/scenes/` (the example scene, the reflective and refractive test scenes, and the stress test scenes), with a registry that names them.
 - The textures of meshes belong to their materials: a mesh has an optional material, used unless its node has a material of its own.
 - Only the opacity of textures discards nearly transparent fragments (below 0.1); the opacity of an object always blends.
+- The parameters of a shader that a material does not set are drawn with their zero values, instead of the values of the previous material drawn with the same shader.
 
 ### Fixed
 

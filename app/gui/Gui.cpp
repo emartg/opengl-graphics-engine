@@ -9,10 +9,13 @@
 #include <algorithm>
 #include <array>
 #include <cctype> // for std::tolower
+#include <cmath>  // for std::abs
 #include <cstdint>
+#include <filesystem>
 #include <limits> // for std::numeric_limits
 #include <string>
 #include <sstream>
+#include <variant>
 
 #include "Gui.h"
 #include "ImGuiFileDialog.h"
@@ -28,6 +31,7 @@
 #include "core/light/Spotlight.h"
 #include "core/model/Shape_Model.h"
 #include "core/model/Assimp_Model.h"
+#include "core/model/mesh/Mesh.h"
 #include "core/model/mesh/Mesh_Geometry.h"
 #include "core/managers/Node_Manager.h"
 #include "core/managers/Selection_Manager.h"
@@ -38,6 +42,7 @@
 #include "core/shader/Shader_Library.h"
 #include "core/material/Material.h"
 #include "core/material/Material_Library.h"
+#include "core/texture/Texture.h"
 #include "core/utils/random/Random.h"
 #include "core/utils/string/String_Utils.h"
 
@@ -309,6 +314,7 @@ void GUI::draw_gui_windows()
 	draw_properties_window();
 	draw_creation_window();
 	draw_debug_window();
+	draw_material_editor_window();
 }
 
 void GUI::handle_gui_input() const
@@ -664,6 +670,10 @@ void GUI::draw_creation_window()
 			);
 		}
 		draw_import_skybox_popup(); // draw the popup for importing a new skybox textures
+
+		// button to open the Material Editor, which creates and edits the materials of the material library
+		if (ImGui::Button("Material Editor", ImVec2(ImGui::GetContentRegionAvail().x, 0.0f)))
+			open_material_editor(nullptr); // the material it showed last time, or the default material
 
 		ImGui::End(); // end the create Objects window
 
@@ -1024,6 +1034,179 @@ void GUI::draw_debug_window()
 			debug_window_just_appeared = false; // no longer the first frame
 		}
 	}
+}
+
+void GUI::open_material_editor(const std::shared_ptr<Material>& material)
+{
+	material_editor_open = true;
+	if (material && material != edited_material)
+	{
+		edited_material = material;
+		set_material_editor_status("", false); // the status of the last action was about another material
+	}
+	ImGui::SetWindowFocus("MATERIAL EDITOR"); // bring the window to the front if it is already open
+}
+
+void GUI::draw_material_editor_window()
+{
+	// the file dialog of the textures is drawn even if the window is closed while it is open
+	draw_load_material_texture_dialog();
+	if (!material_editor_open)
+		return;
+
+	auto        core             = Core::get_instance();
+	const auto& material_library = core->get_material_library();
+
+	// edit the default material if no material was chosen (e.g., when the window is opened from the Creation Window)
+	if (!edited_material)
+		edited_material = material_library->get(Material_Library::DEFAULT_MATERIAL);
+
+	// set the initial size and position of the window (centered on the display)
+	const ImGuiIO& io = ImGui::GetIO();
+	ImGui::SetNextWindowSize(ImVec2{ MATERIAL_EDITOR_WIDTH, MATERIAL_EDITOR_HEIGHT }, ImGuiCond_Appearing);
+	ImGui::SetNextWindowPos(ImVec2{ io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f }, ImGuiCond_Appearing, ImVec2{ 0.5f, 0.5f });
+
+	ImGui::PushFont(bold_font);
+	const bool is_expanded = ImGui::Begin("MATERIAL EDITOR", &material_editor_open);
+	ImGui::PopFont();
+	if (!is_expanded || !edited_material)
+	{ // the window is collapsed, or there is no material to edit (not even the default one)
+		if (is_expanded)
+			ImGui::TextUnformatted("The material library has no materials.");
+		ImGui::End();
+		return;
+	}
+	Material& material = *edited_material;
+
+	// combo box to choose the edited material (the materials with unsaved changes are marked with an asterisk)
+	const auto label_of = [this](const Material& library_material) {
+		return library_material.get_name() + (unsaved_materials.contains(&library_material) ? " *" : "");
+	};
+	ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+	if (ImGui::BeginCombo("##EditedMaterial", label_of(material).c_str()))
+	{
+		for (const auto& library_material : material_library->get_materials())
+		{
+			// the id of each item is its material (not its label, which changes with the asterisk)
+			ImGui::PushID(library_material.get());
+			const bool        is_selected = library_material == edited_material;
+			const std::string item_label  = label_of(*library_material) + "###Material";
+			if (ImGui::Selectable(item_label.c_str(), is_selected) && !is_selected)
+			{
+				edited_material = library_material;
+				set_material_editor_status("", false); // the status of the last action was about another material
+			}
+			if (is_selected)
+				ImGui::SetItemDefaultFocus();
+			ImGui::PopID();
+		}
+		ImGui::EndCombo();
+	}
+
+	// buttons to create a new material, or a copy of the edited one
+	const float half_width = (ImGui::GetContentRegionAvail().x - ImGui::GetStyle().ItemSpacing.x) * 0.5f;
+	if (ImGui::Button("New Material", ImVec2{ half_width, 0.0f }))
+	{
+		new_material_name_buffer.fill('\0');
+		new_material_shader_name = material.get_shader() ? material.get_shader()->get_name() : "";
+		ImGui::OpenPopup("New Material");
+	}
+	draw_create_material_popup();
+	ImGui::SameLine();
+	if (ImGui::Button("Duplicate", ImVec2{ half_width, 0.0f }))
+	{
+		// (the controls below still show the original material in this frame, and the copy from the next one)
+		edited_material = material_library->duplicate(material);
+		unsaved_materials.insert(edited_material.get());
+		set_material_editor_status("Created '" + edited_material->get_name() + "' (not saved yet)", false);
+	}
+
+	ImGui::Separator();
+
+	// name of the material (renamed when the field loses the focus or Enter is pressed; the default material cannot be
+	// renamed, since the renderer finds it by its name)
+	const bool is_default_material = material.get_name() == Material_Library::DEFAULT_MATERIAL;
+	ImGui::Text("Name");
+	ImGui::SameLine();
+	ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+	if (ImGui::GetActiveID() != ImGui::GetID("##MaterialName"))
+	{ // while the field is not being edited, it shows the name of the material
+		material_name_buffer.fill('\0');
+		material.get_name().copy(material_name_buffer.data(), material_name_buffer.size() - 1);
+	}
+	ImGui::BeginDisabled(is_default_material);
+	ImGui::InputText("##MaterialName", material_name_buffer.data(), material_name_buffer.size());
+	ImGui::EndDisabled();
+	if (is_default_material)
+		ImGui::SetItemTooltip("The default material cannot be renamed");
+	if (ImGui::IsItemDeactivatedAfterEdit() && material.get_name() != material_name_buffer.data())
+	{
+		std::string error;
+		if (material_library->rename(material, material_name_buffer.data(), error))
+			unsaved_materials.insert(&material);
+		else
+			set_material_editor_status(error, true);
+	}
+
+	// shader, instancing, and descriptor file of the material (not editable)
+	ImGui::Text("Shader: %s", material.get_shader() ? material.get_shader()->get_name().c_str() : "None");
+	ImGui::Text("Instancing: %s", material.get_supports_instancing() ? "Yes" : "No");
+	const std::string file = material.get_file_path().empty() ? "Not saved yet" : material.get_file_path().filename().string();
+	ImGui::Text("File: %s", file.c_str());
+	if (!material.get_file_path().empty())
+		ImGui::SetItemTooltip("%s", material.get_file_path().string().c_str());
+
+	// controls of the parameters, textures, and environment map of the material (the changes are seen immediately on
+	// every object that uses it, since the objects share the material)
+	ImGui::Separator();
+	draw_material_parameter_controls(material);
+	ImGui::Separator();
+	draw_material_texture_controls(material);
+	ImGui::Separator();
+	draw_material_environment_controls(material);
+	ImGui::Separator();
+
+	// buttons to save the material to its descriptor file (or to a new file in the materials directory of the resources),
+	// and to reload it from its file (discarding its unsaved changes)
+	if (ImGui::Button("Save", ImVec2{ half_width, 0.0f }))
+	{
+		const std::filesystem::path file_path = material.get_file_path().empty()
+			? Material_Library::make_new_descriptor_path(material.get_name(), core->get_resources_dir() / "materials")
+			: material.get_file_path();
+		std::string                 error;
+		if (Material_Library::save(material, file_path, error))
+		{
+			unsaved_materials.erase(&material);
+			set_material_editor_status("Saved to " + file_path.filename().string(), false);
+		}
+		else
+			set_material_editor_status("Failed to save: " + error, true);
+	}
+	ImGui::SameLine();
+	ImGui::BeginDisabled(material.get_file_path().empty());
+	if (ImGui::Button("Reload From File", ImVec2{ half_width, 0.0f }))
+	{
+		std::string error;
+		if (material_library->reload(material, *core->get_shader_library(), error))
+		{
+			unsaved_materials.erase(&material);
+			set_material_editor_status("Reloaded from " + material.get_file_path().filename().string(), false);
+		}
+		else
+			set_material_editor_status("Failed to reload: " + error, true);
+	}
+	ImGui::EndDisabled();
+
+	// result of the last action
+	if (!material_editor_status.empty())
+	{
+		const ImVec4 color = material_editor_status_is_error ? ImVec4{ 1.0f, 0.4f, 0.4f, 1.0f } : ImVec4{ 0.6f, 0.9f, 0.6f, 1.0f };
+		ImGui::PushStyleColor(ImGuiCol_Text, color);
+		ImGui::TextWrapped("%s", material_editor_status.c_str());
+		ImGui::PopStyleColor();
+	}
+
+	ImGui::End();
 }
 
 
@@ -1516,7 +1699,7 @@ void GUI::draw_model_controls(Node* model)
 	const std::string preview          = material ? material->get_name() : "Default";
 	ImGui::Text("Material");
 	ImGui::SameLine(); // keep the combo box on the same line as the label
-	ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+	ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - BUTTON_WIDTH - ImGui::GetStyle().ItemSpacing.x);
 	if (ImGui::BeginCombo("##Material", preview.c_str()))
 	{
 		if (ImGui::Selectable("Default", !material))
@@ -1530,6 +1713,24 @@ void GUI::draw_model_controls(Node* model)
 				ImGui::SetItemDefaultFocus();
 		}
 		ImGui::EndCombo();
+	}
+	// button to edit the material of the model in the Material Editor: its material, or else the material of its first
+	// mesh (or of the first mesh of its descendants, e.g., for an imported model), or else the default material
+	ImGui::SameLine();
+	if (ImGui::Button("Edit", ImVec2{ BUTTON_WIDTH, 0.0f }))
+	{
+		std::shared_ptr<Material> model_material = material;
+		std::vector<const Node*>  pending_nodes{ model };
+		while (!model_material && !pending_nodes.empty())
+		{ // a breadth-first search of the first mesh with a material
+			const Node* node = pending_nodes.front();
+			pending_nodes.erase(pending_nodes.begin());
+			for (const auto& mesh : node->get_meshes())
+				if (!model_material && mesh && mesh->get_material())
+					model_material = mesh->get_material();
+			for (const auto& child : node->get_children()) pending_nodes.push_back(child.get());
+		}
+		open_material_editor(model_material ? model_material : material_library->get(Material_Library::DEFAULT_MATERIAL));
 	}
 
 	glm::vec4 albedo = model->get_albedo(); // get the albedo color of the model (with alpha channel)
@@ -2329,6 +2530,285 @@ void GUI::draw_import_skybox_popup()
 	}
 }
 
+
+void GUI::draw_create_material_popup()
+{
+	if (ImGui::BeginPopupModal("New Material", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+	{
+		auto        core             = Core::get_instance();
+		const auto& material_library = core->get_material_library();
+		const auto& shader_library   = core->get_shader_library();
+
+		// name of the new material (made unique by the material library, e.g., "Wood (2)")
+		ImGui::Text("Name");
+		ImGui::SameLine();
+		ImGui::SetNextItemWidth(POPUP_WIDTH * 0.75f);
+		if (ImGui::IsWindowAppearing())
+			ImGui::SetKeyboardFocusHere();
+		ImGui::InputTextWithHint("##NewMaterialName", "New Material", new_material_name_buffer.data(), new_material_name_buffer.size());
+
+		// the first material of each shader, whose settings that depend on the shader (instanced rendering and the
+		// environment map) the new materials of the shader copy
+		const auto& materials               = material_library->get_materials();
+		const auto  find_material_of_shader = [&materials](const std::shared_ptr<Shader>& shader) {
+			const auto it =
+				std::find_if(materials.begin(), materials.end(), [&shader](const auto& other) { return other->get_shader() == shader; });
+			return it != materials.end() ? *it : nullptr;
+		};
+
+		// shader of the new material: the shaders of the materials of the library first, and then the other shaders
+		// (e.g., the renderer's own shaders, such as the picking shader), grayed out, since they do not draw materials
+		ImGui::Text("Shader");
+		ImGui::SameLine();
+		ImGui::SetNextItemWidth(POPUP_WIDTH * 0.75f);
+		if (ImGui::BeginCombo("##NewMaterialShader", new_material_shader_name.c_str()))
+		{
+			for (const bool list_material_shaders : { true, false })
+			{
+				if (!list_material_shaders)
+					ImGui::Separator();
+				for (const auto& shader : shader_library->get_shaders())
+				{
+					if ((find_material_of_shader(shader) != nullptr) != list_material_shaders)
+						continue;
+					const bool is_selected = shader->get_name() == new_material_shader_name;
+					if (!list_material_shaders)
+						ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled));
+					if (ImGui::Selectable(shader->get_name().c_str(), is_selected))
+						new_material_shader_name = shader->get_name();
+					if (!list_material_shaders)
+					{
+						ImGui::PopStyleColor();
+						ImGui::SetItemTooltip("No material uses this shader (e.g., an internal shader of the renderer)");
+					}
+					if (is_selected)
+						ImGui::SetItemDefaultFocus();
+				}
+			}
+			ImGui::EndCombo();
+		}
+		ImGui::TextDisabled(
+			"The parameters of the shader start at zero. Instancing and the\n"
+			"environment map are those of the first material of the shader.");
+
+		const auto shader = shader_library->get(new_material_shader_name);
+		ImGui::BeginDisabled(!shader);
+		if (ImGui::Button("Create", ImVec2(POPUP_BUTTON_WIDTH, POPUP_BUTTON_HEIGHT)))
+		{
+			// the new material has every parameter of its shader (with its zero value), and the settings that depend on
+			// the shader of the first material of the shader, if any (whether a shader supports instanced rendering, or
+			// samples an environment map, is declared by its materials)
+			const auto        material_of_shader  = find_material_of_shader(shader);
+			const bool        supports_instancing = material_of_shader && material_of_shader->get_supports_instancing();
+			const std::string name                = new_material_name_buffer[0] != '\0' ? new_material_name_buffer.data() : "New Material";
+			edited_material                       = material_library->add(
+				std::make_shared<Material>(name, shader, Material::get_shader_parameters(*shader), supports_instancing));
+			if (material_of_shader)
+				edited_material->set_environment(
+					material_of_shader->get_environment_mode(),
+					material_of_shader->get_environment_resolution());
+			unsaved_materials.insert(edited_material.get());
+			set_material_editor_status("Created '" + edited_material->get_name() + "' (not saved yet)", false);
+			ImGui::CloseCurrentPopup();
+		}
+		ImGui::EndDisabled();
+		ImGui::SameLine();
+		if (ImGui::Button("Cancel", ImVec2(POPUP_BUTTON_WIDTH, POPUP_BUTTON_HEIGHT)))
+			ImGui::CloseCurrentPopup();
+
+		ImGui::EndPopup();
+	}
+}
+
+void GUI::draw_load_material_texture_dialog()
+{
+	// set the size and position of the file dialog (centered on the display)
+	const ImGuiIO& io = ImGui::GetIO();
+	ImGui::SetNextWindowSize(ImVec2(FILE_DIALOG_POPUP_WIDTH, FILE_DIALOG_POPUP_HEIGHT), ImGuiCond_Appearing);
+	ImGui::SetNextWindowPos(
+		ImVec2(io.DisplaySize.x * 0.5f - FILE_DIALOG_POPUP_WIDTH * 0.5f, io.DisplaySize.y * 0.5f - FILE_DIALOG_POPUP_HEIGHT * 0.5f),
+		ImGuiCond_Appearing);
+
+	if (ImGuiFileDialog::Instance()->Display("ChooseMaterialTextureDlgKey"))
+	{
+		if (ImGuiFileDialog::Instance()->IsOk() && texture_dialog_material)
+		{ // load the chosen image file as the texture of the slot
+			std::string file_path = ImGuiFileDialog::Instance()->GetFilePathName();
+			std::replace(file_path.begin(), file_path.end(), '\\', '/');
+			const std::filesystem::path path{ file_path };
+			auto                        texture = std::make_shared<Texture>(path.filename().string(), file_path, Texture_Type::UNDEFINED);
+			if (texture->get_texture_id() != 0)
+			{
+				texture_dialog_material->set_texture(texture_dialog_slot, texture);
+				unsaved_materials.insert(texture_dialog_material.get());
+				set_material_editor_status("Loaded " + path.filename().string() + " as the " + texture_dialog_slot, false);
+			}
+			else
+				set_material_editor_status("Failed to load the texture " + file_path, true);
+		}
+		texture_dialog_material.reset();
+		ImGuiFileDialog::Instance()->Close();
+	}
+}
+
+void GUI::draw_material_parameter_controls(Material& material)
+{
+	ImGui::PushFont(bold_font);
+	ImGui::Text("PARAMETERS");
+	ImGui::PopFont();
+
+	// the parameters of the shader (with their zero values), and those of the material, which may include parameters that
+	// the shader does not use (e.g., after changing the shader's code)
+	const Material_Parameters shader_parameters =
+		material.get_shader() ? Material::get_shader_parameters(*material.get_shader()) : Material_Parameters{};
+	Material_Parameters all_parameters = material.get_parameters();
+	all_parameters.insert(shader_parameters.begin(), shader_parameters.end()); // keeps the values of the material
+	if (all_parameters.empty())
+		ImGui::TextDisabled("The shader has no material parameters.");
+
+	std::string parameter_to_remove;
+	for (auto& [parameter_name, value] : all_parameters)
+	{
+		ImGui::PushID(parameter_name.c_str());
+		const bool is_set  = material.get_parameters().contains(parameter_name);
+		const bool is_used = shader_parameters.contains(parameter_name);
+
+		// a parameter that the material does not set uses its zero value, until it is set with the button
+		if (!is_set)
+		{
+			ImGui::TextDisabled("%s (not set: zero)", parameter_name.c_str());
+			ImGui::SameLine(ImGui::GetContentRegionAvail().x - BUTTON_WIDTH + ImGui::GetCursorPosX());
+			if (ImGui::Button("Set", ImVec2{ BUTTON_WIDTH, 0.0f }))
+			{
+				material.set_parameter(parameter_name, value);
+				unsaved_materials.insert(&material);
+			}
+			ImGui::PopID();
+			continue;
+		}
+
+		// the control of the parameter, by the type of its value (vectors whose name contains "color" are colors)
+		ImGui::TextUnformatted(is_used ? parameter_name.c_str() : (parameter_name + " (not used by the shader)").c_str());
+		ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - BUTTON_WIDTH - ImGui::GetStyle().ItemSpacing.x);
+		const bool is_color = parameter_name.find("color") != std::string::npos;
+		bool       changed  = false;
+		if (auto* float_value = std::get_if<float>(&value))
+			changed = ImGui::DragFloat("##Value", float_value, 0.01f * std::max(1.0f, std::abs(*float_value)));
+		else if (auto* bool_value = std::get_if<bool>(&value))
+			changed = ImGui::Checkbox("##Value", bool_value);
+		else if (auto* vec2_value = std::get_if<glm::vec2>(&value))
+			changed = ImGui::DragFloat2("##Value", &vec2_value->x, 0.01f);
+		else if (auto* vec3_value = std::get_if<glm::vec3>(&value))
+			changed = is_color ? ImGui::ColorEdit3("##Value", &vec3_value->x) : ImGui::DragFloat3("##Value", &vec3_value->x, 0.01f);
+		else if (auto* vec4_value = std::get_if<glm::vec4>(&value))
+			changed = is_color ? ImGui::ColorEdit4("##Value", &vec4_value->x) : ImGui::DragFloat4("##Value", &vec4_value->x, 0.01f);
+		if (changed)
+		{
+			material.set_parameter(parameter_name, value);
+			unsaved_materials.insert(&material);
+		}
+
+		// button to remove the parameter from the material (the shader then uses its zero value)
+		ImGui::SameLine();
+		if (ImGui::Button("Remove", ImVec2{ BUTTON_WIDTH, 0.0f }))
+			parameter_to_remove = parameter_name;
+		ImGui::PopID();
+	}
+	if (!parameter_to_remove.empty())
+	{
+		material.remove_parameter(parameter_to_remove);
+		unsaved_materials.insert(&material);
+	}
+}
+
+void GUI::draw_material_texture_controls(Material& material)
+{
+	ImGui::PushFont(bold_font);
+	ImGui::Text("TEXTURES");
+	ImGui::PopFont();
+
+	const auto& slots = material.get_shader() ? material.get_shader()->get_texture_slots() : std::vector<std::string>{};
+	if (slots.empty())
+		ImGui::TextDisabled("The shader has no texture slots.");
+
+	for (const auto& slot : slots)
+	{
+		ImGui::PushID(slot.c_str());
+		const auto        it          = material.get_textures().find(slot);
+		const bool        has_texture = it != material.get_textures().end() && it->second;
+		const std::string texture_name =
+			has_texture ? std::filesystem::path{ it->second->get_texture_path() }.filename().string() : std::string{ "None" };
+		ImGui::Text("%s: %s", slot.c_str(), texture_name.c_str());
+		if (has_texture)
+			ImGui::SetItemTooltip("%s", it->second->get_texture_path().c_str());
+
+		// buttons to load an image file as the texture of the slot, and to clear the slot
+		ImGui::SameLine(ImGui::GetContentRegionAvail().x - 2.0f * BUTTON_WIDTH - ImGui::GetStyle().ItemSpacing.x + ImGui::GetCursorPosX());
+		if (ImGui::Button("Load", ImVec2{ BUTTON_WIDTH, 0.0f }))
+		{
+			texture_dialog_material = edited_material;
+			texture_dialog_slot     = slot;
+			IGFD::FileDialogConfig fileDialogConfig;
+			fileDialogConfig.path              = Core::get_instance()->get_resource_path("textures");
+			fileDialogConfig.countSelectionMax = 1;
+			fileDialogConfig.flags             = ImGuiFileDialogFlags_Modal;
+			ImGuiFileDialog::Instance()
+				->OpenDialog("ChooseMaterialTextureDlgKey", "Choose Texture Image File", ".png,.jpg,.jpeg,.tga,.bmp", fileDialogConfig);
+		}
+		ImGui::SameLine();
+		ImGui::BeginDisabled(!has_texture);
+		if (ImGui::Button("Clear", ImVec2{ BUTTON_WIDTH, 0.0f }))
+		{
+			material.remove_texture(slot);
+			unsaved_materials.insert(&material);
+		}
+		ImGui::EndDisabled();
+		ImGui::PopID();
+	}
+}
+
+void GUI::draw_material_environment_controls(Material& material)
+{
+	ImGui::PushFont(bold_font);
+	ImGui::Text("ENVIRONMENT MAP");
+	ImGui::PopFont();
+
+	// environment map sampled by the shader (used only by shaders that sample u_environment_map)
+	static constexpr std::array<const char*, 3> MODE_NAMES{ "None", "Skybox", "Dynamic" };
+	int                                         mode_index = static_cast<int>(material.get_environment_mode());
+	ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
+	if (ImGui::Combo("Mode", &mode_index, MODE_NAMES.data(), static_cast<int>(MODE_NAMES.size())))
+	{
+		material.set_environment(static_cast<Environment_Mode>(mode_index), material.get_environment_resolution());
+		unsaved_materials.insert(&material);
+	}
+
+	// resolution of the faces of the dynamic cubemaps (powers of two, since a change recreates the cubemaps)
+	ImGui::BeginDisabled(material.get_environment_mode() != Environment_Mode::DYNAMIC);
+	ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
+	const std::string resolution_label = std::to_string(material.get_environment_resolution());
+	if (ImGui::BeginCombo("Resolution", resolution_label.c_str()))
+	{
+		for (unsigned int resolution = Material::MIN_ENVIRONMENT_RESOLUTION; resolution <= Material::MAX_ENVIRONMENT_RESOLUTION;
+			 resolution *= 2)
+		{
+			const bool is_selected = resolution == material.get_environment_resolution();
+			if (ImGui::Selectable(std::to_string(resolution).c_str(), is_selected) &&
+				material.set_environment(material.get_environment_mode(), resolution))
+				unsaved_materials.insert(&material);
+			if (is_selected)
+				ImGui::SetItemDefaultFocus();
+		}
+		ImGui::EndCombo();
+	}
+	ImGui::EndDisabled();
+}
+
+void GUI::set_material_editor_status(const std::string& status, bool is_error)
+{
+	material_editor_status          = status;
+	material_editor_status_is_error = is_error;
+}
 
 bool GUI::draw_color_control(const std::string& label, glm::vec3& color, bool show_label, float color_picker_width)
 {

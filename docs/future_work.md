@@ -12,7 +12,7 @@ Based on the experience gained and the limitations identified, the following imp
 
 | Version | Content |
 | ------- | ------- |
-| **v0.10.0** | Data-driven material system: shaders and materials as assets defined in files (with their shader, parameters, textures, and render state), assigned to objects at runtime from the editor, replacing the hard-coded shader assignment; reflective and refractive materials sampling the environment maps. |
+| **v0.10.0** | Data-driven material system: shaders and materials as assets defined in files (with their shader, parameters, textures, and render state), assigned to objects and created, edited, and saved at runtime from the editor, replacing the hard-coded shader assignment; reflective and refractive materials sampling the environment maps. |
 | **v0.11.0** | Deferred shading (G-buffer and lighting pass) and shadow mapping (directional lights first). |
 | **v0.12.0** | Normal mapping, Physically Based Rendering (PBR), Screen Space Ambient Occlusion (SSAO), and post-processing (tone mapping, gamma correction). |
 | **v0.13.0** | Order-independent transparency, compute shaders, and particles. |

@@ -12,6 +12,7 @@
 
 #include <filesystem>
 #include <iostream>
+#include <map>
 #include <string>
 #include <memory>
 #include <vector>
@@ -75,6 +76,9 @@ public:
 	bool   get_last_compile_succeeded() const { return last_compile_succeeded; }
 	// names of the texture slots of the shader's materials (samplers of its u_material struct, see Material::apply)
 	const std::vector<std::string>& get_texture_slots() const { return texture_slots; }
+	// active uniforms of the program (those that its stages use), by name (e.g., "u_material.shininess"), with their
+	// OpenGL types (e.g., GL_FLOAT). They are read when the program is linked, and are empty before it is compiled
+	const std::map<std::string, GLenum>& get_uniforms() const { return uniforms; }
 
 	// Setters
 	void        set_texture_slots(const std::vector<std::string>& slots) { texture_slots = slots; }
@@ -102,6 +106,8 @@ private:
 	bool last_compile_succeeded{ false }; // whether the last compilation (or reload) succeeded
 
 	std::vector<std::string> texture_slots; // names of the texture slots of the shader's materials
+
+	std::map<std::string, GLenum> uniforms; // active uniforms of the program, with their types
 
 	// Private Methods
 	// ---------------

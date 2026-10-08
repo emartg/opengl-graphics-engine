@@ -3,8 +3,8 @@
  * This file defines the Gui_Layer interface, which represents the application-specific part of
  * the graphical user interface (the ImGui windows, fonts, and style).
  * The platform renderer (e.g., GLFW_Renderer) owns the ImGui context and its backends, and calls
- * the GUI layer at the appropriate moments, so that each application (the sample App, a simulator, etc.)
- * only has to implement its own windows.
+ * the GUI layer at the appropriate moments, so that each application (the sample App, or any other
+ * application that uses the Engine) only has to implement its own windows.
  */
 
 #pragma once

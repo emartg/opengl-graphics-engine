@@ -2,7 +2,8 @@
  * MaterialLibraryTest.cpp
  * This file contains the unit tests of the Material_Library class that do not require an OpenGL context:
  * the parsing of material descriptors (fields, parameter types, and textures), the search of descriptor files,
- * and the validity of the descriptors of the engine's own materials.
+ * the writing and saving of descriptors, the names of new descriptor files, the duplication and renaming of
+ * materials, and the validity of the descriptors of the engine's own materials.
  */
 
 #include <algorithm>
@@ -18,6 +19,7 @@
 #include <gtest/gtest.h>
 
 #include "core/material/Material_Library.h"
+#include "core/shader/Shader.h"
 #include "core/shader/Shader_Library.h"
 
 namespace fs = std::filesystem;
@@ -231,6 +233,218 @@ TEST(MaterialLibraryTest, FindsOnlyTheDescriptorFilesOfADirectorySorted)
 	fs::remove_all(dir, error);
 }
 
+// Descriptor Writing
+// ------------------
+TEST(MaterialLibraryTest, WritesADescriptorThatParsesBackToTheSameDescriptor)
+{
+	const fs::path      base_dir = fs::temp_directory_path() / "engine_unit_tests_materials";
+	Material_Descriptor descriptor;
+	descriptor.name                   = "Test";
+	descriptor.shader_name            = "Test Shader";
+	descriptor.supports_instancing    = true;
+	descriptor.environment_mode       = Environment_Mode::DYNAMIC;
+	descriptor.environment_resolution = 256;
+	descriptor.parameters             = {
+		{ "ratio", 0.6579f },
+		{ "enabled", true },
+		{ "offset", glm::vec2{ 1.5f, -2.0f } },
+		{ "tint", glm::vec3{ 0.1f, 0.2f, 0.3f } },
+		{ "color", glm::vec4{ 1.0f, 0.5f, 0.25f, 0.125f } },
+	};
+	descriptor.texture_paths = { { "albedo_map", base_dir / ".." / "textures" / "wood.png" } };
+
+	const std::string text = Material_Library::write_descriptor(descriptor, base_dir);
+	std::string       error;
+	const auto        parsed = Material_Library::parse_descriptor(text, base_dir, error);
+
+	ASSERT_TRUE(parsed.has_value()) << error << "\n" << text;
+	EXPECT_EQ(parsed->name, descriptor.name);
+	EXPECT_EQ(parsed->shader_name, descriptor.shader_name);
+	EXPECT_TRUE(parsed->supports_instancing);
+	EXPECT_EQ(parsed->environment_mode, Environment_Mode::DYNAMIC);
+	EXPECT_EQ(parsed->environment_resolution, 256u);
+	EXPECT_EQ(parsed->parameters, descriptor.parameters); // the floats are read back exactly
+	// the texture is written relative to the descriptor's directory, with forward slashes
+	EXPECT_NE(text.find("\"../textures/wood.png\""), std::string::npos) << text;
+	ASSERT_TRUE(parsed->texture_paths.contains("albedo_map"));
+	EXPECT_EQ(
+		parsed->texture_paths.at("albedo_map").lexically_normal(),
+		(base_dir.parent_path() / "textures" / "wood.png").lexically_normal());
+}
+
+TEST(MaterialLibraryTest, WritesTheFloatsWithTheirShortestRepresentation)
+{
+	Material_Descriptor descriptor;
+	descriptor.name        = "Test";
+	descriptor.shader_name = "S";
+	descriptor.parameters  = { { "ratio", 0.6579f }, { "shininess", 32.0f } };
+
+	const std::string text = Material_Library::write_descriptor(descriptor, fs::path{});
+
+	EXPECT_NE(text.find("\"ratio\": 0.6579,\n"), std::string::npos) << text;
+	EXPECT_NE(text.find("\"shininess\": 32.0\n"), std::string::npos) << text;
+}
+
+TEST(MaterialLibraryTest, WritesOnlyTheOptionalFieldsThatAreNotDefaults)
+{
+	Material_Descriptor descriptor;
+	descriptor.name        = "Test";
+	descriptor.shader_name = "S";
+
+	const std::string text = Material_Library::write_descriptor(descriptor, fs::path{});
+
+	EXPECT_EQ(text, "{\n  \"name\": \"Test\",\n  \"shader\": \"S\"\n}\n");
+}
+
+TEST(MaterialLibraryTest, WritesInvalidUtf8AsReplacementCharacters)
+{
+	Material_Descriptor descriptor;
+	descriptor.name        = "Caf\xE9"; // "Café" in Latin-1, which is not valid UTF-8
+	descriptor.shader_name = "S";
+
+	const std::string text = Material_Library::write_descriptor(descriptor, fs::path{});
+	std::string       error;
+	const auto        parsed = Material_Library::parse_descriptor(text, fs::path{}, error);
+
+	ASSERT_TRUE(parsed.has_value()) << error;
+	EXPECT_EQ(parsed->name, "Caf\xEF\xBF\xBD"); // U+FFFD in UTF-8
+}
+
+TEST(MaterialLibraryTest, ConvertsAMaterialToItsDescriptor)
+{
+	auto     shader = std::make_shared<Shader>("Test Shader", "test.vert.glsl", "test.frag.glsl");
+	Material material{ "Test", shader, { { "shininess", 16.0f } }, true };
+	material.set_environment(Environment_Mode::SKYBOX);
+
+	std::string error;
+	const auto  descriptor = Material_Library::to_descriptor(material, error);
+
+	ASSERT_TRUE(descriptor.has_value()) << error;
+	EXPECT_EQ(descriptor->name, "Test");
+	EXPECT_EQ(descriptor->shader_name, "Test Shader");
+	EXPECT_EQ(descriptor->parameters, material.get_parameters());
+	EXPECT_TRUE(descriptor->supports_instancing);
+	EXPECT_EQ(descriptor->environment_mode, Environment_Mode::SKYBOX);
+	EXPECT_TRUE(descriptor->texture_paths.empty());
+
+	// a material without a shader has no descriptor
+	EXPECT_FALSE(Material_Library::to_descriptor(Material{ "No Shader", nullptr }, error).has_value());
+	EXPECT_NE(error.find("shader"), std::string::npos) << error;
+}
+
+TEST(MaterialLibraryTest, SavesAMaterialToADescriptorFileThatBecomesItsFile)
+{
+	const fs::path dir = fs::temp_directory_path() / "engine_unit_tests_MaterialSavesAMaterialToADescriptorFile";
+	fs::remove_all(dir);
+	fs::create_directories(dir);
+	auto     shader = std::make_shared<Shader>("Test Shader", "test.vert.glsl", "test.frag.glsl");
+	Material material{ "Test", shader, { { "shininess", 16.0f } } };
+
+	std::string error;
+	ASSERT_TRUE(Material_Library::save(material, dir / "test.material.json", error)) << error;
+
+	EXPECT_EQ(material.get_file_path(), dir / "test.material.json");
+	const auto parsed = Material_Library::parse_descriptor(read_file(dir / "test.material.json"), dir, error);
+	ASSERT_TRUE(parsed.has_value()) << error;
+	EXPECT_EQ(parsed->name, "Test");
+	EXPECT_EQ(parsed->parameters, material.get_parameters());
+
+	// a file that cannot be written (in a directory that does not exist) is reported, and keeps the material's file
+	EXPECT_FALSE(Material_Library::save(material, dir / "missing" / "test.material.json", error));
+	EXPECT_EQ(material.get_file_path(), dir / "test.material.json");
+
+	std::error_code remove_error;
+	fs::remove_all(dir, remove_error);
+}
+
+// Descriptor File Names
+// ---------------------
+TEST(MaterialLibraryTest, MakesTheDescriptorFileNameFromTheMaterialName)
+{
+	EXPECT_EQ(Material_Library::make_descriptor_file_name("Default"), "default.material.json");
+	EXPECT_EQ(Material_Library::make_descriptor_file_name("Dynamic Glass"), "dynamic_glass.material.json");
+	EXPECT_EQ(Material_Library::make_descriptor_file_name("Teapot (2)"), "teapot_2.material.json");
+	EXPECT_EQ(Material_Library::make_descriptor_file_name("  a--b  "), "a_b.material.json");
+	EXPECT_EQ(Material_Library::make_descriptor_file_name("../x"), "x.material.json");
+	EXPECT_EQ(Material_Library::make_descriptor_file_name(""), "material.material.json");
+	EXPECT_EQ(Material_Library::make_descriptor_file_name("\xC3\xA9"), "material.material.json"); // only non-ASCII letters
+}
+
+TEST(MaterialLibraryTest, MakesANewDescriptorPathThatDoesNotReplaceAnExistingFile)
+{
+	const fs::path dir = fs::temp_directory_path() / "engine_unit_tests_MaterialMakesANewDescriptorPath";
+	fs::remove_all(dir);
+	fs::create_directories(dir);
+
+	EXPECT_EQ(Material_Library::make_new_descriptor_path("Glass", dir), dir / "glass.material.json");
+	std::ofstream{ dir / "glass.material.json" } << "{}";
+	EXPECT_EQ(Material_Library::make_new_descriptor_path("Glass", dir), dir / "glass_2.material.json");
+	std::ofstream{ dir / "glass_2.material.json" } << "{}";
+	EXPECT_EQ(Material_Library::make_new_descriptor_path("Glass", dir), dir / "glass_3.material.json");
+
+	std::error_code error;
+	fs::remove_all(dir, error);
+}
+
+// Library Operations
+// ------------------
+TEST(MaterialLibraryTest, DuplicatesAMaterialWithAUniqueNameAndWithoutItsFile)
+{
+	Material_Library library;
+	auto             original = library.add(std::make_shared<Material>("Glass", nullptr, Material_Parameters{ { "ratio", 0.5f } }, true));
+	original->set_environment(Environment_Mode::DYNAMIC, 256);
+	original->set_file_path("glass.material.json");
+
+	const auto copy = library.duplicate(*original);
+
+	EXPECT_EQ(copy->get_name(), "Glass (2)");
+	EXPECT_NE(copy, original);
+	EXPECT_EQ(copy->get_parameters(), original->get_parameters());
+	EXPECT_TRUE(copy->get_supports_instancing());
+	EXPECT_EQ(copy->get_environment_mode(), Environment_Mode::DYNAMIC);
+	EXPECT_EQ(copy->get_environment_resolution(), 256u);
+	EXPECT_TRUE(copy->get_file_path().empty());
+	EXPECT_EQ(library.get("Glass (2)"), copy);
+
+	// the copy is independent of the original
+	copy->set_parameter("ratio", 0.75f);
+	EXPECT_EQ(std::get<float>(original->get_parameters().at("ratio")), 0.5f);
+}
+
+TEST(MaterialLibraryTest, RenamesAMaterialOnlyToAFreeNonEmptyName)
+{
+	Material_Library library;
+	auto             glass       = library.add(std::make_shared<Material>("Glass", nullptr));
+	auto             chrome      = library.add(std::make_shared<Material>("Chrome", nullptr));
+	auto             default_one = library.add(std::make_shared<Material>(Material_Library::DEFAULT_MATERIAL, nullptr));
+	std::string      error;
+
+	EXPECT_TRUE(library.rename(*glass, "Frosted Glass", error)) << error;
+	EXPECT_EQ(glass->get_name(), "Frosted Glass");
+	EXPECT_EQ(library.get("Frosted Glass"), glass);
+	EXPECT_TRUE(library.rename(*glass, "Frosted Glass", error)); // the same name
+
+	EXPECT_FALSE(library.rename(*glass, "Chrome", error)); // the name of another material
+	EXPECT_FALSE(library.rename(*glass, "", error));
+	EXPECT_EQ(glass->get_name(), "Frosted Glass");
+
+	// the default material keeps its name, since the renderer finds it by its name
+	EXPECT_FALSE(library.rename(*default_one, "Plain", error));
+	EXPECT_EQ(default_one->get_name(), Material_Library::DEFAULT_MATERIAL);
+}
+
+TEST(MaterialLibraryTest, DoesNotReloadAMaterialWithoutAFile)
+{
+	Material_Library library;
+	Shader_Library   shader_library;
+	auto             material = library.add(std::make_shared<Material>("New", nullptr, Material_Parameters{ { "ratio", 0.5f } }));
+
+	std::string error;
+	EXPECT_FALSE(library.reload(*material, shader_library, error));
+	EXPECT_NE(error.find("no descriptor file"), std::string::npos) << error;
+	EXPECT_EQ(material->get_parameters().size(), 1u); // unchanged
+}
+
 // Engine Materials
 // ----------------
 TEST(MaterialLibraryTest, TheEngineMaterialDescriptorsAreValidAndUseExistingShaders)
@@ -268,4 +482,16 @@ TEST(MaterialLibraryTest, TheEngineMaterialDescriptorsAreValidAndUseExistingShad
 
 	// the default material, used by the meshes without a material of their own, must exist
 	EXPECT_TRUE(material_names.contains(Material_Library::DEFAULT_MATERIAL));
+}
+
+TEST(MaterialLibraryTest, WritingTheEngineMaterialDescriptorsReproducesTheirFiles)
+{
+	// saving an engine material without changes must not change its file (e.g., in the Material Editor)
+	for (const auto& file : Material_Library::find_descriptor_files(fs::path{ ENGINE_UNIT_TESTS_RESOURCES_DIR } / "materials"))
+	{
+		std::string error;
+		const auto  descriptor = Material_Library::parse_descriptor(read_file(file), file.parent_path(), error);
+		ASSERT_TRUE(descriptor.has_value()) << file << ": " << error;
+		EXPECT_EQ(Material_Library::write_descriptor(*descriptor, file.parent_path()), read_file(file)) << file;
+	}
 }
