@@ -47,16 +47,33 @@ if(MSVC)
 	include(InstallRequiredSystemLibraries)
 endif()
 
-# Smoke test: render a fixed number of frames of the example scene and exit.
-# It fails if the App exits with an error code or prints an error message, and it requires a display
-# with OpenGL 4.5 support (e.g., a virtual X server with Mesa's llvmpipe software renderer on Linux)
+# Smoke tests: render a fixed number of frames of a scene and exit (the example scene, and a few frames of each
+# test scene, with few objects in the stress test scenes to keep them fast).
+# They fail if the App exits with an error code or prints an error message, and they require a display
+# with OpenGL 4.5 support (e.g., a virtual X server with Mesa's llvmpipe software renderer on Linux).
+# The names of the test scenes must match the registry of scenes (see scenes/Scenes.cpp)
 if(ENGINE_BUILD_TESTS)
 	add_test(NAME App_Smoke_Test COMMAND App --frames 120)
-	set_tests_properties(App_Smoke_Test PROPERTIES
+	set(_app_test_scenes reflective-1 reflective-2 refractive-1 refractive-2)
+	set(_app_stress_test_scenes geometric-stress-1 geometric-stress-2 reflective-stress)
+	set(_app_smoke_tests App_Smoke_Test)
+	foreach(_scene IN LISTS _app_test_scenes _app_stress_test_scenes)
+		set(_arguments --scene ${_scene} --frames 10)
+		if(_scene IN_LIST _app_stress_test_scenes)
+			list(APPEND _arguments --objects 10)
+		endif()
+		add_test(NAME App_Scene_${_scene}_Smoke_Test COMMAND App ${_arguments})
+		list(APPEND _app_smoke_tests App_Scene_${_scene}_Smoke_Test)
+	endforeach()
+	set_tests_properties(${_app_smoke_tests} PROPERTIES
 		FAIL_REGULAR_EXPRESSION "\\[ERROR"
 		TIMEOUT 300
 		LABELS smoke
 	)
+
+	# an unknown scene must be rejected (with an error code) before the window is created, so no display is needed
+	add_test(NAME App_Unknown_Scene_Test COMMAND App --scene unknown-scene)
+	set_tests_properties(App_Unknown_Scene_Test PROPERTIES WILL_FAIL TRUE LABELS smoke)
 endif()
 
 # Install the App and the resources in the App component, so that they can be installed without the

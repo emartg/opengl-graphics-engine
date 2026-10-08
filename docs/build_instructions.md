@@ -316,13 +316,18 @@ Do not reuse a build directory previously configured with MinGW, Visual Studio, 
 
 The App accepts the following command-line options:
 
-- `--frames N` (or `--frames=N`): render `N` frames of the example scene and exit. The main loop does not wait for user input in this mode, so it can run unattended.
+- `--scene NAME` (or `--scene=NAME`): load the scene with the given name (`example` by default). The scenes are registered in `app/scenes/Scenes.cpp`: the example scene, and test scenes for reflective and refractive materials and for performance (stress tests).
+- `--objects N` (or `--objects=N`): number of objects of the scenes that allow choosing it (the stress test scenes, e.g., `--scene geometric-stress-1 --objects 5000`).
+- `--list-scenes`: print the available scenes, with their descriptions, and exit.
+- `--frames N` (or `--frames=N`): render `N` frames and exit. The main loop does not wait for user input in this mode, so it can run unattended.
 - `-h`, `--help`: print the usage and exit.
+
+In VS Code, the arguments can be set in the `args` of the launch configuration; in Visual Studio, in the debug settings of the `App` target (**Debug** > **Debug and Launch Settings for App**, `"args"`).
 
 With the `ENGINE_BUILD_TESTS` option enabled, the build registers two kinds of tests in CTest:
 
 - **Unit tests** (label `unit`): the `Engine_Unit_Tests` executable, written with [GoogleTest](https://github.com/google/googletest), tests the Core classes that do not require an OpenGL context (e.g., `String_Utils`, `File_System_Utils`, and `Random`), so they run on any machine. GoogleTest is taken from an installed package if one is found (e.g., `libgtest-dev` on Linux), and is otherwise downloaded (pinned version and hash) during the configuration.
-- **Smoke test** (label `smoke`): runs `App --frames 120`, and fails if the App exits with an error code (e.g., the OpenGL 4.5 context cannot be created, or a built-in shader fails to compile) or prints any `[ERROR` message.
+- **Smoke tests** (label `smoke`): run `App --frames 120` (the example scene) and a few frames of each test scene (with 10 objects in the stress test scenes), and fail if the App exits with an error code (e.g., the OpenGL 4.5 context cannot be created, or a shader fails to compile) or prints any `[ERROR` message. Another test checks that an unknown scene name is rejected.
 
 The build presets only build the App, so the unit test executable must be requested explicitly:
 
@@ -332,21 +337,21 @@ cmake --preset ninja-gcc-debug -DENGINE_BUILD_TESTS=ON
 cmake --build --preset ninja-gcc-debug --target App Engine_Unit_Tests
 ctest --test-dir out/build/ninja-gcc-debug --output-on-failure
 
-# Run only the unit tests, or only the smoke test
+# Run only the unit tests, or only the smoke tests
 ctest --test-dir out/build/ninja-gcc-debug -L unit --output-on-failure
 ctest --test-dir out/build/ninja-gcc-debug -L smoke --output-on-failure
 ```
 
 The unit test executable can also be run directly (e.g., `out/build/ninja-gcc-debug/bin/Engine_Unit_Tests`), which accepts GoogleTest's options, such as `--gtest_filter=StringUtilsTest.*`.
 
-On Windows, use the corresponding preset (e.g., `ninja-msvc-debug`). Visual Studio generators are multi-configuration, so they also need the configuration: `ctest --test-dir out/build/vs2026-msvc-debug -C Debug --output-on-failure`. The smoke test opens a window, so it requires a display with OpenGL 4.5 support; on a headless Linux machine it can run in a virtual X server with Mesa's software renderer (e.g., `xvfb-run -a ctest --test-dir out/build/ninja-gcc-debug --output-on-failure`).
+On Windows, use the corresponding preset (e.g., `ninja-msvc-debug`). Visual Studio generators are multi-configuration, so they also need the configuration: `ctest --test-dir out/build/vs2026-msvc-debug -C Debug --output-on-failure`. The smoke tests open a window, so they require a display with OpenGL 4.5 support; on a headless Linux machine they can run in a virtual X server with Mesa's software renderer (e.g., `xvfb-run -a ctest --test-dir out/build/ninja-gcc-debug --output-on-failure`).
 
 ## Continuous Integration
 
 Every push to `main` and every pull request runs the GitHub Actions workflow in `.github/workflows/ci.yml` (it can also be started manually from the **Actions** tab). Its jobs run in parallel:
 
 - **Format:** checks the formatting of every C++ source file with clang-format 23.1.1, the version used to format the repository (`clang-format --style=file --dry-run --Werror`).
-- **Linux:** configures and builds the `ninja-gcc-debug` and `ninja-clang-release` presets with the system packages, and runs the unit tests and the smoke test in a virtual X server (Xvfb) with Mesa's `llvmpipe` software renderer (OpenGL 4.5).
+- **Linux:** configures and builds the `ninja-gcc-debug` and `ninja-clang-release` presets with the system packages, and runs the unit tests and the smoke tests in a virtual X server (Xvfb) with Mesa's `llvmpipe` software renderer (OpenGL 4.5).
 - **Consumer test (Linux):** builds and runs `tests/consumer`, a standalone project that consumes the Engine with `add_subdirectory()` and links `Engine::Platform`, and checks that the sample App is not built for consumers.
 - **Windows:** configures and builds the `ninja-msvc-debug` (MSVC) and `mingw-gcc-vcpkg-release` (MinGW's GCC) presets with the dependencies of `vcpkg.json`, runs the unit tests, and builds the consumer test. vcpkg is checked out at the manifest's `builtin-baseline`, and the built packages are kept in the GitHub Actions cache, so they are only rebuilt when the manifest or the compiler version changes. The smoke tests do not run on Windows, since the GitHub-hosted Windows runners provide no OpenGL 4.5 driver.
 
