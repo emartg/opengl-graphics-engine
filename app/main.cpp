@@ -38,6 +38,7 @@
 #include "core/light/Spotlight.h"
 #include "core/managers/Node_Manager.h"
 #include "core/managers/Scene_Manager.h"
+#include "core/material/Material_Library.h"
 #include "core/model/Assimp_Model.h"
 #include "core/model/Model.h"
 #include "core/model/Shape_Model.h"
@@ -107,9 +108,7 @@ int main(int argc, char** argv)
 		return -1;
 	}
 
-	// setup the initial scene (uncomment one of the following lines to choose a
-	// scene, although in some cases the Renderer has to be modified in order to
-	// support the materials)
+	// setup the initial scene (uncomment one of the following lines to choose a scene)
 	setup_example_scene(engine);
 	// setup_test_scene_reflective_1(engine);
 	// setup_test_scene_reflective_2(engine);
@@ -506,9 +505,8 @@ void setup_test_scene_reflective_1(Core* engine)
 	reflective_plane->set_is_two_sided(true);
 	// convert the plane's id to string and set it as part of the plane's name
 	reflective_plane->set_name(String_Utils::generate_id_prefixed_name(reflective_plane));
-	// register the reflective plane for dynamic environment map capture in the
-	// renderer with a specified resolution (e.g., 512x512)
-	engine->get_renderer()->register_model_for_dynamic_env_map_capture(reflective_plane->get_id(), 521);
+	// give the reflective plane a reflective material, which captures its environment map every frame
+	reflective_plane->set_material(engine->get_material_library()->get("Mirror"));
 	// add the reflective plane to the node manager
 	node_manager->add_node(reflective_plane);
 
@@ -641,9 +639,8 @@ void setup_test_scene_reflective_2(Core* engine)
 	reflective_plane->set_is_two_sided(true);
 	// convert the plane's id to string and set it as part of the plane's name
 	reflective_plane->set_name(String_Utils::generate_id_prefixed_name(reflective_plane));
-	// register the reflective plane for dynamic environment map capture in the
-	// renderer with a specified resolution (e.g., 512x512)
-	engine->get_renderer()->register_model_for_dynamic_env_map_capture(reflective_plane->get_id(), 521);
+	// give the reflective plane a reflective material, which captures its environment map every frame
+	reflective_plane->set_material(engine->get_material_library()->get("Mirror"));
 	// add the reflective plane to the node manager
 	node_manager->add_node(reflective_plane);
 
@@ -671,9 +668,8 @@ void setup_test_scene_reflective_2(Core* engine)
 		// convert the model's id to string and set it as part of the model's
 		// name
 		model->set_name(String_Utils::generate_id_prefixed_name(model));
-		// register the Assimp model for dynamic environment map capture in the
-		// renderer with a specified resolution (e.g., 512x512)
-		engine->get_renderer()->register_model_for_dynamic_env_map_capture(model->get_id(), 521);
+		// give the Assimp model a reflective material, which captures its environment map every frame
+		model->set_material(engine->get_material_library()->get("Mirror"));
 		// add the model to the node manager
 		node_manager->add_node(model);
 	}
@@ -780,9 +776,8 @@ void setup_test_scene_refractive_1(Core* engine)
 	);
 	// convert the cube's id to string and set it as part of the cube's name
 	refractive_cube->set_name(String_Utils::generate_id_prefixed_name(refractive_cube));
-	// register the refractive cube for dynamic environment map capture in the
-	// renderer with a specified resolution (e.g., 512x512)
-	engine->get_renderer()->register_model_for_dynamic_env_map_capture(refractive_cube->get_id(), 521);
+	// give the refractive cube a refractive material, which captures its environment map every frame
+	refractive_cube->set_material(engine->get_material_library()->get("Dynamic Glass"));
 	// add the refractive cube to the node manager
 	node_manager->add_node(refractive_cube);
 
@@ -915,9 +910,8 @@ void setup_test_scene_refractive_2(Core* engine)
 	);
 	// convert the cube's id to string and set it as part of the cube's name
 	refractive_cube->set_name(String_Utils::generate_id_prefixed_name(refractive_cube));
-	// register the refractive cube for dynamic environment map capture in the
-	// renderer with a specified resolution (e.g., 512x512)
-	engine->get_renderer()->register_model_for_dynamic_env_map_capture(refractive_cube->get_id(), 521);
+	// give the refractive cube a refractive material, which captures its environment map every frame
+	refractive_cube->set_material(engine->get_material_library()->get("Dynamic Glass"));
 	// add the refractive cube to the node manager
 	node_manager->add_node(refractive_cube);
 
@@ -945,9 +939,8 @@ void setup_test_scene_refractive_2(Core* engine)
 		// convert the model's id to string and set it as part of the model's
 		// name
 		model->set_name(String_Utils::generate_id_prefixed_name(model));
-		// register the Assimp model for dynamic environment map capture in the
-		// renderer
-		engine->get_renderer()->register_model_for_dynamic_env_map_capture(model->get_id(), 521);
+		// give the Assimp model a refractive material, which captures its environment map every frame
+		model->set_material(engine->get_material_library()->get("Dynamic Glass"));
 		// add the model to the node manager
 		node_manager->add_node(model);
 	}
@@ -1232,9 +1225,8 @@ void setup_test_scene_reflective_stress(Core* engine, const int num_shapes)
 		// convert the reflective shape model's id to string and set it as part
 		// of the model's name
 		reflective_shape_model->set_name(String_Utils::generate_id_prefixed_name(reflective_shape_model));
-		// register the reflective shape model for dynamic environment map
-		// capture in the renderer
-		engine->get_renderer()->register_model_for_dynamic_env_map_capture(reflective_shape_model->get_id(), 521);
+		// give the reflective shape model a reflective material, which captures its environment map every frame
+		reflective_shape_model->set_material(engine->get_material_library()->get("Mirror"));
 		// add the reflective shape model to the node manager
 		node_manager->add_node(reflective_shape_model);
 	}

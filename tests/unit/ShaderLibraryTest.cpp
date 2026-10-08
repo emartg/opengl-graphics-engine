@@ -70,6 +70,23 @@ TEST(ShaderLibraryTest, RejectsInvalidRepeatedOrNonIdentifierTextureSlots)
 	}
 }
 
+TEST(ShaderLibraryTest, LimitsTheNumberOfTextureSlots)
+{
+	// builds a descriptor with the given number of texture slots (slot_0, slot_1, ...)
+	const auto descriptor_with_slots = [](std::size_t count) {
+		std::string slots;
+		for (std::size_t i = 0; i < count; ++i) slots += std::string(i > 0 ? ", " : "") + "\"slot_" + std::to_string(i) + "\"";
+		return std::string(R"({ "name": "T", "vertex": "a.vert", "fragment": "a.frag", "textures": [ )") + slots + " ] }";
+	};
+
+	std::string error;
+	EXPECT_TRUE(Shader_Library::parse_descriptor(descriptor_with_slots(Shader_Library::MAX_TEXTURE_SLOTS), fs::path{}, error).has_value())
+		<< error;
+	EXPECT_FALSE(
+		Shader_Library::parse_descriptor(descriptor_with_slots(Shader_Library::MAX_TEXTURE_SLOTS + 1), fs::path{}, error).has_value());
+	EXPECT_NE(error.find("at most"), std::string::npos) << error;
+}
+
 TEST(ShaderLibraryTest, RejectsInvalidJson)
 {
 	std::string error;

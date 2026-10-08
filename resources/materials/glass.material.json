@@ -1,0 +1,8 @@
+{
+  "name": "Glass",
+  "shader": "Refractive Shader",
+  "environment": "skybox",
+  "parameters": {
+    "refraction_ratio": 0.6579
+  }
+}

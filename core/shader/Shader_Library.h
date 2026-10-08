@@ -41,6 +41,9 @@ class Shader_Library
 public:
 	// Public Constants
 	// ----------------
+	// maximum number of texture slots of a shader (units 0 to 14), so that every shader can also sample an environment
+	// map on the next unit (15), within the 16 texture units that OpenGL 4.5 guarantees for a fragment shader
+	static constexpr std::size_t MAX_TEXTURE_SLOTS{ 15 };
 	// extension of the shader descriptor files
 	static constexpr const char* DESCRIPTOR_EXTENSION{ ".shader.json" };
 

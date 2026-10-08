@@ -1,0 +1,9 @@
+{
+  "name": "Dynamic Glass",
+  "shader": "Refractive Shader",
+  "environment": "dynamic",
+  "environment_resolution": 512,
+  "parameters": {
+    "refraction_ratio": 0.6579
+  }
+}

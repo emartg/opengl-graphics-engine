@@ -117,6 +117,33 @@ Material_Library::parse_descriptor(const std::string& text, const std::filesyste
 		}
 	}
 
+	// optional fields: the environment map sampled by the shader, and the resolution of the dynamic cubemaps
+	if (json.contains("environment"))
+	{
+		const std::string mode = json["environment"].is_string() ? json["environment"].get<std::string>() : "";
+		if (mode == "skybox")
+			descriptor.environment_mode = Environment_Mode::SKYBOX;
+		else if (mode == "dynamic")
+			descriptor.environment_mode = Environment_Mode::DYNAMIC;
+		else
+		{
+			error = "The field \"environment\" must be \"skybox\" or \"dynamic\"";
+			return std::nullopt;
+		}
+	}
+	if (json.contains("environment_resolution"))
+	{
+		const auto& resolution = json["environment_resolution"];
+		if (!resolution.is_number_integer() || resolution.get<long long>() < Material::MIN_ENVIRONMENT_RESOLUTION ||
+			resolution.get<long long>() > Material::MAX_ENVIRONMENT_RESOLUTION)
+		{
+			error = "The field \"environment_resolution\" must be an integer between " +
+				std::to_string(Material::MIN_ENVIRONMENT_RESOLUTION) + " and " + std::to_string(Material::MAX_ENVIRONMENT_RESOLUTION);
+			return std::nullopt;
+		}
+		descriptor.environment_resolution = resolution.get<unsigned int>();
+	}
+
 	// optional field: the image files of the textures, by texture slot (relative to the descriptor)
 	if (json.contains("textures"))
 	{
@@ -210,6 +237,7 @@ bool Material_Library::load_directory(const std::filesystem::path& dir, const Sh
 
 		// create the material, with its textures (only for the slots of its shader)
 		auto material = std::make_shared<Material>(descriptor->name, shader, descriptor->parameters, descriptor->supports_instancing);
+		material->set_environment(descriptor->environment_mode, descriptor->environment_resolution);
 		bool has_valid_textures = true;
 		for (const auto& [slot, path] : descriptor->texture_paths)
 		{

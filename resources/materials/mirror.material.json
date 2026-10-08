@@ -1,0 +1,6 @@
+{
+  "name": "Mirror",
+  "shader": "Reflective Shader",
+  "environment": "dynamic",
+  "environment_resolution": 512
+}

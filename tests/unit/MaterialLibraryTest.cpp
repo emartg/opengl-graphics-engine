@@ -161,6 +161,56 @@ TEST(MaterialLibraryTest, RejectsParameterNamesAndTextureSlotsThatAreNotGlslIden
 	EXPECT_NE(error.find("1map"), std::string::npos);
 }
 
+TEST(MaterialLibraryTest, ParsesTheEnvironmentModeAndResolution)
+{
+	std::string error;
+	const auto  none = Material_Library::parse_descriptor(R"({ "name": "T", "shader": "S" })", fs::path{}, error);
+	ASSERT_TRUE(none.has_value()) << error;
+	EXPECT_EQ(none->environment_mode, Environment_Mode::NONE);
+	EXPECT_EQ(none->environment_resolution, Material::DEFAULT_ENVIRONMENT_RESOLUTION);
+
+	const auto skybox = Material_Library::parse_descriptor(R"({ "name": "T", "shader": "S", "environment": "skybox" })", fs::path{}, error);
+	ASSERT_TRUE(skybox.has_value()) << error;
+	EXPECT_EQ(skybox->environment_mode, Environment_Mode::SKYBOX);
+
+	const auto dynamic = Material_Library::parse_descriptor(
+		R"({ "name": "T", "shader": "S", "environment": "dynamic", "environment_resolution": 256 })",
+		fs::path{},
+		error);
+	ASSERT_TRUE(dynamic.has_value()) << error;
+	EXPECT_EQ(dynamic->environment_mode, Environment_Mode::DYNAMIC);
+	EXPECT_EQ(dynamic->environment_resolution, 256u);
+}
+
+TEST(MaterialLibraryTest, RejectsInvalidEnvironmentModesAndResolutions)
+{
+	for (const char* fields : { R"("environment": "cubemap")",
+								R"("environment": true)",
+								R"("environment_resolution": 8)",
+								R"("environment_resolution": 8192)",
+								R"("environment_resolution": 512.5)",
+								R"("environment_resolution": "512")" })
+	{
+		std::string       error;
+		const std::string text = std::string(R"({ "name": "T", "shader": "S", )") + fields + " }";
+		EXPECT_FALSE(Material_Library::parse_descriptor(text, fs::path{}, error).has_value()) << fields;
+		EXPECT_NE(error.find("environment"), std::string::npos) << error;
+	}
+}
+
+TEST(MaterialLibraryTest, SetEnvironmentRejectsResolutionsOutOfRange)
+{
+	Material material{ "T", nullptr };
+
+	EXPECT_TRUE(material.set_environment(Environment_Mode::DYNAMIC, 256));
+	EXPECT_FALSE(material.set_environment(Environment_Mode::SKYBOX, 0));
+	EXPECT_FALSE(material.set_environment(Environment_Mode::SKYBOX, Material::MAX_ENVIRONMENT_RESOLUTION + 1));
+
+	// a rejected change keeps the previous environment
+	EXPECT_EQ(material.get_environment_mode(), Environment_Mode::DYNAMIC);
+	EXPECT_EQ(material.get_environment_resolution(), 256u);
+}
+
 // Descriptor Files
 // ----------------
 TEST(MaterialLibraryTest, FindsOnlyTheDescriptorFilesOfADirectorySorted)

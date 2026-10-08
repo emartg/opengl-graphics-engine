@@ -76,6 +76,11 @@ Shader_Library::parse_descriptor(const std::string& text, const std::filesystem:
 			error = "The field \"textures\" must be an array of GLSL identifiers (e.g., \"albedo_map\")";
 			return std::nullopt;
 		}
+		if (slots.size() > MAX_TEXTURE_SLOTS)
+		{
+			error = "The field \"textures\" can have at most " + std::to_string(MAX_TEXTURE_SLOTS) + " texture slots";
+			return std::nullopt;
+		}
 		for (const auto& slot : slots)
 		{
 			if (std::find(texture_slots.begin(), texture_slots.end(), slot.get<std::string>()) != texture_slots.end())
