@@ -7,6 +7,9 @@
 
 #include "Shader.h"
 
+#include <algorithm>
+#include <utility>
+
 // Constructors
 // ------------
 Shader::Shader(
@@ -128,10 +131,34 @@ bool Shader::compile()
 		return false;
 	}
 
+	// read the active uniforms of the new program, with their types (e.g., for the material editor, which lists
+	// the material parameters of the shader)
+	std::map<std::string, GLenum> program_uniforms;
+	GLint                         uniform_count{ 0 }, max_name_length{ 0 };
+	glGetProgramiv(program, GL_ACTIVE_UNIFORMS, &uniform_count);
+	glGetProgramiv(program, GL_ACTIVE_UNIFORM_MAX_LENGTH, &max_name_length);
+	std::vector<GLchar> uniform_name(static_cast<std::size_t>(std::max(max_name_length, 1)));
+	for (GLint i = 0; i < uniform_count; ++i)
+	{
+		GLsizei length{ 0 };
+		GLint   size{ 0 };
+		GLenum  type{ 0 };
+		glGetActiveUniform(
+			program,
+			static_cast<GLuint>(i),
+			static_cast<GLsizei>(uniform_name.size()),
+			&length,
+			&size,
+			&type,
+			uniform_name.data());
+		program_uniforms[std::string(uniform_name.data(), static_cast<std::size_t>(length))] = type;
+	}
+
 	// replace the previous program (if any) with the new one
 	if (shader_program_id)
 		glDeleteProgram(shader_program_id);
 	shader_program_id      = program;
+	uniforms               = std::move(program_uniforms);
 	last_compile_succeeded = true;
 
 	std::cout << "[SUCCESS::SHADER::compile] Shader with name '" << name << "' compiled and linked successfully" << std::endl;
@@ -143,6 +170,7 @@ void Shader::deallocate_resources()
 	if (shader_program_id)
 		glDeleteProgram(shader_program_id);
 	shader_program_id = 0;
+	uniforms.clear();
 }
 
 void Shader::use() const

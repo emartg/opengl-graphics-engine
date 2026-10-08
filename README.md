@@ -25,6 +25,7 @@ A **modular, extensible 3D graphics engine** built from scratch with OpenGL 4.5.
   - *Properties* - real-time editing of transforms, color, opacity, light parameters, etc.
   - *Debug* - visualisation modes (Normal, Inverted Colors, Picking Colors, Grid Overlay) and performance stats.
   - *Creation* - instantiate primitives (cube, sphere, cylinder, cone, plane) or import models/skyboxes.
+  - *Material Editor* - create, duplicate, rename, and edit materials (parameters, textures, environment map) while the scene is rendered with them, and save them to (or reload them from) their descriptor files.
 - **Efficient Event-Driven Loop** - Blocks on idle using `glfwWaitEvents()`, reducing CPU usage to near zero when inactive.
 - **Rendering Performance** - Frustum culling, geometries shared between identical meshes, instanced rendering of repeated shapes, and a shader storage buffer for any number of lights.
 - **Reusable Libraries** - `Engine::Core` and `Engine::Platform` can be consumed by other CMake projects (e.g., as a Git submodule).
@@ -166,7 +167,7 @@ This engine is a **beta prototype** (v0.9.0) - functional and usable, but not pr
 - No shadows, normal mapping, or physically based materials yet.
 - Transparent objects become expensive (>500 objects).
 - Dynamic environment maps are computationally heavy (>10 reflective objects).
-- Materials can be assigned at runtime, but not yet edited or saved from the editor.
+- Materials can be created, edited, and saved from the editor, but not deleted, and their shader cannot be changed.
 - Limited animation and material import from Assimp.
 
 See the full [Limitations and Known Issues](docs/limitations.md) document for a comprehensive list, and the [Changelog](CHANGELOG.md) for the changes of each version.

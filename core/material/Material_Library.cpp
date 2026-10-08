@@ -4,7 +4,8 @@
  * material is described by a descriptor file (<name>.material.json) with its name, the name of its shader
  * (from the shader library), the values of its parameters, and its textures, so that materials are added or
  * changed without modifying the engine's code. The library loads every descriptor of a directory, holds the
- * materials created by the engine (e.g., those of imported models), and finds the materials by name.
+ * materials created by the engine (e.g., those of imported models), and finds the materials by name. It also
+ * saves materials to descriptor files and reloads them, duplicates them, and renames them (e.g., for an editor).
  */
 
 #include "Material_Library.h"
@@ -15,10 +16,15 @@
 #include "../utils/string/String_Utils.h"
 
 #include <algorithm>
+#include <cctype>
+#include <charconv>
 #include <fstream>
 #include <iostream>
 #include <sstream>
+#include <string_view>
 #include <system_error>
+#include <type_traits>
+#include <variant>
 
 #include <nlohmann/json.hpp>
 
@@ -46,6 +52,50 @@ namespace
 			}
 		}
 		return std::nullopt;
+	}
+
+	// Converts a float to the double with the shortest decimal representation that reads back as the same float, so
+	// that the descriptors are written with the values as they were typed (e.g., 0.6579 instead of 0.657899975776672)
+	double to_json_number(float value)
+	{
+		char       buffer[64];
+		const auto written = std::to_chars(buffer, buffer + sizeof(buffer), value);
+		double     number  = static_cast<double>(value);
+		if (written.ec == std::errc{})
+			std::from_chars(buffer, written.ptr, number);
+		return number;
+	}
+
+	// Converts a material parameter value to a JSON value (the inverse of to_material_value)
+	nlohmann::ordered_json to_json_value(const Material_Value& value)
+	{
+		return std::visit(
+			[](const auto& typed_value) -> nlohmann::ordered_json {
+				using Type = std::decay_t<decltype(typed_value)>;
+				if constexpr (std::is_same_v<Type, bool>)
+					return typed_value;
+				else if constexpr (std::is_same_v<Type, float>)
+					return to_json_number(typed_value);
+				else
+				{ // a vector, as an array of its components
+					nlohmann::ordered_json array = nlohmann::ordered_json::array();
+					for (glm::length_t i = 0; i < Type::length(); ++i) array.push_back(to_json_number(typed_value[i]));
+					return array;
+				}
+			},
+			value);
+	}
+
+	// Reads a whole text file. Returns false if it cannot be opened
+	bool read_text_file(const std::filesystem::path& file, std::string& text)
+	{
+		std::ifstream stream{ file };
+		if (!stream)
+			return false;
+		std::stringstream buffer;
+		buffer << stream.rdbuf();
+		text = buffer.str();
+		return true;
 	}
 }
 
@@ -186,6 +236,173 @@ std::vector<std::filesystem::path> Material_Library::find_descriptor_files(const
 	return files;
 }
 
+std::optional<Material_Descriptor> Material_Library::to_descriptor(const Material& material, std::string& error)
+{
+	if (!material.get_shader())
+	{
+		error = "The material has no shader";
+		return std::nullopt;
+	}
+
+	Material_Descriptor descriptor;
+	descriptor.name                   = material.get_name();
+	descriptor.shader_name            = material.get_shader()->get_name();
+	descriptor.parameters             = material.get_parameters();
+	descriptor.supports_instancing    = material.get_supports_instancing();
+	descriptor.environment_mode       = material.get_environment_mode();
+	descriptor.environment_resolution = material.get_environment_resolution();
+	for (const auto& [slot, texture] : material.get_textures())
+	{
+		if (!texture)
+			continue; // a slot without a texture
+		if (texture->get_texture_path().empty())
+		{
+			error = "The texture of the slot \"" + slot + "\" has no image file";
+			return std::nullopt;
+		}
+		descriptor.texture_paths[slot] = texture->get_texture_path();
+	}
+	return descriptor;
+}
+
+std::string Material_Library::write_descriptor(const Material_Descriptor& descriptor, const std::filesystem::path& base_dir)
+{
+	// the fields are written in the order of the engine's descriptors (an ordered JSON object keeps their order)
+	nlohmann::ordered_json json;
+	json["name"]   = descriptor.name;
+	json["shader"] = descriptor.shader_name;
+	if (descriptor.supports_instancing)
+		json["instancing"] = true;
+	if (descriptor.environment_mode != Environment_Mode::NONE)
+		json["environment"] = descriptor.environment_mode == Environment_Mode::SKYBOX ? "skybox" : "dynamic";
+	if (descriptor.environment_mode == Environment_Mode::DYNAMIC ||
+		descriptor.environment_resolution != Material::DEFAULT_ENVIRONMENT_RESOLUTION)
+		json["environment_resolution"] = descriptor.environment_resolution;
+	if (!descriptor.parameters.empty())
+	{
+		json["parameters"] = nlohmann::ordered_json::object();
+		for (const auto& [parameter_name, value] : descriptor.parameters) json["parameters"][parameter_name] = to_json_value(value);
+	}
+	if (!descriptor.texture_paths.empty())
+	{
+		json["textures"] = nlohmann::ordered_json::object();
+		for (const auto& [slot, path] : descriptor.texture_paths)
+		{
+			// a path relative to the descriptor (with forward slashes, on every platform), or an absolute path
+			std::error_code             error;
+			const std::filesystem::path relative_path = std::filesystem::relative(path, base_dir, error);
+			json["textures"][slot] =
+				!error && !relative_path.empty() ? relative_path.generic_string() : std::filesystem::absolute(path, error).generic_string();
+		}
+	}
+	// invalid UTF-8 (e.g., in the name of a material imported from an old model file) is replaced with U+FFFD, since
+	// JSON text must be valid UTF-8 (the default handler would throw an exception)
+	return json.dump(2, ' ', false, nlohmann::ordered_json::error_handler_t::replace) + "\n";
+}
+
+std::string Material_Library::make_descriptor_file_name(const std::string& material_name)
+{
+	std::string stem;
+	for (const char character : material_name)
+	{
+		const auto code = static_cast<unsigned char>(character);
+		if (code < 128 && std::isalnum(code))
+			stem += static_cast<char>(std::tolower(code));
+		else if (!stem.empty() && stem.back() != '_')
+			stem += '_'; // a run of other characters (e.g., spaces) becomes one underscore
+	}
+	if (!stem.empty() && stem.back() == '_')
+		stem.pop_back();
+	if (stem.empty())
+		stem = "material";
+	return stem + DESCRIPTOR_EXTENSION;
+}
+
+std::filesystem::path Material_Library::make_new_descriptor_path(const std::string& material_name, const std::filesystem::path& dir)
+{
+	const std::string     file_name = make_descriptor_file_name(material_name);
+	const std::string     stem      = file_name.substr(0, file_name.size() - std::string_view{ DESCRIPTOR_EXTENSION }.size());
+	std::filesystem::path path      = dir / file_name;
+	std::error_code       error;
+	for (int suffix = 2; std::filesystem::exists(path, error); ++suffix)
+		path = dir / (stem + "_" + std::to_string(suffix) + DESCRIPTOR_EXTENSION);
+	return path;
+}
+
+std::shared_ptr<Material>
+Material_Library::load_file(const std::filesystem::path& file, const Shader_Library& shader_library, std::string& error)
+{
+	// read and parse the descriptor
+	std::string text;
+	if (!read_text_file(file, text))
+	{
+		error = "The file cannot be read";
+		return nullptr;
+	}
+	const auto descriptor = parse_descriptor(text, file.parent_path(), error);
+	if (!descriptor)
+		return nullptr;
+
+	// find the shader of the material
+	auto shader = shader_library.get(descriptor->shader_name);
+	if (!shader)
+	{
+		error =
+			"The material '" + descriptor->name + "' uses the shader '" + descriptor->shader_name + "', which is not in the shader library";
+		return nullptr;
+	}
+
+	// create the material, with its textures (only for the slots of its shader)
+	auto material = std::make_shared<Material>(descriptor->name, shader, descriptor->parameters, descriptor->supports_instancing);
+	material->set_environment(descriptor->environment_mode, descriptor->environment_resolution);
+	material->set_file_path(file);
+	for (const auto& [slot, path] : descriptor->texture_paths)
+	{
+		const auto& slots = shader->get_texture_slots();
+		if (std::find(slots.begin(), slots.end(), slot) == slots.end())
+		{
+			error = "The material '" + descriptor->name + "' has a texture for the slot '" + slot + "', which the shader '" +
+				descriptor->shader_name + "' does not have";
+			return nullptr;
+		}
+		auto texture = std::make_shared<Texture>(path.filename().string(), path.string(), Texture_Type::UNDEFINED);
+		if (texture->get_texture_id() == 0)
+		{
+			error = "Failed to load the texture " + path.string() + " of the material '" + descriptor->name + "'";
+			return nullptr;
+		}
+		material->set_texture(slot, texture);
+	}
+	return material;
+}
+
+bool Material_Library::save(Material& material, const std::filesystem::path& file, std::string& error)
+{
+	const auto descriptor = to_descriptor(material, error);
+	if (!descriptor)
+		return false;
+
+	// write the descriptor, with the textures relative to its directory
+	const std::string text = write_descriptor(*descriptor, file.parent_path());
+	std::ofstream     stream{ file, std::ios::binary | std::ios::trunc }; // binary: the same line endings on every platform
+	if (!stream)
+	{
+		error = "The file " + file.string() + " cannot be opened for writing";
+		return false;
+	}
+	stream << text;
+	stream.close();
+	if (!stream)
+	{
+		error = "The file " + file.string() + " could not be written";
+		return false;
+	}
+
+	material.set_file_path(file);
+	std::cout << "[INFO::MATERIAL_LIBRARY::save] Saved the material '" << material.get_name() << "' to " << file.string() << std::endl;
+	return true;
+}
+
 // Public Methods
 // --------------
 bool Material_Library::load_directory(const std::filesystem::path& dir, const Shader_Library& shader_library)
@@ -202,66 +419,22 @@ bool Material_Library::load_directory(const std::filesystem::path& dir, const Sh
 	std::size_t loaded_count = 0; // number of materials loaded from this directory
 	for (const auto& file : files)
 	{
-		// read and parse the descriptor
-		std::ifstream     stream{ file };
-		std::stringstream text;
-		text << stream.rdbuf();
+		// load the material (with its shader and textures)
 		std::string error;
-		const auto  descriptor = parse_descriptor(text.str(), file.parent_path(), error);
-		if (!descriptor)
+		auto        material = load_file(file, shader_library, error);
+		if (!material)
 		{
-			std::cerr << "[ERROR::MATERIAL_LIBRARY::load_directory] Invalid material descriptor " << file.string() << ": " << error
-					  << std::endl;
+			std::cerr << "[ERROR::MATERIAL_LIBRARY::load_directory] Failed to load the material descriptor " << file.string() << ": "
+					  << error << std::endl;
 			all_loaded = false;
 			continue;
 		}
 
 		// material names identify the materials, so they must be unique
-		if (get(descriptor->name))
+		if (get(material->get_name()))
 		{
-			std::cerr << "[ERROR::MATERIAL_LIBRARY::load_directory] A material named '" << descriptor->name << "' already exists, "
+			std::cerr << "[ERROR::MATERIAL_LIBRARY::load_directory] A material named '" << material->get_name() << "' already exists, "
 					  << "so the descriptor " << file.string() << " is ignored" << std::endl;
-			all_loaded = false;
-			continue;
-		}
-
-		// find the shader of the material
-		auto shader = shader_library.get(descriptor->shader_name);
-		if (!shader)
-		{
-			std::cerr << "[ERROR::MATERIAL_LIBRARY::load_directory] The material '" << descriptor->name << "' (" << file.string()
-					  << ") uses the shader '" << descriptor->shader_name << "', which is not in the shader library" << std::endl;
-			all_loaded = false;
-			continue;
-		}
-
-		// create the material, with its textures (only for the slots of its shader)
-		auto material = std::make_shared<Material>(descriptor->name, shader, descriptor->parameters, descriptor->supports_instancing);
-		material->set_environment(descriptor->environment_mode, descriptor->environment_resolution);
-		bool has_valid_textures = true;
-		for (const auto& [slot, path] : descriptor->texture_paths)
-		{
-			const auto& slots = shader->get_texture_slots();
-			if (std::find(slots.begin(), slots.end(), slot) == slots.end())
-			{
-				std::cerr << "[ERROR::MATERIAL_LIBRARY::load_directory] The material '" << descriptor->name
-						  << "' has a texture for the slot '" << slot << "', which the shader '" << descriptor->shader_name
-						  << "' does not have" << std::endl;
-				has_valid_textures = false;
-				continue;
-			}
-			auto texture = std::make_shared<Texture>(path.filename().string(), path.string(), Texture_Type::UNDEFINED);
-			if (texture->get_texture_id() == 0)
-			{
-				std::cerr << "[ERROR::MATERIAL_LIBRARY::load_directory] Failed to load the texture " << path.string()
-						  << " of the material '" << descriptor->name << "'" << std::endl;
-				has_valid_textures = false;
-				continue;
-			}
-			material->set_texture(slot, texture);
-		}
-		if (!has_valid_textures)
-		{
 			all_loaded = false;
 			continue;
 		}
@@ -286,6 +459,64 @@ std::shared_ptr<Material> Material_Library::add(std::shared_ptr<Material> materi
 
 	materials.push_back(material);
 	return material;
+}
+
+std::shared_ptr<Material> Material_Library::duplicate(const Material& material)
+{
+	auto copy = std::make_shared<Material>(material);
+	copy->set_file_path({}); // the copy has no file until it is saved (saving it must not replace the original's file)
+	return add(std::move(copy));
+}
+
+bool Material_Library::rename(Material& material, const std::string& new_name, std::string& error) const
+{
+	if (new_name == material.get_name())
+		return true;
+	if (material.get_name() == DEFAULT_MATERIAL)
+	{
+		error = std::string("The material '") + DEFAULT_MATERIAL + "' cannot be renamed, since the renderer finds it by its name";
+		return false;
+	}
+	if (new_name.empty())
+	{
+		error = "The name of a material cannot be empty";
+		return false;
+	}
+	if (get(new_name))
+	{
+		error = "A material named '" + new_name + "' already exists";
+		return false;
+	}
+	material.set_name(new_name);
+	return true;
+}
+
+bool Material_Library::reload(Material& material, const Shader_Library& shader_library, std::string& error) const
+{
+	if (material.get_file_path().empty())
+	{
+		error = "The material '" + material.get_name() + "' has no descriptor file";
+		return false;
+	}
+	const auto reloaded = load_file(material.get_file_path(), shader_library, error);
+	if (!reloaded)
+		return false;
+
+	// the reloaded name must keep the names of the library unique (and the default material must keep its name)
+	if (material.get_name() == DEFAULT_MATERIAL && reloaded->get_name() != DEFAULT_MATERIAL)
+	{
+		error = std::string("The descriptor of the material '") + DEFAULT_MATERIAL + "' must keep its name";
+		return false;
+	}
+	const auto other = get(reloaded->get_name());
+	if (other && other.get() != &material)
+	{
+		error = "The descriptor names the material '" + reloaded->get_name() + "', which is the name of another material";
+		return false;
+	}
+
+	material = *reloaded;
+	return true;
 }
 
 std::shared_ptr<Material> Material_Library::get(const std::string& name) const

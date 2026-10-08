@@ -7,7 +7,7 @@ As of version **v0.9.0**, the engine is functional but has several known constra
 
 | Limitation | Description | Affected Areas |
 | ---------- | ----------- | -------------- |
-| **Incomplete Material System** | Materials (a shader and its parameters) are loaded from descriptor files and assigned to objects at runtime, but they cannot be created, edited, or saved from the editor yet. | Flexibility, extensibility. |
+| **Incomplete Material System** | Materials are loaded from descriptor files, assigned to objects, and created, edited, and saved from the Material Editor at runtime, but they cannot be deleted, and the shader of a material cannot be changed. Whether a shader supports instanced rendering or samples an environment map is declared by its materials (a new material copies it from the first material of its shader), not by the shader. | Flexibility, extensibility. |
 | **Limited Assimp Import** | Assimp is used only for static geometry extraction. Animations, bones, morph targets, and complex material maps (normals, specular, etc.) are not imported. Some embedded textures fail to load. | Model import quality. |
 | **No Shadows** | Lights are evaluated without shadow mapping. Shadow maps, point shadows, and cascaded maps are not implemented. | Visual realism. |
 | **Rotation Instability** | *Y-axis rotation ghosting* and *rotation axis coupling* appear due to quaternion-Euler conversions, causing abrupt jumps when rotating in certain orientations. | Usability. |

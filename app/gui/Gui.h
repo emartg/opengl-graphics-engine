@@ -10,6 +10,7 @@
 
 #pragma once
 
+#include <array>
 #include <iostream>
 #include <memory>
 #include <string>
@@ -32,6 +33,7 @@ class Directional_Light;
 class Point_Light;
 class Spotlight;
 class Random;
+class Material;
 
 // Forward declaration of enum class to avoid cyclic includes
 enum class Node_Type;
@@ -88,6 +90,17 @@ private:
 	// positions and sizes of the windows in the display
 	ImVec2 scene_graph_window_position, properties_window_position, creation_window_position, debug_window_position;
 	ImVec2 scene_graph_window_size, properties_window_size, creation_window_size, debug_window_size;
+	// state of the Material Editor window
+	bool                                material_editor_open{ false };            // whether the window is shown
+	std::shared_ptr<Material>           edited_material;                          // material shown in the window
+	std::unordered_set<const Material*> unsaved_materials;                        // materials changed since they were loaded or saved
+	std::array<char, 128>               material_name_buffer{};                   // text of the name field of the edited material
+	std::string                         material_editor_status;                   // result of the last action (e.g., a save)
+	bool                                material_editor_status_is_error{ false }; // whether the last action failed
+	std::shared_ptr<Material>           texture_dialog_material;                  // material whose texture the file dialog loads
+	std::string                         texture_dialog_slot;                      // texture slot whose texture the file dialog loads
+	std::array<char, 128>               new_material_name_buffer{};               // name of a new material (New Material popup)
+	std::string                         new_material_shader_name;                 // shader of a new material (New Material popup)
 	// flags for the windows to prevent focus on the first frame (indicating that the window just appeared)
 	bool scene_graph_window_just_appeared, properties_window_just_appeared, creation_window_just_appeared, debug_window_just_appeared;
 
@@ -106,6 +119,7 @@ private:
 	static constexpr float POPUP_WIDTH{ 400.0f }, POPUP_HEIGHT{ 300.0f };
 	static constexpr float FILE_DIALOG_POPUP_WIDTH{ 1000.0f }, FILE_DIALOG_POPUP_HEIGHT{ 600.0f };
 	static constexpr float ERROR_POPUP_WIDTH{ 400.0f }, ERROR_POPUP_HEIGHT{ 150.0f };
+	static constexpr float MATERIAL_EDITOR_WIDTH{ 460.0f }, MATERIAL_EDITOR_HEIGHT{ 560.0f };
 	// default values for ImGui controls
 	static constexpr float MIN_POSITION_VALUE{ -100.0f }, MAX_POSITION_VALUE{ 100.0f };
 	static constexpr float MIN_ROTATION_VALUE{ -360.0f }, MAX_ROTATION_VALUE{ 360.0f };
@@ -144,6 +158,11 @@ private:
 	void draw_creation_window();
 	// Draws the Debug Window with debug information and scene and GUI controls
 	void draw_debug_window();
+	// Draws the Material Editor Window (if it is open), which creates, edits, saves, and reloads the materials of the
+	// material library while the scene is rendered with them
+	void draw_material_editor_window();
+	// Opens the Material Editor Window with a material
+	void open_material_editor(const std::shared_ptr<Material>& material);
 
 	// Recursively draws a node and its children in the scene graph tree
 	void draw_tree_node_recursive(const std::shared_ptr<Node>& node);
@@ -178,6 +197,19 @@ private:
 	void draw_import_model_popup();
 	// Draws a pop-up modal window to import a skybox from a folder (6 textures)
 	void draw_import_skybox_popup();
+	// Draws a pop-up modal window to create a new material with a shader of the shader library
+	void draw_create_material_popup();
+	// Draws the file dialog that loads an image file as the texture of a texture slot of a material
+	void draw_load_material_texture_dialog();
+
+	// Draws the controls of the parameters of the edited material (and of the shader parameters that it does not set)
+	void draw_material_parameter_controls(Material& material);
+	// Draws the controls of the textures of the edited material, by texture slot of its shader
+	void draw_material_texture_controls(Material& material);
+	// Draws the controls of the environment map of the edited material
+	void draw_material_environment_controls(Material& material);
+	// Sets the result of the last action of the Material Editor, shown at the bottom of its window
+	void set_material_editor_status(const std::string& status, bool is_error);
 
 	// Creates a color picker with sliders for RGB components
 	// and returns true if the color was changed
