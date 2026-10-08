@@ -115,6 +115,11 @@ void Mesh::bind_textures(Shader& shader) const
 		textures[i]->bind(next_available_unit++);
 	}
 
+	// set the texture units of the known maps in the shader
+	shader.set_int("u_material.albedo_map", albedo_map_unit);
+	shader.set_int("u_material.metallic_map", metallic_map_unit);
+	shader.set_int("u_material.opacity_map", opacity_map_unit);
+
 	// communicate presence of known maps to the shader (per-mesh, which is more performant)
 	shader.set_int("u_material.has_albedo_map", albedo_idx >= 0 ? 1 : 0);
 	shader.set_int("u_material.has_metallic_map", metallic_idx >= 0 ? 1 : 0);

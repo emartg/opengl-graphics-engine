@@ -36,6 +36,8 @@
 #include "core/renderer/Renderer.h"
 #include "core/shader/Shader.h"
 #include "core/shader/Shader_Library.h"
+#include "core/material/Material.h"
+#include "core/material/Material_Library.h"
 #include "core/utils/random/Random.h"
 #include "core/utils/string/String_Utils.h"
 
@@ -1505,6 +1507,29 @@ void GUI::draw_model_controls(Node* model)
 {
 	// use PushID to create a unique id for each model
 	ImGui::PushID(model->get_name().c_str());
+
+	// combo box to assign a material of the material library to the model at runtime (or to go back to the
+	// default material of its type, used while the model has no material of its own)
+	const auto&       material_library = Core::get_instance()->get_material_library();
+	const auto&       material         = model->get_material();
+	const std::string preview          = material ? material->get_name() : "Default";
+	ImGui::Text("Material");
+	ImGui::SameLine(); // keep the combo box on the same line as the label
+	ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+	if (ImGui::BeginCombo("##Material", preview.c_str()))
+	{
+		if (ImGui::Selectable("Default", !material))
+			model->set_material(nullptr);
+		for (const auto& library_material : material_library->get_materials())
+		{
+			const bool is_selected = library_material == material;
+			if (ImGui::Selectable(library_material->get_name().c_str(), is_selected))
+				model->set_material(library_material);
+			if (is_selected)
+				ImGui::SetItemDefaultFocus();
+		}
+		ImGui::EndCombo();
+	}
 
 	glm::vec4 albedo = model->get_albedo(); // get the albedo color of the model (with alpha channel)
 

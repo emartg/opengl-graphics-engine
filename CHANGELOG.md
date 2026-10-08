@@ -8,6 +8,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
+- Materials as assets: each one is described by a `<name>.material.json` file (its name, the name of its shader, its parameters, and whether its shader supports instancing), loaded by the new `Material_Library` from `resources/materials`. Shapes and imported models use the "Default Shape" and "Default Model" materials unless they have a material of their own.
+- Material assignment at runtime from the Properties window, and material parameters that each object can override for itself.
 - Shader programs as assets: each one is described by a `<name>.shader.json` file (its name and the files of its stages), loaded by the new `Shader_Library` from `resources/shaders` (applications can load their own directories).
 - Shader reloading at runtime from the Debug window (all shaders or one by one): a shader that fails to compile keeps its previous program.
 - nlohmann/json dependency (vcpkg `nlohmann-json`, Ubuntu `nlohmann-json3-dev`).
@@ -18,6 +20,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - The lit shaders share the lights and the lighting functions through `resources/shaders/include/lighting.glsl`.
 - Render passes can have a different color format per attachment.
 - The renderer takes the shaders of its passes from the shader library by name, and shaders are no longer scene nodes of the node manager.
+- The renderer draws every model with the shader and parameters of its material (instead of choosing the shader by node type, with a hard-coded shininess), and instanced rendering groups the objects by geometry and material.
+- The albedo color of each object reaches the lit shaders as `u_object_albedo`, separate from the material parameters (`u_material`).
+
+### Fixed
+
+- The opacity maps of imported models were sampled from the texture unit of the albedo map.
+- The capture of dynamic environment maps skipped the own meshes of composite models and could draw their children twice.
 
 ### Removed
 

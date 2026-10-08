@@ -1,0 +1,8 @@
+{
+  "name": "Default Shape",
+  "shader": "Shape Model Shader",
+  "instancing": true,
+  "parameters": {
+    "shininess": 32.0
+  }
+}

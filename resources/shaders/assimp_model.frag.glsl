@@ -16,7 +16,6 @@ struct Material
 	int has_opacity_map;	// flag indicating whether an opacity map is used (0 or 1)
 
 	float shininess;
-	float base_opacity;		// model's base opacity (used if no opacity map is provided)
 };
 
 // fragment position, normal and texture coordinates in view space passed from the vertex shader
@@ -29,6 +28,9 @@ uniform mat4 u_view;
 
 // material properties struct
 uniform Material u_material;
+
+// albedo color of the object (set by the renderer for each object): its alpha is the base opacity of the model
+uniform vec4 u_object_albedo;
 
 // Helper functions to fetch with fallback if no texture is used
 vec3 get_albedo_component();
@@ -48,7 +50,7 @@ void main()
 	// lighting result of all the lights of the scene
 	vec3 result = compute_lighting(surface, u_view);
 
-	// get final opacity either from the opacity map (if it exists) or from the base opacity uniform
+	// get final opacity either from the opacity map (if it exists) or from the base opacity of the object
 	float opacity = get_opacity_component();
 
 	// discard nearly transparent fragments to improve performance and avoid blending issues
@@ -74,7 +76,7 @@ vec3 get_metallic_component()
 
 float get_opacity_component()
 {
-	float opacity = u_material.base_opacity; // default opacity from the base opacity uniform
+	float opacity = u_object_albedo.a; // default opacity from the base opacity of the object
 
 	// if an opacity map is used, fetch the opacity from the red channel of the texture
 	// (convention for opacity maps is to store opacity in the red channel) 
@@ -85,7 +87,7 @@ float get_opacity_component()
 		opacity = texture(u_material.opacity_map, v_tex_coords).r;
 		// combine the sampled opacity with the base opacity to get the final opacity value for the fragment
 		// (common convention is to multiply the base opacity by the sampled opacity from the opacity map)
-		opacity *= u_material.base_opacity;
+		opacity *= u_object_albedo.a;
 	}
 	// if no opacity map is used but an albedo map is used,
 	// the alpha channel of the albedo map can be used for opacity (if it exists in the texture);

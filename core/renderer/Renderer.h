@@ -32,6 +32,7 @@ class Node;
 class Render_Pass;
 class Shader;
 class Shader_Library;
+class Material;
 class Texture;
 
 enum class Buffer_Type
@@ -153,8 +154,6 @@ protected:
 	GLfloat      delta_time, last_frame_time; // time settings
 
 	// shader programs' smart pointers
-	std::shared_ptr<Shader> shape_model_shader;
-	std::shared_ptr<Shader> assimp_model_shader;
 	std::shared_ptr<Shader> single_albedo_shader;
 	std::shared_ptr<Shader> screen_quad_shader;
 	std::shared_ptr<Shader> picking_shader;
@@ -216,8 +215,16 @@ protected:
 	// with the appropriate shader program
 	void render_node(const std::shared_ptr<Node>& node);
 
-	// Renders the opaque nodes: the shape models that share a geometry (untextured, single-sided, and with
-	// a single mesh) are drawn with one instanced draw call per geometry, and the other nodes one by one
+	// Returns the material that draws the node: its own material or, if it has none, the default material of its
+	// type (shapes and imported models), or nullptr if the node is not drawn with a material
+	std::shared_ptr<Material> get_node_material(const Node& node) const;
+	// Uses the shader of the node's material and sets the material parameters, the parameters that the node
+	// overrides, and the albedo color of the node. Returns the shader, or nullptr if the node has no material
+	std::shared_ptr<Shader> bind_node_material(const Node& node) const;
+
+	// Renders the opaque nodes: the nodes that share a geometry and a material that supports instancing (without
+	// overridden parameters, untextured, single-sided, and with a single mesh) are drawn with one instanced draw
+	// call per geometry and material, and the other nodes one by one
 	void render_opaque_nodes(const std::vector<std::shared_ptr<Node>>& nodes);
 
 	// Uploads the lights of the scene to the light buffer (in world space, sorted by type), and binds it

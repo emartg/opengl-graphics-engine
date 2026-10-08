@@ -30,6 +30,7 @@ class Input_Manager;
 class Scene_Manager;
 class Selection_Manager;
 class Shader_Library;
+class Material_Library;
 
 class Core
 {
@@ -58,6 +59,8 @@ private:
 
 	// library of the shader programs, loaded from the descriptor files of the resources directory
 	std::shared_ptr<Shader_Library> shader_library;
+	// library of the materials, loaded from the descriptor files of the resources directory
+	std::shared_ptr<Material_Library> material_library;
 
 	// screen settings
 	GLuint screen_width{ 1600 }, screen_height{ 1000 }; // default screen width and height
@@ -82,6 +85,10 @@ private:
 	// resources directory into the shader library, and gives the renderer and the selection manager the
 	// shaders they use. Returns true if every shader was loaded and the required ones exist, false otherwise
 	bool load_shaders();
+	// Loads the materials described by the descriptor files of the "materials" subdirectory of the resources
+	// directory into the material library. Returns true if every material was loaded and the default
+	// materials exist, false otherwise
+	bool load_materials();
 
 public:
 	// Constructors
@@ -107,6 +114,7 @@ public:
 	const std::shared_ptr<Scene_Manager>&     get_scene_manager() const { return scene_manager; }
 	const std::shared_ptr<Selection_Manager>& get_selection_manager() const { return selection_manager; }
 	const std::shared_ptr<Shader_Library>&    get_shader_library() const { return shader_library; }
+	const std::shared_ptr<Material_Library>&  get_material_library() const { return material_library; }
 
 	const GLuint&                get_screen_width() const { return screen_width; }
 	const GLuint&                get_screen_height() const { return screen_height; }
@@ -125,7 +133,7 @@ public:
 	void set_resources_dir(const std::filesystem::path& dir) { resources_dir = dir; }
 
 	// Initializes the core engine (OpenGL, window, GUI, etc.), locates the resources directory,
-	// and loads the engine's shaders into the shader library
+	// and loads the engine's shaders and materials into the shader and material libraries
 	bool init();
 	// Runs the main loop of the engine until the renderer signals that the window should close or,
 	// if max_frames is greater than 0, until that number of frames has been rendered (e.g., for automated
