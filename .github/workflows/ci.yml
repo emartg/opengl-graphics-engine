@@ -39,7 +39,7 @@ jobs:
             | grep -v -x -e 'core/glad.c' -e 'core/stb_image.cpp' \
             | xargs clang-format --style=file --dry-run --Werror
 
-  # Linux builds with the system packages, unit tests, and smoke test of the App
+  # Linux builds with the system packages, unit tests, and smoke tests of the App
   linux:
     name: Linux (${{ matrix.preset }})
     runs-on: ubuntu-24.04
