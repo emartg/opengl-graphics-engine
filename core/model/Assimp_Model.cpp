@@ -11,6 +11,8 @@
 #include "../shader/Shader.h"
 #include "../texture/Texture.h"
 
+#include <fstream>
+
 // Constructors
 // ------------
 // Constructor that loads a model from a file

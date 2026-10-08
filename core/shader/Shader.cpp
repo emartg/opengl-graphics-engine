@@ -46,53 +46,25 @@ Shader::Shader(
 // --------------
 bool Shader::compile()
 {
-	// retrieve the vertex/geometry/fragment shader source code from the file paths
-	std::string   vertex_shader_src_code;
-	std::string   geometry_shader_src_code;
-	std::string   fragment_shader_src_code;
-	std::ifstream vertex_shader_file;
-	std::ifstream geometry_shader_file;
-	std::ifstream fragment_shader_file;
-	// ensure ifstream objects can throw exceptions
-	vertex_shader_file.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-	if (!geometry_shader_path.empty())
-		geometry_shader_file.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-	fragment_shader_file.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-	try
+	// load the source code of each stage from its file, resolving the #include directives
+	const Shader_Source vertex_shader_source = Shader_Preprocessor::load(vertex_shader_path);
+	const Shader_Source geometry_shader_source =
+		geometry_shader_path.empty() ? Shader_Source{} : Shader_Preprocessor::load(geometry_shader_path);
+	const Shader_Source fragment_shader_source = Shader_Preprocessor::load(fragment_shader_path);
+	for (const Shader_Source* source : { &vertex_shader_source, &geometry_shader_source, &fragment_shader_source })
 	{
-		// open files
-		vertex_shader_file.open(vertex_shader_path);
-		if (!geometry_shader_path.empty())
-			geometry_shader_file.open(geometry_shader_path);
-		fragment_shader_file.open(fragment_shader_path);
-		// read files' buffer contents into streams
-		std::stringstream vertex_shader_stream, geometry_shader_stream, fragment_shader_stream;
-		vertex_shader_stream << vertex_shader_file.rdbuf();
-		if (!geometry_shader_path.empty())
-			geometry_shader_stream << geometry_shader_file.rdbuf();
-		fragment_shader_stream << fragment_shader_file.rdbuf();
-		// close file handlers
-		vertex_shader_file.close();
-		if (!geometry_shader_path.empty())
-			geometry_shader_file.close();
-		fragment_shader_file.close();
-		// convert streams into strings
-		vertex_shader_src_code = vertex_shader_stream.str();
-		if (!geometry_shader_path.empty())
-			geometry_shader_src_code = geometry_shader_stream.str();
-		fragment_shader_src_code = fragment_shader_stream.str();
-	}
-	catch (const std::ifstream::failure& e)
-	{
-		std::cerr << "[ERROR::SHADER::compile] Shader file reading error: " << e.what() << std::endl;
-		return false; // if file reading failed, return false
+		if (!source->is_valid())
+		{ // if a file could not be read, print the error message and return false
+			std::cerr << "[ERROR::SHADER::compile] Shader file reading error in '" << name << "': " << source->error << std::endl;
+			return false;
+		}
 	}
 	// convert strings to GLchar pointers
-	const GLchar* vertex_shader_code   = vertex_shader_src_code.c_str();
+	const GLchar* vertex_shader_code   = vertex_shader_source.code.c_str();
 	const GLchar* geometry_shader_code = nullptr;
 	if (!geometry_shader_path.empty())
-		geometry_shader_code = geometry_shader_src_code.c_str();
-	const GLchar* fragment_shader_code = fragment_shader_src_code.c_str();
+		geometry_shader_code = geometry_shader_source.code.c_str();
+	const GLchar* fragment_shader_code = fragment_shader_source.code.c_str();
 
 	// compile shaders and create shader program
 	GLuint vertex_shader{}, geometry_shader{}, fragment_shader{};
@@ -100,7 +72,7 @@ bool Shader::compile()
 	vertex_shader = glCreateShader(GL_VERTEX_SHADER);
 	glShaderSource(vertex_shader, 1, &vertex_shader_code, NULL);
 	glCompileShader(vertex_shader);
-	if (!check_compilation_linking_errors(vertex_shader, "VERTEX"))
+	if (!check_compilation_linking_errors(vertex_shader, "VERTEX", vertex_shader_source.files))
 	{ // if compilation of the vertex shader failed, delete it and return false
 		glDeleteShader(vertex_shader);
 		return false;
@@ -111,7 +83,7 @@ bool Shader::compile()
 		geometry_shader = glCreateShader(GL_GEOMETRY_SHADER);
 		glShaderSource(geometry_shader, 1, &geometry_shader_code, NULL);
 		glCompileShader(geometry_shader);
-		if (!check_compilation_linking_errors(geometry_shader, "GEOMETRY"))
+		if (!check_compilation_linking_errors(geometry_shader, "GEOMETRY", geometry_shader_source.files))
 		{ // if compilation of the geometry shader failed, delete the created shaders and return false
 			glDeleteShader(vertex_shader);
 			glDeleteShader(geometry_shader);
@@ -122,7 +94,7 @@ bool Shader::compile()
 	fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
 	glShaderSource(fragment_shader, 1, &fragment_shader_code, NULL);
 	glCompileShader(fragment_shader);
-	if (!check_compilation_linking_errors(fragment_shader, "FRAGMENT"))
+	if (!check_compilation_linking_errors(fragment_shader, "FRAGMENT", fragment_shader_source.files))
 	{ // if compilation of the fragment shader failed, delete the created shaders and return false
 		glDeleteShader(vertex_shader);
 		if (!geometry_shader_path.empty())
@@ -145,7 +117,7 @@ bool Shader::compile()
 		glDeleteShader(geometry_shader);
 	glDeleteShader(fragment_shader);
 
-	if (!check_compilation_linking_errors(shader_program_id, "PROGRAM"))
+	if (!check_compilation_linking_errors(shader_program_id, "PROGRAM", {}))
 	{ // if linking the program failed, delete it and return false
 		glDeleteProgram(shader_program_id);
 		shader_program_id = 0;
@@ -203,7 +175,7 @@ void Shader::set_mat4(const std::string& name, const glm::mat4& mat) const
 
 // Private Methods
 // ---------------
-bool Shader::check_compilation_linking_errors(GLuint shader, std::string type) const
+bool Shader::check_compilation_linking_errors(GLuint shader, std::string type, const std::vector<std::filesystem::path>& files) const
 {
 	GLint  success;        // variable to store the success status of the compilation/linking process
 	GLchar info_log[1024]; // buffer to store the information log in case of errors
@@ -215,6 +187,13 @@ bool Shader::check_compilation_linking_errors(GLuint shader, std::string type) c
 		{ // if compilation failed, retrieve the info log, print it, and return false
 			glGetShaderInfoLog(shader, 1024, NULL, info_log);
 			std::cerr << "[ERROR::SHADER::compile] Shader compilation error of type: " << type << "\n" << info_log << std::endl;
+			// list the files of the source, since the messages identify them by their source string number
+			// (e.g., "0:12" or "0(12)" is line 12 of file 0, depending on the driver)
+			if (files.size() > 1)
+			{
+				std::cerr << "Source files:" << std::endl;
+				for (std::size_t i = 0; i < files.size(); ++i) std::cerr << "  " << i << ": " << files[i].string() << std::endl;
+			}
 			return false;
 		}
 	}

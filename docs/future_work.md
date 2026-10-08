@@ -12,10 +12,11 @@ Based on the experience gained and the limitations identified, the following imp
 
 | Version | Content |
 | ------- | ------- |
-| **v0.10.0** | Deferred shading (G-buffer and lighting pass) and shadow mapping (directional lights first). |
-| **v0.11.0** | Normal mapping, Physically Based Rendering (PBR), Screen Space Ambient Occlusion (SSAO), and post-processing (tone mapping, gamma correction). |
-| **v0.12.0** | Order-independent transparency, compute shaders, and particles. |
-| **v0.13.0** | Editor improvements: data-driven materials, multi-selection, viewport gizmos, and multi-camera support. |
+| **v0.10.0** | Data-driven material system: shaders and materials as assets defined in files (with their shader, parameters, textures, and render state), assigned to objects at runtime from the editor, replacing the hard-coded shader assignment; reflective and refractive materials sampling the environment maps. |
+| **v0.11.0** | Deferred shading (G-buffer and lighting pass) and shadow mapping (directional lights first). |
+| **v0.12.0** | Normal mapping, Physically Based Rendering (PBR), Screen Space Ambient Occlusion (SSAO), and post-processing (tone mapping, gamma correction). |
+| **v0.13.0** | Order-independent transparency, compute shaders, and particles. |
+| **v0.14.0** | Editor improvements: multi-selection, viewport gizmos, and multi-camera support. |
 | **v1.0.0** | Stable interfaces, once the Engine has been used by a real consumer project. |
 
 ## Short-Term (1 - 3 Months)
@@ -45,7 +46,7 @@ Based on the experience gained and the limitations identified, the following imp
     - Bloom (Gaussian blur + additive composition).
 
 2. **Additional Lighting Effects**  
-    - Shadow mapping for point and spot lights (directional lights come first, in v0.10.0).  
+    - Shadow mapping for point and spot lights (directional lights come first, in v0.11.0).  
     - Parallax mapping.
 
 3. **Advanced Window Customisation**  
