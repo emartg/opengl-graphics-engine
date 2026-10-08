@@ -166,7 +166,7 @@ This engine is a **beta prototype** (v0.9.0) - functional and usable, but not pr
 - No shadows, normal mapping, or physically based materials yet.
 - Transparent objects become expensive (>500 objects).
 - Dynamic environment maps are computationally heavy (>10 reflective objects).
-- Shader/material assignment is hard-coded (no data-driven material system).
+- Materials can be assigned at runtime, but not yet edited or saved from the editor, and reflective and refractive surfaces are not materials yet.
 - Limited animation and material import from Assimp.
 
 See the full [Limitations and Known Issues](docs/limitations.md) document for a comprehensive list, and the [Changelog](CHANGELOG.md) for the changes of each version.

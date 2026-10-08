@@ -7,7 +7,7 @@ As of version **v0.9.0**, the engine is functional but has several known constra
 
 | Limitation | Description | Affected Areas |
 | ---------- | ----------- | -------------- |
-| **Static Shader/Material Assignment** | Shaders are assigned by node type via hard-coded logic in `Renderer.cpp`. No data-driven system exists to change materials at runtime without recompiling. | Flexibility, extensibility. |
+| **Incomplete Material System** | Materials (a shader and its parameters) are loaded from descriptor files and assigned to objects at runtime, but they cannot be created, edited, or saved from the editor yet, the textures of imported models still belong to their meshes instead of their materials, and reflective and refractive surfaces are not materials yet (completed during v0.10.0). | Flexibility, extensibility. |
 | **Limited Assimp Import** | Assimp is used only for static geometry extraction. Animations, bones, morph targets, and complex material maps (normals, specular, etc.) are not imported. Some embedded textures fail to load. | Model import quality. |
 | **No Shadows** | Lights are evaluated without shadow mapping. Shadow maps, point shadows, and cascaded maps are not implemented. | Visual realism. |
 | **Rotation Instability** | *Y-axis rotation ghosting* and *rotation axis coupling* appear due to quaternion-Euler conversions, causing abrupt jumps when rotating in certain orientations. | Usability. |

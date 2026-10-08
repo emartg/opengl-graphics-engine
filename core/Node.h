@@ -19,6 +19,7 @@
 #include <glm/gtx/quaternion.hpp> // for quaternion operations
 
 #include "utils/geometry/Bounding_Box.h"
+#include "material/Material.h"
 
 // Forward declarations of classes to avoid cyclic includes and allow virtual interfaces and pointers
 class Shader;
@@ -170,6 +171,18 @@ public:
 	// transformations), or an invalid box if the node has no meshes
 	Bounding_Box get_world_bounding_box() const;
 
+	// Gets and sets the material of the node (nullptr if the node uses the default material of its type)
+	const std::shared_ptr<Material>& get_material() const { return material; }
+	void                             set_material(const std::shared_ptr<Material>& material) { this->material = material; }
+
+	// Gets and sets the material parameters that the node overrides for itself (applied after its material's)
+	const Material_Parameters& get_material_overrides() const { return material_overrides; }
+	void                       set_material_override(const std::string& parameter_name, const Material_Value& value)
+	{
+		material_overrides[parameter_name] = value;
+	}
+	void remove_material_override(const std::string& parameter_name) { material_overrides.erase(parameter_name); }
+
 	// Gets the meshes of the node itself (empty for pure composite nodes)
 	const std::vector<std::shared_ptr<Mesh>>& get_meshes() const { return meshes; }
 
@@ -217,7 +230,9 @@ protected:
 	glm::vec3 mesh_forward; // original forward vector of the mesh
 
 	// appearance attributes
-	glm::vec4 albedo; // albedo color of the node
+	glm::vec4                 albedo;             // albedo color of the node (its alpha is its opacity)
+	std::shared_ptr<Material> material;           // material of the node (nullptr: default material of its type)
+	Material_Parameters       material_overrides; // material parameters overridden by the node
 
 	// state attributes
 	bool is_visible;            // visibility of the node in the scene

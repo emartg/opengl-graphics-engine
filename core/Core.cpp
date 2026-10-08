@@ -15,6 +15,7 @@
 
 #include "shader/Shader.h"
 #include "shader/Shader_Library.h"
+#include "material/Material_Library.h"
 #include "texture/Texture.h"
 #include "gizmos/Line.h"               // for directional light gizmo rendering
 #include "gizmos/TRIANGLE_FAN_PLANE.h" // for directional light gizmo rendering
@@ -38,7 +39,8 @@ Core::Core() :
 	input_manager{ std::make_shared<Input_Manager>() },
 	scene_manager{ std::make_shared<Scene_Manager>() },
 	selection_manager{ std::make_shared<Selection_Manager>() },
-	shader_library{ std::make_shared<Shader_Library>() }
+	shader_library{ std::make_shared<Shader_Library>() },
+	material_library{ std::make_shared<Material_Library>() }
 {}
 
 // Destructor
@@ -135,6 +137,25 @@ bool Core::load_shaders()
 	return true;
 }
 
+bool Core::load_materials()
+{
+	// load the engine's materials, described by the descriptor files of the materials directory
+	if (!material_library->load_directory(resources_dir / "materials", *shader_library))
+		return false;
+
+	// the renderer draws the objects without a material of their own with the default materials
+	bool has_default_materials = true;
+	for (const char* name : { Material_Library::DEFAULT_SHAPE_MATERIAL, Material_Library::DEFAULT_MODEL_MATERIAL })
+	{
+		if (!material_library->get(name))
+		{
+			std::cerr << "[ERROR::CORE::load_materials] The material library has no material named '" << name << "'" << std::endl;
+			has_default_materials = false;
+		}
+	}
+	return has_default_materials;
+}
+
 // Public Methods
 // --------------
 std::string Core::get_resource_path(const std::string& relative_path) const
@@ -196,6 +217,13 @@ bool Core::init()
 	if (!load_shaders())
 	{ // if the shaders fail to load, print an error message and return false
 		std::cerr << "[ERROR::CORE::init] Failed to load the shaders" << std::endl;
+		return false;
+	}
+
+	// load the engine's materials, which use the shaders
+	if (!load_materials())
+	{ // if the materials fail to load, print an error message and return false
+		std::cerr << "[ERROR::CORE::init] Failed to load the materials" << std::endl;
 		return false;
 	}
 
@@ -261,6 +289,7 @@ void Core::shutdown()
 		selection_manager.reset();
 		scene_manager.reset();
 		node_manager.reset();
+		material_library.reset();
 		shader_library.reset();
 		renderer->release_resources();
 

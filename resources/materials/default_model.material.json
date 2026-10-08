@@ -1,0 +1,7 @@
+{
+  "name": "Default Model",
+  "shader": "Assimp Model Shader",
+  "parameters": {
+    "shininess": 32.0
+  }
+}

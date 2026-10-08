@@ -4,10 +4,9 @@ out vec4 FragColor;
 // lights of the scene and lighting functions (Light_Data, Surface, compute_lighting, etc.)
 #include "include/lighting.glsl"
 
-// struct to hold material properties
+// struct to hold the material parameters (set by the material, see the material descriptor files)
 struct Material
 {
-	vec4 albedo;
 	float shininess;
 };
 
@@ -21,16 +20,19 @@ flat in vec4 v_instance_albedo;
 // view matrix, used to transform the lights from world space to view space
 uniform mat4 u_view;
 
-// material properties struct
+// material parameters struct
 uniform Material u_material;
 
-// whether the shape is drawn with instancing (albedo of the instance) or alone (albedo of the material)
+// albedo color of the object (set by the renderer for each object drawn alone)
+uniform vec4 u_object_albedo;
+
+// whether the shape is drawn with instancing (albedo of the instance) or alone (albedo of the object)
 uniform bool u_instanced;
 
 void main()
 {
-	// albedo of the instance, or of the material when the shape is drawn alone
-	vec4 albedo = u_instanced ? v_instance_albedo : u_material.albedo;
+	// albedo of the instance, or of the object when the shape is drawn alone
+	vec4 albedo = u_instanced ? v_instance_albedo : u_object_albedo;
 
 	// surface properties of the fragment (the shape is completely shiny, since it has no specular map)
 	Surface surface;

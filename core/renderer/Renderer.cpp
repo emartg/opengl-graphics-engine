@@ -17,6 +17,7 @@
 #include <cstddef>
 #include <cstring>
 #include <functional>
+#include <map>
 #include <utility>
 
 #include "SKYBOX.h"      // skybox vertex data
@@ -35,6 +36,8 @@
 #include "../model/mesh/Mesh_Geometry.h"
 #include "../shader/Shader.h"
 #include "../shader/Shader_Library.h"
+#include "../material/Material.h"
+#include "../material/Material_Library.h"
 #include "../texture/Texture.h"
 #include "../utils/geometry/Bounding_Box.h"
 #include "../utils/geometry/Frustum.h"
@@ -180,8 +183,6 @@ bool Renderer::set_shaders(const Shader_Library& shader_library)
 {
 	// names of the shaders used by the render passes, and the member variables that hold them
 	const std::pair<const char*, std::shared_ptr<Shader>*> required_shaders[]{
-		{ "Shape Model Shader", &shape_model_shader },
-		{ "Assimp Model Shader", &assimp_model_shader },
 		{ "Single Albedo Shader", &single_albedo_shader },
 		{ "Screen Quad Shader", &screen_quad_shader },
 		{ "Picking Shader", &picking_shader },
@@ -260,8 +261,8 @@ void Renderer::render_scene()
 	auto& camera        = scene_manager->get_camera();
 
 	// ensure camera and shaders are valid before proceeding
-	if (!camera || !shape_model_shader || !assimp_model_shader || !single_albedo_shader || !screen_quad_shader || !picking_shader ||
-		!skybox_shader || !equirect_to_cubemap_shader || !reflective_shader || !refractive_shader)
+	if (!camera || !single_albedo_shader || !screen_quad_shader || !picking_shader || !skybox_shader || !equirect_to_cubemap_shader ||
+		!reflective_shader || !refractive_shader)
 	{ // if any of them are null, print an error message and return
 		std::cerr << "[ERROR::RENDERER::render_scene] Camera or shaders aren't set up correctly" << std::endl;
 		return;
@@ -286,14 +287,6 @@ void Renderer::render_scene()
 		shader->set_mat4("u_view", view);
 		shader->set_mat4("u_projection", projection);
 	}
-
-	// set constant material uniforms
-	shape_model_shader->use();
-	shape_model_shader->set_float("u_material.shininess", 32.0f); // shininess factor for the material
-	assimp_model_shader->use();
-	assimp_model_shader->set_int("u_material.albedo_map", 0);      // set albedo map to texture unit 0
-	assimp_model_shader->set_int("u_material.metallic_map", 1);    // set metallic map to texture unit 1
-	assimp_model_shader->set_float("u_material.shininess", 32.0f); // set shininess factor for the material
 
 	// set constant uniforms for the reflective and refractive shaders
 	reflective_shader->use();
@@ -549,29 +542,16 @@ void Renderer::render_node(const std::shared_ptr<Node>& node)
 		{
 			switch (node->get_type()) // use the appropriate shader based on the node type
 			{
-				// for container-only nodes (COMPOSITE_MODEL), we don't need to set a shader
-				// as they don't have their own meshes to render
-
-				// COMPOSITE_ASSIMP_MODEL nodes have their own meshes,
-				// so they are handled as regular ASSIMP_MODEL nodes here
+				// container-only nodes (COMPOSITE_MODEL) have no meshes of their own to render, while the
+				// COMPOSITE_ASSIMP_MODEL and COMPOSITE_SHAPE_MODEL nodes are rendered as regular models
 				case Node_Type::COMPOSITE_ASSIMP_MODEL:
 				case Node_Type::ASSIMP_MODEL:
-				{
-					render_shader = assimp_model_shader;
-					render_shader->use();
-					// set the base opacity (alpha) of the model based on the node's albedo (RGBA)
-					render_shader->set_float("u_material.base_opacity", node->get_albedo().a);
-				}
-				break;
-				// COMPOSITE_SHAPE_MODEL nodes have their own meshes,
-				// so they are handled as regular SHAPE_MODEL nodes here
 				case Node_Type::COMPOSITE_SHAPE_MODEL:
 				case Node_Type::SHAPE_MODEL:
-				{
-					render_shader = shape_model_shader;
-					render_shader->use();
-					// set the color of the shape based on the node's albedo (RGBA)
-					render_shader->set_vec4("u_material.albedo", node->get_albedo());
+				{ // use the shader of the node's material, with the material and the node's own parameters
+					render_shader = bind_node_material(*node);
+					if (!render_shader)
+						return; // the node has no usable material (the error was already printed)
 				}
 				break;
 				default:
@@ -622,6 +602,43 @@ void Renderer::render_node(const std::shared_ptr<Node>& node)
 		if (need_disable_culling && cull_was_enabled)
 			glEnable(GL_CULL_FACE);
 	}
+}
+
+std::shared_ptr<Material> Renderer::get_node_material(const Node& node) const
+{
+	// the node's own material, if it has one
+	if (node.get_material())
+		return node.get_material();
+
+	// otherwise, the default material of its type (shapes and imported models)
+	const auto& material_library = Core::get_instance()->get_material_library();
+	switch (node.get_type())
+	{
+		case Node_Type::SHAPE_MODEL:
+		case Node_Type::COMPOSITE_SHAPE_MODEL: return material_library->get(Material_Library::DEFAULT_SHAPE_MATERIAL);
+		case Node_Type::ASSIMP_MODEL:
+		case Node_Type::COMPOSITE_ASSIMP_MODEL: return material_library->get(Material_Library::DEFAULT_MODEL_MATERIAL);
+		default: return nullptr; // other nodes are not drawn with materials
+	}
+}
+
+std::shared_ptr<Shader> Renderer::bind_node_material(const Node& node) const
+{
+	const auto material = get_node_material(node);
+	if (!material || !material->get_shader())
+	{ // if the node has no material (or its material has no shader), print an error message and return
+		std::cerr << "[ERROR::RENDERER::bind_node_material] No material to render the node " << node.get_name() << std::endl;
+		return nullptr;
+	}
+
+	// use the material's shader, and set the material parameters, the parameters that the node overrides,
+	// and the albedo color of the node (whose alpha is its opacity)
+	const auto& shader = material->get_shader();
+	shader->use();
+	material->apply();
+	material->apply(node.get_material_overrides());
+	shader->set_vec4("u_object_albedo", node.get_albedo());
+	return shader;
 }
 
 void Renderer::upload_lights()
@@ -730,30 +747,33 @@ void Renderer::render_opaque_nodes(const std::vector<std::shared_ptr<Node>>& nod
 	instanced_node_count      = 0;
 	instanced_draw_call_count = 0;
 
-	// per-instance data of a node drawn with instancing (read by the shape model shader as vertex attributes)
+	// per-instance data of a node drawn with instancing (read by the material's shader as vertex attributes)
 	struct Instance_Data
 	{
 		glm::mat4 model;  // world model matrix (attribute locations 3 to 6)
 		glm::vec4 albedo; // albedo color (attribute location 7)
 	};
 
-	// group of nodes sharing a geometry
+	// group of nodes sharing a geometry and a material
 	struct Instance_Group
 	{
 		Mesh_Geometry*                     geometry{ nullptr };
+		std::shared_ptr<Material>          material;
 		std::vector<std::shared_ptr<Node>> nodes;
 	};
 
-	// group the shape models that can be drawn with instancing by geometry (in order of first appearance),
-	// and render every other node (and every node, if instancing is disabled) one by one
-	std::vector<Instance_Group>                     groups;
-	std::unordered_map<Mesh_Geometry*, std::size_t> group_indices; // index of each geometry's group
+	// group the nodes that can be drawn with instancing (those whose material supports it, without overridden
+	// parameters, untextured, single-sided, and with a single mesh) by geometry and material (in order of first
+	// appearance), and render every other node (and every node, if instancing is disabled) one by one
+	std::vector<Instance_Group>                                 groups;
+	std::map<std::pair<Mesh_Geometry*, Material*>, std::size_t> group_indices; // index of each group
 	for (const auto& node : nodes)
 	{
-		const bool  is_shape_model  = node->get_type() == Node_Type::SHAPE_MODEL || node->get_type() == Node_Type::COMPOSITE_SHAPE_MODEL;
+		const auto  material        = get_node_material(*node);
 		const auto& meshes          = node->get_meshes();
-		const bool  is_instanceable = is_instancing_enabled && is_shape_model && node->get_gizmo_type() == Gizmo_Type::NONE &&
-			!node->get_is_two_sided() && meshes.size() == 1 && meshes[0] && meshes[0]->get_geometry() && !meshes[0]->has_textures();
+		const bool  is_instanceable = is_instancing_enabled && material && material->get_supports_instancing() &&
+			node->get_material_overrides().empty() && node->get_gizmo_type() == Gizmo_Type::NONE && !node->get_is_two_sided() &&
+			meshes.size() == 1 && meshes[0] && meshes[0]->get_geometry() && !meshes[0]->has_textures();
 		if (!is_instanceable)
 		{
 			render_node(node);
@@ -761,9 +781,9 @@ void Renderer::render_opaque_nodes(const std::vector<std::shared_ptr<Node>>& nod
 		}
 
 		Mesh_Geometry* geometry = meshes[0]->get_geometry().get();
-		auto [it, inserted]     = group_indices.try_emplace(geometry, groups.size());
+		auto [it, inserted]     = group_indices.try_emplace({ geometry, material.get() }, groups.size());
 		if (inserted)
-			groups.push_back(Instance_Group{ geometry, {} });
+			groups.push_back(Instance_Group{ geometry, material, {} });
 		groups[it->second].nodes.push_back(node);
 	}
 
@@ -809,8 +829,10 @@ void Renderer::render_opaque_nodes(const std::vector<std::shared_ptr<Node>>& nod
 		glVertexAttribDivisor(7, 1);
 
 		// draw all the instances with a single draw call
-		shape_model_shader->use();
-		shape_model_shader->set_bool("u_instanced", GL_TRUE);
+		const auto& shader = group.material->get_shader();
+		shader->use();
+		group.material->apply();
+		shader->set_bool("u_instanced", GL_TRUE);
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		glDrawElementsInstanced(
 			GL_TRIANGLES,
@@ -818,7 +840,7 @@ void Renderer::render_opaque_nodes(const std::vector<std::shared_ptr<Node>>& nod
 			GL_UNSIGNED_INT,
 			0,
 			static_cast<GLsizei>(instances.size()));
-		shape_model_shader->set_bool("u_instanced", GL_FALSE);
+		shader->set_bool("u_instanced", GL_FALSE);
 
 		// remove the per-instance attributes from the geometry, which is also drawn without instancing
 		for (GLuint location = 3; location <= 7; ++location) glDisableVertexAttribArray(location);
@@ -1448,26 +1470,20 @@ void Renderer::render_scene_for_env_map_capture(
 	GLfloat   refraction_index_ratio = 1.00f / 1.52f;                            // air to glass refraction index ratio
 	glm::mat3 inv_view_rot           = glm::transpose(glm::mat3(capture_views)); // inverse of rotation part of view matrix
 
-	// set parameters on shaders that are used for the env map capture
-	shape_model_shader->use();
-	shape_model_shader->set_mat4("u_view", capture_views);
-	shape_model_shader->set_mat4("u_projection", capture_proj);
-	shape_model_shader->set_float("u_material.shininess", 32.0f);
-
-	assimp_model_shader->use();
-	assimp_model_shader->set_mat4("u_view", capture_views);
-	assimp_model_shader->set_mat4("u_projection", capture_proj);
-	assimp_model_shader->set_float("u_material.shininess", 32.0f);
+	// set the capture view and projection matrices in every shader of the shader library (the main pass sets
+	// them again with the camera's matrices), and the parameters of the reflective and refractive shaders
+	for (const auto& shader : core->get_shader_library()->get_shaders())
+	{
+		shader->use();
+		shader->set_mat4("u_view", capture_views);
+		shader->set_mat4("u_projection", capture_proj);
+	}
 
 	reflective_shader->use();
-	reflective_shader->set_mat4("u_view", capture_views);
-	reflective_shader->set_mat4("u_projection", capture_proj);
 	reflective_shader->set_mat3("u_inv_view_rot", inv_view_rot);
 	reflective_shader->set_int("u_skybox", 0);
 
 	refractive_shader->use();
-	refractive_shader->set_mat4("u_view", capture_views);
-	refractive_shader->set_mat4("u_projection", capture_proj);
 	refractive_shader->set_float("u_ratio", refraction_index_ratio);
 	refractive_shader->set_mat3("u_inv_view_rot", inv_view_rot);
 	refractive_shader->set_int("u_skybox", 0);
@@ -1475,145 +1491,32 @@ void Renderer::render_scene_for_env_map_capture(
 	// the lights are read from the light buffer, uploaded once per frame by upload_lights() in world space,
 	// and transformed to view space by the shaders with the capture view matrix
 
-	// render all models in the scene except the excluded model
-	auto& models = node_manager->get_nodes(Node_Type::MODEL); // get models from the node manager
-	for (const auto& node : models)
-	{ // iterate over the models and render them
-		// dynamically cast the node to a Model Component object
-		auto model = dynamic_cast<Node*>(node.get());
-
-		// skip excluded model (the one for which we are capturing the env map) and gizmos early
-		if (exclude_model && model == exclude_model.get())
+	// render every model of the scene once (in a depth-first traversal from the root models), except the
+	// excluded model (the one whose environment map is being captured) and the gizmos
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	std::vector<std::shared_ptr<Node>> stack;
+	for (const auto& node : node_manager->get_nodes(Node_Type::MODEL))
+		if (node && !node->get_parent())
+			stack.push_back(node);
+	while (!stack.empty())
+	{
+		const auto model = stack.back();
+		stack.pop_back();
+		if (!model || model == exclude_model || model->get_gizmo_type() != Gizmo_Type::NONE)
 			continue;
-		if (model->get_gizmo_type() != Gizmo_Type::NONE)
+
+		// visit the children later
+		const auto children = model->get_children();
+		stack.insert(stack.end(), children.begin(), children.end());
+
+		// render the model's own meshes (if any) with its material
+		if (model->get_meshes().empty())
 			continue;
-
-		// render the model for enviroment map capture, using recursive rendering for composite models
-		if (model->is_composite())
-		{ // if the model is composite, render all its child models recursively in a depth-first traversal
-			std::vector<std::shared_ptr<Node>> stack{ model->get_children() };
-			while (!stack.empty())
-			{                                       // process models in the stack until empty
-				auto& current_model = stack.back(); // get the model at the top of the stack
-				stack.pop_back();                   // remove the model from the stack
-
-				// if the current model is null, excluded, or a gizmo, skip it
-				if (!current_model)
-					continue;
-				if (exclude_model && current_model == exclude_model)
-					continue;
-				if (current_model->get_gizmo_type() != Gizmo_Type::NONE)
-					continue;
-
-				if (current_model->is_composite())
-				{ // if the current model is composite, add its children to the stack for further processing
-					auto children = current_model->get_children();
-					stack.insert(stack.end(), children.begin(), children.end());
-				}
-
-				// leaf model rendering based on the model type (child models)
-				std::shared_ptr<Shader> render_shader;
-
-				switch (current_model->get_type()) // use the appropriate shader based on the model type
-				{
-					case Node_Type::COMPOSITE_MODEL: // basic composite models do not have their own meshes
-					{
-						// assign a default shader for composite models without meshes
-						render_shader = single_albedo_shader;
-						render_shader->use(); // activate the current shader program
-
-						// set a default albedo color (e.g., gray) for composite models without meshes
-						render_shader->set_vec3("u_albedo", glm::vec3(0.25f, 0.25f, 0.25f));
-					}
-					break;
-					case Node_Type::COMPOSITE_ASSIMP_MODEL: // composite Assimp models have their own meshes
-					case Node_Type::ASSIMP_MODEL:
-					{
-						render_shader = assimp_model_shader;
-						render_shader->use();
-						// set the base opacity (alpha) of the model based on the node's albedo (RGBA)
-						render_shader->set_float("u_material.base_opacity", node->get_albedo().a);
-					}
-					break;
-					case Node_Type::COMPOSITE_SHAPE_MODEL: // composite shape models have their own meshes
-					case Node_Type::SHAPE_MODEL:
-					{
-						render_shader = shape_model_shader; // use the shape model shader
-						render_shader->use();               // activate the current shader program
-						// set the color of the shape based on the model's albedo (RGBA)
-						render_shader->set_vec4("u_material.albedo", current_model->get_albedo());
-					}
-					break;
-					default:
-						// if the model type is unknown, print an error message and return
-						std::cerr << "[ERROR::RENDERER::render_scene_for_env_map_capture] "
-									 "Unknown model type for "
-								  << current_model->get_name() << std::endl;
-						return;
-
-						// set the polygon mode to fill for regular models
-						glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-				}
-
-				if (render_shader)
-				{ // if a valid shader is set, proceed with rendering
-					// set the model matrix uniform (hierarchical world transformation)
-					render_shader->set_mat4("u_model", current_model->get_world_model_matrix());
-					// render the current node
-					current_model->draw(*render_shader);
-					// children rendering is handled via the stack, so no recursive call here
-				}
-			}
-		}
-		else
-		{ // leaf model rendering based on the model type (non-composite models)
-			std::shared_ptr<Shader> render_shader;
-			switch (model->get_type()) // use the appropriate shader based on the model type
-			{
-				case Node_Type::COMPOSITE_MODEL: // basic composite models do not have their own meshes
-				{
-					// assign a default shader for composite models without meshes
-					render_shader = single_albedo_shader;
-					render_shader->use(); // activate the current shader program
-
-					// set a default albedo color (e.g., gray) for composite models without meshes
-					render_shader->set_vec3("u_albedo", glm::vec3(0.25f, 0.25f, 0.25f));
-				}
-				break;
-				case Node_Type::COMPOSITE_ASSIMP_MODEL: // composite Assimp models have their own meshes
-				case Node_Type::ASSIMP_MODEL:
-				{
-					render_shader = assimp_model_shader;
-					render_shader->use();
-					// set the base opacity (alpha) of the model based on the node's albedo (RGBA)
-					render_shader->set_float("u_material.base_opacity", node->get_albedo().a);
-				}
-				break;
-				case Node_Type::COMPOSITE_SHAPE_MODEL: // composite shape models have their own meshes
-				case Node_Type::SHAPE_MODEL:
-				{
-					render_shader = shape_model_shader; // use the shape model shader
-					render_shader->use();               // activate the current shader program
-					// set the color of the shape based on the model's albedo (RGBA)
-					render_shader->set_vec4("u_material.albedo", model->get_albedo());
-				}
-				break;
-				default:
-					// if the model type is unknown, print an error message and return
-					std::cerr << "[ERROR::RENDERER::render_scene_for_env_map_capture] "
-								 "Unknown model type for "
-							  << model->get_name() << std::endl;
-					return;
-			}
-
-			// set the polygon mode to fill for regular models
-			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-
-			// set the model matrix for the model (hierarchical world transformation)
-			render_shader->set_mat4("u_model", model->get_world_model_matrix());
-			// render the current model
-			model->draw(*render_shader);
-		}
+		const auto render_shader = bind_node_material(*model);
+		if (!render_shader)
+			continue;
+		render_shader->set_mat4("u_model", model->get_world_model_matrix());
+		model->draw(*render_shader);
 	}
 
 	// render the skybox as background if available
