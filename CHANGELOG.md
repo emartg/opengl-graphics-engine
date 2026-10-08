@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+
+- `#include` directive for shaders, resolved by the engine's shader preprocessor (with `#line` directives, so that compiler messages show the line numbers of the original files).
+
+### Changed
+
+- The lit shaders share the lights and the lighting functions through `resources/shaders/include/lighting.glsl`.
+- Render passes can have a different color format per attachment.
+
 ## [0.9.0] - 2026-10-08
 
 ### Added

@@ -174,7 +174,7 @@ See the full [Limitations and Known Issues](docs/limitations.md) document for a 
 
 ## Future Roadmap
 
-The planned releases (deferred shading and shadows, normal mapping and PBR, order-independent transparency and particles, editor improvements) and longer-term features are outlined in the [Future Work](docs/future_work.md) document. The development and release process is described in the [Development Workflow](docs/development_workflow.md) document.
+The planned releases (data-driven materials, deferred shading and shadows, normal mapping and PBR, order-independent transparency and particles, editor improvements) and longer-term features are outlined in the [Future Work](docs/future_work.md) document. The development and release process is described in the [Development Workflow](docs/development_workflow.md) document.
 
 ---
 

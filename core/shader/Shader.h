@@ -8,12 +8,13 @@
 #pragma once
 
 #include "../Node.h"
+#include "Shader_Preprocessor.h"
 
+#include <filesystem>
 #include <iostream>
 #include <string>
-#include <fstream>
-#include <sstream>
 #include <memory>
+#include <vector>
 
 #include <glad/glad.h> // holds all OpenGL type declarations
 #include <glm/glm.hpp>
@@ -92,7 +93,8 @@ private:
 
 	// Private Methods
 	// ---------------
-	// Utility method to check for shader compilation/linking errors.
-	// Returns true if there were compilation/linking errors, false otherwise
-	bool check_compilation_linking_errors(GLuint shader, std::string type) const;
+	// Utility method to check for shader compilation/linking errors, printing the files of the source
+	// (used to identify the file of each error message) if there are compilation errors.
+	// Returns true if there were no compilation/linking errors, false otherwise
+	bool check_compilation_linking_errors(GLuint shader, std::string type, const std::vector<std::filesystem::path>& files) const;
 };

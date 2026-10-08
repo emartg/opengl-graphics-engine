@@ -9,7 +9,7 @@ set(SOURCES_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS ${SOURCES_DIR}/*.cpp)
 
 set(SHADERS_DIR ${ENGINE_ROOT_DIR}/resources/shaders)
-file(GLOB SHADERS CONFIGURE_DEPENDS ${SHADERS_DIR}/*.glsl)
+file(GLOB_RECURSE SHADERS CONFIGURE_DEPENDS ${SHADERS_DIR}/*.glsl) # including the shared files of shaders/include
 
 # Output each file in the list of headers, sources, and shaders for the Core library (debugging purposes)
 foreach(FILE_TYPE IN ITEMS HEADERS SOURCES SHADERS)
