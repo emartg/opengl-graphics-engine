@@ -53,15 +53,17 @@ public:
 	// Loads the shader
 	void load() override {}
 
-	// Deallocates all the resources of the shader
-	void deallocate_resources() override { glDeleteProgram(shader_program_id); }
+	// Deallocates all the resources of the shader (its program)
+	void deallocate_resources() override;
 
 	// Does not draw anything by default, as a shader program has no visual representation
 	virtual void draw() const override {}
 	// Does not draw anything by default, as a shader program has no visual representation
 	virtual void draw(const Shader& shader) const override {}
 
-	// Compiles the shader from the source code and links it to a shader program
+	// Compiles the shader from its source files and links it to a shader program. It can be called again
+	// to reload the shader after its files change: the new program replaces the previous one only if
+	// compilation and linking succeed, so that a shader with errors keeps working with its previous program.
 	// Returns true if compilation and linking were successful, false otherwise
 	bool compile();
 
@@ -70,6 +72,7 @@ public:
 
 	// Getters
 	GLuint      get_shader_program_id() const { return shader_program_id; }
+	bool        get_last_compile_succeeded() const { return last_compile_succeeded; }
 	std::string get_vertex_shader_path() const { return vertex_shader_path; }
 	std::string get_geometry_shader_path() const { return geometry_shader_path; }
 	std::string get_fragment_shader_path() const { return fragment_shader_path; }
@@ -90,6 +93,8 @@ private:
 	std::string vertex_shader_path;   // path to the vertex shader file
 	std::string geometry_shader_path; // path to the geometry shader file (optional)
 	std::string fragment_shader_path; // path to the fragment shader file
+
+	bool last_compile_succeeded{ false }; // whether the last compilation (or reload) succeeded
 
 	// Private Methods
 	// ---------------

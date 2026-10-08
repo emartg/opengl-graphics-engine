@@ -1,0 +1,5 @@
+{
+  "name": "Picking Shader",
+  "vertex": "picking.vert.glsl",
+  "fragment": "picking.frag.glsl"
+}

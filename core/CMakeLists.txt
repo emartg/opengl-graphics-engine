@@ -40,6 +40,8 @@ target_link_libraries(Core PUBLIC
 	engine_glad
 	engine_stb_image
 )
+# JSON parsing (e.g., the shader descriptors) is an implementation detail: the Core's headers do not include it
+target_link_libraries(Core PRIVATE nlohmann_json::nlohmann_json)
 target_compile_features(Core PUBLIC cxx_std_20)
 
 # Locations searched for the resources directory at runtime (see Core::resolve_resources_dir):

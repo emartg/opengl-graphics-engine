@@ -1,0 +1,5 @@
+{
+  "name": "Single Albedo Shader",
+  "vertex": "single_albedo.vert.glsl",
+  "fragment": "single_albedo.frag.glsl"
+}

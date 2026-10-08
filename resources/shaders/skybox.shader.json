@@ -1,0 +1,5 @@
+{
+  "name": "Skybox Shader",
+  "vertex": "skybox.vert.glsl",
+  "fragment": "skybox.frag.glsl"
+}

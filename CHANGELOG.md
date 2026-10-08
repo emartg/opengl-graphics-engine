@@ -8,12 +8,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
+- Shader programs as assets: each one is described by a `<name>.shader.json` file (its name and the files of its stages), loaded by the new `Shader_Library` from `resources/shaders` (applications can load their own directories).
+- Shader reloading at runtime from the Debug window (all shaders or one by one): a shader that fails to compile keeps its previous program.
+- nlohmann/json dependency (vcpkg `nlohmann-json`, Ubuntu `nlohmann-json3-dev`).
 - `#include` directive for shaders, resolved by the engine's shader preprocessor (with `#line` directives, so that compiler messages show the line numbers of the original files).
 
 ### Changed
 
 - The lit shaders share the lights and the lighting functions through `resources/shaders/include/lighting.glsl`.
 - Render passes can have a different color format per attachment.
+- The renderer takes the shaders of its passes from the shader library by name, and shaders are no longer scene nodes of the node manager.
+
+### Removed
+
+- The hard-coded list of built-in shaders, `Renderer::set_shader_by_name()`, and `Core::compile_shaders()` (replaced by the shader library).
 
 ## [0.9.0] - 2026-10-08
 

@@ -1,0 +1,5 @@
+{
+  "name": "Equirectangular to Cubemap Shader",
+  "vertex": "equirectangular_to_cubemap.vert.glsl",
+  "fragment": "equirectangular_to_cubemap.frag.glsl"
+}

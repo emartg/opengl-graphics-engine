@@ -34,6 +34,8 @@
 #include "core/managers/Scene_Manager.h"
 #include "core/managers/Input_Manager.h"
 #include "core/renderer/Renderer.h"
+#include "core/shader/Shader.h"
+#include "core/shader/Shader_Library.h"
 #include "core/utils/random/Random.h"
 #include "core/utils/string/String_Utils.h"
 
@@ -983,6 +985,33 @@ void GUI::draw_debug_window()
 		if (params_changed)
 		{ // if any of the renderer debug params were changed, apply the changes to the renderer
 			renderer->set_screen_debug_params(params);
+		}
+
+		ImGui::Dummy(ImVec2(0.0f, 10.0f)); // add spacing before next section
+
+		// shaders section title
+		ImGui::PushFont(bold_font);
+		ImGui::Text("SHADERS");
+		ImGui::PopFont();
+
+		// reload the shaders from their files (e.g., after editing them while the application runs): a shader
+		// that fails to compile keeps its previous program, and its errors are printed in the console
+		auto& shader_library = Core::get_instance()->get_shader_library();
+		if (ImGui::Button("Reload All Shaders", ImVec2{ ImGui::GetContentRegionAvail().x, BUTTON_HEIGHT }))
+			shader_library->reload_all();
+
+		// list the shaders of the library, with a button to reload each of them and the result of its last compilation
+		for (const auto& shader : shader_library->get_shaders())
+		{
+			ImGui::PushID(shader->get_name().c_str()); // the buttons have the same label, so they need unique ids
+			if (ImGui::SmallButton("Reload"))
+				shader_library->reload(shader->get_name());
+			ImGui::SameLine();
+			if (shader->get_last_compile_succeeded())
+				ImGui::TextUnformatted(shader->get_name().c_str());
+			else
+				ImGui::TextColored(ImVec4{ 1.0f, 0.4f, 0.4f, 1.0f }, "%s (errors, see the console)", shader->get_name().c_str());
+			ImGui::PopID();
 		}
 
 		ImGui::End(); // end the Debug window

@@ -1,0 +1,5 @@
+{
+  "name": "Reflective Shader",
+  "vertex": "reflective.vert.glsl",
+  "fragment": "reflective.frag.glsl"
+}
