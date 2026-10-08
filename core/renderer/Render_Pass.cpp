@@ -40,19 +40,12 @@ void Render_Pass::create(const Render_Pass_Specification& spec)
 		glGenTextures(specification.color_attachment_count, color_attachment_ids.data());
 
 		// bind each texture, set its parameters and attach it to the framebuffer
-		for (int i = 0; i < specification.color_attachment_count; ++i)
+		for (GLuint i = 0; i < specification.color_attachment_count; ++i)
 		{
 			glBindTexture(GL_TEXTURE_2D, color_attachment_ids[i]);
-			glTexImage2D(
-				GL_TEXTURE_2D,
-				0,
-				GL_RGBA8, // prefer sized internal format for color attachments
-				specification.width,
-				specification.height,
-				0,
-				GL_RGBA,
-				GL_UNSIGNED_BYTE,
-				NULL);
+			// allocate immutable storage with the sized internal format of the attachment, with a single level
+			// since render targets have no mipmaps (the storage cannot be resized: resizing recreates the pass)
+			glTexStorage2D(GL_TEXTURE_2D, 1, get_color_format(i), specification.width, specification.height);
 
 			// set texture parameters for filtering and wrapping
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -138,7 +131,7 @@ void Render_Pass::create(const Render_Pass_Specification& spec)
 	if (specification.color_attachment_count > 1)
 	{ // if there are more than one color attachments
 		std::vector<GLenum> attachments;
-		for (int i{}; i < specification.color_attachment_count; ++i) attachments.push_back(GL_COLOR_ATTACHMENT0 + i);
+		for (GLuint i{}; i < specification.color_attachment_count; ++i) attachments.push_back(GL_COLOR_ATTACHMENT0 + i);
 
 		// set all attachments as draw buffers for multiple render targets (MRT)
 		glDrawBuffers(specification.color_attachment_count, attachments.data());
@@ -237,6 +230,7 @@ std::string Render_Pass::get_specification_str() const
 	// return a string representation of the render pass specification
 	return "{\n\tWidth: " + std::to_string(specification.width) + "\n" + "\tHeight: " + std::to_string(specification.height) + "\n" +
 		"\tColor Attachment Count: " + std::to_string(specification.color_attachment_count) + "\n" +
+		"\tColor Formats: " + get_color_formats_str() + "\n" +
 		"\tHas Depth Attachment: " + (specification.has_depth_attachment ? "Yes" : "No") + "\n" +
 		"\tHas Stencil Attachment: " + (specification.has_stencil_attachment ? "Yes" : "No") + "\n" +
 		"\tDepth As Texture: " + (specification.depth_as_texture ? "Yes" : "No") + "\n}";
@@ -248,4 +242,34 @@ GLuint Render_Pass::get_texture_id(GLuint index) const
 	if (index < color_attachment_ids.size())
 		return color_attachment_ids[index];
 	return 0;
+}
+
+GLenum Render_Pass::get_color_format(GLuint index) const
+{
+	// return the format of the specified index if the specification sets it, and GL_RGBA8 otherwise
+	if (index < specification.color_formats.size())
+		return specification.color_formats[index];
+	return GL_RGBA8;
+}
+
+// Private Methods
+// ---------------
+std::string Render_Pass::get_color_formats_str() const
+{
+	// return the name of the format of each color attachment, separated by commas
+	std::string formats_str;
+	for (GLuint i = 0; i < specification.color_attachment_count; ++i)
+	{
+		if (i > 0)
+			formats_str += ", ";
+
+		switch (get_color_format(i))
+		{
+			case GL_RGBA8: formats_str += "RGBA8"; break;
+			case GL_RGBA16F: formats_str += "RGBA16F"; break;
+			case GL_RGBA32F: formats_str += "RGBA32F"; break;
+			default: formats_str += std::to_string(get_color_format(i)); break; // other formats by their value
+		}
+	}
+	return formats_str.empty() ? "None" : formats_str;
 }

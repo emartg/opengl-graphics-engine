@@ -203,7 +203,7 @@ VS Code can open the WSL folder directly with the **WSL** extension (`code .` fr
 
 ## Using the Engine from Another CMake Project
 
-The Engine can be consumed by another CMake project (e.g., a simulator that includes this repository as a Git submodule)
+The Engine can be consumed by another CMake project (e.g., an application that includes this repository as a Git submodule)
 through `add_subdirectory()`. In that case, only the `Core` library is built by default (`ENGINE_BUILD_APP` defaults
 to `OFF` when the Engine is not the top-level project), and the consumer keeps
 its own C++ standard, build type, and output directories.
@@ -347,7 +347,7 @@ Every push to `main` and every pull request runs the GitHub Actions workflow in 
 
 - **Format:** checks the formatting of every C++ source file with clang-format 23.1.1, the version used to format the repository (`clang-format --style=file --dry-run --Werror`).
 - **Linux:** configures and builds the `ninja-gcc-debug` and `ninja-clang-release` presets with the system packages, and runs the unit tests and the smoke test in a virtual X server (Xvfb) with Mesa's `llvmpipe` software renderer (OpenGL 4.5).
-- **Consumer test (Linux):** builds and runs `tests/consumer`, a standalone project that consumes the Engine with `add_subdirectory()` and links `Engine::Platform` (as the X-ray simulator does), and checks that the sample App is not built for consumers.
+- **Consumer test (Linux):** builds and runs `tests/consumer`, a standalone project that consumes the Engine with `add_subdirectory()` and links `Engine::Platform`, and checks that the sample App is not built for consumers.
 - **Windows:** configures and builds the `ninja-msvc-debug` (MSVC) and `mingw-gcc-vcpkg-release` (MinGW's GCC) presets with the dependencies of `vcpkg.json`, runs the unit tests, and builds the consumer test. vcpkg is checked out at the manifest's `builtin-baseline`, and the built packages are kept in the GitHub Actions cache, so they are only rebuilt when the manifest or the compiler version changes. The smoke tests do not run on Windows, since the GitHub-hosted Windows runners provide no OpenGL 4.5 driver.
 
 The consumer test can also be run locally. It is a separate CMake project, so the compiler and, on Windows, the vcpkg toolchain and the Engine's manifest must be selected explicitly, as the presets do for the Engine. Each compiler needs its own build directory: delete a directory (or configure it with `cmake --fresh`) before reusing it with another compiler.

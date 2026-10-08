@@ -26,7 +26,7 @@ The project is split into three top-level modules:
    - The ImGui editor interface (`GUI`, a `Gui_Layer`).
    - Dependencies: `platform`.
 
-This strict separation means the `core` can be linked into other applications (e.g., a simulation or scientific visualiser) without pulling in GLFW or ImGui, and that applications which need a window (such as the X-ray simulator) reuse the `platform` library instead of duplicating it.
+This strict separation means the `core` can be linked into other applications (e.g., a simulation or scientific visualiser) without pulling in GLFW or ImGui, and that applications which need a window reuse the `platform` library instead of duplicating it.
 The following diagram (Fig. 1) shows the dependencies between the different modules and libraries in the project:
 
 <div style="display:flex; justify-content:center; align-items:center; flex-wrap:wrap; gap:20px;">

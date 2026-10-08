@@ -22,6 +22,10 @@ struct Render_Pass_Specification
 	GLboolean has_stencil_attachment{ true };
 	// if true and has_depth_attachment is true, allocate a depth (or depth-stencil) texture instead of an RBO
 	GLboolean depth_as_texture{ false };
+
+	// sized internal format of each color attachment (e.g., GL_RGBA16F for the floating-point data of a G-buffer);
+	// the attachments without a format in this vector (all of them, if it is empty) use GL_RGBA8
+	std::vector<GLenum> color_formats{};
 };
 
 class Render_Pass
@@ -59,6 +63,8 @@ public:
 	GLuint get_rbo_id() const { return rbo_id; }
 	// Get the texture id for the specified color attachment index
 	GLuint get_texture_id(GLuint index = 0) const;
+	// Get the sized internal format of the specified color attachment index (GL_RGBA8 by default)
+	GLenum get_color_format(GLuint index = 0) const;
 	// Get the texture id of the depth attachment if it was allocated as a texture (0 if not)
 	GLuint get_depth_texture_id() const { return depth_texture_id; }
 
@@ -72,4 +78,9 @@ private:
 	GLuint depth_texture_id; // depth (or depth-stencil) attachment texture id if depth_as_texture is true
 
 	std::vector<GLuint> color_attachment_ids; // texture identificators for color attachments
+
+	// Private Methods
+	// ---------------
+	// Get the names of the formats of the color attachments as a string (e.g., "RGBA16F, RGBA8")
+	std::string get_color_formats_str() const;
 };

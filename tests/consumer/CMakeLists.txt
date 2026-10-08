@@ -1,5 +1,5 @@
 ## CMakeLists.txt for the consumer test, a standalone project that uses the Engine as an external
-## dependency through add_subdirectory(), as the X-ray simulator does with the Engine as a Git submodule.
+## dependency through add_subdirectory(), as a consumer project should do with the Engine as a Git submodule.
 ## It verifies that the Engine can be consumed, that the sample App is not built for consumers,
 ## and that an application can create a window and its own GUI with the Platform library
 
