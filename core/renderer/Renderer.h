@@ -144,9 +144,6 @@ public:
 	virtual void render_scene();
 	virtual void frame_end_config() const;
 
-	// Registration/Unregistration for dynamic environment map capture for models by their unique ids
-	virtual void register_model_for_dynamic_env_map_capture(std::uint32_t model_id, GLuint resolution = 512);
-	virtual void unregister_model_for_dynamic_env_map_capture(std::uint32_t model_id);
 
 protected:
 	// Protected Attributes
@@ -160,8 +157,6 @@ protected:
 	std::shared_ptr<Shader> picking_shader;
 	std::shared_ptr<Shader> skybox_shader;
 	std::shared_ptr<Shader> equirect_to_cubemap_shader;
-	std::shared_ptr<Shader> reflective_shader;
-	std::shared_ptr<Shader> refractive_shader;
 
 	// buffers for the screen quad (for rendering the offscreen texture to the screen)
 	GLuint screen_quad_vao{}, screen_quad_vbo{}, screen_quad_ebo{};
@@ -206,9 +201,12 @@ protected:
 		bool   initialized{ false };
 		bool   has_prev_cubemap{ false }; // indicates if prev_cubemap_tex_id is valid (rendered at least once)
 	};
-	// map of dynamic env maps by entity id
+	// map of dynamic env maps by node id, kept in sync with the nodes drawn with a dynamic environment material
 	std::unordered_map<std::uint32_t, Dynamic_Env_Map_Entry> dynamic_env_maps;
-	bool is_capturing_dynamic_env_map{ false }; // flag to prevent recursion during dynamic env map capture
+	// texture unit of the environment maps, after the units of the materials' texture slots (which are limited to
+	// Shader_Library::MAX_TEXTURE_SLOTS, so that the environment map never shares a unit with a slot)
+	static constexpr GLuint ENVIRONMENT_MAP_UNIT{ 15 };
+	bool                    is_capturing_dynamic_env_map{ false }; // flag to prevent recursion during dynamic env map capture
 
 	// Protected Methods
 	// -----------------
@@ -225,6 +223,9 @@ protected:
 	std::shared_ptr<Shader> bind_material(const Material& material, const Node& node) const;
 	// Draws the meshes of a node (if any), each one with its material
 	void draw_model_meshes(const Node& node) const;
+	// Binds the environment map of a material for a node (the skybox, or the node's dynamic cubemap) to the
+	// ENVIRONMENT_MAP_UNIT texture unit, as the cubemap u_environment_map of the shader (which must be in use)
+	void bind_environment_map(const Material& material, const Node& node, const Shader& shader) const;
 
 	// Renders the opaque nodes: the nodes that share a geometry and a material that supports instancing (with a
 	// single mesh, single-sided, and without overridden parameters) are drawn with one instanced draw call per
@@ -250,7 +251,11 @@ protected:
 	void convert_hdr_to_cubemap_if_needed();
 
 	// Dynamic environment map helpers
+	// Updates the dynamic env maps: creates or releases the cubemaps of the nodes as their materials require them,
+	// and captures the cubemap of each node from its position
 	void update_dynamic_env_maps();
+	// Releases the OpenGL objects of a dynamic env map entry
+	void release_dynamic_env_map(Dynamic_Env_Map_Entry& entry);
 	void capture_dynamic_env_map_for_model(const std::shared_ptr<Node>& model, Dynamic_Env_Map_Entry& entry);
 	void render_scene_for_env_map_capture(
 		const glm::mat4&             capture_view,

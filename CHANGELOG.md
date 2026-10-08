@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - Materials as assets: each one is described by a `<name>.material.json` file (its name, the name of its shader, its parameters, its textures, and whether its shader supports instancing), loaded by the new `Material_Library` from `resources/materials`. Meshes without a material of their own use the "Default" material.
 - Texture slots in shader descriptors (e.g., the albedo, metallic, and opacity maps of the lit shader), filled by the textures of each material.
+- Reflective and refractive materials ("Chrome", "Mirror", "Glass", and "Dynamic Glass"), whose shaders sample an environment map: the skybox, or a cubemap captured every frame from the position of each object, as set by the material's `environment` field. The dynamic cubemaps are created and released automatically for the objects that use such materials.
 - Imported models create a material for each of their materials with textures (added to the material library, so that it can also be assigned to other objects).
 - Material assignment at runtime from the Properties window, and material parameters that each object can override for itself.
 - Shader programs as assets: each one is described by a `<name>.shader.json` file (its name and the files of its stages), loaded by the new `Shader_Library` from `resources/shaders` (applications can load their own directories).
@@ -32,11 +33,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - The opacity maps of imported models were sampled from the texture unit of the albedo map.
 - The capture of dynamic environment maps skipped the own meshes of composite models and could draw their children twice.
+- The dynamic environment maps were captured every frame but never displayed (the reflective and refractive shaders were not used in the main pass), and they were captured from the local position of the objects instead of their world position.
 - Textures were never released from the GPU: they are now released when their last owner (e.g., a material or the skybox) releases them.
 
 ### Removed
 
 - The hard-coded list of built-in shaders, `Renderer::set_shader_by_name()`, and `Core::compile_shaders()` (replaced by the shader library).
+- `Renderer::register_model_for_dynamic_env_map_capture()` and `Renderer::unregister_model_for_dynamic_env_map_capture()` (replaced by the dynamic environment materials).
 - The shape and Assimp model shaders (replaced by the lit shader), the textures of meshes and `Mesh::bind_textures()`, and `Shape_Model::add_texture_data()` (replaced by the textures of materials).
 
 ## [0.9.0] - 2026-10-08

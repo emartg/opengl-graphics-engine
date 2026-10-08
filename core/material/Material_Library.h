@@ -6,9 +6,9 @@
  * changed without modifying the engine's code. The library loads every descriptor of a directory, holds the
  * materials created by the engine (e.g., those of imported models), and finds the materials by name.
  *
- * Example of a descriptor ("instancing", "parameters", and "textures" are optional; a parameter value is a number,
- * a boolean, or an array of 2 to 4 numbers, set as the uniform u_material.<parameter name> of the shader, and a
- * texture is the path of an image file, relative to the descriptor, for a texture slot of the shader):
+ * Example of a descriptor ("instancing", "parameters", "textures", and "environment" are optional; a parameter value
+ * is a number, a boolean, or an array of 2 to 4 numbers, set as the uniform u_material.<parameter name> of the shader,
+ * and a texture is the path of an image file, relative to the descriptor, for a texture slot of the shader):
  * {
  *     "name": "Default",
  *     "shader": "Lit Shader",
@@ -16,6 +16,9 @@
  *     "parameters": { "shininess": 32.0 },
  *     "textures": { "albedo_map": "../textures/wood.png" }
  * }
+ * The environment map sampled by the shader (as the cubemap u_environment_map) is "skybox" or "dynamic" (captured
+ * every frame from each object), with an optional "environment_resolution" for the faces of dynamic cubemaps, e.g.:
+ * { "name": "Mirror", "shader": "Reflective Shader", "environment": "dynamic", "environment_resolution": 512 }
  */
 
 #pragma once
@@ -39,6 +42,8 @@ struct Material_Descriptor
 	Material_Parameters                          parameters;
 	std::map<std::string, std::filesystem::path> texture_paths; // image file of each texture slot
 	bool                                         supports_instancing{ false };
+	Environment_Mode                             environment_mode{ Environment_Mode::NONE };
+	unsigned int                                 environment_resolution{ Material::DEFAULT_ENVIRONMENT_RESOLUTION };
 };
 
 class Material_Library

@@ -93,17 +93,7 @@ void Renderer::release_resources()
 	skybox_ebo = skybox_vbo = skybox_vao = 0;
 
 	// clean up dynamic environment map FBOs, RBOs, and cubemap textures
-	for (auto [id, entry] : dynamic_env_maps)
-	{
-		if (entry.fbo)
-			glDeleteFramebuffers(1, &entry.fbo);
-		if (entry.rbo)
-			glDeleteRenderbuffers(1, &entry.rbo);
-		if (entry.cubemap_tex_id)
-			glDeleteTextures(1, &entry.cubemap_tex_id);
-		if (entry.prev_cubemap_tex_id)
-			glDeleteTextures(1, &entry.prev_cubemap_tex_id);
-	}
+	for (auto& [id, entry] : dynamic_env_maps) release_dynamic_env_map(entry);
 	dynamic_env_maps.clear();
 
 	// delete the instance buffer if created, and reset its id
@@ -188,8 +178,6 @@ bool Renderer::set_shaders(const Shader_Library& shader_library)
 		{ "Picking Shader", &picking_shader },
 		{ "Skybox Shader", &skybox_shader },
 		{ "Equirectangular to Cubemap Shader", &equirect_to_cubemap_shader },
-		{ "Reflective Shader", &reflective_shader },
-		{ "Refractive Shader", &refractive_shader },
 	};
 
 	bool has_all_shaders = true;
@@ -261,8 +249,7 @@ void Renderer::render_scene()
 	auto& camera        = scene_manager->get_camera();
 
 	// ensure camera and shaders are valid before proceeding
-	if (!camera || !single_albedo_shader || !screen_quad_shader || !picking_shader || !skybox_shader || !equirect_to_cubemap_shader ||
-		!reflective_shader || !refractive_shader)
+	if (!camera || !single_albedo_shader || !screen_quad_shader || !picking_shader || !skybox_shader || !equirect_to_cubemap_shader)
 	{ // if any of them are null, print an error message and return
 		std::cerr << "[ERROR::RENDERER::render_scene] Camera or shaders aren't set up correctly" << std::endl;
 		return;
@@ -280,22 +267,15 @@ void Renderer::render_scene()
 	// (i.e., the inverse matrix of the rotation part of the view matrix)
 	glm::mat3 inv_view_rot = glm::transpose(glm::mat3(view));
 
-	// set the view and projection matrices for each shader program of the shader library
+	// set the view and projection matrices, and the inverse view rotation (used by the shaders that sample
+	// environment maps), for each shader program of the shader library
 	for (const auto& shader : core->get_shader_library()->get_shaders())
 	{
 		shader->use();
 		shader->set_mat4("u_view", view);
 		shader->set_mat4("u_projection", projection);
+		shader->set_mat3("u_inv_view_rot", inv_view_rot);
 	}
-
-	// set constant uniforms for the reflective and refractive shaders
-	reflective_shader->use();
-	reflective_shader->set_mat3("u_inv_view_rot", inv_view_rot); // set inverse view rotation matrix
-	reflective_shader->set_int("u_skybox", 0);                   // set skybox texture unit to 0
-	refractive_shader->use();
-	refractive_shader->set_mat3("u_inv_view_rot", inv_view_rot); // set inverse view rotation matrix
-	refractive_shader->set_float("u_ratio", 1.00f / 1.52f);      // air to glass refraction index ratio
-	refractive_shader->set_int("u_skybox", 0);                   // set skybox texture unit to 0
 
 	// lights of the scene (their data is uploaded to the light buffer by upload_lights(), in frame_start_config())
 	auto& lights = node_manager->get_nodes(Node_Type::LIGHT);
@@ -483,39 +463,6 @@ void Renderer::frame_end_config() const
 	swap_buffers();
 }
 
-void Renderer::register_model_for_dynamic_env_map_capture(std::uint32_t model_id, GLuint resolution)
-{
-	auto& entry            = dynamic_env_maps[model_id]; // get or create the dynamic env map entry
-	entry.resolution       = resolution;                 // set the resolution for the dynamic env map
-	entry.has_prev_cubemap = false;                      // initially, there is no valid previous cubemap
-
-	std::cout << "[INFO::RENDERER::register_model_for_dynamic_env_map_capture] "
-				 "Registered dynamic environment map for model id "
-			  << model_id << " with resolution " << resolution << std::endl;
-}
-
-void Renderer::unregister_model_for_dynamic_env_map_capture(std::uint32_t model_id)
-{
-	auto it = dynamic_env_maps.find(model_id); // find the dynamic env map entry by model id
-	if (it == dynamic_env_maps.end())
-		return; // if not found, return
-
-	auto& entry            = it->second; // get the dynamic env map entry
-	entry.has_prev_cubemap = false;      // explicitly mark previous cubemap as invalid before deletion
-	// delete the FBO, RBO, and cubemap texture associated with the dynamic env map entry if they exist
-	if (entry.fbo)
-		glDeleteFramebuffers(1, &entry.fbo);
-	if (entry.rbo)
-		glDeleteRenderbuffers(1, &entry.rbo);
-	if (entry.cubemap_tex_id)
-		glDeleteTextures(1, &entry.cubemap_tex_id);
-	dynamic_env_maps.erase(it); // remove the entry from the map
-
-	std::cout << "[INFO::RENDERER::unregister_model_for_dynamic_env_map_capture] "
-				 "Unregistered dynamic environment map for model id "
-			  << model_id << std::endl;
-}
-
 // Protected Methods
 // -----------------
 void Renderer::render_node(const std::shared_ptr<Node>& node)
@@ -596,7 +543,42 @@ std::shared_ptr<Shader> Renderer::bind_material(const Material& material, const 
 	material.apply(node.get_material_overrides());
 	shader->set_vec4("u_object_albedo", node.get_albedo());
 	shader->set_mat4("u_model", node.get_world_model_matrix());
+	if (material.get_environment_mode() != Environment_Mode::NONE)
+		bind_environment_map(material, node, *shader);
 	return shader;
+}
+
+void Renderer::bind_environment_map(const Material& material, const Node& node, const Shader& shader) const
+{
+	// the environment maps use a texture unit after the units of the texture slots of the shaders (which are limited)
+	static_assert(ENVIRONMENT_MAP_UNIT >= Shader_Library::MAX_TEXTURE_SLOTS, "The environment map unit must follow the texture slots");
+
+	// the skybox cubemap (if any), used by the skybox materials, and by the dynamic ones until their cubemap exists
+	GLuint      cubemap_id     = 0;
+	const auto& skybox_texture = Core::get_instance()->get_scene_manager()->get_skybox();
+	if (skybox_texture && skybox_texture->get_texture_type() == Texture_Type::CUBEMAP)
+		cubemap_id = skybox_texture->get_texture_id();
+
+	// the dynamic cubemap of the node: while the cubemaps are being captured, the one of the previous frame (complete),
+	// and afterwards, the one captured in this frame
+	if (material.get_environment_mode() == Environment_Mode::DYNAMIC)
+	{
+		const auto it = dynamic_env_maps.find(node.get_id());
+		if (it != dynamic_env_maps.end() && it->second.initialized)
+		{
+			const auto& entry = it->second;
+			if (!is_capturing_dynamic_env_map)
+				cubemap_id = entry.cubemap_tex_id;
+			else if (entry.has_prev_cubemap)
+				cubemap_id = entry.prev_cubemap_tex_id;
+		}
+	}
+
+	// bind the cubemap to its texture unit, after the units of the material's texture slots
+	glActiveTexture(GL_TEXTURE0 + ENVIRONMENT_MAP_UNIT);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, cubemap_id);
+	shader.set_int("u_environment_map", ENVIRONMENT_MAP_UNIT);
+	glActiveTexture(GL_TEXTURE0);
 }
 
 void Renderer::draw_model_meshes(const Node& node) const
@@ -1264,20 +1246,76 @@ void Renderer::convert_hdr_to_cubemap_if_needed()
 	hdr_source_tex_id = env_cubemap; // the active skybox is now the cubemap
 }
 
+void Renderer::release_dynamic_env_map(Dynamic_Env_Map_Entry& entry)
+{
+	// delete the FBO, RBO, and cubemap textures of the entry (if created), and reset their ids
+	if (entry.fbo)
+		glDeleteFramebuffers(1, &entry.fbo);
+	if (entry.rbo)
+		glDeleteRenderbuffers(1, &entry.rbo);
+	if (entry.cubemap_tex_id)
+		glDeleteTextures(1, &entry.cubemap_tex_id);
+	if (entry.prev_cubemap_tex_id)
+		glDeleteTextures(1, &entry.prev_cubemap_tex_id);
+	entry = Dynamic_Env_Map_Entry{};
+}
+
 void Renderer::update_dynamic_env_maps()
 {
 	//// start measuring time for performance profiling
 	// auto start_time{ std::chrono::high_resolution_clock::now() };
 
-	// if already capturing or no dynamic env maps, return
-	if (is_capturing_dynamic_env_map || dynamic_env_maps.empty())
+	// if already capturing, return
+	if (is_capturing_dynamic_env_map)
 		return;
 
 	auto  core         = Core::get_instance();                      // get the core instance
 	auto& node_manager = core->get_node_manager();                  // get the node manager
 	auto& models       = node_manager->get_nodes(Node_Type::MODEL); // get the models from the node manager
-	if (models.empty())
-		return; // if no models, return
+
+	// find the models drawn with a material that needs a dynamic environment map (in any of their meshes),
+	// with the highest resolution requested by their materials
+	std::unordered_map<std::uint32_t, GLuint> required_resolutions;
+	for (const auto& model : models)
+	{
+		if (!model || model->get_gizmo_type() != Gizmo_Type::NONE)
+			continue;
+		// skip the models that are not drawn: invisible ones, or those with an invisible ancestor (the main pass
+		// does not traverse the children of invisible nodes)
+		bool is_effectively_visible = model->get_is_visible();
+		for (auto parent = model->get_parent(); is_effectively_visible && parent; parent = parent->get_parent())
+			is_effectively_visible = parent->get_is_visible();
+		if (!is_effectively_visible)
+			continue;
+		for (const auto& mesh : model->get_meshes())
+		{
+			const auto material = mesh ? get_mesh_material(*model, *mesh) : nullptr;
+			if (material && material->get_environment_mode() == Environment_Mode::DYNAMIC)
+			{
+				auto& resolution = required_resolutions[model->get_id()];
+				resolution       = std::max<GLuint>(resolution, material->get_environment_resolution());
+			}
+		}
+	}
+
+	// release the cubemaps that are no longer needed (or whose resolution changed), and add the new ones
+	for (auto it = dynamic_env_maps.begin(); it != dynamic_env_maps.end();)
+	{
+		const auto required = required_resolutions.find(it->first);
+		if (required == required_resolutions.end() || required->second != it->second.resolution)
+		{
+			release_dynamic_env_map(it->second);
+			it = dynamic_env_maps.erase(it);
+		}
+		else
+			++it;
+	}
+	for (const auto& [id, resolution] : required_resolutions)
+		if (!dynamic_env_maps.contains(id))
+			dynamic_env_maps[id].resolution = resolution;
+
+	if (dynamic_env_maps.empty())
+		return; // if no model needs a dynamic environment map, return
 
 	// ensure a skybox cubemap exists for the dynamic env map captures
 	auto& skybox_texture = core->get_scene_manager()->get_skybox();
@@ -1289,6 +1327,8 @@ void Renderer::update_dynamic_env_maps()
 	// this frame's "read" buffer -prev_cubemap_tex_id-)
 	for (auto& [id, entry] : dynamic_env_maps)
 	{
+		if (!entry.initialized)
+			continue; // a new cubemap has no previous capture yet
 		std::swap(entry.cubemap_tex_id, entry.prev_cubemap_tex_id);
 		entry.has_prev_cubemap = true; // mark that a valid "previous" cubemap now exists for reading
 	}
@@ -1296,7 +1336,7 @@ void Renderer::update_dynamic_env_maps()
 	// set capturing flag to prevent re-entrance
 	is_capturing_dynamic_env_map = true;
 
-	// iterate over the models and capture dynamic env maps for those registered
+	// iterate over the models and capture the dynamic env maps of those that need one
 	for (const auto& node : models)
 	{
 		// dynamically cast the node to a Model object
@@ -1305,7 +1345,7 @@ void Renderer::update_dynamic_env_maps()
 		if (!model || model->get_gizmo_type() != Gizmo_Type::NONE)
 			continue;
 
-		// check if the model has a registered dynamic env map
+		// check if the model needs a dynamic env map
 		auto it = dynamic_env_maps.find(model->get_id());
 		if (it == dynamic_env_maps.end())
 			continue; // if not found, skip to next model
@@ -1394,6 +1434,9 @@ void Renderer::capture_dynamic_env_map_for_model(const std::shared_ptr<Node>& mo
 	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, entry.resolution, entry.resolution); // configure RBO storage
 	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, entry.rbo);       // attach RBO to FBO depth attachment
 	glDrawBuffer(GL_COLOR_ATTACHMENT0); // select color attachment 0 for rendering
+	// attach the first face of the cubemap before checking the completeness of the FBO (the loop below attaches
+	// each face in turn), so that the FBO is checked with the color attachment it renders to
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X, entry.cubemap_tex_id, 0);
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{ // validate FBO completeness, if incomplete, print error, restore FBO, and return
 		std::cerr << "[ERROR::RENDERER::capture_dynamic_env_map_for_model] "
@@ -1405,7 +1448,7 @@ void Renderer::capture_dynamic_env_map_for_model(const std::shared_ptr<Node>& mo
 
 	// set up capture projection and views for the 6 cubemap faces
 	glm::mat4       capture_proj    = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
-	const glm::vec3 pos             = model->get_position(); // get the model's position for the capture
+	const glm::vec3 pos             = model->get_world_position(); // capture from the model's position in world space
 	glm::mat4       capture_views[] = {
 		// 6 view matrices for the 6 faces of the cubemap (right, left, top, bottom, front, back)
 		glm::lookAt(pos, pos + glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f)),  // +X
@@ -1447,27 +1490,18 @@ void Renderer::render_scene_for_env_map_capture(
 	auto& node_manager  = core->get_node_manager();  // get the node manager
 	auto& scene_manager = core->get_scene_manager(); // get the scene manager
 
-	// pre-compute uniforms common to all shaders used for env map capture
-	GLfloat   refraction_index_ratio = 1.00f / 1.52f;                            // air to glass refraction index ratio
-	glm::mat3 inv_view_rot           = glm::transpose(glm::mat3(capture_views)); // inverse of rotation part of view matrix
+	// inverse of the rotation part of the capture view matrix (used by the shaders that sample environment maps)
+	glm::mat3 inv_view_rot = glm::transpose(glm::mat3(capture_views));
 
-	// set the capture view and projection matrices in every shader of the shader library (the main pass sets
-	// them again with the camera's matrices), and the parameters of the reflective and refractive shaders
+	// set the capture view and projection matrices, and the inverse view rotation, in every shader of the shader
+	// library (the main pass sets them again with the camera's matrices)
 	for (const auto& shader : core->get_shader_library()->get_shaders())
 	{
 		shader->use();
 		shader->set_mat4("u_view", capture_views);
 		shader->set_mat4("u_projection", capture_proj);
+		shader->set_mat3("u_inv_view_rot", inv_view_rot);
 	}
-
-	reflective_shader->use();
-	reflective_shader->set_mat3("u_inv_view_rot", inv_view_rot);
-	reflective_shader->set_int("u_skybox", 0);
-
-	refractive_shader->use();
-	refractive_shader->set_float("u_ratio", refraction_index_ratio);
-	refractive_shader->set_mat3("u_inv_view_rot", inv_view_rot);
-	refractive_shader->set_int("u_skybox", 0);
 
 	// the lights are read from the light buffer, uploaded once per frame by upload_lights() in world space,
 	// and transformed to view space by the shaders with the capture view matrix
