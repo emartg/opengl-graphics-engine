@@ -529,39 +529,19 @@ void Renderer::render_node(const std::shared_ptr<Node>& node)
 	if (!node->get_is_visible())
 		return; // if the node is not visible, skip rendering
 
-	// auxiliary shared pointer to the shader program used for rendering the node and its children (if any)
-	std::shared_ptr<Shader> render_shader;
+	// handle two-sided nodes by disabling face culling temporarily if needed
+	const GLboolean cull_was_enabled     = glIsEnabled(GL_CULL_FACE);
+	const bool      need_disable_culling = node->get_is_two_sided();
+	if (need_disable_culling && cull_was_enabled)
+		glDisable(GL_CULL_FACE);
 
-	// switch based on the gizmo type to:
-	// - set the current shader program accordingly for rendering
-	// - set the appropiate properties for the node for rendering
-	// - set the polygon mode (fill or line) for rendering
+	// render the node based on its gizmo type
 	switch (node->get_gizmo_type())
 	{
-		case Gizmo_Type::NONE: // if the node is not a gizmo
+		case Gizmo_Type::NONE: // if the node is not a gizmo, render its meshes (if any) with their materials
 		{
-			switch (node->get_type()) // use the appropriate shader based on the node type
-			{
-				// container-only nodes (COMPOSITE_MODEL) have no meshes of their own to render, while the
-				// COMPOSITE_ASSIMP_MODEL and COMPOSITE_SHAPE_MODEL nodes are rendered as regular models
-				case Node_Type::COMPOSITE_ASSIMP_MODEL:
-				case Node_Type::ASSIMP_MODEL:
-				case Node_Type::COMPOSITE_SHAPE_MODEL:
-				case Node_Type::SHAPE_MODEL:
-				{ // use the shader of the node's material, with the material and the node's own parameters
-					render_shader = bind_node_material(*node);
-					if (!render_shader)
-						return; // the node has no usable material (the error was already printed)
-				}
-				break;
-				default:
-					// if the node type is unknown, print an error message and return
-					std::cerr << "[ERROR::RENDERER::render_node] Unknown node type for " << node->get_name() << std::endl;
-					return;
-			}
-
-			// set the polygon mode to fill for regular nodes
-			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); // fill mode for regular nodes
+			draw_model_meshes(*node);
 		}
 		break;
 		// gizmos for light sources (DIRECTIONAL_LIGHT, POINT_LIGHT, SPOTLIGHT)
@@ -570,75 +550,78 @@ void Renderer::render_node(const std::shared_ptr<Node>& node)
 		case Gizmo_Type::POINT_LIGHT:
 		case Gizmo_Type::SPOTLIGHT:
 		{
-			render_shader = single_albedo_shader;
-			render_shader->use();
+			single_albedo_shader->use();
 			// set the color of the gizmo shape based on the node's albedo
-			render_shader->set_vec3("u_albedo", node->get_albedo());
+			single_albedo_shader->set_vec3("u_albedo", node->get_albedo());
+			single_albedo_shader->set_mat4("u_model", node->get_world_model_matrix());
 
-			// set the polygon mode to line for light gizmos
-			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); // line mode for light gizmos
+			node->draw(*single_albedo_shader);
 		}
 		break;
-		default: // if the gizmo type is unknown, print an error message and return
+		default: // if the gizmo type is unknown, print an error message
 			std::cerr << "[ERROR::RENDERER::render_node] Unknown gizmo type for node: " << node->get_name() << std::endl;
-			return;
+			break;
 	}
 
-	if (render_shader)
-	{ // if the node has a valid shader to render with, finish setting up the shader and render the node
-		// handle two-sided nodes by disabling face culling temporarily if needed
-		const GLboolean cull_was_enabled     = glIsEnabled(GL_CULL_FACE);
-		const bool      need_disable_culling = node->get_is_two_sided();
-		if (need_disable_culling && cull_was_enabled)
-			glDisable(GL_CULL_FACE);
-
-		// set the node matrix for the current node (hierarchical world transformation)
-		render_shader->set_mat4("u_model", node->get_world_model_matrix());
-
-		// draw the node using its draw method, passing the current shader program
-		node->draw(*render_shader);
-
-		// re-enable face culling if it was previously enabled
-		if (need_disable_culling && cull_was_enabled)
-			glEnable(GL_CULL_FACE);
-	}
+	// re-enable face culling if it was previously enabled
+	if (need_disable_culling && cull_was_enabled)
+		glEnable(GL_CULL_FACE);
 }
 
-std::shared_ptr<Material> Renderer::get_node_material(const Node& node) const
+std::shared_ptr<Material> Renderer::get_mesh_material(const Node& node, const Mesh& mesh) const
 {
-	// the node's own material, if it has one
+	// the node's material (which replaces the materials of all its meshes), the mesh's own material
+	// (e.g., the material of an imported model), or the default material
 	if (node.get_material())
 		return node.get_material();
-
-	// otherwise, the default material of its type (shapes and imported models)
-	const auto& material_library = Core::get_instance()->get_material_library();
-	switch (node.get_type())
-	{
-		case Node_Type::SHAPE_MODEL:
-		case Node_Type::COMPOSITE_SHAPE_MODEL: return material_library->get(Material_Library::DEFAULT_SHAPE_MATERIAL);
-		case Node_Type::ASSIMP_MODEL:
-		case Node_Type::COMPOSITE_ASSIMP_MODEL: return material_library->get(Material_Library::DEFAULT_MODEL_MATERIAL);
-		default: return nullptr; // other nodes are not drawn with materials
-	}
+	if (mesh.get_material())
+		return mesh.get_material();
+	return Core::get_instance()->get_material_library()->get(Material_Library::DEFAULT_MATERIAL);
 }
 
-std::shared_ptr<Shader> Renderer::bind_node_material(const Node& node) const
+std::shared_ptr<Shader> Renderer::bind_material(const Material& material, const Node& node) const
 {
-	const auto material = get_node_material(node);
-	if (!material || !material->get_shader())
-	{ // if the node has no material (or its material has no shader), print an error message and return
-		std::cerr << "[ERROR::RENDERER::bind_node_material] No material to render the node " << node.get_name() << std::endl;
+	if (!material.get_shader())
+	{ // if the material has no shader, print an error message and return
+		std::cerr << "[ERROR::RENDERER::bind_material] The material " << material.get_name() << " has no shader" << std::endl;
 		return nullptr;
 	}
 
-	// use the material's shader, and set the material parameters, the parameters that the node overrides,
-	// and the albedo color of the node (whose alpha is its opacity)
-	const auto& shader = material->get_shader();
+	// use the material's shader, and set the material parameters and textures, the parameters that the node
+	// overrides, the albedo color of the node (whose alpha is its opacity), and its world model matrix
+	const auto& shader = material.get_shader();
 	shader->use();
-	material->apply();
-	material->apply(node.get_material_overrides());
+	material.apply();
+	material.apply(node.get_material_overrides());
 	shader->set_vec4("u_object_albedo", node.get_albedo());
+	shader->set_mat4("u_model", node.get_world_model_matrix());
 	return shader;
+}
+
+void Renderer::draw_model_meshes(const Node& node) const
+{
+	// draw each mesh of the node with its material, binding a material only when it changes between meshes
+	const Material* bound_material = nullptr;
+	for (const auto& mesh : node.get_meshes())
+	{
+		if (!mesh)
+			continue;
+
+		const auto material = get_mesh_material(node, *mesh);
+		if (!material)
+		{ // if there is no material (not even the default one), print an error message and skip the mesh
+			std::cerr << "[ERROR::RENDERER::draw_model_meshes] No material to render a mesh of " << node.get_name() << std::endl;
+			continue;
+		}
+		if (material.get() != bound_material)
+		{
+			if (!bind_material(*material, node))
+				continue;
+			bound_material = material.get();
+		}
+		mesh->draw();
+	}
 }
 
 void Renderer::upload_lights()
@@ -769,11 +752,11 @@ void Renderer::render_opaque_nodes(const std::vector<std::shared_ptr<Node>>& nod
 	std::map<std::pair<Mesh_Geometry*, Material*>, std::size_t> group_indices; // index of each group
 	for (const auto& node : nodes)
 	{
-		const auto  material        = get_node_material(*node);
 		const auto& meshes          = node->get_meshes();
+		const bool  has_single_mesh = meshes.size() == 1 && meshes[0] && meshes[0]->get_geometry();
+		const auto  material        = has_single_mesh ? get_mesh_material(*node, *meshes[0]) : nullptr;
 		const bool  is_instanceable = is_instancing_enabled && material && material->get_supports_instancing() &&
-			node->get_material_overrides().empty() && node->get_gizmo_type() == Gizmo_Type::NONE && !node->get_is_two_sided() &&
-			meshes.size() == 1 && meshes[0] && meshes[0]->get_geometry() && !meshes[0]->has_textures();
+			node->get_material_overrides().empty() && node->get_gizmo_type() == Gizmo_Type::NONE && !node->get_is_two_sided();
 		if (!is_instanceable)
 		{
 			render_node(node);
@@ -1269,11 +1252,9 @@ void Renderer::convert_hdr_to_cubemap_if_needed()
 	// restore original viewport
 	glViewport(prev_viewport[0], prev_viewport[1], prev_viewport[2], prev_viewport[3]);
 
-	// replace skybox with new cubemap texture
-	GLuint old_hdr = skybox->get_texture_id(); // store old HDR texture id for deletion after replacement
+	// replace the skybox with the new cubemap texture (the old HDR texture is released by its Texture object
+	// once it is no longer used)
 	scene_manager->set_skybox(std::make_shared<Texture>("Skybox Cubemap From HDR", env_cubemap, Texture_Type::CUBEMAP));
-	// delete old HDR texture as it is no longer needed
-	glDeleteTextures(1, &old_hdr);
 	hdr_to_cubemap_converted = true; // mark as converted to avoid redundant conversions
 
 	std::cout << "[SUCCESS::RENDERER::convert_hdr_to_cubemap_if_needed] Converted HDR (src texId = " << hdr_source_tex_id
@@ -1509,14 +1490,8 @@ void Renderer::render_scene_for_env_map_capture(
 		const auto children = model->get_children();
 		stack.insert(stack.end(), children.begin(), children.end());
 
-		// render the model's own meshes (if any) with its material
-		if (model->get_meshes().empty())
-			continue;
-		const auto render_shader = bind_node_material(*model);
-		if (!render_shader)
-			continue;
-		render_shader->set_mat4("u_model", model->get_world_model_matrix());
-		model->draw(*render_shader);
+		// render the model's own meshes (if any) with their materials
+		draw_model_meshes(*model);
 	}
 
 	// render the skybox as background if available

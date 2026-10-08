@@ -1,16 +1,19 @@
 /*
  * MaterialLibraryTest.cpp
  * This file contains the unit tests of the Material_Library class that do not require an OpenGL context:
- * the parsing of material descriptors (fields and parameter types), the search of descriptor files,
+ * the parsing of material descriptors (fields, parameter types, and textures), the search of descriptor files,
  * and the validity of the descriptors of the engine's own materials.
  */
 
+#include <algorithm>
 #include <filesystem>
 #include <fstream>
+#include <map>
 #include <set>
 #include <sstream>
 #include <string>
 #include <variant>
+#include <vector>
 
 #include <gtest/gtest.h>
 
@@ -36,7 +39,7 @@ namespace
 TEST(MaterialLibraryTest, ParsesADescriptorWithOnlyTheRequiredFields)
 {
 	std::string error;
-	const auto  descriptor = Material_Library::parse_descriptor(R"({ "name": "Test", "shader": "Test Shader" })", error);
+	const auto  descriptor = Material_Library::parse_descriptor(R"({ "name": "Test", "shader": "Test Shader" })", fs::path{}, error);
 
 	ASSERT_TRUE(descriptor.has_value()) << error;
 	EXPECT_EQ(descriptor->name, "Test");
@@ -48,7 +51,8 @@ TEST(MaterialLibraryTest, ParsesADescriptorWithOnlyTheRequiredFields)
 TEST(MaterialLibraryTest, ParsesTheInstancingFlag)
 {
 	std::string error;
-	const auto  descriptor = Material_Library::parse_descriptor(R"({ "name": "Test", "shader": "S", "instancing": true })", error);
+	const auto  descriptor =
+		Material_Library::parse_descriptor(R"({ "name": "Test", "shader": "S", "instancing": true })", fs::path{}, error);
 
 	ASSERT_TRUE(descriptor.has_value()) << error;
 	EXPECT_TRUE(descriptor->supports_instancing);
@@ -61,6 +65,7 @@ TEST(MaterialLibraryTest, ParsesEachParameterTypeFromItsJsonValue)
 		R"({ "name": "Test", "shader": "S", "parameters": {
 			"shininess": 32, "roughness": 0.5, "enabled": true,
 			"offset": [1, 2], "tint": [0.1, 0.2, 0.3], "color": [1, 0, 0, 0.5] } })",
+		fs::path{},
 		error);
 
 	ASSERT_TRUE(descriptor.has_value()) << error;
@@ -78,28 +83,28 @@ TEST(MaterialLibraryTest, ParsesEachParameterTypeFromItsJsonValue)
 TEST(MaterialLibraryTest, RejectsInvalidJsonAndValuesThatAreNotObjects)
 {
 	std::string error;
-	EXPECT_FALSE(Material_Library::parse_descriptor(R"({ "name": )", error).has_value());
-	EXPECT_FALSE(Material_Library::parse_descriptor(R"([ "name", "shader" ])", error).has_value());
+	EXPECT_FALSE(Material_Library::parse_descriptor(R"({ "name": )", fs::path{}, error).has_value());
+	EXPECT_FALSE(Material_Library::parse_descriptor(R"([ "name", "shader" ])", fs::path{}, error).has_value());
 	EXPECT_FALSE(error.empty());
 }
 
 TEST(MaterialLibraryTest, RejectsADescriptorWithoutARequiredField)
 {
 	std::string error;
-	EXPECT_FALSE(Material_Library::parse_descriptor(R"({ "shader": "S" })", error).has_value());
+	EXPECT_FALSE(Material_Library::parse_descriptor(R"({ "shader": "S" })", fs::path{}, error).has_value());
 	EXPECT_NE(error.find("name"), std::string::npos);
-	EXPECT_FALSE(Material_Library::parse_descriptor(R"({ "name": "Test" })", error).has_value());
+	EXPECT_FALSE(Material_Library::parse_descriptor(R"({ "name": "Test" })", fs::path{}, error).has_value());
 	EXPECT_NE(error.find("shader"), std::string::npos);
-	EXPECT_FALSE(Material_Library::parse_descriptor(R"({ "name": "", "shader": "S" })", error).has_value());
+	EXPECT_FALSE(Material_Library::parse_descriptor(R"({ "name": "", "shader": "S" })", fs::path{}, error).has_value());
 	EXPECT_NE(error.find("name"), std::string::npos);
 }
 
 TEST(MaterialLibraryTest, RejectsFieldsOfInvalidTypes)
 {
 	std::string error;
-	EXPECT_FALSE(Material_Library::parse_descriptor(R"({ "name": "T", "shader": "S", "instancing": 1 })", error).has_value());
+	EXPECT_FALSE(Material_Library::parse_descriptor(R"({ "name": "T", "shader": "S", "instancing": 1 })", fs::path{}, error).has_value());
 	EXPECT_NE(error.find("instancing"), std::string::npos);
-	EXPECT_FALSE(Material_Library::parse_descriptor(R"({ "name": "T", "shader": "S", "parameters": [] })", error).has_value());
+	EXPECT_FALSE(Material_Library::parse_descriptor(R"({ "name": "T", "shader": "S", "parameters": [] })", fs::path{}, error).has_value());
 	EXPECT_NE(error.find("parameters"), std::string::npos);
 }
 
@@ -109,9 +114,51 @@ TEST(MaterialLibraryTest, RejectsParametersOfInvalidTypes)
 	{
 		std::string       error;
 		const std::string text = std::string(R"({ "name": "T", "shader": "S", "parameters": { "bad": )") + value + " } }";
-		EXPECT_FALSE(Material_Library::parse_descriptor(text, error).has_value()) << value;
+		EXPECT_FALSE(Material_Library::parse_descriptor(text, fs::path{}, error).has_value()) << value;
 		EXPECT_NE(error.find("bad"), std::string::npos) << error;
 	}
+}
+
+TEST(MaterialLibraryTest, ParsesTheTexturesAndResolvesThemRelativeToTheBaseDirectory)
+{
+	std::string error;
+	const auto  descriptor = Material_Library::parse_descriptor(
+		R"({ "name": "T", "shader": "S", "textures": { "albedo_map": "../textures/wood.png", "opacity_map": "mask.png" } })",
+		fs::path{ "materials" },
+		error);
+
+	ASSERT_TRUE(descriptor.has_value()) << error;
+	ASSERT_EQ(descriptor->texture_paths.size(), 2u);
+	EXPECT_EQ(descriptor->texture_paths.at("albedo_map"), fs::path("materials") / "../textures/wood.png");
+	EXPECT_EQ(descriptor->texture_paths.at("opacity_map"), fs::path("materials") / "mask.png");
+}
+
+TEST(MaterialLibraryTest, RejectsTexturesOfInvalidTypes)
+{
+	std::string error;
+	EXPECT_FALSE(Material_Library::parse_descriptor(R"({ "name": "T", "shader": "S", "textures": [] })", fs::path{}, error).has_value());
+	EXPECT_NE(error.find("textures"), std::string::npos);
+	EXPECT_FALSE(
+		Material_Library::parse_descriptor(R"({ "name": "T", "shader": "S", "textures": { "albedo_map": 1 } })", fs::path{}, error)
+			.has_value());
+	EXPECT_NE(error.find("albedo_map"), std::string::npos);
+	EXPECT_FALSE(
+		Material_Library::parse_descriptor(R"({ "name": "T", "shader": "S", "textures": { "albedo_map": "" } })", fs::path{}, error)
+			.has_value());
+	EXPECT_NE(error.find("albedo_map"), std::string::npos);
+}
+
+TEST(MaterialLibraryTest, RejectsParameterNamesAndTextureSlotsThatAreNotGlslIdentifiers)
+{
+	std::string error;
+	EXPECT_FALSE(
+		Material_Library::parse_descriptor(R"({ "name": "T", "shader": "S", "parameters": { "base-shininess": 1 } })", fs::path{}, error)
+			.has_value());
+	EXPECT_NE(error.find("base-shininess"), std::string::npos);
+	EXPECT_FALSE(
+		Material_Library::parse_descriptor(R"({ "name": "T", "shader": "S", "textures": { "1map": "a.png" } })", fs::path{}, error)
+			.has_value());
+	EXPECT_NE(error.find("1map"), std::string::npos);
 }
 
 // Descriptor Files
@@ -138,14 +185,14 @@ TEST(MaterialLibraryTest, FindsOnlyTheDescriptorFilesOfADirectorySorted)
 // ----------------
 TEST(MaterialLibraryTest, TheEngineMaterialDescriptorsAreValidAndUseExistingShaders)
 {
-	// names of the engine's shaders
-	std::set<std::string> shader_names;
+	// texture slots of the engine's shaders, by shader name
+	std::map<std::string, std::vector<std::string>> shader_texture_slots;
 	for (const auto& file : Shader_Library::find_descriptor_files(fs::path{ ENGINE_UNIT_TESTS_RESOURCES_DIR } / "shaders"))
 	{
 		std::string error;
 		const auto  descriptor = Shader_Library::parse_descriptor(read_file(file), file.parent_path(), error);
 		ASSERT_TRUE(descriptor.has_value()) << file << ": " << error;
-		shader_names.insert(descriptor->name);
+		shader_texture_slots[descriptor->name] = descriptor->texture_slots;
 	}
 
 	// every material must be valid, have a unique name, and use one of the engine's shaders
@@ -155,13 +202,20 @@ TEST(MaterialLibraryTest, TheEngineMaterialDescriptorsAreValidAndUseExistingShad
 	for (const auto& file : files)
 	{
 		std::string error;
-		const auto  descriptor = Material_Library::parse_descriptor(read_file(file), error);
+		const auto  descriptor = Material_Library::parse_descriptor(read_file(file), file.parent_path(), error);
 		ASSERT_TRUE(descriptor.has_value()) << file << ": " << error;
 		EXPECT_TRUE(material_names.insert(descriptor->name).second) << "Duplicate material name: " << descriptor->name;
-		EXPECT_TRUE(shader_names.contains(descriptor->shader_name)) << descriptor->name << " uses an unknown shader";
+		ASSERT_TRUE(shader_texture_slots.contains(descriptor->shader_name)) << descriptor->name << " uses an unknown shader";
+
+		// every texture must exist and be for a texture slot of the material's shader
+		const auto& slots = shader_texture_slots.at(descriptor->shader_name);
+		for (const auto& [slot, path] : descriptor->texture_paths)
+		{
+			EXPECT_NE(std::find(slots.begin(), slots.end(), slot), slots.end()) << descriptor->name << ": unknown texture slot " << slot;
+			EXPECT_TRUE(fs::exists(path)) << descriptor->name << ": " << path;
+		}
 	}
 
-	// the default materials, used by the objects without a material of their own, must exist
-	EXPECT_TRUE(material_names.contains(Material_Library::DEFAULT_SHAPE_MATERIAL));
-	EXPECT_TRUE(material_names.contains(Material_Library::DEFAULT_MODEL_MATERIAL));
+	// the default material, used by the meshes without a material of their own, must exist
+	EXPECT_TRUE(material_names.contains(Material_Library::DEFAULT_MATERIAL));
 }

@@ -1508,8 +1508,9 @@ void GUI::draw_model_controls(Node* model)
 	// use PushID to create a unique id for each model
 	ImGui::PushID(model->get_name().c_str());
 
-	// combo box to assign a material of the material library to the model at runtime (or to go back to the
-	// default material of its type, used while the model has no material of its own)
+	// combo box to assign a material of the material library to the model at runtime, which replaces the materials
+	// of all its meshes (or to go back to "Default": the meshes' own materials, e.g., those of an imported model,
+	// or the default material)
 	const auto&       material_library = Core::get_instance()->get_material_library();
 	const auto&       material         = model->get_material();
 	const std::string preview          = material ? material->get_name() : "Default";
@@ -1533,26 +1534,13 @@ void GUI::draw_model_controls(Node* model)
 
 	glm::vec4 albedo = model->get_albedo(); // get the albedo color of the model (with alpha channel)
 
-	// for shape models, show the full RGBA color picker, including alpha channel for transparency control
-	if (model->get_type() == Node_Type::SHAPE_MODEL)
+	// for shapes and imported models, show the full RGBA color picker: the color tints the material of the model
+	// (its textures, if any), and the alpha channel controls its opacity
+	if (model->get_type() == Node_Type::SHAPE_MODEL || model->get_type() == Node_Type::ASSIMP_MODEL)
 	{
 		// create a color picker for the model's color
 		if (draw_color_control("Albedo", albedo))
 		{                              // if the color control is used
-			model->set_albedo(albedo); // set the new color of the model
-		}
-	}
-	// for Assimp models, show only a slider for the alpha component to allow for
-	// transparency/opacity control without affecting the original material colors
-	else if (model->get_type() == Node_Type::ASSIMP_MODEL)
-	{
-		ImGui::Text("Opacity"); // label for the alpha slider
-		ImGui::SameLine();      // keep the slider on the same line as the label
-		// make the slider take the full width of the window
-		ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
-		// create a slider for the alpha component of the model's color
-		if (ImGui::SliderFloat("##Opacity", &albedo.a, 0.0f, 1.0f, "%.2f", ImGuiSliderFlags_AlwaysClamp))
-		{                              // if the slider is used, set the new color with original RGB and new alpha
 			model->set_albedo(albedo); // set the new color of the model
 		}
 	}

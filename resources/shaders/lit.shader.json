@@ -1,0 +1,6 @@
+{
+  "name": "Lit Shader",
+  "vertex": "lit.vert.glsl",
+  "fragment": "lit.frag.glsl",
+  "textures": [ "albedo_map", "metallic_map", "opacity_map" ]
+}

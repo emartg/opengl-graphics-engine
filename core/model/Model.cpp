@@ -38,12 +38,6 @@ void Model::draw() const
 
 void Model::draw(const Shader& shader) const
 {
-	for (const auto& mesh : meshes)
-	{
-		if (mesh)
-		{
-			mesh->bind_textures(const_cast<Shader&>(shader)); // bind the textures
-			mesh->draw();
-		}
-	}
+	// the shader is already set up by the caller (the textures belong to the materials, see Material::apply)
+	draw();
 }

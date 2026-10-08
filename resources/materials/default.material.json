@@ -1,6 +1,6 @@
 {
-  "name": "Default Shape",
-  "shader": "Shape Model Shader",
+  "name": "Default",
+  "shader": "Lit Shader",
   "instancing": true,
   "parameters": {
     "shininess": 32.0

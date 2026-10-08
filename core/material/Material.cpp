@@ -1,13 +1,15 @@
 /*
  * Material.cpp
  * This file implements the Material class, which describes how the surface of an object is shaded: the shader
- * program that draws it and the values of the shader's material parameters (e.g., the shininess). Materials
- * are assets, shared by every object that uses them, and objects can override some parameters for themselves.
+ * program that draws it, the values of the shader's material parameters (e.g., the shininess), and the textures
+ * of its texture slots (e.g., the albedo map). Materials are assets, shared by every object that uses them,
+ * and objects can override some parameters for themselves.
  */
 
 #include "Material.h"
 
 #include "../shader/Shader.h"
+#include "../texture/Texture.h"
 
 #include <type_traits>
 #include <utility>
@@ -30,6 +32,28 @@ Material::Material(
 void Material::apply() const
 {
 	apply(parameters);
+	if (!shader)
+		return;
+
+	// bind the texture of each texture slot of the shader to the unit of the slot (or no texture, if the material
+	// has none for it), and tell the shader which slots have a texture
+	const auto& slots = shader->get_texture_slots();
+	for (GLuint unit = 0; unit < slots.size(); ++unit)
+	{
+		const std::string& slot        = slots[unit];
+		const auto         it          = textures.find(slot);
+		const bool         has_texture = it != textures.end() && it->second;
+		if (has_texture)
+			it->second->bind(unit);
+		else
+		{
+			glActiveTexture(GL_TEXTURE0 + unit);
+			glBindTexture(GL_TEXTURE_2D, 0);
+		}
+		shader->set_int(UNIFORM_PREFIX + slot, static_cast<GLint>(unit));
+		shader->set_bool(std::string(UNIFORM_PREFIX) + "has_" + slot, has_texture);
+	}
+	glActiveTexture(GL_TEXTURE0); // leave the first unit active, as the rest of the renderer expects
 }
 
 void Material::apply(const Material_Parameters& parameters) const

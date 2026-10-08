@@ -68,13 +68,19 @@ public:
 	Texture(Texture&&)            = delete;
 	Texture& operator=(Texture&&) = delete;
 
+	// Destructor
+	// ----------
+	// Releases the OpenGL texture when the last owner of the texture releases it (e.g., the materials and the
+	// skybox that use it), which must happen while the OpenGL context still exists (as the shutdown ensures)
+	~Texture();
+
 	// Public Methods
 	// --------------
 	// Loads the texture
 	void load() override {}
 
-	// Deallocates all the resources of the texture
-	void deallocate_resources() override { glDeleteTextures(1, &texture_id); }
+	// Deallocates all the resources of the texture (its OpenGL texture); safe to call more than once
+	void deallocate_resources() override;
 
 	// Does not draw anything by default, as a texture has no visual representation
 	virtual void draw() const override {}

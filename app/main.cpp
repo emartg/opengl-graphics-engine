@@ -378,11 +378,11 @@ void setup_example_scene(Core* engine)
 	{ // check if the file exists before loading it
 		auto model = std::make_shared<Assimp_Model>(
 			"Teapot",
-			model_file_path,                    // model file path
-			glm::vec4{ 0.8, 0.8f, 0.8f, 0.5f }, // albedo (overriden)
-			glm::vec3{ 0.0f, 0.0f, 3.0f },      // position (overridden - offset from root)
-			glm::quat(glm::vec3{ 0.0f }),       // rotation (default)
-			glm::vec3{ 0.25f }                  // scale (overridden)
+			model_file_path,                     // model file path
+			glm::vec4{ 1.0f, 1.0f, 1.0f, 0.5f }, // albedo (overriden)
+			glm::vec3{ 0.0f, 0.0f, 3.0f },       // position (overridden - offset from root)
+			glm::quat(glm::vec3{ 0.0f }),        // rotation (default)
+			glm::vec3{ 0.25f }                   // scale (overridden)
 		);
 		// remove the path and the extension from the file path for the model's
 		// name
@@ -520,7 +520,7 @@ void setup_test_scene_reflective_1(Core* engine)
 		auto model = std::make_shared<Assimp_Model>(
 			"Teapot",
 			model_file_path,                                         // model file path
-			glm::vec4{ 0.8f, 0.8f, 0.8f, 1.0f },                     // albedo (default)
+			glm::vec4{ 1.0f, 1.0f, 1.0f, 1.0f },                     // albedo (default)
 			glm::vec3{ -3.25f, 0.95f, -3.25f },                      // position (overridden)
 			glm::quat(glm::radians(glm::vec3{ 0.0f, 85.0f, 0.0f })), // rotation (overridden)
 			glm::vec3{ 0.2f }                                        // scale (overridden)
@@ -656,7 +656,7 @@ void setup_test_scene_reflective_2(Core* engine)
 		auto model = std::make_shared<Assimp_Model>(
 			"Reflective Teapot",
 			model_file_path,                                         // model file path
-			glm::vec4{ 0.8f, 0.8f, 0.8f, 1.0f },                     // albedo (default)
+			glm::vec4{ 1.0f, 1.0f, 1.0f, 1.0f },                     // albedo (default)
 			glm::vec3{ -3.25f, 0.95f, -3.25f },                      // position (overridden)
 			glm::quat(glm::radians(glm::vec3{ 0.0f, 85.0f, 0.0f })), // rotation (overridden)
 			glm::vec3{ 0.2f }                                        // scale (overridden)
@@ -794,7 +794,7 @@ void setup_test_scene_refractive_1(Core* engine)
 		auto model = std::make_shared<Assimp_Model>(
 			"Teapot",
 			model_file_path,                                         // model file path
-			glm::vec4{ 0.8f, 0.8f, 0.8f, 1.0f },                     // albedo (default)
+			glm::vec4{ 1.0f, 1.0f, 1.0f, 1.0f },                     // albedo (default)
 			glm::vec3{ -2.75f, -1.95f, -5.75f },                     // position (overridden)
 			glm::quat(glm::radians(glm::vec3{ 0.0f, 85.0f, 0.0f })), // rotation (overridden)
 			glm::vec3{ 0.3f }                                        // scale (overridden)
@@ -930,7 +930,7 @@ void setup_test_scene_refractive_2(Core* engine)
 		auto model = std::make_shared<Assimp_Model>(
 			"Teapot",
 			model_file_path,                                         // model file path
-			glm::vec4{ 0.8f, 0.8f, 0.8f, 1.0f },                     // albedo (default)
+			glm::vec4{ 1.0f, 1.0f, 1.0f, 1.0f },                     // albedo (default)
 			glm::vec3{ -1.4f, -0.6f, -5.6f },                        // position (overridden)
 			glm::quat(glm::radians(glm::vec3{ 0.0f, 85.0f, 0.0f })), // rotation (overridden)
 			glm::vec3{ 0.6f }                                        // scale (overridden)

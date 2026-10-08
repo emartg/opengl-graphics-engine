@@ -19,13 +19,13 @@ uniform mat4 u_projection;
 uniform mat4 u_view;
 uniform mat4 u_model;
 
-// whether the shape is drawn with instancing (model matrix and albedo from the per-instance attributes)
-// or alone (model matrix from u_model, and albedo from the material in the fragment shader)
+// whether the object is drawn with instancing (model matrix and albedo from the per-instance attributes)
+// or alone (model matrix from u_model, and albedo from u_object_albedo in the fragment shader)
 uniform bool u_instanced;
 
 void main()
 {
-	// model matrix of the instance, or of the single shape
+	// model matrix of the instance, or of the single object
 	mat4 model		= u_instanced ? aInstanceModel : u_model;
 	v_instance_albedo = aInstanceAlbedo;
 

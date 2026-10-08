@@ -24,7 +24,7 @@ Texture::Texture(const std::string& name, const std::string& path, const Texture
 
 Texture::Texture(const std::string& name, GLuint existing_id, Texture_Type type) :
 	Node(name, Node_Type::TEXTURE), // set the node type to TEXTURE
-	texture_id{ existing_id },
+	texture_id{ existing_id },      // the texture takes the ownership of the existing OpenGL texture
 	texture_type{ type }
 {}
 
@@ -57,8 +57,23 @@ Texture::Texture(const std::string& name, const std::vector<std::string>& faces)
 	}
 }
 
+// Destructor
+// ----------
+Texture::~Texture()
+{
+	deallocate_resources();
+}
+
 // Public Methods
 // --------------
+void Texture::deallocate_resources()
+{
+	// delete the OpenGL texture (if any) and reset its id, so that it is not deleted twice
+	if (texture_id)
+		glDeleteTextures(1, &texture_id);
+	texture_id = 0;
+}
+
 GLuint Texture::load_texture_from_file(const GLchar* path)
 {
 	// ensure the path is valid

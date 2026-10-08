@@ -7,11 +7,67 @@
 #include "Assimp_Model.h"
 
 #include "mesh/Mesh.h"
+#include "../Core.h"
 #include "../Node.h"
+#include "../material/Material.h"
+#include "../material/Material_Library.h"
 #include "../shader/Shader.h"
 #include "../texture/Texture.h"
 
+#include <filesystem>
 #include <fstream>
+
+namespace
+{
+	// Textures of the texture slots of the lit shader, selected among the textures of an imported material
+	struct Material_Maps
+	{
+		std::shared_ptr<Texture> albedo_map;
+		std::shared_ptr<Texture> metallic_map;
+		std::shared_ptr<Texture> opacity_map;
+	};
+
+	// Selects the albedo, metallic, and opacity maps among the textures of an imported material: first by their
+	// type (the first texture of each type), and then, for the textures of unknown type, by their file names
+	Material_Maps select_material_maps(const std::vector<std::shared_ptr<Texture>>& textures)
+	{
+		Material_Maps maps;
+
+		// type-based selection of the known texture types
+		for (const auto& texture : textures)
+		{
+			const Texture_Type type = texture->get_texture_type();
+			if (!maps.albedo_map && (type == Texture_Type::DIFFUSE || type == Texture_Type::AMBIENT))
+				maps.albedo_map = texture;
+			else if (!maps.metallic_map && (type == Texture_Type::SPECULAR || type == Texture_Type::METALNESS))
+				maps.metallic_map = texture;
+			else if (!maps.opacity_map && type == Texture_Type::OPACITY)
+				maps.opacity_map = texture;
+		}
+
+		// file name hints for the textures of unknown type, for the maps that are still missing
+		for (const auto& texture : textures)
+		{
+			if (maps.albedo_map && maps.metallic_map && maps.opacity_map)
+				break;
+			if (texture->get_texture_type() != Texture_Type::UNDEFINED)
+				continue;
+
+			const std::string& name     = texture->get_name();
+			const auto         contains = [&name](const char* text) {
+				return name.find(text) != std::string::npos;
+			};
+			if (!maps.albedo_map && (contains("albedo") || contains("diffuse") || contains("basecolor") || contains("bcolor")))
+				maps.albedo_map = texture;
+			else if (!maps.metallic_map && (contains("specular") || contains("reflective") || contains("metal") || contains("metallic")))
+				maps.metallic_map = texture;
+			else if (!maps.opacity_map && (contains("opacity") || contains("alpha") || contains("transparent") || contains("transparency")))
+				maps.opacity_map = texture;
+		}
+
+		return maps;
+	}
+}
 
 // Constructors
 // ------------
@@ -83,8 +139,13 @@ void Assimp_Model::load_assimp_model(std::string const& path)
 		directory.clear();
 	}
 
+	// name of the model file (without its directory), used to name the materials of the model
+	file_name = std::filesystem::path(path).filename().string();
+
 	// process the root node (recursively process all of its children)
+	imported_materials.clear();
 	process_node(scene->mRootNode, scene);
+	imported_materials.clear(); // the meshes and the material library keep the materials
 
 	std::cout << "[SUCCESS::ASSIMPMODEL::load_assimp_model] Model loaded successfully from:\n\t" << path << std::endl;
 }
@@ -109,6 +170,8 @@ std::shared_ptr<Mesh> Assimp_Model::process_mesh(aiMesh* mesh, const aiScene* sc
 	std::vector<GLuint> indices;  // each index corresponds to a vertex in the vertices vector
 	// each texture corresponds to a material texture of the mesh
 	std::vector<std::shared_ptr<Texture>> textures;
+	// material of the mesh, created from the textures of its imported material (shared by the meshes that use it)
+	std::shared_ptr<Material> mesh_material;
 
 	// process vertices
 	for (GLuint i{}; i < mesh->mNumVertices; i++)
@@ -147,8 +210,12 @@ std::shared_ptr<Mesh> Assimp_Model::process_mesh(aiMesh* mesh, const aiScene* sc
 		for (GLuint j{}; j < face.mNumIndices; j++) indices.push_back(face.mIndices[j]);
 	}
 
-	// process material (load all supported types of texture maps)
-	if (mesh->mMaterialIndex >= 0)
+	// process material (load all supported types of texture maps), unless it was already processed for another mesh
+	if (const auto it = imported_materials.find(mesh->mMaterialIndex); it != imported_materials.end())
+	{
+		mesh_material = it->second;
+	}
+	else if (mesh->mMaterialIndex >= 0)
 	{
 		// retrieve the material of the mesh
 		aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
@@ -176,10 +243,32 @@ std::shared_ptr<Mesh> Assimp_Model::process_mesh(aiMesh* mesh, const aiScene* sc
 		append(aiTextureType_REFLECTION, Texture_Type::REFLECTION);
 		// unknown texture type (fallback)
 		append(aiTextureType_UNKNOWN, Texture_Type::UNDEFINED);
+
+		// create a material with the maps of the imported material (based on the default material, which provides
+		// the shader and the parameters), and add it to the material library, so that it can also be assigned to
+		// other objects. Without maps, the mesh uses the default material
+		const Material_Maps maps             = select_material_maps(textures);
+		const auto          default_material = Core::get_instance()->get_material_library()->get(Material_Library::DEFAULT_MATERIAL);
+		if ((maps.albedo_map || maps.metallic_map || maps.opacity_map) && default_material)
+		{
+			auto new_material = std::make_shared<Material>(
+				file_name + ": " + material->GetName().C_Str(),
+				default_material->get_shader(),
+				default_material->get_parameters(),
+				default_material->get_supports_instancing());
+			if (maps.albedo_map)
+				new_material->set_texture("albedo_map", maps.albedo_map);
+			if (maps.metallic_map)
+				new_material->set_texture("metallic_map", maps.metallic_map);
+			if (maps.opacity_map)
+				new_material->set_texture("opacity_map", maps.opacity_map);
+			mesh_material = Core::get_instance()->get_material_library()->add(new_material);
+		}
+		imported_materials[mesh->mMaterialIndex] = mesh_material;
 	}
 
 	// return a mesh object created from the extracted mesh data
-	return std::make_shared<Mesh>(vertices, indices, textures);
+	return std::make_shared<Mesh>(vertices, indices, mesh_material);
 }
 
 std::vector<std::shared_ptr<Texture>> Assimp_Model::load_material_textures(aiMaterial* mat, aiTextureType type, Texture_Type texture_type)

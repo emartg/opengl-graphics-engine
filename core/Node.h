@@ -117,7 +117,7 @@ public:
 	// Draws the node if it is a mesh-bearing node, including its children if the node is composite
 	virtual void draw() const = 0;
 	// Draws the node if it is a mesh-bearing node, including its children if the node is composite,
-	// using the specified shader (binds the textures before drawing)
+	// with the specified shader, already set up by the caller (e.g., the picking shader)
 	virtual void draw(const Shader& shader) const = 0;
 
 	// Getters and Setters

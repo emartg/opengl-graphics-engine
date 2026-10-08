@@ -2,7 +2,7 @@
  * Shape_Model.h
  * This file defines the Shape_Model class (a derived class of Model),
  * which is used to create and draw geometric shapes from vertex, normal, texture coordinate,
- * index and texture data (if added).
+ * and index data (its textures, if any, belong to its material).
  */
 
 #pragma once
@@ -89,17 +89,11 @@ public:
 	// ----------
 	~Shape_Model() = default;
 
-	// Public Methods
-	// --------------
-	// Adds texture data to the shape
-	void add_texture_data(const std::vector<std::shared_ptr<Texture>>& textures);
-
 private:
 	// Private Attributes
 	// ------------------
-	std::vector<Vertex>                   vertices; // vertex, normal and texture coordinate data
-	std::vector<GLuint>                   indices;  // indices that define the order in which the vertices are drawn
-	std::vector<std::shared_ptr<Texture>> textures; // texture data (if any) associated with the shape
+	std::vector<Vertex> vertices; // vertex, normal and texture coordinate data
+	std::vector<GLuint> indices;  // indices that define the order in which the vertices are drawn
 
 	// Private Methods
 	// ---------------
@@ -108,6 +102,6 @@ private:
 	// Interleaves vertex, normal, and texture coordinate data into a single vector of Vertex objects
 	std::vector<Vertex> process_vertex_data(std::vector<GLfloat> position, std::vector<GLfloat> normals, std::vector<GLfloat> tex_coords);
 
-	// Creates the mesh from the vertex, index and texture data
+	// Creates the mesh from the vertex and index data
 	void create_mesh();
 };
