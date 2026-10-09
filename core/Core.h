@@ -137,7 +137,8 @@ public:
 	bool init();
 	// Runs the main loop of the engine until the renderer signals that the window should close or,
 	// if max_frames is greater than 0, until that number of frames has been rendered (e.g., for automated
-	// tests without user input, in which case the loop does not wait for events between frames)
+	// tests without user input, in which case the loop does not wait for events between frames). While the window
+	// is minimized, nothing is rendered: the loop waits for events until it is restored
 	void run(std::uint64_t max_frames = 0);
 	// Frees resources in the correct order and shuts down the engine, destroying the Core instance
 	void shutdown();
