@@ -244,6 +244,16 @@ void Core::run(std::uint64_t max_frames)
 	int           pending_frames{ FRAMES_AFTER_EVENT }; // frames still to render before waiting for events again
 	while (!renderer->should_close())
 	{
+		// while the window is minimized (or resized to an empty area), its framebuffer is 0 x 0, so nothing can be
+		// rendered (e.g., the aspect ratio of the projection would be 0 / 0): wait for events until it is restored,
+		// and then render a few frames, as after any event (even with a frame limit, since no frame is rendered)
+		if (screen_width == 0 || screen_height == 0)
+		{
+			renderer->wait_for_events();
+			pending_frames = FRAMES_AFTER_EVENT;
+			continue;
+		}
+
 		// without a frame limit, wait for events once the pending frames have been rendered: the renderer
 		// fully blocks until an event occurs, and when that happens, the renderer processes frames but
 		// throttles the frame rate, reducing CPU / GPU usage and improving performance.
@@ -321,6 +331,11 @@ void Core::framebuffer_size_callback(GLint width, GLint height)
 	// keep Core's notion of the default framebuffer size in sync with the actual window size
 	screen_width  = static_cast<GLuint>(std::max(0, width));
 	screen_height = static_cast<GLuint>(std::max(0, height));
+
+	// a minimized window has an empty framebuffer (0 x 0), which is not rendered (see run): the viewport and the
+	// picking/outline FBOs keep their sizes until the window is restored
+	if (screen_width == 0 || screen_height == 0)
+		return;
 
 	// update the default framebuffer viewport
 	if (renderer)
