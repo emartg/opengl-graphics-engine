@@ -183,3 +183,7 @@ The planned releases (data-driven materials, deferred shading and shadows, norma
 ## License
 
 This project is distributed under the **MIT License**. See the [LICENSE](LICENSE) file for details. All images and documentation are likewise covered by the MIT License.
+
+## Credits
+
+The third-party libraries (GLFW, GLM, Assimp, Dear ImGui, and the others) and the resources that are part of the project are credited, with their authors, sources, and licenses, in [docs/sources.md](docs/sources.md). They keep their own licenses: the MIT License of the project does not apply to them. The libraries and their versions are also listed in [Dependencies](#dependencies).
