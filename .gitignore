@@ -408,7 +408,7 @@ FodyWeavers.xsd
 
 ## Ignore CMake output and build directories, and user-specific and temporary files
 
-# CMake build output directoriwa
+# CMake build output directories
 [Oo]ut/
 [Bb]uild/
 
@@ -425,11 +425,17 @@ CMakeUserPresets.json
 
 ## Ignore other specific files and directories
 
-# Information about the structure of the Project
-*tree*
+# Information about the structure of the Project (generated tree listings)
+*-tree.txt
+*_tree.txt
 
 # Dear ImGui settings (window positions and sizes, saved per user in the working directory at runtime)
 imgui.ini
+
+# Editor and tool caches (clangd, JetBrains) and local VS Code workspaces
+.cache/
+.idea/
+*.code-workspace
 
 
 ## Files and directories to keep
