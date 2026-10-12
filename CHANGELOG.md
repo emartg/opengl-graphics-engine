@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
+- `Asset_Registry`, `Asset`, and `Asset_Type` (in `core/asset`): they find the assets of an assets directory (materials, models, shapes, lights, skyboxes, and textures) and its folders by scanning it and recognizing each file by its name (a folder with the six images of a cubemap is a skybox), with identifiers that stay the same when the directory is scanned again. They need no OpenGL context, and nothing in the App uses them yet.
 - `--scene NAME`, `--objects N`, and `--list-scenes` command-line options of the App, to choose the scene (and the number of objects of the stress test scenes) without editing the code, and a smoke test for each test scene.
 - Materials as assets: each one is described by a `<name>.material.json` file (its name, the name of its shader, its parameters, its textures, and whether its shader supports instancing), loaded by the new `Material_Library` from `resources/materials`. Meshes without a material of their own use the "Default" material.
 - Texture slots in shader descriptors (e.g., the albedo, metallic, and opacity maps of the lit shader), filled by the textures of each material.
