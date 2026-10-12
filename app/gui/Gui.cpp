@@ -638,9 +638,9 @@ void GUI::draw_creation_window()
 		{ // if the button is clicked
 			// file dialog configuration
 			IGFD::FileDialogConfig fileDialogConfig;
-			fileDialogConfig.path = Core::get_instance()->get_resource_path("models"); // initial directory to open the file dialog
-			fileDialogConfig.countSelectionMax = 1;                                    // for now, allow only one file to be selected
-			fileDialogConfig.flags             = ImGuiFileDialogFlags_Modal;           // no special flags for the file dialog
+			fileDialogConfig.path = Core::get_instance()->get_asset_path("models"); // initial directory to open the file dialog
+			fileDialogConfig.countSelectionMax = 1;                                 // for now, allow only one file to be selected
+			fileDialogConfig.flags             = ImGuiFileDialogFlags_Modal;        // no special flags for the file dialog
 
 			// open a file dialog to select a model file
 			ImGuiFileDialog::Instance()->OpenDialog(

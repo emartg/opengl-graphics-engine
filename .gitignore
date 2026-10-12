@@ -441,5 +441,5 @@ imgui.ini
 ## Files and directories to keep
 
 # Keep 3D model OBJ nodes in the repository
-!resources/models/obj/
-!resources/models/obj/**
+!assets/models/obj/
+!assets/models/obj/**

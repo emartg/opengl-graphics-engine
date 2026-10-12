@@ -189,7 +189,7 @@ void setup_example_scene(Core* engine)
 
 	// create an Assimp model as a child of the root group and add it to the
 	// node manager
-	std::string model_file_path = engine->get_resource_path("models/gltf/teapot/teapot.gltf");
+	std::string model_file_path = engine->get_asset_path("models/gltf/teapot/teapot.gltf");
 	if (std::filesystem::exists(model_file_path))
 	{ // check if the file exists before loading it
 		auto model = std::make_shared<Assimp_Model>(
