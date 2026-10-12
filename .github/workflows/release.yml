@@ -74,7 +74,7 @@ jobs:
       - name: Install and zip the package
         # the package is named after the release tag, or after the commit for manual runs
         # (e.g., opengl-graphics-engine-v0.9.0-windows-x64), and only contains the App component:
-        # bin\App.exe with its DLLs, share\EngineProject\resources, and the license
+        # bin\App.exe with its DLLs, share\EngineProject\resources and share\EngineProject\assets, and the license
         id: package
         shell: pwsh
         run: |

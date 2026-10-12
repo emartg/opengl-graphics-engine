@@ -424,7 +424,7 @@ TEST_F(AssetRegistryScanTest, DoesNotFollowSymbolicLinks)
 // --------------------------
 TEST(AssetRegistryTest, FindsEveryDescriptorOfTheEngineMaterials)
 {
-	const fs::path materials_dir = fs::path{ ENGINE_UNIT_TESTS_RESOURCES_DIR } / "materials";
+	const fs::path materials_dir = fs::path{ ENGINE_UNIT_TESTS_ASSETS_DIR } / "materials";
 
 	Asset_Registry registry;
 	ASSERT_TRUE(registry.scan(materials_dir));

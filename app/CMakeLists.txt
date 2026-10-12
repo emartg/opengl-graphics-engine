@@ -25,7 +25,7 @@ target_link_libraries(App PRIVATE Engine::Platform)
 target_compile_features(App PRIVATE cxx_std_20)
 
 # Stage the runtime dependencies (DLLs) beside the executable for local runs (MinGW only, see the function).
-# Resources are not copied: the Core locates them at runtime (beside the executable, in the
+# Resources and assets are not copied: the Core locates them at runtime (beside the executable, in the
 # installation layout, in the working directory, or in the Engine's source tree for development builds).
 engine_stage_runtime_dependencies(App)
 
@@ -76,7 +76,8 @@ if(ENGINE_BUILD_TESTS)
 	set_tests_properties(App_Unknown_Scene_Test PROPERTIES WILL_FAIL TRUE LABELS smoke)
 endif()
 
-# Install the App and the resources in the App component, so that they can be installed without the
+# Install the App, the resources, and the assets in the App component, so that they can be installed without the
 # Core and Platform libraries (e.g., cmake --install <build dir> --component App)
 install(TARGETS App RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT App)
 install(DIRECTORY ${ENGINE_ROOT_DIR}/resources/ DESTINATION ${CMAKE_INSTALL_DATADIR}/EngineProject/resources COMPONENT App)
+install(DIRECTORY ${ENGINE_ROOT_DIR}/assets/ DESTINATION ${CMAKE_INSTALL_DATADIR}/EngineProject/assets COMPONENT App)

@@ -59,14 +59,17 @@ private:
 
 	// library of the shader programs, loaded from the descriptor files of the resources directory
 	std::shared_ptr<Shader_Library> shader_library;
-	// library of the materials, loaded from the descriptor files of the resources directory
+	// library of the materials, loaded from the descriptor files of the assets directory
 	std::shared_ptr<Material_Library> material_library;
 
 	// screen settings
 	GLuint screen_width{ 1600 }, screen_height{ 1000 }; // default screen width and height
 
-	// absolute path of the Engine's resources directory (shaders, fonts, models, textures, etc.)
+	// absolute path of the Engine's resources directory (shaders, fonts, etc.)
 	std::filesystem::path resources_dir;
+	// absolute path of the Engine's assets directory (materials, and in the future models, textures, etc.), which
+	// applications and users organize in folders
+	std::filesystem::path assets_dir;
 
 	// Private Static Methods
 	// ----------------------
@@ -75,17 +78,28 @@ private:
 
 	// Private Methods
 	// ---------------
-	// Locates the Engine's resources directory (unless it was already set explicitly),
-	// searching, in order, beside the executable, in the installation layout,
-	// in the current working directory, and in the Engine's source tree.
-	// Returns true if the directory was found, false otherwise
+	// Locates a directory of the Engine (unless it was already set explicitly, in which case it only checks that
+	// it exists), searching, in order, beside the executable, in the installation layout, in the current working
+	// directory, and in the Engine's source tree. The folder name is the one searched beside the executable and
+	// in the working directory (e.g., "resources"), and the other two are the locations of the installation layout
+	// and of the source tree. Returns true if the directory was found, false otherwise
+	static bool resolve_directory(
+		std::filesystem::path&       directory,
+		const std::string&           folder_name,
+		const std::filesystem::path& install_directory,
+		const std::filesystem::path& source_directory);
+
+	// Locates the Engine's resources directory (see resolve_directory)
 	bool resolve_resources_dir();
+
+	// Locates the Engine's assets directory (see resolve_directory)
+	bool resolve_assets_dir();
 
 	// Loads the shader programs described by the descriptor files of the "shaders" subdirectory of the
 	// resources directory into the shader library, and gives the renderer and the selection manager the
 	// shaders they use. Returns true if every shader was loaded and the required ones exist, false otherwise
 	bool load_shaders();
-	// Loads the materials described by the descriptor files of the "materials" subdirectory of the resources
+	// Loads the materials described by the descriptor files of the "materials" subdirectory of the assets
 	// directory into the material library. Returns true if every material was loaded and the default
 	// material exists, false otherwise
 	bool load_materials();
@@ -123,6 +137,11 @@ public:
 	// (e.g., "shaders/skybox.vert" for a shader file located in the engine->get_resource_path("shaders") directory)
 	std::string get_resource_path(const std::string& relative_path) const;
 
+	const std::filesystem::path& get_assets_dir() const { return assets_dir; }
+	// returns the absolute path of an asset file given its path relative to the assets directory
+	// (e.g., "materials/default.material.json")
+	std::string get_asset_path(const std::string& relative_path) const;
+
 	// Setters
 	void set_renderer(Renderer* renderer) { this->renderer = renderer; }
 
@@ -131,8 +150,11 @@ public:
 	// Sets the resources directory explicitly (must be called before init() to take effect on
 	// the engine's shaders); otherwise, it is located automatically during init()
 	void set_resources_dir(const std::filesystem::path& dir) { resources_dir = dir; }
+	// Sets the assets directory explicitly (must be called before init() to take effect on the engine's
+	// materials); otherwise, it is located automatically during init()
+	void set_assets_dir(const std::filesystem::path& dir) { assets_dir = dir; }
 
-	// Initializes the core engine (OpenGL, window, GUI, etc.), locates the resources directory,
+	// Initializes the core engine (OpenGL, window, GUI, etc.), locates the resources and assets directories,
 	// and loads the engine's shaders and materials into the shader and material libraries
 	bool init();
 	// Runs the main loop of the engine until the renderer signals that the window should close or,

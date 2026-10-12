@@ -76,17 +76,22 @@ void Core::destroy_instance()
 
 // Private Methods
 // ---------------
-bool Core::resolve_resources_dir()
+bool Core::resolve_directory(
+	std::filesystem::path&       directory,
+	const std::string&           folder_name,
+	const std::filesystem::path& install_directory,
+	const std::filesystem::path& source_directory)
 {
-	if (!resources_dir.empty())
+	if (!directory.empty())
 	{ // if the directory was set explicitly, only verify that it exists
 		std::error_code error;
-		if (!std::filesystem::is_directory(resources_dir, error))
+		if (!std::filesystem::is_directory(directory, error))
 		{ // if it doesn't exist, print an error message and return false
-			std::cerr << "[ERROR::CORE::resolve_resources_dir] Resources directory not found: " << resources_dir.string() << std::endl;
+			std::cerr << "[ERROR::CORE::resolve_directory] The " << folder_name << " directory was not found: " << directory.string()
+					  << std::endl;
 			return false;
 		}
-		resources_dir = std::filesystem::absolute(resources_dir, error);
+		directory = std::filesystem::absolute(directory, error);
 	}
 	else
 	{ // otherwise, search the candidate locations in order of precedence
@@ -97,29 +102,39 @@ bool Core::resolve_resources_dir()
 		std::vector<std::filesystem::path> candidates;
 		if (!executable_dir.empty())
 		{
-			// resources staged beside the executable (e.g., a packaged build)
-			candidates.push_back(executable_dir / "resources");
-			// installation layout (<prefix>/bin/<executable> and <prefix>/<data dir>/.../resources)
-			candidates.push_back(executable_dir.parent_path() / ENGINE_INSTALL_RESOURCES_DIR);
+			// the directory staged beside the executable (e.g., a packaged build)
+			candidates.push_back(executable_dir / folder_name);
+			// installation layout (<prefix>/bin/<executable> and <prefix>/<data dir>/...)
+			candidates.push_back(executable_dir.parent_path() / install_directory);
 		}
 		if (!current_dir.empty())
-		{ // resources in the current working directory
-			candidates.push_back(current_dir / "resources");
+		{ // the directory in the current working directory
+			candidates.push_back(current_dir / folder_name);
 		}
-		// resources in the Engine's source tree (development builds, where they are not copied)
-		candidates.push_back(ENGINE_SOURCE_RESOURCES_DIR);
+		// the directory in the Engine's source tree (development builds, where it is not copied)
+		candidates.push_back(source_directory);
 
-		resources_dir = File_System_Utils::find_first_existing_directory(candidates);
-		if (resources_dir.empty())
+		directory = File_System_Utils::find_first_existing_directory(candidates);
+		if (directory.empty())
 		{ // if none of the candidates exists, print the searched locations and return false
-			std::cerr << "[ERROR::CORE::resolve_resources_dir] Resources directory not found. Searched in:" << std::endl;
+			std::cerr << "[ERROR::CORE::resolve_directory] The " << folder_name << " directory was not found. Searched in:" << std::endl;
 			for (const auto& candidate : candidates) std::cerr << "  " << candidate.string() << std::endl;
 			return false;
 		}
 	}
 
-	std::cout << "[INFO::CORE::resolve_resources_dir] Using resources directory: " << resources_dir.string() << std::endl;
+	std::cout << "[INFO::CORE::resolve_directory] Using the " << folder_name << " directory: " << directory.string() << std::endl;
 	return true;
+}
+
+bool Core::resolve_resources_dir()
+{
+	return resolve_directory(resources_dir, "resources", ENGINE_INSTALL_RESOURCES_DIR, ENGINE_SOURCE_RESOURCES_DIR);
+}
+
+bool Core::resolve_assets_dir()
+{
+	return resolve_directory(assets_dir, "assets", ENGINE_INSTALL_ASSETS_DIR, ENGINE_SOURCE_ASSETS_DIR);
 }
 
 bool Core::load_shaders()
@@ -139,8 +154,8 @@ bool Core::load_shaders()
 
 bool Core::load_materials()
 {
-	// load the engine's materials, described by the descriptor files of the materials directory
-	if (!material_library->load_directory(resources_dir / "materials", *shader_library))
+	// load the engine's materials, described by the descriptor files of the materials directory of the assets
+	if (!material_library->load_directory(assets_dir / "materials", *shader_library))
 		return false;
 
 	// the renderer draws the meshes without a material of their own with the default material
@@ -160,12 +175,22 @@ std::string Core::get_resource_path(const std::string& relative_path) const
 	return (resources_dir / relative_path).string();
 }
 
+std::string Core::get_asset_path(const std::string& relative_path) const
+{
+	return (assets_dir / relative_path).string();
+}
+
 bool Core::init()
 {
-	// locate the resources directory before anything is loaded from it
+	// locate the resources and assets directories before anything is loaded from them
 	if (!resolve_resources_dir())
 	{ // if the resources directory is not found, print an error message and return false
 		std::cerr << "[ERROR::CORE::init] Failed to locate the resources directory" << std::endl;
+		return false;
+	}
+	if (!resolve_assets_dir())
+	{ // if the assets directory is not found, print an error message and return false
+		std::cerr << "[ERROR::CORE::init] Failed to locate the assets directory" << std::endl;
 		return false;
 	}
 

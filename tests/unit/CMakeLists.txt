@@ -34,10 +34,11 @@ target_link_libraries(Engine_Unit_Tests PRIVATE Engine::Core GTest::gtest_main)
 target_compile_features(Engine_Unit_Tests PRIVATE cxx_std_20)
 
 # Name of the executable file, used by the tests of File_System_Utils::get_executable_directory(),
-# and the Engine's resources directory, used by the tests of the engine's own resource files
+# and the Engine's resources and assets directories, used by the tests of the engine's own files
 target_compile_definitions(Engine_Unit_Tests PRIVATE
 	ENGINE_UNIT_TESTS_EXECUTABLE_NAME="$<TARGET_FILE_NAME:Engine_Unit_Tests>"
 	ENGINE_UNIT_TESTS_RESOURCES_DIR="${ENGINE_ROOT_DIR}/resources"
+	ENGINE_UNIT_TESTS_ASSETS_DIR="${ENGINE_ROOT_DIR}/assets"
 )
 
 # Copy the runtime dependencies (DLLs) beside the executable (MinGW only, see the function)
