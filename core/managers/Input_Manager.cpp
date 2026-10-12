@@ -119,8 +119,5 @@ void Input_Manager::key_callback(std::string input)
 
 		selection_manager->delete_selected(node_manager.get());
 	}
-	else
-	{ // if the input is not recognized, print an error message
-		std::cerr << "[ERROR::INPUTMANAGER::key_callback] Unknown key input: " << input << std::endl;
-	}
+	// any other key has no action (and pressing it is not an error), so it is ignored
 }

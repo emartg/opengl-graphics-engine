@@ -38,6 +38,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
+- Pressing a key that has no action (any key except Escape and Delete) printed an `[ERROR::INPUTMANAGER::key_callback]` line, which made the smoke tests fail at random when keys were pressed while the App was open. Such keys are now ignored silently.
 - Minimizing the window (or resizing it to an empty area) aborted Debug builds with a failed assertion of GLM, since the aspect ratio of the projection was 0 / 0, and resized the picking and outline framebuffers to 0 x 0. While the window is minimized, nothing is rendered until it is restored.
 - The entry of the Material combo box of the Properties window that removes the material of an object was named "Default", like the default material, so both entries had the same ImGui identifier (reported as a conflict in Debug builds, and a click could select the other entry). It is now named "Mesh Materials".
 - The opacity maps of imported models were sampled from the texture unit of the albedo map.
