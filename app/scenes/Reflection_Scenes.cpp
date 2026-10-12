@@ -114,7 +114,7 @@ void setup_test_scene_reflective_1(Core* engine)
 	node_manager->add_node(reflective_plane);
 
 	// create an Assimp model and add it to the node manager
-	std::string model_file_path = engine->get_resource_path("models/obj/teapot/Teapot.obj");
+	std::string model_file_path = engine->get_asset_path("models/obj/teapot/Teapot.obj");
 	if (std::filesystem::exists(model_file_path))
 	{ // if the file exists, create the model and add
 	  // it to the node manager
@@ -249,7 +249,7 @@ void setup_test_scene_reflective_2(Core* engine)
 
 	// create a reflective Assimp model, register it for dynamic environment map
 	// capture, and add it to the node manager
-	std::string model_file_path = engine->get_resource_path("models/gltf/teapot/teapot.gltf");
+	std::string model_file_path = engine->get_asset_path("models/gltf/teapot/teapot.gltf");
 	if (std::filesystem::exists(model_file_path))
 	{ // if the file exists, create the model and add
 	  // it to the node manager
@@ -385,7 +385,7 @@ void setup_test_scene_refractive_1(Core* engine)
 	node_manager->add_node(refractive_cube);
 
 	// create an Assimp model and add it to the node manager
-	std::string model_file_path = engine->get_resource_path("models/obj/teapot/Teapot.obj");
+	std::string model_file_path = engine->get_asset_path("models/obj/teapot/Teapot.obj");
 	if (std::filesystem::exists(model_file_path))
 	{ // if the file exists, create the model and add
 	  // it to the node manager
@@ -520,7 +520,7 @@ void setup_test_scene_refractive_2(Core* engine)
 
 	// create a refractive Assimp model, register it for dynamic environment map
 	// capture, and add it to the node manager
-	std::string model_file_path = engine->get_resource_path("models/obj/teapot/Teapot.obj");
+	std::string model_file_path = engine->get_asset_path("models/obj/teapot/Teapot.obj");
 	if (std::filesystem::exists(model_file_path))
 	{ // if the file exists, create the model and add
 	  // it to the node manager
