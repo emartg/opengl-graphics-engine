@@ -44,13 +44,17 @@ target_link_libraries(Core PUBLIC
 target_link_libraries(Core PRIVATE nlohmann_json::nlohmann_json)
 target_compile_features(Core PUBLIC cxx_std_20)
 
-# Locations searched for the resources directory at runtime (see Core::resolve_resources_dir):
-# - ENGINE_INSTALL_RESOURCES_DIR: relative to the installation prefix (matches the install rule of the App)
-# - ENGINE_SOURCE_RESOURCES_DIR: the Engine's source tree, used by development builds (resources are not
-#   copied into the build tree, so changes to shaders and other resources are used without rebuilding)
+# Locations searched for the resources and assets directories at runtime (see Core::resolve_directory):
+# - ENGINE_INSTALL_RESOURCES_DIR and ENGINE_INSTALL_ASSETS_DIR: relative to the installation prefix (they match
+#   the install rules of the App)
+# - ENGINE_SOURCE_RESOURCES_DIR and ENGINE_SOURCE_ASSETS_DIR: the Engine's source tree, used by development
+#   builds (they are not copied into the build tree, so changes to shaders, materials, and other files are used
+#   without rebuilding)
 target_compile_definitions(Core PRIVATE
 	ENGINE_INSTALL_RESOURCES_DIR="${CMAKE_INSTALL_DATADIR}/EngineProject/resources"
 	ENGINE_SOURCE_RESOURCES_DIR="${ENGINE_ROOT_DIR}/resources"
+	ENGINE_INSTALL_ASSETS_DIR="${CMAKE_INSTALL_DATADIR}/EngineProject/assets"
+	ENGINE_SOURCE_ASSETS_DIR="${ENGINE_ROOT_DIR}/assets"
 )
 
 install(TARGETS Core

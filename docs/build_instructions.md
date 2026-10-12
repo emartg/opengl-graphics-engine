@@ -111,9 +111,9 @@ out\build\ninja-msvc-debug\bin\App.exe
 
 The VS Code launch configuration uses the CMake-selected target and sets the working directory to the generated `bin` directory.
 
-## Resources Location
+## Resources and Assets Location
 
-The engine locates its `resources` directory (shaders, fonts, models, and textures) at runtime, so the executable can be launched from any working directory. The first existing location is used, in this order:
+The engine locates two directories at runtime, so the executable can be launched from any working directory: `resources` (the shaders and the fonts) and `assets` (the materials, and in the future the models, textures, and other files that users organize). For each one, the first existing location is used, in this order (shown for `resources`, with `Core::set_assets_dir()`, `assets`, and `<prefix>/share/EngineProject/assets` for `assets`):
 
 1. The directory set explicitly with `Core::set_resources_dir()` before `Core::init()`.
 2. `resources` beside the executable (e.g., a packaged build).
@@ -121,7 +121,7 @@ The engine locates its `resources` directory (shaders, fonts, models, and textur
 4. `resources` in the current working directory.
 5. The `resources` directory of the source tree, whose absolute path is embedded at build time.
 
-Resources are not copied into the build tree, so development builds use the source tree directly: changes to shaders or other resources take effect the next time the application runs, without rebuilding. The resolved directory is printed at startup (`Using resources directory: ...`).
+Resources and assets are not copied into the build tree, so development builds use the source tree directly: changes to shaders, materials, or other files take effect the next time the application runs, without rebuilding (a material saved from the Material Editor is written to the `assets/materials` directory of the source tree). The resolved directories are printed at startup (`Using the resources directory: ...` and `Using the assets directory: ...`).
 
 Build directories created before this behavior may still contain an old `bin/resources` copy, which takes precedence. Delete it (or the whole build directory) so the source tree is used.
 
@@ -392,13 +392,13 @@ Each job has a time limit (10 minutes for formatting, 30 minutes for Linux build
 
 The `.github/workflows/release.yml` workflow builds the `ninja-msvc-release` preset and packages the App for Windows: when a release is published on GitHub, it attaches `opengl-graphics-engine-<tag>-windows-x64.zip` to it, and when it is started manually (**Actions** > **Release** > **Run workflow**), it uploads the package as an artifact of the run, to check it before a release.
 
-The package is the installation of the `App` component, which contains the App, its DLLs (including the MSVC runtime, so the Visual C++ Redistributable is not required), and the resources, but not the Core and Platform libraries. The same package can be created locally from a Release build:
+The package is the installation of the `App` component, which contains the App, its DLLs (including the MSVC runtime, so the Visual C++ Redistributable is not required), and the resources and assets, but not the Core and Platform libraries. The same package can be created locally from a Release build:
 
 ```powershell
 cmake --install out/build/ninja-msvc-release --component App --prefix out/package/opengl-graphics-engine
 ```
 
-The App is then run from `out/package/opengl-graphics-engine/bin`, and uses the resources of `share/EngineProject/resources`.
+The App is then run from `out/package/opengl-graphics-engine/bin`, and uses the resources and assets of `share/EngineProject/resources` and `share/EngineProject/assets`.
 
 ## Clean Build
 

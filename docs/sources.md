@@ -3,7 +3,7 @@
 This file credits the third-party libraries and the resources that are part of the project (and are meant
 to stay in it): who made each one, where it comes from, and under which license. The temporary assets
 (placeholders) are listed at the end and will be credited if they are kept in the final version. The
-shaders and materials in `resources/shaders` and `resources/materials` are the project's own work and fall
+shaders and materials in `resources/shaders` and `assets/materials` are the project's own work and fall
 under its MIT License (see `LICENSE`).
 
 ## How to Use This File

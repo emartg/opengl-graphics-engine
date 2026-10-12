@@ -460,7 +460,7 @@ TEST(MaterialLibraryTest, TheEngineMaterialDescriptorsAreValidAndUseExistingShad
 	}
 
 	// every material must be valid, have a unique name, and use one of the engine's shaders
-	const auto files = Material_Library::find_descriptor_files(fs::path{ ENGINE_UNIT_TESTS_RESOURCES_DIR } / "materials");
+	const auto files = Material_Library::find_descriptor_files(fs::path{ ENGINE_UNIT_TESTS_ASSETS_DIR } / "materials");
 	ASSERT_FALSE(files.empty());
 	std::set<std::string> material_names;
 	for (const auto& file : files)
@@ -487,7 +487,7 @@ TEST(MaterialLibraryTest, TheEngineMaterialDescriptorsAreValidAndUseExistingShad
 TEST(MaterialLibraryTest, WritingTheEngineMaterialDescriptorsReproducesTheirFiles)
 {
 	// saving an engine material without changes must not change its file (e.g., in the Material Editor)
-	for (const auto& file : Material_Library::find_descriptor_files(fs::path{ ENGINE_UNIT_TESTS_RESOURCES_DIR } / "materials"))
+	for (const auto& file : Material_Library::find_descriptor_files(fs::path{ ENGINE_UNIT_TESTS_ASSETS_DIR } / "materials"))
 	{
 		std::string error;
 		const auto  descriptor = Material_Library::parse_descriptor(read_file(file), file.parent_path(), error);

@@ -1166,12 +1166,12 @@ void GUI::draw_material_editor_window()
 	draw_material_environment_controls(material);
 	ImGui::Separator();
 
-	// buttons to save the material to its descriptor file (or to a new file in the materials directory of the resources),
+	// buttons to save the material to its descriptor file (or to a new file in the materials directory of the assets),
 	// and to reload it from its file (discarding its unsaved changes)
 	if (ImGui::Button("Save", ImVec2{ half_width, 0.0f }))
 	{
 		const std::filesystem::path file_path = material.get_file_path().empty()
-			? Material_Library::make_new_descriptor_path(material.get_name(), core->get_resources_dir() / "materials")
+			? Material_Library::make_new_descriptor_path(material.get_name(), core->get_assets_dir() / "materials")
 			: material.get_file_path();
 		std::string                 error;
 		if (Material_Library::save(material, file_path, error))
