@@ -229,7 +229,7 @@ void setup_example_scene(Core* engine)
 	node_manager->add_node(green_plane);
 
 	// load an HDR skybox texture and set it as the skybox in the scene manager
-	std::string skybox_file_path = engine->get_resource_path("textures/skyboxes/hdr/tiergarten_4k.hdr");
+	std::string skybox_file_path = engine->get_asset_path("skyboxes/hdr/tiergarten_4k.hdr");
 	if (std::filesystem::exists(skybox_file_path))
 	{ // check if the file exists before loading it
 		scene_manager->load_skybox(skybox_file_path);
