@@ -657,9 +657,9 @@ void GUI::draw_creation_window()
 		{ // if the button is clicked
 			// file dialog configuration
 			IGFD::FileDialogConfig fileDialogConfig;
-			fileDialogConfig.path = Core::get_instance()->get_resource_path("textures/skyboxes"); // initial directory for the file dialog
-			fileDialogConfig.countSelectionMax = 6;                                               // allow up to 6 files to be selected
-			fileDialogConfig.flags             = ImGuiFileDialogFlags_Modal;                      // no special flags for the file dialog
+			fileDialogConfig.path              = Core::get_instance()->get_asset_path("skyboxes"); // initial directory for the file dialog
+			fileDialogConfig.countSelectionMax = 6;                                                // allow up to 6 files to be selected
+			fileDialogConfig.flags             = ImGuiFileDialogFlags_Modal;                       // no special flags for the file dialog
 
 			// open a file dialog to select skybox image files
 			ImGuiFileDialog::Instance()->OpenDialog(
@@ -2519,7 +2519,7 @@ void GUI::draw_import_skybox_popup()
 			{
 				// file dialog configuration (same as used when first opened)
 				IGFD::FileDialogConfig fileDialogConfig;
-				fileDialogConfig.path              = Core::get_instance()->get_resource_path("textures/skyboxes");
+				fileDialogConfig.path              = Core::get_instance()->get_asset_path("skyboxes");
 				fileDialogConfig.countSelectionMax = 6;
 				fileDialogConfig.flags             = ImGuiFileDialogFlags_Modal;
 
@@ -2751,7 +2751,7 @@ void GUI::draw_material_texture_controls(Material& material)
 			texture_dialog_material = edited_material;
 			texture_dialog_slot     = slot;
 			IGFD::FileDialogConfig fileDialogConfig;
-			fileDialogConfig.path              = Core::get_instance()->get_resource_path("textures");
+			fileDialogConfig.path              = Core::get_instance()->get_assets_dir().string(); // there is no folder of textures yet
 			fileDialogConfig.countSelectionMax = 1;
 			fileDialogConfig.flags             = ImGuiFileDialogFlags_Modal;
 			ImGuiFileDialog::Instance()

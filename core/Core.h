@@ -67,7 +67,7 @@ private:
 
 	// absolute path of the Engine's resources directory (shaders, fonts, etc.)
 	std::filesystem::path resources_dir;
-	// absolute path of the Engine's assets directory (materials and models, and in the future textures, etc.), which
+	// absolute path of the Engine's assets directory (materials, models, and skyboxes, and in the future textures, etc.), which
 	// applications and users organize in folders
 	std::filesystem::path assets_dir;
 

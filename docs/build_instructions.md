@@ -113,7 +113,7 @@ The VS Code launch configuration uses the CMake-selected target and sets the wor
 
 ## Resources and Assets Location
 
-The engine locates two directories at runtime, so the executable can be launched from any working directory: `resources` (the shaders and the fonts) and `assets` (the materials and the models, and in the future the textures, and other files that users organize). For each one, the first existing location is used, in this order (shown for `resources`, with `Core::set_assets_dir()`, `assets`, and `<prefix>/share/EngineProject/assets` for `assets`):
+The engine locates two directories at runtime, so the executable can be launched from any working directory: `resources` (the shaders and the fonts) and `assets` (the materials, the models, and the skyboxes, and in the future the textures and other files that users organize). For each one, the first existing location is used, in this order (shown for `resources`, with `Core::set_assets_dir()`, `assets`, and `<prefix>/share/EngineProject/assets` for `assets`):
 
 1. The directory set explicitly with `Core::set_resources_dir()` before `Core::init()`.
 2. `resources` beside the executable (e.g., a packaged build).

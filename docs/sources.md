@@ -47,9 +47,9 @@ that stay, and replace those whose source or license cannot be established. The 
 
 | Path | What | Author, source, and license known so far |
 |---|---|---|
-| `resources/textures/skyboxes/faces/` (`fatbursparken`, `meadow`, `medborgarplatsen`, `mountain_path`, `saint_lazarus_church`, `swedish_royal_castle`, `tantolunden`, `union_square`, `union_square_INVALID`) | Cube map skyboxes | Emil Persson, aka Humus (http://www.humus.name), [CC BY 3.0](http://creativecommons.org/licenses/by/3.0/), stated in the `readme.txt` of each folder (the license requires this credit) |
-| `resources/textures/skyboxes/hdr/` (`canary_wharf`, `golden_gate_hills`, `potsdamer_platz`, `shanghai_bund`, `tiergarten`) | Environment maps | [Poly Haven](https://polyhaven.com) ([CC0](https://polyhaven.com/license)): Canary Wharf by Andreas Mischok; Golden Gate Hills by Dimitrios Savva (photography) and Jarod Guest (processing); Potsdamer Platz, Shanghai Bund, and Tiergarten by Greg Zaal. Identified by file name |
-| `resources/textures/skyboxes/hdr/puresky_4k.hdr` | Environment map | Unknown (probably a renamed Poly Haven "Pure Sky" asset) |
+| `assets/skyboxes/faces/` (`fatbursparken`, `meadow`, `medborgarplatsen`, `mountain_path`, `saint_lazarus_church`, `swedish_royal_castle`, `tantolunden`, `union_square`, `union_square_INVALID`) | Cube map skyboxes | Emil Persson, aka Humus (http://www.humus.name), [CC BY 3.0](http://creativecommons.org/licenses/by/3.0/), stated in the `readme.txt` of each folder (the license requires this credit) |
+| `assets/skyboxes/hdr/` (`canary_wharf`, `golden_gate_hills`, `potsdamer_platz`, `shanghai_bund`, `tiergarten`) | Environment maps | [Poly Haven](https://polyhaven.com) ([CC0](https://polyhaven.com/license)): Canary Wharf by Andreas Mischok; Golden Gate Hills by Dimitrios Savva (photography) and Jarod Guest (processing); Potsdamer Platz, Shanghai Bund, and Tiergarten by Greg Zaal. Identified by file name |
+| `assets/skyboxes/hdr/puresky_4k.hdr` | Environment map | Unknown (probably a renamed Poly Haven "Pure Sky" asset) |
 | `assets/models/` (teapot in OBJ, FBX, and glTF; construction helmet; traffic cone) | Sample models with PBR textures | Unknown (the files only show Blender and Maya exports) |
 
 ## Open Items

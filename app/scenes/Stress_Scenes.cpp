@@ -107,7 +107,7 @@ void setup_test_scene_geometric_stress_1(Core* engine, const int num_shapes)
 	}
 
 	// create a skybox and set it in the scene manager
-	std::string skybox_file_path = engine->get_resource_path("textures/skyboxes/hdr/puresky_4k.hdr");
+	std::string skybox_file_path = engine->get_asset_path("skyboxes/hdr/puresky_4k.hdr");
 	if (std::filesystem::exists(skybox_file_path))
 	{ // check if the file exists before loading it
 		scene_manager->load_skybox(skybox_file_path);
@@ -201,7 +201,7 @@ void setup_test_scene_geometric_stress_2(Core* engine, const int num_shapes)
 	}
 
 	// create a skybox and set it in the scene manager
-	std::string skybox_file_path = engine->get_resource_path("textures/skyboxes/hdr/puresky_4k.hdr");
+	std::string skybox_file_path = engine->get_asset_path("skyboxes/hdr/puresky_4k.hdr");
 	if (std::filesystem::exists(skybox_file_path))
 	{ // check if the file exists before loading it
 		scene_manager->load_skybox(skybox_file_path);
@@ -293,7 +293,7 @@ void setup_test_scene_reflective_stress(Core* engine, const int num_shapes)
 	}
 
 	// create a skybox and set it in the scene manager
-	std::string skybox_file_path = engine->get_resource_path("textures/skyboxes/hdr/puresky_4k.hdr");
+	std::string skybox_file_path = engine->get_asset_path("skyboxes/hdr/puresky_4k.hdr");
 	if (std::filesystem::exists(skybox_file_path))
 	{ // check if the file exists before loading it
 		scene_manager->load_skybox(skybox_file_path);

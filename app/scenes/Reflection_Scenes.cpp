@@ -147,7 +147,7 @@ void setup_test_scene_reflective_1(Core* engine)
 	}
 
 	// create a skybox and set it in the scene manager
-	std::string skybox_file_path = engine->get_resource_path("textures/skyboxes/hdr/canary_wharf_4k.hdr");
+	std::string skybox_file_path = engine->get_asset_path("skyboxes/hdr/canary_wharf_4k.hdr");
 	if (std::filesystem::exists(skybox_file_path))
 	{ // check if the file exists before loading it
 		scene_manager->load_skybox(skybox_file_path);
@@ -284,7 +284,7 @@ void setup_test_scene_reflective_2(Core* engine)
 	}
 
 	// create a skybox and set it in the scene manager
-	std::string skybox_file_path = engine->get_resource_path("textures/skyboxes/hdr/canary_wharf_4k.hdr");
+	std::string skybox_file_path = engine->get_asset_path("skyboxes/hdr/canary_wharf_4k.hdr");
 	if (std::filesystem::exists(skybox_file_path))
 	{ // check if the file exists before loading it
 		scene_manager->load_skybox(skybox_file_path);
@@ -418,7 +418,7 @@ void setup_test_scene_refractive_1(Core* engine)
 	}
 
 	// create a skybox and set it in the scene manager
-	std::string skybox_file_path = engine->get_resource_path("textures/skyboxes/hdr/golden_gate_hills_4k.hdr");
+	std::string skybox_file_path = engine->get_asset_path("skyboxes/hdr/golden_gate_hills_4k.hdr");
 	if (std::filesystem::exists(skybox_file_path))
 	{ // check if the file exists before loading it
 		scene_manager->load_skybox(skybox_file_path);
@@ -555,7 +555,7 @@ void setup_test_scene_refractive_2(Core* engine)
 	}
 
 	// create a skybox and set it in the scene manager
-	std::string skybox_file_path = engine->get_resource_path("textures/skyboxes/hdr/golden_gate_hills_4k.hdr");
+	std::string skybox_file_path = engine->get_asset_path("skyboxes/hdr/golden_gate_hills_4k.hdr");
 	if (std::filesystem::exists(skybox_file_path))
 	{ // check if the file exists before loading it
 		scene_manager->load_skybox(skybox_file_path);

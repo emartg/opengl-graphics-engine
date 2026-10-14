@@ -435,9 +435,9 @@ TEST(AssetRegistryTest, FindsEveryDescriptorOfTheEngineMaterials)
 	EXPECT_EQ(registry.get_assets().size(), files.size()); // nothing else is there
 }
 
-TEST(AssetRegistryTest, FindsTheCubemapSkyboxesOfTheEngineResources)
+TEST(AssetRegistryTest, FindsTheCubemapSkyboxesOfTheEngineAssets)
 {
-	const fs::path faces_dir = fs::path{ ENGINE_UNIT_TESTS_RESOURCES_DIR } / "textures" / "skyboxes" / "faces";
+	const fs::path faces_dir = fs::path{ ENGINE_UNIT_TESTS_ASSETS_DIR } / "skyboxes" / "faces";
 
 	Asset_Registry registry;
 	ASSERT_TRUE(registry.scan(faces_dir));
