@@ -4,6 +4,7 @@
  * directory (and its subfolders) and recognizes each asset by the name of its file, without reading it (a
  * material by its ".material.json" extension, a model by its model extension, and so on). The folders of the
  * directory are the folders of the assets, so the registry reflects what is on disk every time it scans.
+ * It also creates, renames, moves, and deletes the folders and assets on disk (keeping the registry in sync).
  * It needs no OpenGL context, so it can be used and tested without a window.
  *
  * A skybox can be a single HDR image, a descriptor file, or a folder that holds the six images of a cubemap
@@ -34,6 +35,9 @@ public:
 	static constexpr const char* LIGHT_EXTENSION{ ".light.json" };
 	static constexpr const char* SKYBOX_EXTENSION{ ".skybox.json" };
 
+	// maximum number of characters of the name of a file or a folder
+	static constexpr std::size_t MAX_NAME_LENGTH{ 200 };
+
 	// Public Static Methods
 	// ---------------------
 	// Returns the type of asset that a file is, judging only by its name (the extension is compared without
@@ -48,6 +52,11 @@ public:
 	// Returns the name of an asset type for the user (e.g., "Material")
 	static std::string to_string(Asset_Type type);
 
+	// Returns true if a text can be the name of a file or a folder of the assets: it is not empty (nor longer than
+	// MAX_NAME_LENGTH), does not start with a dot (hidden items are not assets) or with a space, does not end with a
+	// dot or a space, and has no control character or any of / \ < > : " | ? * (which file systems do not accept)
+	static bool is_valid_name(const std::string& name);
+
 	// Public Methods
 	// --------------
 	// Scans a directory and replaces the assets and folders of the registry with the ones found in it. The
@@ -58,6 +67,40 @@ public:
 
 	// Forgets the assets and folders, but not the identifiers given so far
 	void clear();
+
+	// Operations on the files of the directory
+	// ----------------------------------------
+	// They change the files on disk and scan the directory again, so the pointers returned by the queries are no longer
+	// valid afterwards. Every path is given relative to the scanned directory (with "/" or the native separator) and
+	// must name an asset or a folder that the registry knows: an unknown file (e.g., a readme), a hidden item, a path
+	// that leaves the directory (an absolute path, or one with "..") and the directory itself are refused, so nothing
+	// outside the assets is ever touched. No operation overwrites an existing item: a name that is already used is an
+	// error (see get_unique_name). On success, an asset or a folder that is moved or renamed keeps its identifier, and
+	// so do the assets inside a folder. The references between assets (e.g., the textures of a material, or the
+	// textures of a model) are not changed. Every operation returns false and fills the error text on failure.
+
+	// Returns a name for a new item in a folder that is not used yet: the name itself, or the name with " (2)", " (3)",
+	// and so on before its extension (a descriptor extension such as ".material.json" is taken as a whole)
+	std::string get_unique_name(const std::filesystem::path& folder, const std::string& name) const;
+
+	// Creates a folder with a name in a folder (an empty path is the directory itself). Returns its path in created
+	bool
+	create_folder(const std::filesystem::path& parent_folder, const std::string& name, std::filesystem::path& created, std::string& error);
+
+	// Renames an asset or a folder. The new name is the name of the asset without its extension (the extension, which
+	// can be a descriptor extension such as ".material.json", stays the same). Returns the new path in renamed
+	bool rename(const std::filesystem::path& path, const std::string& new_name, std::filesystem::path& renamed, std::string& error);
+
+	// Moves an asset or a folder into another folder (an empty path is the directory itself), which cannot be the folder
+	// itself or one of its subfolders. Returns the new path in moved
+	bool move(
+		const std::filesystem::path& path,
+		const std::filesystem::path& destination_folder,
+		std::filesystem::path&       moved,
+		std::string&                 error);
+
+	// Deletes an asset or a folder with everything inside it
+	bool remove(const std::filesystem::path& path, std::string& error);
 
 	// Getters
 	// -------
@@ -94,8 +137,32 @@ private:
 	std::map<std::string, std::uint32_t> known_ids; // identifier of each path (generic form) seen so far
 	std::uint32_t                        next_id{ 1 };
 
+	// Private Types
+	// -------------
+	// What a path of the directory is for the registry
+	enum class Entry_Kind
+	{
+		NONE,  // not an asset or a folder that the registry knows (or a path that is not valid)
+		ASSET, // an asset (a file, or a folder with the six images of a cubemap)
+		FOLDER // a folder of the directory
+	};
+
 	// Private Methods
 	// ---------------
 	// Returns the identifier of a path, giving it a new one the first time that it is seen
 	std::uint32_t get_or_create_id(const std::string& generic_path);
+
+	// Returns what a path is, and its normalized text (with "/" separators and without "." or ".."). The directory
+	// itself is not an entry
+	Entry_Kind find_entry(const std::filesystem::path& relative_path, std::string& normalized) const;
+
+	// Returns true if a path is the directory itself or one of its folders (not a skybox folder), and its normalized
+	// text (empty for the directory)
+	bool find_folder(const std::filesystem::path& relative_path, std::string& normalized) const;
+
+	// Makes the identifiers of a path and of the paths inside it follow it to a new path
+	void retarget_ids(const std::string& old_path, const std::string& new_path);
+
+	// Scans the directory again after an operation on its files, reporting a failure in the error text
+	bool rescan(std::string& error);
 };
