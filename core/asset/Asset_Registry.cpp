@@ -10,7 +10,10 @@
 #include <array>
 #include <cctype>
 #include <set>
+#include <string_view>
 #include <system_error>
+#include <utility>
+#include <vector>
 
 namespace fs = std::filesystem;
 
@@ -50,18 +53,43 @@ namespace
 		return text == "." ? std::string{} : text;
 	}
 
-	// Returns the name of a file without its extension, taking a descriptor extension (e.g., ".material.json") as a whole
-	std::string get_asset_name(const fs::path& file)
+	// Returns the extension of the name of a file, with its dot, taking a descriptor extension (e.g., ".material.json")
+	// as a whole (empty if the name has no extension)
+	std::string get_suffix(const std::string& file_name)
 	{
-		const std::string file_name = file.filename().string();
 		const std::string lowercase = to_lowercase(file_name);
 		for (const char* suffix : { Asset_Registry::MATERIAL_EXTENSION,
 									Asset_Registry::SHAPE_EXTENSION,
 									Asset_Registry::LIGHT_EXTENSION,
 									Asset_Registry::SKYBOX_EXTENSION })
 			if (lowercase.ends_with(suffix))
-				return file_name.substr(0, file_name.size() - std::string{ suffix }.size());
-		return file.stem().string();
+				return file_name.substr(file_name.size() - std::string{ suffix }.size());
+		return fs::path{ file_name }.extension().string();
+	}
+
+	// Returns the name of a file without its extension, taking a descriptor extension (e.g., ".material.json") as a whole
+	std::string get_asset_name(const fs::path& file)
+	{
+		const std::string file_name = file.filename().string();
+		return file_name.substr(0, file_name.size() - get_suffix(file_name).size());
+	}
+
+	// Returns true if a path is relative and stays inside the directory that it is relative to: it has no root, and
+	// no ".." is left once "." and ".." are resolved
+	bool is_safe_relative_path(const fs::path& path)
+	{
+		if (path.is_absolute() || path.has_root_name() || path.has_root_directory())
+			return false;
+		for (const fs::path& part : path.lexically_normal())
+			if (part == "..")
+				return false;
+		return true;
+	}
+
+	// Returns the path of an item inside a folder, both as normalized texts (an empty folder is the directory itself)
+	std::string join(const std::string& folder, const std::string& name)
+	{
+		return folder.empty() ? name : folder + "/" + name;
 	}
 } // namespace
 
@@ -112,6 +140,19 @@ bool Asset_Registry::is_skybox_folder(const fs::path& dir)
 	}
 
 	return faces_found.size() == CUBEMAP_FACE_NAMES.size();
+}
+
+bool Asset_Registry::is_valid_name(const std::string& name)
+{
+	if (name.empty() || name.size() > MAX_NAME_LENGTH)
+		return false;
+	if (name.front() == '.' || name.front() == ' ' || name.back() == '.' || name.back() == ' ')
+		return false;
+
+	constexpr std::string_view FORBIDDEN{ "/\\<>:\"|?*" };
+	return std::none_of(name.begin(), name.end(), [&FORBIDDEN](char character) {
+		return static_cast<unsigned char>(character) < 32 || FORBIDDEN.find(character) != std::string_view::npos;
+	});
 }
 
 std::string Asset_Registry::to_string(Asset_Type type)
@@ -197,6 +238,168 @@ void Asset_Registry::clear()
 	folders.clear();
 }
 
+// Operations on the files of the directory
+// ----------------------------------------
+std::string Asset_Registry::get_unique_name(const fs::path& folder, const std::string& name) const
+{
+	const fs::path  directory = root / folder;
+	std::error_code error;
+	if (!fs::exists(directory / name, error))
+		return name;
+
+	// a folder has no extension to keep, even if its name has a dot
+	const std::string suffix = fs::is_directory(directory / name, error) ? std::string{} : get_suffix(name);
+	const std::string stem   = name.substr(0, name.size() - suffix.size());
+	for (int number = 2;; ++number)
+	{
+		const std::string candidate = stem + " (" + std::to_string(number) + ")" + suffix;
+		if (!fs::exists(directory / candidate, error))
+			return candidate;
+	}
+}
+
+bool Asset_Registry::create_folder(const fs::path& parent_folder, const std::string& name, fs::path& created, std::string& error)
+{
+	std::string parent;
+	if (!find_folder(parent_folder, parent))
+	{
+		error = "The parent is not a folder of the assets";
+		return false;
+	}
+	if (!is_valid_name(name))
+	{
+		error = "\"" + name + "\" is not a valid name for a folder";
+		return false;
+	}
+
+	std::error_code file_error;
+	if (fs::exists(root / join(parent, name), file_error))
+	{
+		error = "There is already an item named \"" + name + "\" in that folder";
+		return false;
+	}
+	if (!fs::create_directory(root / join(parent, name), file_error) || file_error)
+	{
+		error = "The folder could not be created: " + file_error.message();
+		return false;
+	}
+
+	created = fs::path{ join(parent, name) };
+	return rescan(error);
+}
+
+bool Asset_Registry::rename(const fs::path& path, const std::string& new_name, fs::path& renamed, std::string& error)
+{
+	std::string      old_path;
+	const Entry_Kind kind = find_entry(path, old_path);
+	if (kind == Entry_Kind::NONE)
+	{
+		error = "The item is not an asset or a folder of the assets";
+		return false;
+	}
+	if (!is_valid_name(new_name))
+	{
+		error = "\"" + new_name + "\" is not a valid name";
+		return false;
+	}
+
+	// the extension of a file stays the same (a folder has none to keep)
+	std::error_code   file_error;
+	const fs::path    source   = root / old_path;
+	const std::string suffix   = fs::is_regular_file(source, file_error) ? get_suffix(source.filename().string()) : std::string{};
+	const std::string new_path = join(normalize(fs::path{ old_path }.parent_path()), new_name + suffix);
+	if (new_path == old_path)
+	{ // nothing to change
+		renamed = fs::path{ old_path };
+		return true;
+	}
+
+	// a name that is only written with another case is the same item on a file system that ignores the case
+	const fs::path target = root / new_path;
+	if (fs::exists(target, file_error) && !fs::equivalent(source, target, file_error))
+	{
+		error = "There is already an item named \"" + new_name + suffix + "\" in that folder";
+		return false;
+	}
+
+	fs::rename(source, target, file_error);
+	if (file_error)
+	{
+		error = "The item could not be renamed: " + file_error.message();
+		return false;
+	}
+
+	retarget_ids(old_path, new_path);
+	renamed = fs::path{ new_path };
+	return rescan(error);
+}
+
+bool Asset_Registry::move(const fs::path& path, const fs::path& destination_folder, fs::path& moved, std::string& error)
+{
+	std::string      old_path;
+	const Entry_Kind kind = find_entry(path, old_path);
+	if (kind == Entry_Kind::NONE)
+	{
+		error = "The item is not an asset or a folder of the assets";
+		return false;
+	}
+	std::string destination;
+	if (!find_folder(destination_folder, destination))
+	{
+		error = "The destination is not a folder of the assets";
+		return false;
+	}
+	if (kind == Entry_Kind::FOLDER && (destination == old_path || destination.starts_with(old_path + "/")))
+	{
+		error = "A folder cannot be moved into itself";
+		return false;
+	}
+	if (destination == normalize(fs::path{ old_path }.parent_path()))
+	{
+		error = "The item is already in that folder";
+		return false;
+	}
+
+	const std::string new_path = join(destination, fs::path{ old_path }.filename().string());
+	std::error_code   file_error;
+	if (fs::exists(root / new_path, file_error))
+	{
+		error = "There is already an item named \"" + fs::path{ new_path }.filename().string() + "\" in the destination";
+		return false;
+	}
+
+	fs::rename(root / old_path, root / new_path, file_error);
+	if (file_error)
+	{
+		error = "The item could not be moved: " + file_error.message();
+		return false;
+	}
+
+	retarget_ids(old_path, new_path);
+	moved = fs::path{ new_path };
+	return rescan(error);
+}
+
+bool Asset_Registry::remove(const fs::path& path, std::string& error)
+{
+	std::string old_path;
+	if (find_entry(path, old_path) == Entry_Kind::NONE)
+	{
+		error = "The item is not an asset or a folder of the assets";
+		return false;
+	}
+
+	std::error_code file_error;
+	fs::remove_all(root / old_path, file_error);
+	if (file_error)
+	{
+		error = "The item could not be deleted: " + file_error.message();
+		return false;
+	}
+
+	return rescan(error);
+}
+
 // Getters
 // -------
 const Asset* Asset_Registry::find_by_id(std::uint32_t id) const
@@ -240,6 +443,67 @@ std::vector<const Asset*> Asset_Registry::get_assets_in_folder(const fs::path& f
 
 // Private Methods
 // ---------------
+Asset_Registry::Entry_Kind Asset_Registry::find_entry(const fs::path& relative_path, std::string& normalized) const
+{
+	normalized.clear();
+	if (root.empty() || !is_safe_relative_path(relative_path))
+		return Entry_Kind::NONE;
+
+	normalized = normalize(relative_path);
+	if (normalized.empty())
+		return Entry_Kind::NONE; // the directory itself
+
+	if (find_by_path(normalized))
+		return Entry_Kind::ASSET;
+	const bool is_folder = std::any_of(folders.begin(), folders.end(), [&normalized](const fs::path& folder) {
+		return folder.generic_string() == normalized;
+	});
+	return is_folder ? Entry_Kind::FOLDER : Entry_Kind::NONE;
+}
+
+bool Asset_Registry::find_folder(const fs::path& relative_path, std::string& normalized) const
+{
+	normalized.clear();
+	if (root.empty() || !is_safe_relative_path(relative_path))
+		return false;
+
+	normalized = normalize(relative_path);
+	if (normalized.empty())
+		return true; // the directory itself
+
+	return std::any_of(folders.begin(), folders.end(), [&normalized](const fs::path& folder) {
+		return folder.generic_string() == normalized;
+	});
+}
+
+void Asset_Registry::retarget_ids(const std::string& old_path, const std::string& new_path)
+{
+	// the identifiers are collected first, since the keys of the map change
+	std::vector<std::pair<std::string, std::uint32_t>> moved;
+	for (auto it = known_ids.begin(); it != known_ids.end();)
+	{
+		if (it->first == old_path || it->first.starts_with(old_path + "/"))
+		{
+			moved.emplace_back(new_path + it->first.substr(old_path.size()), it->second);
+			it = known_ids.erase(it);
+		}
+		else
+			++it;
+	}
+	for (const auto& [path, id] : moved) known_ids[path] = id;
+}
+
+bool Asset_Registry::rescan(std::string& error)
+{
+	// scan() clears the registry, including the root that it would read, so it is given a copy
+	const fs::path directory = root;
+	if (scan(directory))
+		return true;
+
+	error = "The assets directory could not be scanned again";
+	return false;
+}
+
 std::uint32_t Asset_Registry::get_or_create_id(const std::string& generic_path)
 {
 	const auto known = known_ids.find(generic_path);
