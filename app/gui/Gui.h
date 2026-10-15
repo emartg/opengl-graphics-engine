@@ -24,6 +24,7 @@
 #include <imgui.h>
 #include <imgui_internal.h>
 
+#include "Assets_Window.h"
 #include "platform/gui/Gui_Layer.h"
 
 // Forward declaration of classes to avoid cyclic includes and allow virtual interfaces and pointers
@@ -67,6 +68,11 @@ private:
 	glm::vec3 new_position, new_rotation, new_direction, new_scale;
 	float     new_inner_cutoff, new_outer_cutoff;
 
+	// the ASSETS window (the folders and assets of the assets directory), and the node that was selected in the scene
+	// in the last frame, to know when the user selects something of the scene instead of an asset
+	Assets_Window assets_window;
+	std::uint32_t last_scene_selection_id{ 0 };
+
 	// set of node ids that should be auto-opened in the Scene Graph window
 	std::unordered_set<std::uint32_t> scene_graph_auto_open_ids;
 	// ids to actually force-open this frame (re-armed per selection change)
@@ -77,11 +83,13 @@ private:
 	// parameters for the GUI layout and windows
 	// relative widths and heights of the windows relative to the display size
 	float scene_graph_window_relative_width, scene_graph_window_relative_height;
+	float assets_window_relative_width, assets_window_relative_height;
 	float creation_window_relative_width, creation_window_relative_height;
 	float properties_window_relative_width, properties_window_relative_height;
 	float debug_window_relative_width, debug_window_relative_height;
 	// offsets the windows from the edges of the display
 	float scene_graph_window_x_offset, scene_graph_window_y_offset;
+	float assets_window_x_offset, assets_window_y_offset;
 	float properties_window_x_offset, properties_window_y_offset;
 	float creation_window_x_offset, creation_window_y_offset;
 	float debug_window_x_offset, debug_window_y_offset;
@@ -90,6 +98,7 @@ private:
 	// positions and sizes of the windows in the display
 	ImVec2 scene_graph_window_position, properties_window_position, creation_window_position, debug_window_position;
 	ImVec2 scene_graph_window_size, properties_window_size, creation_window_size, debug_window_size;
+	ImVec2 assets_window_position, assets_window_size;
 	// state of the Material Editor window
 	bool                                material_editor_open{ false };            // whether the window is shown
 	std::shared_ptr<Material>           edited_material;                          // material shown in the window

@@ -108,6 +108,8 @@ GUI::GUI() :
 	// (each attribute is assigned separately, since chaining them with commas would only assign the last one)
 	scene_graph_window_position = properties_window_position = ImVec2{ 0.0f, 0.0f };
 	creation_window_position = debug_window_position = ImVec2{ 0.0f, 0.0f };
+	assets_window_position                           = ImVec2{ 0.0f, 0.0f };
+	assets_window_size                               = ImVec2{ 0.0f, 0.0f };
 	scene_graph_window_size = properties_window_size = ImVec2{ 0.0f, 0.0f };
 	creation_window_size = debug_window_size = ImVec2{ 0.0f, 0.0f };
 	// initialize the flags for the windows to prevent focus on the first frame
@@ -139,6 +141,13 @@ void GUI::configure()
 
 void GUI::draw()
 {
+	// the selection of the App is either something of the scene or assets: selecting something of the scene (in the
+	// viewport or in the Scene Graph window) unselects the assets (selecting an asset unselects the scene itself)
+	const std::uint32_t scene_selection_id = Core::get_instance()->get_selection_manager()->get_selected_node_id();
+	if (scene_selection_id != 0 && scene_selection_id != last_scene_selection_id)
+		assets_window.clear_selection();
+	last_scene_selection_id = scene_selection_id;
+
 	configure_gui_layout(); // configure the layout of the GUI windows based on the display size
 	draw_gui_windows();     // draw the GUI windows (information, settings, and create Windows)
 	handle_gui_input();     // handle ImGui input (mouse and keyboard)
@@ -150,7 +159,9 @@ void GUI::init_gui_layout_attributes()
 {
 	// set the private variables for the GUI layout
 	scene_graph_window_relative_width  = 0.25f;
-	scene_graph_window_relative_height = 1.0f;
+	scene_graph_window_relative_height = 0.55f;
+	assets_window_relative_width       = 0.25f;
+	assets_window_relative_height      = 1.0f - scene_graph_window_relative_height;
 	properties_window_relative_width   = 0.25f;
 	properties_window_relative_height  = 0.4f;
 	creation_window_relative_width     = 0.25f;
@@ -160,6 +171,8 @@ void GUI::init_gui_layout_attributes()
 
 	scene_graph_window_x_offset = 0.0f;
 	scene_graph_window_y_offset = 0.0f;
+	assets_window_x_offset      = 0.0f;
+	assets_window_y_offset      = scene_graph_window_relative_height;
 	properties_window_x_offset  = 1.0f - properties_window_relative_width;
 	properties_window_y_offset  = 0.0f;
 	creation_window_x_offset    = 1.0f - creation_window_relative_width;
@@ -269,10 +282,21 @@ void GUI::configure_gui_layout()
 		io.DisplaySize.x * scene_graph_window_x_offset + window_position_padding.x, // x position
 		io.DisplaySize.y * scene_graph_window_y_offset + window_position_padding.y  // y position
 	};
-	// size (width and height) of the Scene Graph Window
+	// size (width and height) of the Scene Graph Window (it ends where the Assets Window starts, like the windows of
+	// the right side)
 	scene_graph_window_size = ImVec2{
-		io.DisplaySize.x * scene_graph_window_relative_width - window_size_padding.x, // width
-		io.DisplaySize.y * scene_graph_window_relative_height - window_size_padding.y // height
+		io.DisplaySize.x * scene_graph_window_relative_width - window_size_padding.x,        // width
+		io.DisplaySize.y * scene_graph_window_relative_height - window_size_padding.y * 0.5f // height
+	};
+	// position of the Assets Window - left side, below the Scene Graph with padding
+	assets_window_position = ImVec2{
+		io.DisplaySize.x * assets_window_x_offset + window_position_padding.x, // x position
+		io.DisplaySize.y * assets_window_y_offset + window_position_padding.y  // y position
+	};
+	// size (width and height) of the Assets Window (it ends at the bottom edge with padding)
+	assets_window_size = ImVec2{
+		io.DisplaySize.x * assets_window_relative_width - window_size_padding.x, // width
+		io.DisplaySize.y * assets_window_relative_height - window_size_padding.y // height
 	};
 	// position of the Properties Window - top right corner with padding
 	properties_window_position = ImVec2{
@@ -311,6 +335,7 @@ void GUI::configure_gui_layout()
 void GUI::draw_gui_windows()
 {
 	draw_scene_graph_window();
+	assets_window.draw(assets_window_position, assets_window_size, bold_font);
 	draw_properties_window();
 	draw_creation_window();
 	draw_debug_window();
@@ -338,6 +363,10 @@ void GUI::reset_gui_layout()
 	ImGui::SetWindowPos("SCENE GRAPH", scene_graph_window_position);
 	ImGui::SetWindowSize("SCENE GRAPH", scene_graph_window_size);
 	ImGui::SetWindowCollapsed("SCENE GRAPH", false);
+
+	ImGui::SetWindowPos("ASSETS", assets_window_position);
+	ImGui::SetWindowSize("ASSETS", assets_window_size);
+	ImGui::SetWindowCollapsed("ASSETS", false);
 
 	ImGui::SetWindowPos("DEBUG", debug_window_position);
 	ImGui::SetWindowSize("DEBUG", debug_window_size);
@@ -512,7 +541,11 @@ void GUI::draw_properties_window()
 		ImGui::PopFont();
 
 		auto selected = selection_manager->get_selected_node(node_manager.get());
-		if (!selected)
+		if (!selected && assets_window.has_selection())
+		{ // if assets are selected instead of a node, display their attributes (read only)
+			assets_window.draw_selection_properties(bold_font);
+		}
+		else if (!selected)
 		{ // if no node is selected, display a message
 			ImGui::Text("No node selected.\nClick an object to inspect it.");
 		}

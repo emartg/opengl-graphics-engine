@@ -318,6 +318,7 @@ The App accepts the following command-line options:
 
 - `--scene NAME` (or `--scene=NAME`): load the scene with the given name (`example` by default). The scenes are registered in `app/scenes/Scenes.cpp`: the example scene, and test scenes for reflective and refractive materials and for performance (stress tests).
 - `--objects N` (or `--objects=N`): number of objects of the scenes that allow choosing it (the stress test scenes, e.g., `--scene geometric-stress-1 --objects 5000`).
+- `--assets-dir PATH` (or `--assets-dir=PATH`): use the assets in `PATH` instead of the assets directory that the engine finds. It must be an existing directory (otherwise the App fails before starting). It is useful to try the ASSETS window, which changes files, on a copy of the assets.
 - `--list-scenes`: print the available scenes, with their descriptions, and exit.
 - `--frames N` (or `--frames=N`): render `N` frames and exit. The main loop does not wait for user input in this mode, so it can run unattended.
 - `-h`, `--help`: print the usage and exit.
@@ -327,7 +328,7 @@ In VS Code, the arguments can be set in the `args` of the launch configuration; 
 With the `ENGINE_BUILD_TESTS` option enabled, the build registers two kinds of tests in CTest:
 
 - **Unit tests** (label `unit`): the `Engine_Unit_Tests` executable, written with [GoogleTest](https://github.com/google/googletest), tests the Core classes that do not require an OpenGL context (e.g., `String_Utils`, `File_System_Utils`, and `Random`), so they run on any machine. GoogleTest is taken from an installed package if one is found (e.g., `libgtest-dev` on Linux), and is otherwise downloaded (pinned version and hash) during the configuration.
-- **Smoke tests** (label `smoke`): run `App --frames 120` (the example scene) and a few frames of each test scene (with 10 objects in the stress test scenes), and fail if the App exits with an error code (e.g., the OpenGL 4.5 context cannot be created, or a shader fails to compile) or prints any `[ERROR` message. Another test checks that an unknown scene name is rejected.
+- **Smoke tests** (label `smoke`): run `App --frames 120` (the example scene) and a few frames of each test scene (with 10 objects in the stress test scenes), and fail if the App exits with an error code (e.g., the OpenGL 4.5 context cannot be created, or a shader fails to compile) or prints any `[ERROR` message. Other tests check that an unknown scene name is rejected, that the App runs with `--assets-dir` set to the engine's assets, and that a missing assets directory is rejected.
 
 The build presets only build the App, so the unit test executable must be requested explicitly:
 

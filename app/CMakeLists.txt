@@ -71,6 +71,16 @@ if(ENGINE_BUILD_TESTS)
 		LABELS smoke
 	)
 
+	# the assets directory can be chosen on the command line (here, the engine's own), and it must exist
+	add_test(NAME App_Assets_Dir_Smoke_Test COMMAND App --assets-dir ${ENGINE_ROOT_DIR}/assets --frames 10)
+	set_tests_properties(App_Assets_Dir_Smoke_Test PROPERTIES
+		FAIL_REGULAR_EXPRESSION "\\[ERROR"
+		TIMEOUT 300
+		LABELS smoke
+	)
+	add_test(NAME App_Missing_Assets_Dir_Test COMMAND App --assets-dir ${CMAKE_BINARY_DIR}/missing_assets_directory)
+	set_tests_properties(App_Missing_Assets_Dir_Test PROPERTIES WILL_FAIL TRUE LABELS smoke)
+
 	# an unknown scene must be rejected (with an error code) before the window is created, so no display is needed
 	add_test(NAME App_Unknown_Scene_Test COMMAND App --scene unknown-scene)
 	set_tests_properties(App_Unknown_Scene_Test PROPERTIES WILL_FAIL TRUE LABELS smoke)
