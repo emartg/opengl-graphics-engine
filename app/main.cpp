@@ -22,6 +22,8 @@
 
 #include <charconv>
 #include <cstdint>
+#include <filesystem>
+#include <system_error>
 #include <iostream>
 #include <limits>
 #include <memory>
@@ -42,6 +44,7 @@ struct App_Options
 	std::uint64_t    max_frames{ 0 };         // number of frames to render before exiting (0 means no limit)
 	bool             list_scenes{ false };    // whether the list of scenes was requested
 	bool             show_help{ false };      // whether the usage was requested
+	std::string_view assets_dir;              // assets directory to use instead of the one that the engine finds (empty if none)
 };
 
 // Parses the command-line arguments into the given options.
@@ -89,10 +92,24 @@ int main(int argc, char** argv)
 		return -1;
 	}
 
+	// the assets directory that was asked for must exist (the engine finds its own otherwise)
+	if (!options.assets_dir.empty())
+	{
+		std::error_code error;
+		if (!std::filesystem::is_directory(std::filesystem::path{ std::string{ options.assets_dir } }, error))
+		{
+			std::cerr << "[ERROR::main] The assets directory does not exist: '" << options.assets_dir << "'" << std::endl;
+			return -1;
+		}
+	}
+
 	std::cout << "[INFO::main] Starting the application..." << std::endl;
 
 	Core* engine = Core::get_instance(); // retrieve the singleton instance of
 										 // the Core class
+
+	if (!options.assets_dir.empty())
+		engine->set_assets_dir(std::filesystem::path{ std::string{ options.assets_dir } });
 
 	// the application is interactive unless it renders a fixed number of frames (e.g., automated tests)
 	const bool interactive = options.max_frames == 0;
@@ -182,6 +199,12 @@ bool parse_command_line(int argc, char** argv, App_Options& options)
 				return false;
 			options.scene_name = value;
 		}
+		else if (is_option(argument, "--assets-dir"))
+		{ // assets directory to use (validated by main)
+			if (!read_value(i, argument, "--assets-dir", value))
+				return false;
+			options.assets_dir = value;
+		}
 		else if (is_option(argument, "--objects"))
 		{ // number of objects of the scene
 			std::uint64_t object_count{ 0 };
@@ -212,6 +235,7 @@ void print_usage(const char* program_name)
 			  << "Options:\n"
 			  << "  --scene NAME, --scene=NAME      Load the scene with the given name (\"example\" by default)\n"
 			  << "  --objects N, --objects=N        Number of objects of the scenes that allow choosing it (e.g., stress tests)\n"
+			  << "  --assets-dir PATH               Use the assets in PATH (e.g., a copy, to try the ASSETS window safely)\n"
 			  << "  --list-scenes                   Print the available scenes and exit\n"
 			  << "  --frames N, --frames=N          Render N frames and exit (e.g., for automated smoke tests)\n"
 			  << "  -h, --help                      Print this help and exit" << std::endl;
