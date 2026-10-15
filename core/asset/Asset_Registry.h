@@ -76,8 +76,15 @@ public:
 	// that leaves the directory (an absolute path, or one with "..") and the directory itself are refused, so nothing
 	// outside the assets is ever touched. No operation overwrites an existing item: a name that is already used is an
 	// error (see get_unique_name). On success, an asset or a folder that is moved or renamed keeps its identifier, and
-	// so do the assets inside a folder. The references between assets (e.g., the textures of a material, or the
-	// textures of a model) are not changed. Every operation returns false and fills the error text on failure.
+	// so do the assets inside a folder. Every operation returns false and fills the error text on failure.
+	//
+	// References between assets: the materials refer to their textures with relative paths, so moving or renaming a
+	// texture (or a folder with textures) rewrites the paths of the materials that use it, and moving or renaming a
+	// material (or a folder with materials) rewrites its own paths, so that every material keeps its textures. A
+	// material descriptor that cannot be read or written is left as it was, and a text about it is added to the
+	// warnings (the operation itself succeeds). A model refers to the files next to it (e.g., its textures) in ways that
+	// the registry does not read, so what is inside a folder that directly holds a model cannot be renamed or moved on
+	// its own (the folder of the model can). Deleting never fails because of a reference: ask find_users first.
 
 	// Returns a name for a new item in a folder that is not used yet: the name itself, or the name with " (2)", " (3)",
 	// and so on before its extension (a descriptor extension such as ".material.json" is taken as a whole)
@@ -101,6 +108,14 @@ public:
 
 	// Deletes an asset or a folder with everything inside it
 	bool remove(const std::filesystem::path& path, std::string& error);
+
+	// Returns the assets that use an asset or a folder (given relative to the scanned directory): the materials that
+	// have a texture inside it (except the ones that are inside it too) and, for something that is inside the folder
+	// of a model, the models of that folder. It is empty if nothing uses it, or if the path is not an asset or a folder
+	std::vector<std::filesystem::path> find_users(const std::filesystem::path& path) const;
+
+	// The texts about what the last operation could not update (see the references above); empty if it updated all
+	const std::vector<std::string>& get_warnings() const { return warnings; }
 
 	// Getters
 	// -------
@@ -136,6 +151,7 @@ private:
 	std::vector<std::filesystem::path>   folders;
 	std::map<std::string, std::uint32_t> known_ids; // identifier of each path (generic form) seen so far
 	std::uint32_t                        next_id{ 1 };
+	std::vector<std::string>             warnings; // what the last operation could not update
 
 	// Private Types
 	// -------------
@@ -159,6 +175,14 @@ private:
 	// Returns true if a path is the directory itself or one of its folders (not a skybox folder), and its normalized
 	// text (empty for the directory)
 	bool find_folder(const std::filesystem::path& relative_path, std::string& normalized) const;
+
+	// Returns the folder (normalized) of the nearest model that holds a path inside it, or an empty optional if the path
+	// is not inside the folder of a model. The directory itself is never a folder of a model
+	std::optional<std::string> find_model_folder(const std::string& normalized_path) const;
+
+	// Rewrites the texture paths of the materials after the item at old_path was moved to new_path on disk (and before
+	// the registry is scanned again), adding to the warnings the materials that could not be updated
+	void update_references(const std::string& old_path, const std::string& new_path);
 
 	// Makes the identifiers of a path and of the paths inside it follow it to a new path
 	void retarget_ids(const std::string& old_path, const std::string& new_path);

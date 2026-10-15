@@ -6,10 +6,14 @@
 
 #include "Asset_Registry.h"
 
+#include "../material/Material_Library.h"
+
 #include <algorithm>
 #include <array>
 #include <cctype>
+#include <fstream>
 #include <set>
+#include <sstream>
 #include <string_view>
 #include <system_error>
 #include <utility>
@@ -90,6 +94,56 @@ namespace
 	std::string join(const std::string& folder, const std::string& name)
 	{
 		return folder.empty() ? name : folder + "/" + name;
+	}
+
+	// Returns true if a normalized path is an item or is inside it
+	bool is_same_or_inside(const std::string& path, const std::string& item)
+	{
+		return path == item || path.starts_with(item + "/");
+	}
+
+	// Returns the path that a normalized path takes when the item at old_path is moved to new_path
+	std::string remap(const std::string& path, const std::string& old_path, const std::string& new_path)
+	{
+		return is_same_or_inside(path, old_path) ? new_path + path.substr(old_path.size()) : path;
+	}
+
+	// Returns the normalized text of a path relative to a directory, or an empty optional if the path is the directory or is
+	// outside it (both are absolute, or both relative to the same place)
+	std::optional<std::string> to_relative_text(const fs::path& path, const fs::path& directory)
+	{
+		const fs::path relative = path.lexically_normal().lexically_relative(directory);
+		if (relative.empty() || relative == "." || *relative.begin() == "..")
+			return std::nullopt;
+		return relative.generic_string();
+	}
+
+	// Reads the text of a file, returning false if it cannot be read
+	bool read_text(const fs::path& file, std::string& text)
+	{
+		std::ifstream stream{ file, std::ios::binary };
+		if (!stream)
+			return false;
+		std::ostringstream buffer;
+		buffer << stream.rdbuf();
+		text = buffer.str();
+		return true;
+	}
+
+	// Reads the descriptor of a material file, resolving its texture paths relative to the directory where the file is
+	// (or was) and normalizing them. Returns an empty optional and an error text if it cannot be read or parsed
+	std::optional<Material_Descriptor> read_material(const fs::path& file, const fs::path& directory, std::string& error)
+	{
+		std::string text;
+		if (!read_text(file, text))
+		{
+			error = "the file cannot be read";
+			return std::nullopt;
+		}
+		std::optional<Material_Descriptor> descriptor = Material_Library::parse_descriptor(text, directory, error);
+		if (descriptor)
+			for (auto& entry : descriptor->texture_paths) entry.second = entry.second.lexically_normal();
+		return descriptor;
 	}
 } // namespace
 
@@ -290,11 +344,18 @@ bool Asset_Registry::create_folder(const fs::path& parent_folder, const std::str
 
 bool Asset_Registry::rename(const fs::path& path, const std::string& new_name, fs::path& renamed, std::string& error)
 {
+	warnings.clear();
 	std::string      old_path;
 	const Entry_Kind kind = find_entry(path, old_path);
 	if (kind == Entry_Kind::NONE)
 	{
 		error = "The item is not an asset or a folder of the assets";
+		return false;
+	}
+	if (const std::optional<std::string> model_folder = find_model_folder(old_path))
+	{
+		error = "The item belongs to the model in \"" + *model_folder +
+			"\" and may be referred to by it: rename the folder of the model instead";
 		return false;
 	}
 	if (!is_valid_name(new_name))
@@ -329,6 +390,7 @@ bool Asset_Registry::rename(const fs::path& path, const std::string& new_name, f
 		return false;
 	}
 
+	update_references(old_path, new_path);
 	retarget_ids(old_path, new_path);
 	renamed = fs::path{ new_path };
 	return rescan(error);
@@ -336,11 +398,18 @@ bool Asset_Registry::rename(const fs::path& path, const std::string& new_name, f
 
 bool Asset_Registry::move(const fs::path& path, const fs::path& destination_folder, fs::path& moved, std::string& error)
 {
+	warnings.clear();
 	std::string      old_path;
 	const Entry_Kind kind = find_entry(path, old_path);
 	if (kind == Entry_Kind::NONE)
 	{
 		error = "The item is not an asset or a folder of the assets";
+		return false;
+	}
+	if (const std::optional<std::string> model_folder = find_model_folder(old_path))
+	{
+		error =
+			"The item belongs to the model in \"" + *model_folder + "\" and may be referred to by it: move the folder of the model instead";
 		return false;
 	}
 	std::string destination;
@@ -375,6 +444,7 @@ bool Asset_Registry::move(const fs::path& path, const fs::path& destination_fold
 		return false;
 	}
 
+	update_references(old_path, new_path);
 	retarget_ids(old_path, new_path);
 	moved = fs::path{ new_path };
 	return rescan(error);
@@ -382,6 +452,7 @@ bool Asset_Registry::move(const fs::path& path, const fs::path& destination_fold
 
 bool Asset_Registry::remove(const fs::path& path, std::string& error)
 {
+	warnings.clear();
 	std::string old_path;
 	if (find_entry(path, old_path) == Entry_Kind::NONE)
 	{
@@ -398,6 +469,42 @@ bool Asset_Registry::remove(const fs::path& path, std::string& error)
 	}
 
 	return rescan(error);
+}
+
+std::vector<fs::path> Asset_Registry::find_users(const fs::path& path) const
+{
+	std::vector<fs::path> users;
+	std::string           item;
+	if (find_entry(path, item) == Entry_Kind::NONE)
+		return users;
+
+	std::error_code file_error;
+	const fs::path  root_absolute = fs::absolute(root, file_error).lexically_normal();
+	for (const Asset& asset : assets)
+	{
+		const std::string asset_path = asset.path.generic_string();
+		if (asset.type != Asset_Type::MATERIAL || is_same_or_inside(asset_path, item))
+			continue; // a material that is inside the item goes with it
+
+		std::string error;
+		const auto  material = read_material(root_absolute / asset_path, (root_absolute / asset_path).parent_path(), error);
+		if (!material)
+			continue;
+		const bool uses_item = std::any_of(material->texture_paths.begin(), material->texture_paths.end(), [&](const auto& entry) {
+			const std::optional<std::string> texture = to_relative_text(entry.second, root_absolute);
+			return texture && is_same_or_inside(*texture, item);
+		});
+		if (uses_item)
+			users.push_back(asset.path);
+	}
+
+	// what is inside the folder of a model may be used by the model
+	if (const std::optional<std::string> model_folder = find_model_folder(item))
+		for (const Asset& asset : assets)
+			if (asset.type == Asset_Type::MODEL && normalize(asset.path.parent_path()) == *model_folder)
+				users.push_back(asset.path);
+
+	return users;
 }
 
 // Getters
@@ -474,6 +581,73 @@ bool Asset_Registry::find_folder(const fs::path& relative_path, std::string& nor
 	return std::any_of(folders.begin(), folders.end(), [&normalized](const fs::path& folder) {
 		return folder.generic_string() == normalized;
 	});
+}
+
+std::optional<std::string> Asset_Registry::find_model_folder(const std::string& normalized_path) const
+{
+	for (const Asset& asset : assets)
+	{
+		if (asset.type != Asset_Type::MODEL)
+			continue;
+		const std::string folder = normalize(asset.path.parent_path());
+		if (!folder.empty() && normalized_path.starts_with(folder + "/"))
+			return folder;
+	}
+	return std::nullopt;
+}
+
+void Asset_Registry::update_references(const std::string& old_path, const std::string& new_path)
+{
+	std::error_code file_error;
+	const fs::path  root_absolute = fs::absolute(root, file_error).lexically_normal();
+
+	// the registry still has the paths that the materials had before the move
+	for (const Asset& asset : assets)
+	{
+		if (asset.type != Asset_Type::MATERIAL)
+			continue;
+
+		const std::string old_file = asset.path.generic_string();
+		const std::string new_file = remap(old_file, old_path, new_path);
+		const fs::path    old_dir  = (root_absolute / old_file).parent_path(); // the texture paths are relative to it
+		const fs::path    new_dir  = (root_absolute / new_file).parent_path();
+
+		std::string                        error;
+		std::optional<Material_Descriptor> material = read_material(root_absolute / new_file, old_dir, error);
+		if (!material)
+		{
+			warnings.push_back(new_file + ": its textures could not be updated (" + error + ")");
+			continue;
+		}
+		if (material->texture_paths.empty())
+			continue;
+
+		// the paths of the textures after the move, and whether anything changes for this material
+		bool is_changed = old_dir != new_dir;
+		for (auto& [slot, texture_path] : material->texture_paths)
+		{
+			const std::optional<std::string> texture = to_relative_text(texture_path, root_absolute);
+			if (!texture)
+				continue; // a texture outside the directory is not touched
+			const std::string moved_texture = remap(*texture, old_path, new_path);
+			if (moved_texture != *texture)
+			{
+				texture_path = root_absolute / moved_texture;
+				is_changed   = true;
+			}
+		}
+		if (!is_changed)
+			continue;
+
+		// write the descriptor with its paths relative to the place where the file is now
+		const std::string new_text = Material_Library::write_descriptor(*material, new_dir);
+		std::string       old_text;
+		if (read_text(root_absolute / new_file, old_text) && old_text == new_text)
+			continue;
+		std::ofstream stream{ root_absolute / new_file, std::ios::binary | std::ios::trunc };
+		if (!stream || !(stream << new_text))
+			warnings.push_back(new_file + ": its textures could not be updated (the file cannot be written)");
+	}
 }
 
 void Asset_Registry::retarget_ids(const std::string& old_path, const std::string& new_path)
