@@ -24,6 +24,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Shader reloading at runtime from the Debug window (all shaders or one by one): a shader that fails to compile keeps its previous program.
 - nlohmann/json dependency (vcpkg `nlohmann-json`, Ubuntu `nlohmann-json3-dev`).
 - `#include` directive for shaders, resolved by the engine's shader preprocessor (with `#line` directives, so that compiler messages show the line numbers of the original files).
+- `Mesh_Geometry::get_indices()`, a read-only getter for the indices of the triangles, next to `get_vertices()`, so that the triangles of a loaded model can be read.
 
 ### Changed
 
