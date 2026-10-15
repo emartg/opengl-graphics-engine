@@ -60,6 +60,9 @@ public:
 	GLuint                     get_vao() const { return vao; }
 	GLsizei                    get_index_count() const { return static_cast<GLsizei>(indices.size()); }
 	const std::vector<Vertex>& get_vertices() const { return vertices; }
+	// Returns the indices of the triangles (three for each one, into the vertices), which the geometry keeps on the CPU
+	// like the vertices, so that the triangles can be read (e.g., for picking or for another renderer)
+	const std::vector<GLuint>& get_indices() const { return indices; }
 	// Returns the bounding box of the vertices, in the local space of the geometry
 	const Bounding_Box& get_bounding_box() const { return bounding_box; }
 
