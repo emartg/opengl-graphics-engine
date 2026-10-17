@@ -266,7 +266,7 @@ The consumer must provide the Engine's dependencies (GLFW, GLM, Assimp, and nloh
 }
 ```
 
-With MinGW, vcpkg does not copy the DLLs beside the executables, so consumers should call `engine_stage_runtime_dependencies(<target>)` (defined in `cmake/EngineDependencies.cmake`) for each executable, as the App, the unit tests, and the consumer test do. It copies the DLLs installed by vcpkg (Debug or Release ones, depending on the configuration) after each build, and does nothing with MSVC, whose DLLs are copied by vcpkg, or on Linux.
+With MinGW, vcpkg does not copy the DLLs beside the executables, so consumers should call `engine_stage_runtime_dependencies(<target>)` (defined in `cmake/EngineDependencies.cmake`) for each executable, as the App, the unit tests, and the consumer test do. It copies the DLLs installed by vcpkg (Debug or Release ones, depending on the configuration) after each build, and does nothing with MSVC, whose DLLs are copied by vcpkg, or on Linux. One custom target for each output directory does the copying, and the executables of that directory depend on it, so that executables that share a folder never copy the same files at the same time in a parallel build.
 
 ## Building with CMake Presets from the Command Line
 

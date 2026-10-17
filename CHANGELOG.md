@@ -44,6 +44,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
+- `engine_stage_runtime_dependencies` (MinGW) no longer copies the DLLs in the post-build step of each executable: one custom target for each output directory copies them, and the executables of that directory depend on it, so that two executables that share a folder (e.g., the App and the unit tests) cannot copy the same files at the same time in a parallel build and fail with "permission denied".
 - Pressing a key that has no action (any key except Escape and Delete) printed an `[ERROR::INPUTMANAGER::key_callback]` line, which made the smoke tests fail at random when keys were pressed while the App was open. Such keys are now ignored silently.
 - Minimizing the window (or resizing it to an empty area) aborted Debug builds with a failed assertion of GLM, since the aspect ratio of the projection was 0 / 0, and resized the picking and outline framebuffers to 0 x 0. While the window is minimized, nothing is rendered until it is restored.
 - The entry of the Material combo box of the Properties window that removes the material of an object was named "Default", like the default material, so both entries had the same ImGui identifier (reported as a conflict in Debug builds, and a click could select the other entry). It is now named "Mesh Materials".
