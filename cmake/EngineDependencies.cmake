@@ -51,10 +51,13 @@ if(ENGINE_BUILD_PLATFORM)
     target_compile_features(engine_imgui PUBLIC cxx_std_17)
 endif()
 
-# Copies the runtime dependencies (DLLs) built by vcpkg beside the executable of the given target after
-# each build, so that it can be run from the build tree. It is only needed with MinGW: with MSVC, vcpkg
-# already copies the DLLs used by each executable, and on Linux the shared libraries are found by the system.
-# It is a function (functions are global in CMake), so consumers of the Engine can use it for their executables
+# Copies the runtime dependencies (DLLs) built by vcpkg beside the executable of the given target, so that it can be
+# run from the build tree. It is only needed with MinGW: with MSVC, vcpkg already copies the DLLs used by each
+# executable, and on Linux the shared libraries are found by the system. It is a function (functions are global in
+# CMake), so consumers of the Engine can use it for their executables.
+# The copy is done by one custom target for each output directory, which the executables of that directory depend on, so
+# that several executables that share a folder (e.g., the App and the unit tests) never copy the same files at the
+# same time in a parallel build (a copy that finds a file open by another one fails with "permission denied")
 function(engine_stage_runtime_dependencies target)
     if(MINGW AND DEFINED VCPKG_INSTALLED_DIR AND DEFINED VCPKG_TARGET_TRIPLET)
         # every DLL installed by vcpkg (including the dependencies of Assimp, e.g., zlib), for each configuration
@@ -62,13 +65,32 @@ function(engine_stage_runtime_dependencies target)
         file(GLOB _engine_release_dlls "${_engine_vcpkg_dir}/bin/*.dll")
         file(GLOB _engine_debug_dlls "${_engine_vcpkg_dir}/debug/bin/*.dll")
         if(_engine_release_dlls AND _engine_debug_dlls)
-            add_custom_command(TARGET ${target} POST_BUILD
-                COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                    "$<IF:$<CONFIG:Debug>,${_engine_debug_dlls},${_engine_release_dlls}>"
-                    "$<TARGET_FILE_DIR:${target}>"
-                COMMAND_EXPAND_LISTS
-                COMMENT "Copying the runtime dependencies installed by vcpkg beside ${target}"
-            )
+            # the output directory of the target, as it is when the function is called (the same rules as CMake)
+            get_target_property(_engine_output_dir ${target} RUNTIME_OUTPUT_DIRECTORY)
+            if(NOT _engine_output_dir)
+                set(_engine_output_dir "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
+            endif()
+            if(NOT _engine_output_dir)
+                set(_engine_output_dir "${CMAKE_CURRENT_BINARY_DIR}")
+            endif()
+
+            # the custom target of that directory, created by the first executable that asks for it
+            string(MD5 _engine_output_dir_hash "${_engine_output_dir}")
+            string(SUBSTRING "${_engine_output_dir_hash}" 0 8 _engine_output_dir_hash)
+            get_property(_engine_stager GLOBAL PROPERTY ENGINE_RUNTIME_STAGER_${_engine_output_dir_hash})
+            if(NOT _engine_stager)
+                set(_engine_stager engine_runtime_dependencies_${_engine_output_dir_hash})
+                add_custom_target(${_engine_stager}
+                    COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:${target}>"
+                    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                        "$<IF:$<CONFIG:Debug>,${_engine_debug_dlls},${_engine_release_dlls}>"
+                        "$<TARGET_FILE_DIR:${target}>"
+                    COMMAND_EXPAND_LISTS
+                    COMMENT "Copying the runtime dependencies installed by vcpkg beside ${target}"
+                )
+                set_property(GLOBAL PROPERTY ENGINE_RUNTIME_STAGER_${_engine_output_dir_hash} ${_engine_stager})
+            endif()
+            add_dependencies(${target} ${_engine_stager})
         endif()
     endif()
 endfunction()
