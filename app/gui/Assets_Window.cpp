@@ -1,7 +1,8 @@
 /*
  * Assets_Window.cpp
  * This file implements the Assets_Window class, which draws the ASSETS window of the App: the folders and the assets
- * of the engine's assets directory, where the user selects them and creates, renames, and deletes folders and assets.
+ * of the engine's assets directory, where the user selects them, creates, renames, and deletes folders and assets, and
+ * moves them by dragging them onto a folder.
  */
 
 #include "Assets_Window.h"
@@ -30,6 +31,9 @@ namespace
 	const ImVec4 ERROR_COLOR{ 1.0f, 0.4f, 0.4f, 1.0f };
 	const ImVec4 SUCCESS_COLOR{ 0.6f, 0.9f, 0.6f, 1.0f };
 	const ImVec4 WARNING_COLOR{ 1.0f, 0.8f, 0.4f, 1.0f };
+
+	// type of the payload of the items of the window that are dragged
+	constexpr const char* ITEMS_PAYLOAD{ "ASSET_ITEMS" };
 
 	// maximum number of lines of a list in a dialog or in the Properties window before it is cut
 	constexpr std::size_t MAX_LISTED_ITEMS{ 12 };
@@ -125,18 +129,26 @@ void Assets_Window::draw(const ImVec2& position, const ImVec2& size, ImFont* bol
 	ImGui::PopFont();
 
 	ensure_scanned();
+	if (has_pending_move)
+	{ // the items were dropped in the last frame: they are moved now, when no list is being drawn
+		has_pending_move = false;
+		move_items(dragged_paths, pending_move_folder);
+	}
 	draw_toolbar();
 	draw_status();
 
 	// the folders on the left and the content of the current folder on the right
 	const float tree_width = ImGui::GetContentRegionAvail().x * 0.35f;
+	drop_target_found      = false;
 	ImGui::BeginChild("AssetFolderTree", ImVec2{ tree_width, 0.0f }, true);
 	draw_folder_tree();
 	ImGui::EndChild();
+	refuse_on_empty_space();
 	ImGui::SameLine();
 	ImGui::BeginChild("AssetList", ImVec2{ 0.0f, 0.0f }, true);
 	draw_list();
 	ImGui::EndChild();
+	refuse_on_empty_space();
 
 	draw_dialogs();
 
@@ -295,6 +307,7 @@ void Assets_Window::draw_folder_node(const std::string& folder, const std::strin
 
 	ImGui::PushID(folder.c_str()); // the labels of folders with the same name in different places are the same
 	const bool is_open = ImGui::TreeNodeEx("##folder", flags, "%s", label.c_str());
+	draw_drop_target(folder);
 	if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen() && folder != current_folder)
 	{ // clicking a folder shows it
 		current_folder = folder;
@@ -347,6 +360,12 @@ void Assets_Window::draw_list()
 				else
 					click_row(row.path, ordered_paths);
 			}
+
+			draw_drag_source(row.path);
+			if (row.is_folder)
+				draw_drop_target(row.path);
+			else
+				draw_refusing_target("Items are dropped onto a folder, not onto an asset");
 
 			// the menu of the right click: the item is selected first, so that the operations are about it
 			if (ImGui::BeginPopupContextItem("##RowMenu"))
@@ -578,7 +597,140 @@ void Assets_Window::delete_items(const std::vector<std::string>& paths)
 		set_status("Deleted " + std::to_string(deleted) + " item(s). " + errors, true);
 }
 
+void Assets_Window::draw_drag_source(const std::string& path)
+{
+	if (!ImGui::BeginDragDropSource())
+		return;
+
+	// dragging an item that is not selected drags only that item, which becomes the selection
+	if (!selection.is_selected(path))
+	{
+		selection.select(path);
+		Core::get_instance()->get_selection_manager()->clear_selection();
+	}
+	dragged_paths = selection.get_top_level_paths();
+
+	const int count = static_cast<int>(dragged_paths.size());
+	ImGui::SetDragDropPayload(ITEMS_PAYLOAD, &count, sizeof(count));
+	if (count == 1)
+		ImGui::TextUnformatted(name_of(dragged_paths.front()).c_str());
+	else
+		ImGui::Text("%d items", count);
+	ImGui::EndDragDropSource();
+}
+
+void Assets_Window::draw_drop_target(const std::string& folder)
+{
+	if (!ImGui::BeginDragDropTarget())
+		return;
+	drop_target_found = true;
+
+	// only the items of this window are accepted (the Scene Graph window drags nodes)
+	const ImGuiPayload* dragged = ImGui::GetDragDropPayload();
+	if (dragged != nullptr && dragged->IsDataType(ITEMS_PAYLOAD))
+	{
+		const std::string error = get_drop_error(folder);
+		if (error.empty())
+		{
+			if (ImGui::AcceptDragDropPayload(ITEMS_PAYLOAD) != nullptr)
+			{
+				pending_move_folder = folder;
+				has_pending_move    = true;
+			}
+		}
+		else
+			refuse_dragged_items(error);
+	}
+	ImGui::EndDragDropTarget();
+}
+
+void Assets_Window::draw_refusing_target(const std::string& reason)
+{
+	if (!ImGui::BeginDragDropTarget())
+		return;
+	drop_target_found = true;
+
+	const ImGuiPayload* dragged = ImGui::GetDragDropPayload();
+	if (dragged != nullptr && dragged->IsDataType(ITEMS_PAYLOAD))
+		refuse_dragged_items(reason);
+	ImGui::EndDragDropTarget();
+}
+
+void Assets_Window::refuse_on_empty_space()
+{
+	// the space of a list that is not a target: it is not a folder, so the items are refused
+	if (!drop_target_found)
+		draw_refusing_target("Items are dropped onto a folder of the tree or of the list");
+}
+
+void Assets_Window::refuse_dragged_items(const std::string& reason)
+{
+	// while the items are over the target, the reason is next to the cursor
+	ImGui::SetTooltip("%s", reason.c_str());
+
+	// the payload is only taken (without highlighting the target) to know when the items are dropped, which is when the
+	// reason is also written in the status of the window, where it stays
+	const ImGuiPayload* dropped =
+		ImGui::AcceptDragDropPayload(ITEMS_PAYLOAD, ImGuiDragDropFlags_AcceptBeforeDelivery | ImGuiDragDropFlags_AcceptNoDrawDefaultRect);
+	if (dropped != nullptr && dropped->IsDelivery())
+		set_status("Nothing was moved. " + reason + ".", true);
+}
+
+std::string Assets_Window::get_drop_error(const std::string& folder) const
+{
+	if (dragged_paths.empty())
+		return "There is nothing to move";
+
+	for (const std::string& path : dragged_paths)
+	{
+		const std::string error = registry.get_move_error(path, folder);
+		if (!error.empty())
+			return "\"" + name_of(path) + "\": " + error;
+	}
+	return {};
+}
+
+void Assets_Window::move_items(const std::vector<std::string>& paths, const std::string& folder)
+{
+	std::size_t              moved = 0;
+	std::string              errors;
+	std::vector<std::string> moved_warnings;
+	for (const std::string& path : paths)
+	{
+		fs::path    new_path;
+		std::string error;
+		if (registry.move(path, folder, new_path, error))
+		{
+			++moved;
+			const std::string moved_path = new_path.generic_string();
+			selection.retarget(path, moved_path);
+			if (is_same_or_inside(current_folder, path))
+				current_folder = moved_path + current_folder.substr(path.size());
+			for (const std::string& warning : registry.get_warnings()) moved_warnings.push_back(warning);
+		}
+		else
+			errors += (errors.empty() ? "" : " ") + std::string{ "\"" } + name_of(path) + "\": " + error + ".";
+	}
+
+	size_cache.clear();
+	properties_path.clear();
+	warnings = moved_warnings;
+	fix_current_folder();
+
+	// the items that left the folder that is shown are no longer selected, so that an operation never acts on items that
+	// the user does not see (when the search shows the items of every folder, they all stay selected)
+	if (search_buffer[0] == '\0')
+		selection.keep_if([this](const std::string& path) { return parent_of(path) == current_folder; });
+
+	const std::string target = folder.empty() ? std::string{ "the assets directory" } : "\"" + name_of(folder) + "\"";
+	if (errors.empty())
+		set_status("Moved " + std::to_string(moved) + " item(s) to " + target + ".", false);
+	else
+		set_status("Moved " + std::to_string(moved) + " item(s) to " + target + ". " + errors, true);
+}
+
 void Assets_Window::click_row(const std::string& path, const std::vector<std::string>& ordered_paths)
+
 {
 	const ImGuiIO& io = ImGui::GetIO();
 	if (io.KeyShift)

@@ -55,6 +55,10 @@ public:
 
 	// Getters
 	// -------
+	// Returns the selected items that are not inside another selected item (what an operation on a folder already does
+	// to what it holds, e.g., moving), in the order of the selection
+	std::vector<std::string> get_top_level_paths() const;
+
 	// Returns true if an item is selected
 	bool is_selected(const std::string& path) const;
 

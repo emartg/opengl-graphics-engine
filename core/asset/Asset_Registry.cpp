@@ -396,47 +396,49 @@ bool Asset_Registry::rename(const fs::path& path, const std::string& new_name, f
 	return rescan(error);
 }
 
-bool Asset_Registry::move(const fs::path& path, const fs::path& destination_folder, fs::path& moved, std::string& error)
+std::string Asset_Registry::get_move_error(const fs::path& path, const fs::path& destination_folder) const
 {
-	warnings.clear();
 	std::string      old_path;
 	const Entry_Kind kind = find_entry(path, old_path);
 	if (kind == Entry_Kind::NONE)
-	{
-		error = "The item is not an asset or a folder of the assets";
-		return false;
-	}
+		return "The item is not an asset or a folder of the assets";
 	if (const std::optional<std::string> model_folder = find_model_folder(old_path))
-	{
-		error =
-			"The item belongs to the model in \"" + *model_folder + "\" and may be referred to by it: move the folder of the model instead";
-		return false;
-	}
+		return "The item belongs to the model in \"" + *model_folder +
+			"\" and may be referred to by it: move the folder of the model instead";
+	if (const Asset* asset = find_by_path(old_path);
+		asset != nullptr && asset->type == Asset_Type::SKYBOX && fs::is_directory(root / old_path))
+		return "\"" + asset->name +
+			"\" is a cubemap skybox: its folder is used as a whole and is referred to by its path, so it stays where it is";
 	std::string destination;
 	if (!find_folder(destination_folder, destination))
-	{
-		error = "The destination is not a folder of the assets";
-		return false;
-	}
+		return "The destination is not a folder of the assets";
 	if (kind == Entry_Kind::FOLDER && (destination == old_path || destination.starts_with(old_path + "/")))
-	{
-		error = "A folder cannot be moved into itself";
-		return false;
-	}
+		return "A folder cannot be moved into itself";
 	if (destination == normalize(fs::path{ old_path }.parent_path()))
-	{
-		error = "The item is already in that folder";
-		return false;
-	}
+		return "The item is already in that folder";
 
 	const std::string new_path = join(destination, fs::path{ old_path }.filename().string());
 	std::error_code   file_error;
 	if (fs::exists(root / new_path, file_error))
-	{
-		error = "There is already an item named \"" + fs::path{ new_path }.filename().string() + "\" in the destination";
-		return false;
-	}
+		return "There is already an item named \"" + fs::path{ new_path }.filename().string() + "\" in the destination";
+	return {};
+}
 
+bool Asset_Registry::move(const fs::path& path, const fs::path& destination_folder, fs::path& moved, std::string& error)
+{
+	warnings.clear();
+	error = get_move_error(path, destination_folder);
+	if (!error.empty())
+		return false;
+
+	// the checks passed, so the item and the folder exist
+	std::string old_path;
+	std::string destination;
+	find_entry(path, old_path);
+	find_folder(destination_folder, destination);
+	const std::string new_path = join(destination, fs::path{ old_path }.filename().string());
+
+	std::error_code file_error;
 	fs::rename(root / old_path, root / new_path, file_error);
 	if (file_error)
 	{
@@ -449,6 +451,7 @@ bool Asset_Registry::move(const fs::path& path, const fs::path& destination_fold
 	moved = fs::path{ new_path };
 	return rescan(error);
 }
+
 
 bool Asset_Registry::remove(const fs::path& path, std::string& error)
 {

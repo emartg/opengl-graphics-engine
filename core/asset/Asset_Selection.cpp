@@ -77,6 +77,20 @@ void Asset_Selection::retarget(const std::string& old_path, const std::string& n
 
 // Getters
 // -------
+std::vector<std::string> Asset_Selection::get_top_level_paths() const
+{
+	std::vector<std::string> top_level;
+	for (const std::string& path : paths)
+	{
+		const bool is_inside_another = std::any_of(paths.begin(), paths.end(), [&path](const std::string& other) {
+			return other != path && is_same_or_inside(path, other);
+		});
+		if (!is_inside_another)
+			top_level.push_back(path);
+	}
+	return top_level;
+}
+
 bool Asset_Selection::is_selected(const std::string& path) const
 {
 	return std::find(paths.begin(), paths.end(), path) != paths.end();

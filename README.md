@@ -25,7 +25,7 @@ A **modular, extensible 3D graphics engine** built from scratch with OpenGL 4.5.
   - *Properties* - real-time editing of transforms, color, opacity, light parameters, etc.
   - *Debug* - visualisation modes (Normal, Inverted Colors, Picking Colors, Grid Overlay) and performance stats.
   - *Creation* - instantiate primitives (cube, sphere, cylinder, cone, plane) or import models/skyboxes.
-  - *Assets* - browse the folders and assets of the assets directory, select them, and create, rename, and delete folders and assets.
+  - *Assets* - browse the folders and assets of the assets directory, select them, and create, rename, move (by dragging), and delete folders and assets.
   - *Material Editor* - create, duplicate, rename, and edit materials (parameters, textures, environment map) while the scene is rendered with them, and save them to (or reload them from) their descriptor files.
 - **Efficient Event-Driven Loop** - Blocks on idle using `glfwWaitEvents()`, reducing CPU usage to near zero when inactive.
 - **Rendering Performance** - Frustum culling, geometries shared between identical meshes, instanced rendering of repeated shapes, and a shader storage buffer for any number of lights.
@@ -143,7 +143,7 @@ Another CMake Project](docs/build_instructions.md#using-the-engine-from-another-
   - *Scene Graph* - drag nodes to reparent; drop on the bottom area to make the node a root.
   - *Properties* - modify transforms, color, opacity, light parameters, etc.
   - *Creation* - create new lights, primitives, or import models/skyboxes.
-  - *Assets* - select folders and assets (click, Ctrl-click, Shift-click), enter folders with a double click, and use the toolbar or the right-click menu to create, rename, or delete them; their attributes appear in *Properties*.
+  - *Assets* - select folders and assets (click, Ctrl-click, Shift-click), enter folders with a double click, and use the toolbar or the right-click menu to create, rename, or delete them, and drag them onto a folder to move them; their attributes appear in *Properties*.
   - *Debug* - switch visualisation modes and reset GUI layout.
 
 ---

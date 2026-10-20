@@ -150,3 +150,19 @@ TEST(AssetSelectionTest, KeepsOnlyTheItemsThatStillExist)
 	EXPECT_EQ(selection.get_paths(), Paths{ "a.png" });
 	EXPECT_TRUE(selection.get_anchor().empty()); // the anchor no longer exists
 }
+
+TEST(AssetSelectionTest, TheTopLevelItemsLeaveOutWhatIsInsideAnotherSelectedItem)
+{
+	Asset_Selection selection;
+	selection.toggle("textures/wood.png");
+	selection.toggle("textures");
+	selection.toggle("texturesque/b.png"); // another folder whose name starts the same
+	selection.toggle("textures/deep/a.png");
+	selection.toggle("other.png");
+
+	EXPECT_EQ(selection.get_top_level_paths(), (Paths{ "textures", "texturesque/b.png", "other.png" }));
+	EXPECT_EQ(selection.get_paths().size(), 5u); // the selection itself is not changed
+
+	selection.clear();
+	EXPECT_TRUE(selection.get_top_level_paths().empty());
+}

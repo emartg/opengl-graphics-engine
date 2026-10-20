@@ -98,6 +98,14 @@ public:
 	// can be a descriptor extension such as ".material.json", stays the same). Returns the new path in renamed
 	bool rename(const std::filesystem::path& path, const std::string& new_name, std::filesystem::path& renamed, std::string& error);
 
+	// Returns why an asset or a folder cannot be moved into a folder (an empty path is the directory itself), or an empty
+	// text if it can: the same checks that move() makes, without changing anything (e.g., for a window that shows where
+	// a dragged item can be dropped). Besides the items that the registry does not know, the items inside the folder of
+	// a model, and the moves into itself, over an item, or into the folder that already holds the item, a cubemap skybox
+	// cannot be moved on its own (its folder is used as a whole and scenes refer to it by its path); the folder that
+	// holds it can move, and so can the other skyboxes (the HDR images)
+	std::string get_move_error(const std::filesystem::path& path, const std::filesystem::path& destination_folder) const;
+
 	// Moves an asset or a folder into another folder (an empty path is the directory itself), which cannot be the folder
 	// itself or one of its subfolders. Returns the new path in moved
 	bool move(
