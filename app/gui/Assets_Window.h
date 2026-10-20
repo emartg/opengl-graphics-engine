@@ -1,10 +1,11 @@
 /*
  * Assets_Window.h
  * This file defines the Assets_Window class, which draws the ASSETS window of the App: the folders and the assets of
- * the engine's assets directory (the Core's assets directory), where the user selects them, creates and renames and
- * deletes folders and assets, and sees the attributes of the selection (read only) in the Properties window. It uses
- * the Asset_Registry for the files and the Asset_Selection for the selection, so that this class only holds what is
- * about the window: the folder that is shown, the search text, the dialogs, and the messages of the last operation.
+ * the engine's assets directory (the Core's assets directory), where the user selects them, creates, renames, and
+ * deletes folders and assets, moves them by dragging them onto a folder, and sees the attributes of the selection
+ * (read only) in the Properties window. It uses the Asset_Registry for the files and the Asset_Selection for the
+ * selection, so that this class only holds what is about the window: the folder that is shown, the search text, the
+ * dialogs, and the messages of the last operation.
  */
 
 #pragma once
@@ -82,6 +83,10 @@ private:
 	std::vector<std::string> delete_paths;                            // items that the Delete dialog asks to delete
 	std::vector<std::string> delete_users;                            // assets that use the items of the Delete dialog
 	std::string              rename_path;                             // item that the Rename dialog renames
+	std::vector<std::string> dragged_paths;                           // items that are being dragged (the top level ones of the selection)
+	std::string              pending_move_folder;                     // folder where the dropped items are moved in the next frame
+	bool                     has_pending_move{ false };               // whether items were dropped and are not moved yet
+	bool                     drop_target_found{ false };              // whether a target of the lists was under the cursor in this frame
 	std::string              status;                                  // result of the last operation
 	bool                     status_is_error{ false };                // whether the last operation failed
 	std::vector<std::string> warnings;                                // what the last operation could not update (see Asset_Registry)
@@ -117,6 +122,34 @@ private:
 	bool create_folder(const std::string& name, std::string& error);
 	bool rename_item(const std::string& path, const std::string& name, std::string& error);
 	void delete_items(const std::vector<std::string>& paths);
+
+	// Makes the last item that was drawn a source of dragging: the dragged items are the selection (or only that item
+	// if it is not selected), and they can be dropped on a folder
+	void draw_drag_source(const std::string& path);
+
+	// Makes the last item that was drawn a target of the dragged items for a folder (an empty path is the directory
+	// itself): it is highlighted when the items can be moved there, and the reason is shown when they cannot (over the
+	// folder while the items are dragged, and in the status of the window if they are dropped). Dropping the items asks
+	// to move them (they are moved at the start of the next frame, not while the lists are drawn)
+	void draw_drop_target(const std::string& folder);
+
+	// Makes the last item that was drawn a target that refuses the dragged items, with the reason, which is shown over
+	// it while the items are dragged, and in the status of the window if they are dropped (e.g., an asset, or the empty
+	// space of the list)
+	void draw_refusing_target(const std::string& reason);
+
+	// Makes the empty space of a list (the last item that was drawn) a target that refuses the dragged items, if no
+	// other target of the lists was under the cursor
+	void refuse_on_empty_space();
+
+	// Shows the reason why the dragged items are refused next to the cursor, and in the status when they are dropped
+	void refuse_dragged_items(const std::string& reason);
+
+	// Returns why the dragged items cannot be moved into a folder, or an empty text if all of them can
+	std::string get_drop_error(const std::string& folder) const;
+
+	// Moves items (and what is inside the folders) into a folder, updating the selection, the current folder, and the messages
+	void move_items(const std::vector<std::string>& paths, const std::string& folder);
 
 	// Selects a row of the list the way that the keys held by the user ask (shift: a range, control: toggling)
 	void click_row(const std::string& path, const std::vector<std::string>& ordered_paths);

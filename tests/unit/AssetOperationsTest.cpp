@@ -332,15 +332,34 @@ TEST_F(AssetOperationsFilesTest, MovesAFolderWithItsContentAndTheIdentifiersInsi
 	EXPECT_EQ(id_of("b/x/sky"), id_sky);
 }
 
-TEST_F(AssetOperationsFilesTest, MovesASkyboxFolderAsAnAsset)
+TEST_F(AssetOperationsFilesTest, DoesNotMoveACubemapSkyboxOnItsOwnButMovesTheFolderThatHoldsItAndTheHdrImages)
 {
-	create_cubemap("skyboxes/meadow");
+	create_cubemap("skyboxes/faces/meadow");
+	create_file("skyboxes/hdr/sky.hdr");
+	create_file("skyboxes/faces/union_invalid/1.jpg"); // a folder that is not a cubemap: its images are textures
 	fs::create_directories(root / "archive");
 	scan();
-	const std::uint32_t id = id_of("skyboxes/meadow");
+	const std::uint32_t cubemap_id = id_of("skyboxes/faces/meadow");
 
-	ASSERT_TRUE(registry.move("skyboxes/meadow", "archive", result, error)) << error;
-	EXPECT_EQ(id_of("archive/meadow"), id);
+	// the cubemap stays where it is, and says why (and nothing changes)
+	const std::string reason = registry.get_move_error("skyboxes/faces/meadow", "archive");
+	EXPECT_NE(reason.find("cubemap skybox"), std::string::npos) << reason;
+	EXPECT_NE(reason.find("meadow"), std::string::npos) << reason;
+	EXPECT_FALSE(registry.move("skyboxes/faces/meadow", "archive", result, error));
+	EXPECT_EQ(error, reason);
+	EXPECT_TRUE(exists("skyboxes/faces/meadow/posx.jpg"));
+	EXPECT_EQ(id_of("skyboxes/faces/meadow"), cubemap_id);
+
+	// the faces are not items of their own, so they cannot be moved either
+	EXPECT_NE(registry.get_move_error("skyboxes/faces/meadow/posx.jpg", "archive").find("not an asset"), std::string::npos);
+
+	// the folder that holds it moves, and the cubemap goes with it, keeping its identifier
+	ASSERT_TRUE(registry.move("skyboxes/faces", "archive", result, error)) << error;
+	EXPECT_EQ(id_of("archive/faces/meadow"), cubemap_id);
+
+	// an HDR skybox is a file, and an image of a folder that is not a cubemap is a texture: both move
+	EXPECT_EQ(registry.get_move_error("skyboxes/hdr/sky.hdr", "archive"), "");
+	EXPECT_EQ(registry.get_move_error("archive/faces/union_invalid/1.jpg", "archive"), "");
 }
 
 TEST_F(AssetOperationsFilesTest, RefusesToMoveAFolderIntoItselfOrIntoItsSubfolders)
@@ -372,6 +391,40 @@ TEST_F(AssetOperationsFilesTest, RefusesToMoveToAnInvalidDestinationOrOverAnothe
 	EXPECT_FALSE(registry.move("textures/wood.png", "skyboxes/meadow", result, error)); // a skybox is not a folder of assets
 	EXPECT_FALSE(registry.move("textures/wood.png", "textures", result, error));        // it is already there
 	EXPECT_NE(error.find("already in"), std::string::npos) << error;
+}
+
+TEST_F(AssetOperationsFilesTest, TellsWhyAnItemCannotBeMovedWithoutMovingIt)
+{
+	create_file("textures/wood.png");
+	create_file("archive/wood.png");
+	create_file("models/teapot/Teapot.obj");
+	create_file("models/teapot/textures/pot.png");
+	create_file("notes.txt");
+	fs::create_directories(root / "a" / "b");
+	fs::create_directories(root / "empty");
+	scan();
+
+	// what can be moved gives no reason, and nothing changes
+	EXPECT_EQ(registry.get_move_error("textures/wood.png", "empty"), "");
+	EXPECT_EQ(registry.get_move_error("textures", "archive"), "");
+	EXPECT_EQ(registry.get_move_error("models/teapot", "empty"), ""); // the folder of a model can move
+	EXPECT_TRUE(exists("textures/wood.png"));
+	EXPECT_FALSE(exists("empty/wood.png"));
+
+	// every refusal of move() has its reason
+	EXPECT_NE(registry.get_move_error("textures/wood.png", "archive").find("already an item"), std::string::npos);
+	EXPECT_NE(registry.get_move_error("textures/wood.png", "textures").find("already in"), std::string::npos);
+	EXPECT_NE(registry.get_move_error("a", "a/b").find("itself"), std::string::npos);
+	EXPECT_NE(registry.get_move_error("models/teapot/textures/pot.png", "empty").find("model"), std::string::npos);
+	EXPECT_NE(registry.get_move_error("textures/wood.png", "missing").find("destination"), std::string::npos);
+	EXPECT_NE(registry.get_move_error("textures/wood.png", "notes.txt").find("destination"), std::string::npos);
+	EXPECT_NE(registry.get_move_error("notes.txt", "empty").find("not an asset"), std::string::npos);
+	EXPECT_NE(registry.get_move_error("../outside.png", "empty").find("not an asset"), std::string::npos);
+
+	// move() agrees with it
+	EXPECT_FALSE(registry.move("textures/wood.png", "archive", result, error));
+	EXPECT_EQ(error, registry.get_move_error("textures/wood.png", "archive"));
+	EXPECT_TRUE(registry.move("textures/wood.png", "empty", result, error)) << error;
 }
 
 // Deleting
