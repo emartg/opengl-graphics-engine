@@ -139,7 +139,7 @@ Another CMake Project](docs/build_instructions.md#using-the-engine-from-another-
 
 - **Camera** - Drag with right mouse button to orbit, scroll to zoom.
 - **Select** - Left-click on any renderable object to select it (outline appears). Double-click to select the parent group.
-- **GUI Panels** - All panels are draggable, resizable, and collapsible.
+- **GUI Panels** - All panels are draggable, resizable, collapsible, and closable; the *View* menu of the menu bar shows or hides each of them and resets the layout.
   - *Scene Graph* - drag nodes to reparent; drop on the bottom area to make the node a root.
   - *Properties* - modify transforms, color, opacity, light parameters, etc.
   - *Creation* - create new lights, primitives, or import models/skyboxes.

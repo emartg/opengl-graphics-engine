@@ -71,6 +71,13 @@ private:
 	// the ASSETS window (the folders and assets of the assets directory), and the node that was selected in the scene
 	// in the last frame, to know when the user selects something of the scene instead of an asset
 	Assets_Window assets_window;
+
+	// whether each window is shown (the View menu and the close button of each window change them)
+	bool          show_scene_graph_window{ true };
+	bool          show_assets_window{ true };
+	bool          show_properties_window{ true };
+	bool          show_creation_window{ true };
+	bool          show_debug_window{ true };
 	std::uint32_t last_scene_selection_id{ 0 };
 
 	// set of node ids that should be auto-opened in the Scene Graph window
@@ -154,6 +161,9 @@ private:
 	void configure_gui_layout();
 	// Draws the GUI windows
 	void draw_gui_windows();
+
+	// Draws the menu bar at the top of the window: the View menu shows or hides each window and resets the layout
+	void draw_main_menu_bar();
 	// Handles input events for ImGui
 	void handle_gui_input() const;
 	// Resets all GUI windows to their default layout for the current display size

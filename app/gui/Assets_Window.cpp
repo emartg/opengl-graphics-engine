@@ -117,15 +117,18 @@ namespace
 
 // Public Methods
 // --------------
-void Assets_Window::draw(const ImVec2& position, const ImVec2& size, ImFont* bold_font)
+void Assets_Window::draw(const ImVec2& position, const ImVec2& size, ImFont* bold_font, bool* is_open)
 {
+	if (!*is_open)
+		return;
+
 	// set initial size and position for the window
 	ImGui::SetNextWindowSize(size, ImGuiCond_Appearing);
 	ImGui::SetNextWindowPos(position, ImGuiCond_Appearing);
 	ImGui::SetNextWindowCollapsed(false, ImGuiCond_Appearing);
 
 	ImGui::PushFont(bold_font);
-	ImGui::Begin("ASSETS", nullptr, ImGuiWindowFlags_NoFocusOnAppearing);
+	ImGui::Begin("ASSETS", is_open, ImGuiWindowFlags_NoFocusOnAppearing);
 	ImGui::PopFont();
 
 	ensure_scanned();
@@ -137,14 +140,8 @@ void Assets_Window::draw(const ImVec2& position, const ImVec2& size, ImFont* bol
 	draw_toolbar();
 	draw_status();
 
-	// the folders on the left and the content of the current folder on the right
-	const float tree_width = ImGui::GetContentRegionAvail().x * 0.35f;
-	drop_target_found      = false;
-	ImGui::BeginChild("AssetFolderTree", ImVec2{ tree_width, 0.0f }, true);
-	draw_folder_tree();
-	ImGui::EndChild();
-	refuse_on_empty_space();
-	ImGui::SameLine();
+	// the content of the current folder (the path bar above it is a target of the dragged items too)
+	drop_target_found = false; // the targets of the path bar do not count for the empty space of the list
 	ImGui::BeginChild("AssetList", ImVec2{ 0.0f, 0.0f }, true);
 	draw_list();
 	ImGui::EndChild();
@@ -232,13 +229,16 @@ void Assets_Window::ensure_scanned()
 		refresh();
 }
 
-void Assets_Window::draw_toolbar()
+void Assets_Window::draw_path_bar()
 {
-	// the folder that is shown
-	ImGui::TextDisabled("Folder");
-	ImGui::SameLine();
-	ImGui::TextUnformatted(current_folder.empty() ? "assets" : ("assets/" + current_folder).c_str());
+	// the right edge of the window, to move to the next line the parts that do not fit
+	const float right_edge = ImGui::GetWindowPos().x + ImGui::GetWindowWidth() - ImGui::GetStyle().WindowPadding.x;
+	const auto  fits       = [right_edge](const char* label) {
+		const float width = ImGui::CalcTextSize(label).x + ImGui::GetStyle().FramePadding.x * 2.0f;
+		return ImGui::GetItemRectMax().x + ImGui::GetStyle().ItemSpacing.x + width <= right_edge;
+	};
 
+	// the folder above the current one (and a target of the items that are dragged)
 	ImGui::BeginDisabled(current_folder.empty());
 	if (ImGui::Button("Up"))
 	{
@@ -246,29 +246,72 @@ void Assets_Window::draw_toolbar()
 		selection.clear();
 	}
 	ImGui::EndDisabled();
-	ImGui::SameLine();
-	if (ImGui::Button("Refresh"))
-		refresh();
+	draw_drop_target(parent_of(current_folder));
 
-	ImGui::SameLine();
-	ImGui::TextDisabled("|");
-	ImGui::SameLine();
-	if (ImGui::Button("New Folder"))
+	// the path: the assets directory and each folder of the current one, which shows that folder when it is clicked
+	std::size_t                                      start = 0;
+	std::vector<std::pair<std::string, std::string>> parts{ { "", "assets" } }; // folder, label
+	while (start < current_folder.size())
+	{
+		const std::size_t end  = current_folder.find('/', start);
+		const std::size_t stop = end == std::string::npos ? current_folder.size() : end;
+		parts.emplace_back(current_folder.substr(0, stop), current_folder.substr(start, stop - start));
+		start = stop + 1;
+	}
+
+	for (std::size_t i = 0; i < parts.size(); ++i)
+	{
+		ImGui::SameLine();
+		if (i > 0)
+		{
+			ImGui::TextDisabled("/");
+			ImGui::SameLine();
+		}
+		if (!fits(parts[i].second.c_str()))
+			ImGui::NewLine();
+
+		ImGui::PushID(parts[i].first.c_str());
+		if (ImGui::SmallButton(parts[i].second.c_str()) && parts[i].first != current_folder)
+		{
+			current_folder = parts[i].first;
+			selection.clear();
+		}
+		draw_drop_target(parts[i].first);
+		ImGui::PopID();
+	}
+}
+
+void Assets_Window::draw_toolbar()
+{
+	draw_path_bar();
+
+	// the buttons go to the next line when the window is narrow
+	const auto button = [](const char* label, bool is_first) {
+		const float width = ImGui::CalcTextSize(label).x + ImGui::GetStyle().FramePadding.x * 2.0f;
+		if (!is_first &&
+			ImGui::GetItemRectMax().x + ImGui::GetStyle().ItemSpacing.x + width <=
+				ImGui::GetWindowPos().x + ImGui::GetWindowWidth() - ImGui::GetStyle().WindowPadding.x)
+			ImGui::SameLine();
+		return ImGui::Button(label);
+	};
+
+	if (button("New Folder", true))
 		request_new_folder();
-	ImGui::SameLine();
 	ImGui::BeginDisabled(selection.get_paths().size() != 1);
-	if (ImGui::Button("Rename"))
+	if (button("Rename", false))
 		request_rename();
 	ImGui::EndDisabled();
-	ImGui::SameLine();
 	ImGui::BeginDisabled(selection.is_empty());
-	if (ImGui::Button("Delete"))
+	if (button("Delete", false))
 		request_delete();
 	ImGui::EndDisabled();
+	if (button("Refresh", false))
+		refresh();
 
 	ImGui::SetNextItemWidth(-FLT_MIN);
 	ImGui::InputTextWithHint("##AssetSearch", "Search assets by name", search_buffer.data(), search_buffer.size());
 }
+
 
 void Assets_Window::draw_status() const
 {
@@ -288,39 +331,6 @@ void Assets_Window::draw_status() const
 		ImGui::TextDisabled("... and %zu more warnings", warnings.size() - MAX_LISTED_ITEMS);
 }
 
-void Assets_Window::draw_folder_tree()
-{
-	draw_folder_node("", "assets");
-}
-
-void Assets_Window::draw_folder_node(const std::string& folder, const std::string& label)
-{
-	const std::vector<std::string> subfolders = get_subfolders(folder);
-
-	ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick | ImGuiTreeNodeFlags_SpanAvailWidth;
-	if (folder == current_folder)
-		flags |= ImGuiTreeNodeFlags_Selected;
-	if (subfolders.empty())
-		flags |= ImGuiTreeNodeFlags_Leaf;
-	if (folder.empty())
-		flags |= ImGuiTreeNodeFlags_DefaultOpen;
-
-	ImGui::PushID(folder.c_str()); // the labels of folders with the same name in different places are the same
-	const bool is_open = ImGui::TreeNodeEx("##folder", flags, "%s", label.c_str());
-	draw_drop_target(folder);
-	if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen() && folder != current_folder)
-	{ // clicking a folder shows it
-		current_folder = folder;
-		selection.clear();
-	}
-	if (is_open)
-	{
-		for (const std::string& subfolder : subfolders) draw_folder_node(subfolder, name_of(subfolder));
-		ImGui::TreePop();
-	}
-	ImGui::PopID();
-}
-
 void Assets_Window::draw_list()
 {
 	const std::vector<Row> rows = get_rows();
@@ -329,16 +339,11 @@ void Assets_Window::draw_list()
 	std::vector<std::string> ordered_paths;
 	for (const Row& row : rows) ordered_paths.push_back(row.path);
 
-	if (ImGui::BeginTable("AssetTable", 3, ImGuiTableFlags_Resizable | ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY))
+	if (ImGui::BeginTable("AssetTable", 2, ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY))
 	{
-		ImGui::TableSetupScrollFreeze(0, 1);
-		ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthStretch, 2.0f);
-		ImGui::TableSetupColumn("Type", ImGuiTableColumnFlags_WidthStretch, 1.0f);
-		ImGui::TableSetupColumn("Size", ImGuiTableColumnFlags_WidthStretch, 1.0f);
-		// the header uses the color of the frames, because the default one is too dark for the text of the theme
-		ImGui::PushStyleColor(ImGuiCol_TableHeaderBg, ImGui::GetStyleColorVec4(ImGuiCol_FrameBg));
-		ImGui::TableHeadersRow();
-		ImGui::PopStyleColor();
+		// the names take what the type does not need (the size is in the Properties window)
+		ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthStretch);
+		ImGui::TableSetupColumn("Type", ImGuiTableColumnFlags_WidthFixed, ImGui::CalcTextSize("Material").x);
 
 		for (const Row& row : rows)
 		{
@@ -383,10 +388,7 @@ void Assets_Window::draw_list()
 			ImGui::PopID();
 
 			ImGui::TableSetColumnIndex(1);
-			ImGui::TextUnformatted(row.type.c_str());
-			ImGui::TableSetColumnIndex(2);
-			if (!row.is_folder)
-				ImGui::TextUnformatted(format_size(row.size).c_str());
+			ImGui::TextDisabled("%s", row.type.c_str());
 		}
 		ImGui::EndTable();
 	}
@@ -754,23 +756,14 @@ std::vector<Assets_Window::Row> Assets_Window::get_rows()
 		const std::string wanted = to_lowercase(search_buffer.data());
 		for (const Asset& asset : registry.get_assets())
 			if (to_lowercase(asset.name).find(wanted) != std::string::npos)
-				rows.push_back(
-					{ asset.path.generic_string(),
-					  asset.path.generic_string(),
-					  Asset_Registry::to_string(asset.type),
-					  false,
-					  get_file_size(asset.path.generic_string()) });
+				rows.push_back({ asset.path.generic_string(), asset.path.generic_string(), Asset_Registry::to_string(asset.type), false });
 		return rows;
 	}
 
-	for (const std::string& folder : get_subfolders(current_folder)) rows.push_back({ folder, name_of(folder), "Folder", true, 0 });
+	for (const std::string& folder : get_subfolders(current_folder)) rows.push_back({ folder, name_of(folder), "Folder", true });
 	for (const Asset* asset : registry.get_assets_in_folder(current_folder))
 		rows.push_back(
-			{ asset->path.generic_string(),
-			  name_of(asset->path.generic_string()),
-			  Asset_Registry::to_string(asset->type),
-			  false,
-			  get_file_size(asset->path.generic_string()) });
+			{ asset->path.generic_string(), name_of(asset->path.generic_string()), Asset_Registry::to_string(asset->type), false });
 	return rows;
 }
 

@@ -23,7 +23,7 @@ The project is split into three top-level modules:
 
 3. **`app` (executable)** - Sample application (scene editor). It contains:
    - The example and test scenes.
-   - The ImGui editor interface (`GUI`, a `Gui_Layer`) and its ASSETS window (`Assets_Window`).
+   - The ImGui editor interface (`GUI`, a `Gui_Layer`, with a menu bar whose View menu shows and hides the windows) and its ASSETS window (`Assets_Window`).
    - Dependencies: `platform`.
 
 This strict separation means the `core` can be linked into other applications (e.g., a simulation or scientific visualiser) without pulling in GLFW or ImGui, and that applications which need a window reuse the `platform` library instead of duplicating it.
