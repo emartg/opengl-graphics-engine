@@ -28,8 +28,9 @@ public:
 	// Public Methods
 	// --------------
 	// Draws the window. The position and the size are used when the window appears (the layout is reset from the GUI),
-	// and the bold font draws the titles
-	void draw(const ImVec2& position, const ImVec2& size, ImFont* bold_font);
+	// and the bold font draws the titles. The window has a close button that clears is_open, and nothing is drawn
+	// while it is false
+	void draw(const ImVec2& position, const ImVec2& size, ImFont* bold_font, bool* is_open);
 
 	// Draws, read only, the attributes of the selected assets and folders (for the Properties window)
 	void draw_selection_properties(ImFont* bold_font);
@@ -62,11 +63,10 @@ private:
 	// A row of the list of the window: a folder or an asset
 	struct Row
 	{
-		std::string    path;      // relative to the assets directory
-		std::string    name;      // what the row shows
-		std::string    type;      // "Folder" or the name of the type of the asset
-		bool           is_folder; // whether the row is a folder
-		std::uintmax_t size;      // size of the file (0 for a folder)
+		std::string path;      // relative to the assets directory
+		std::string name;      // what the row shows
+		std::string type;      // "Folder" or the name of the type of the asset
+		bool        is_folder; // whether the row is a folder
 	};
 
 	// Private Attributes
@@ -99,13 +99,11 @@ private:
 	// Scans the assets directory the first time that it is needed
 	void ensure_scanned();
 
-	// Draws the buttons, the search field, and the messages of the window
+	// Draws the path of the current folder (each of its parts is a button that shows that folder, and a target of the
+	// items that are dragged), the buttons, and the search field
+	void draw_path_bar();
 	void draw_toolbar();
 	void draw_status() const;
-
-	// Draws the tree of folders, and one folder of it with its subfolders
-	void draw_folder_tree();
-	void draw_folder_node(const std::string& folder, const std::string& label);
 
 	// Draws the list of the folders and assets of the current folder (or the assets that match the search)
 	void draw_list();

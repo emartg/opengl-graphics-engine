@@ -277,69 +277,99 @@ void GUI::configure_gui_layout()
 {
 	ImGuiIO& io = ImGui::GetIO(); // get ImGui IO object for font and style settings
 
+	// the windows are laid out in the area below the menu bar
+	const float top    = ImGui::GetFrameHeight();
+	const float height = io.DisplaySize.y - top;
+
 	// position of the Scene Graph Window - top left corner with padding
 	scene_graph_window_position = ImVec2{
 		io.DisplaySize.x * scene_graph_window_x_offset + window_position_padding.x, // x position
-		io.DisplaySize.y * scene_graph_window_y_offset + window_position_padding.y  // y position
+		top + height * scene_graph_window_y_offset + window_position_padding.y      // y position
 	};
 	// size (width and height) of the Scene Graph Window (it ends where the Assets Window starts, like the windows of
 	// the right side)
 	scene_graph_window_size = ImVec2{
-		io.DisplaySize.x * scene_graph_window_relative_width - window_size_padding.x,        // width
-		io.DisplaySize.y * scene_graph_window_relative_height - window_size_padding.y * 0.5f // height
+		io.DisplaySize.x * scene_graph_window_relative_width - window_size_padding.x, // width
+		height * scene_graph_window_relative_height - window_size_padding.y * 0.5f    // height
 	};
 	// position of the Assets Window - left side, below the Scene Graph with padding
 	assets_window_position = ImVec2{
 		io.DisplaySize.x * assets_window_x_offset + window_position_padding.x, // x position
-		io.DisplaySize.y * assets_window_y_offset + window_position_padding.y  // y position
+		top + height * assets_window_y_offset + window_position_padding.y      // y position
 	};
 	// size (width and height) of the Assets Window (it ends at the bottom edge with padding)
 	assets_window_size = ImVec2{
 		io.DisplaySize.x * assets_window_relative_width - window_size_padding.x, // width
-		io.DisplaySize.y * assets_window_relative_height - window_size_padding.y // height
+		height * assets_window_relative_height - window_size_padding.y           // height
 	};
 	// position of the Properties Window - top right corner with padding
 	properties_window_position = ImVec2{
 		io.DisplaySize.x * properties_window_x_offset + window_position_padding.x, // x position
-		io.DisplaySize.y * properties_window_y_offset + window_position_padding.y  // y position
+		top + height * properties_window_y_offset + window_position_padding.y      // y position
 	};
 	// size (width and height) of the Properties Window
 	properties_window_size = ImVec2{
-		io.DisplaySize.x * properties_window_relative_width - window_size_padding.x,        // width
-		io.DisplaySize.y * properties_window_relative_height - window_size_padding.y * 0.5f // height
+		io.DisplaySize.x * properties_window_relative_width - window_size_padding.x, // width
+		height * properties_window_relative_height - window_size_padding.y * 0.5f    // height
 	};
 	// position of the Creation Window - right side, below Properties with padding
 	creation_window_position = ImVec2{
 		io.DisplaySize.x * creation_window_x_offset + window_position_padding.x, // x position
-		io.DisplaySize.y * creation_window_y_offset + window_position_padding.y  // y position
+		top + height * creation_window_y_offset + window_position_padding.y      // y position
 	};
 	// size (width and height) of the Creation Window
 	// (account for the padding between Creation and Debug Windows)
 	creation_window_size = ImVec2{
-		io.DisplaySize.x * creation_window_relative_width - window_size_padding.x,     // width
-		io.DisplaySize.y * creation_window_relative_height - window_position_padding.y // height
+		io.DisplaySize.x * creation_window_relative_width - window_size_padding.x, // width
+		height * creation_window_relative_height - window_position_padding.y       // height
 	};
 	// position of the Debug Window - bottom right corner with padding
 	// (no vertical padding at top since Creation window handles the gap)
 	debug_window_position = ImVec2{
 		io.DisplaySize.x * debug_window_x_offset + window_position_padding.x, // x position
-		io.DisplaySize.y * debug_window_y_offset + window_position_padding.y  // y position
+		top + height * debug_window_y_offset + window_position_padding.y      // y position
 	};
 	// size (width and height) of the Debug Window
 	debug_window_size = ImVec2{
 		io.DisplaySize.x * debug_window_relative_width - window_size_padding.x, // width
-		io.DisplaySize.y * debug_window_relative_height - window_size_padding.y // height
+		height * debug_window_relative_height - window_size_padding.y           // height
 	};
 }
 
 void GUI::draw_gui_windows()
 {
+	draw_main_menu_bar();
 	draw_scene_graph_window();
-	assets_window.draw(assets_window_position, assets_window_size, bold_font);
+	assets_window.draw(assets_window_position, assets_window_size, bold_font, &show_assets_window);
 	draw_properties_window();
 	draw_creation_window();
 	draw_debug_window();
 	draw_material_editor_window();
+}
+
+void GUI::draw_main_menu_bar()
+{
+	if (!ImGui::BeginMainMenuBar())
+		return;
+
+	if (ImGui::BeginMenu("View"))
+	{
+		ImGui::MenuItem("Scene Graph", nullptr, &show_scene_graph_window);
+		ImGui::MenuItem("Assets", nullptr, &show_assets_window);
+		ImGui::MenuItem("Properties", nullptr, &show_properties_window);
+		ImGui::MenuItem("Creation", nullptr, &show_creation_window);
+		ImGui::MenuItem("Debug", nullptr, &show_debug_window);
+		ImGui::Separator();
+		if (ImGui::MenuItem("Show All Windows"))
+		{
+			show_scene_graph_window = show_assets_window = show_properties_window = show_creation_window = show_debug_window = true;
+		}
+		if (ImGui::MenuItem("Reset Layout"))
+			reset_gui_layout();
+		ImGui::EndMenu();
+	}
+
+	ImGui::EndMainMenuBar();
 }
 
 void GUI::handle_gui_input() const
@@ -356,6 +386,9 @@ void GUI::handle_gui_input() const
 
 void GUI::reset_gui_layout()
 {
+	// every window is shown again
+	show_scene_graph_window = show_assets_window = show_properties_window = show_creation_window = show_debug_window = true;
+
 	// recalculate layout for current window size
 	configure_gui_layout();
 
@@ -387,6 +420,9 @@ void GUI::reset_gui_layout()
 
 void GUI::draw_scene_graph_window()
 {
+	if (!show_scene_graph_window)
+		return;
+
 	// set initial size and position for the Scene Graph Window
 	ImGui::SetNextWindowSize(scene_graph_window_size, ImGuiCond_Appearing);
 	ImGui::SetNextWindowPos(scene_graph_window_position, ImGuiCond_Appearing);
@@ -396,7 +432,7 @@ void GUI::draw_scene_graph_window()
 	{ // show a window that displays the scene graph as a hierarchical tree
 		// begin the Scene Graph window
 		ImGui::PushFont(bold_font);
-		ImGui::Begin("SCENE GRAPH", nullptr, ImGuiWindowFlags_NoFocusOnAppearing);
+		ImGui::Begin("SCENE GRAPH", &show_scene_graph_window, ImGuiWindowFlags_NoFocusOnAppearing);
 		ImGui::PopFont();
 
 		// display instruction text
@@ -524,6 +560,9 @@ void GUI::draw_scene_graph_window()
 
 void GUI::draw_properties_window()
 {
+	if (!show_properties_window)
+		return;
+
 	// get the node manager from the Core instance
 	auto& node_manager      = Core::get_instance()->get_node_manager();
 	auto& selection_manager = Core::get_instance()->get_selection_manager();
@@ -537,7 +576,7 @@ void GUI::draw_properties_window()
 	{ // show a window that allows the user to change the properties of the nodes in the scene
 		// begin the Properties window
 		ImGui::PushFont(bold_font);
-		ImGui::Begin("PROPERTIES", nullptr, ImGuiWindowFlags_NoFocusOnAppearing);
+		ImGui::Begin("PROPERTIES", &show_properties_window, ImGuiWindowFlags_NoFocusOnAppearing);
 		ImGui::PopFont();
 
 		auto selected = selection_manager->get_selected_node(node_manager.get());
@@ -596,6 +635,9 @@ void GUI::draw_properties_window()
 
 void GUI::draw_creation_window()
 {
+	if (!show_creation_window)
+		return;
+
 	// set initial size and position for the create Window
 	ImGui::SetNextWindowSize(creation_window_size, ImGuiCond_Appearing);
 	ImGui::SetNextWindowPos(creation_window_position, ImGuiCond_Appearing);
@@ -605,7 +647,7 @@ void GUI::draw_creation_window()
 	{ // show a window that contains buttons to add new objects to the scene
 		// begin the Creation window
 		ImGui::PushFont(bold_font);
-		ImGui::Begin("CREATION", nullptr, ImGuiWindowFlags_NoFocusOnAppearing);
+		ImGui::Begin("CREATION", &show_creation_window, ImGuiWindowFlags_NoFocusOnAppearing);
 		ImGui::PopFont();
 
 		// button to add a new directional light to the scene
@@ -720,6 +762,9 @@ void GUI::draw_creation_window()
 
 void GUI::draw_debug_window()
 {
+	if (!show_debug_window)
+		return;
+
 	// set initial size and position for the Debug Window
 	ImGui::SetNextWindowSize(debug_window_size, ImGuiCond_Appearing);
 	ImGui::SetNextWindowPos(debug_window_position, ImGuiCond_Appearing);
@@ -729,7 +774,7 @@ void GUI::draw_debug_window()
 	{ // show a window that contains debug information and controls
 		// begin the Debug window
 		ImGui::PushFont(bold_font);
-		ImGui::Begin("DEBUG", nullptr, ImGuiWindowFlags_NoFocusOnAppearing);
+		ImGui::Begin("DEBUG", &show_debug_window, ImGuiWindowFlags_NoFocusOnAppearing);
 		ImGui::PopFont();
 
 		// get the renderer screen debug params from the Core instance
