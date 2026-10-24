@@ -3,11 +3,11 @@
 ## It verifies that the Engine can be consumed, that the sample App is not built for consumers,
 ## and that an application can create a window and its own GUI with the Platform library
 
-cmake_minimum_required(VERSION 3.21)
+cmake_minimum_required(VERSION 3.26...4.2)
 
 project(Engine_Consumer_Test LANGUAGES C CXX)
 
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 

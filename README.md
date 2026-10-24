@@ -4,7 +4,7 @@
 [![Language](https://img.shields.io/badge/C%2B%2B-20-blue.svg)](https://isocpp.org/)
 [![OpenGL](https://img.shields.io/badge/OpenGL-4.5-red.svg)](https://www.opengl.org/)
 [![CI](https://github.com/emartg/opengl-graphics-engine/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/emartg/opengl-graphics-engine/actions/workflows/ci.yml)
-[![CMake](https://img.shields.io/badge/CMake-≥3.21-brightgreen.svg)](https://cmake.org/)
+[![CMake](https://img.shields.io/badge/CMake-≥3.26-brightgreen.svg)](https://cmake.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 A **modular, extensible 3D graphics engine** built from scratch with OpenGL 4.5. Initially developed as a Bachelor's Thesis (TFG), it serves as a lightweight prototyping platform for real-time rendering, featuring a composite scene graph, lighting, model import, an immediate-mode GUI editor, among other functionalities.
@@ -65,7 +65,7 @@ For a detailed class diagram and pipeline description, see the [Architecture Gui
 
 On Windows, GLFW, GLM, Assimp, and nlohmann/json are built by [vcpkg](https://github.com/microsoft/vcpkg) from the `vcpkg.json` manifest (the versions above); on Linux, the versions of the system packages are used.
 
-CMake (≥3.21, or ≥3.25 to use the presets) with the Ninja generator is recommended, but any generator works.
+CMake (≥3.26) with the Ninja generator is recommended, but any generator works. The Engine is written in C++23 (a compiler that supports it is required, see the build instructions).
 
 ---
 

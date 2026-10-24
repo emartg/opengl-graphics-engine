@@ -3,8 +3,8 @@
 ## or consumed by another CMake project through the add_subdirectory() command
 ## (e.g., as a Git submodule), in which case only the Core library is built by default
 
-cmake_minimum_required(VERSION 3.21)
-cmake_policy(VERSION 3.21)
+cmake_minimum_required(VERSION 3.26...4.2)
+cmake_policy(VERSION 3.26...4.2)
 
 # Project name, version and languages
 project(EngineProject VERSION 0.9.0 LANGUAGES C CXX)
@@ -12,7 +12,7 @@ project(EngineProject VERSION 0.9.0 LANGUAGES C CXX)
 # Set C++ standard (only when the Engine is the top-level project,
 # so that other consumers can keep their own C++ standard)
 if (PROJECT_IS_TOP_LEVEL)
-	set(CMAKE_CXX_STANDARD 20)
+	set(CMAKE_CXX_STANDARD 23)
 	set(CMAKE_CXX_STANDARD_REQUIRED ON)
 	set(CMAKE_CXX_EXTENSIONS OFF)
 endif()

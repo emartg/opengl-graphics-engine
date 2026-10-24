@@ -19,7 +19,7 @@ target_link_libraries(Platform PUBLIC
 	engine_imgui
 	glfw
 )
-target_compile_features(Platform PUBLIC cxx_std_20)
+target_compile_features(Platform PUBLIC cxx_std_23)
 
 install(TARGETS Platform
 	ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
