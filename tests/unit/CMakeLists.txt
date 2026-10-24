@@ -31,7 +31,7 @@ file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp)
 # Create the unit test executable, linked against the Core library and GoogleTest (with its main function)
 add_executable(Engine_Unit_Tests ${SOURCES})
 target_link_libraries(Engine_Unit_Tests PRIVATE Engine::Core GTest::gtest_main)
-target_compile_features(Engine_Unit_Tests PRIVATE cxx_std_20)
+target_compile_features(Engine_Unit_Tests PRIVATE cxx_std_23)
 
 # Name of the executable file, used by the tests of File_System_Utils::get_executable_directory(),
 # and the Engine's resources and assets directories, used by the tests of the engine's own files

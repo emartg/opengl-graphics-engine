@@ -7,8 +7,8 @@ This document provides detailed steps to compile and run the OpenGL Graphics Eng
 
 - **Operating System:** Windows (tested on Windows 11) or Linux (tested on Ubuntu 26.04). macOS is not supported, since it only provides OpenGL up to 4.1.
 - **GPU and drivers:** OpenGL 4.5 core profile support (any NVIDIA, AMD, or Intel GPU with current drivers on Windows or Linux, or a recent Mesa on Linux, including the `llvmpipe` software renderer).
-- **Compiler:** MSVC from Visual Studio 2022/2026, or GCC from a MinGW installation on Windows; GCC or Clang on Linux.
-- **CMake:** ≥ 3.21 (≥ 3.25 to use the presets in `CMakePresets.json`).
+- **Compiler:** a C++23 compiler: MSVC from Visual Studio, or GCC from a MinGW installation on Windows; GCC or Clang on Linux. The CI builds and tests with MSVC 14.51 (Visual Studio 2026), MinGW GCC 15.2, GCC 13.3, and Clang 18.1; older versions are not tested.
+- **CMake:** ≥ 3.26 (the presets in `CMakePresets.json` need no more). The CI configures and tests with CMake 3.26.4, the minimum.
 - **vcpkg (Windows):** A Git clone of [vcpkg](https://github.com/microsoft/vcpkg), used by the Windows presets to build the dependencies.
 - **VS Code extensions:** CMake Tools and C/C++.
 - **Git:** To clone the repository (optional if you download the source).

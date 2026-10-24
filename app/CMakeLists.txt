@@ -22,7 +22,7 @@ target_include_directories(App PRIVATE
 # Link libraries to the App executable
 # (the Platform library provides the Core library, GLFW, and ImGui)
 target_link_libraries(App PRIVATE Engine::Platform)
-target_compile_features(App PRIVATE cxx_std_20)
+target_compile_features(App PRIVATE cxx_std_23)
 
 # Stage the runtime dependencies (DLLs) beside the executable for local runs (MinGW only, see the function).
 # Resources and assets are not copied: the Core locates them at runtime (beside the executable, in the

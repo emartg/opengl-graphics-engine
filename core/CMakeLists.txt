@@ -42,7 +42,7 @@ target_link_libraries(Core PUBLIC
 )
 # JSON parsing (e.g., the shader descriptors) is an implementation detail: the Core's headers do not include it
 target_link_libraries(Core PRIVATE nlohmann_json::nlohmann_json)
-target_compile_features(Core PUBLIC cxx_std_20)
+target_compile_features(Core PUBLIC cxx_std_23)
 
 # Locations searched for the resources and assets directories at runtime (see Core::resolve_directory):
 # - ENGINE_INSTALL_RESOURCES_DIR and ENGINE_INSTALL_ASSETS_DIR: relative to the installation prefix (they match
