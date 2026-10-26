@@ -145,6 +145,7 @@ jobs:
           - preset: ninja-msvc-debug
             toolchain: msvc
             triplet: x64-windows
+            vcpkg-triplet: x64-windows-ci
             generator: Ninja
             build-type: Debug
             c-compiler: cl
@@ -152,6 +153,7 @@ jobs:
           - preset: mingw-gcc-vcpkg-release
             toolchain: mingw
             triplet: x64-mingw-dynamic
+            vcpkg-triplet: x64-mingw-dynamic-ci
             generator: MinGW Makefiles
             build-type: Release
             c-compiler: gcc
@@ -206,13 +208,40 @@ jobs:
         uses: actions/cache/restore@v5
         with:
           path: ${{ runner.temp }}\vcpkg-binary-cache
-          key: vcpkg-${{ matrix.triplet }}-${{ steps.compiler.outputs.version }}-${{ hashFiles('vcpkg.json') }}
+          key: vcpkg-${{ matrix.triplet }}-${{ steps.compiler.outputs.version }}-${{ hashFiles('vcpkg.json', 'cmake/vcpkg_triplets/**', 'cmake/vcpkg_triplets_ci/**') }}
           restore-keys: |
             vcpkg-${{ matrix.triplet }}-${{ steps.compiler.outputs.version }}-
 
       - name: Configure
-        # vcpkg installs the dependencies of the manifest during the configuration (from the cache when available)
-        run: cmake --preset ${{ matrix.preset }} -DENGINE_BUILD_TESTS=ON
+        # vcpkg installs the dependencies of the manifest during the configuration (from the cache when available). The CI
+        # triplets keep the PATH and the compiler out of the hash of the packages (see cmake/vcpkg_triplets_ci), and the debug
+        # output of vcpkg (the entries of the hash) goes to a file that the next step summarizes
+        shell: pwsh
+        run: |
+          cmake --preset ${{ matrix.preset }} -DENGINE_BUILD_TESTS=ON "-DVCPKG_TARGET_TRIPLET=${{ matrix.vcpkg-triplet }}" "-DVCPKG_HOST_TRIPLET=x64-windows-ci" "-DVCPKG_OVERLAY_TRIPLETS=${{ github.workspace }}/cmake/vcpkg_triplets_ci;${{ github.workspace }}/cmake/vcpkg_triplets" "-DVCPKG_INSTALL_OPTIONS=--debug" *> "$env:RUNNER_TEMP\configure.log"
+          $code = $LASTEXITCODE
+          if ($code -ne 0) { Get-Content "$env:RUNNER_TEMP\configure.log" -Tail 200 }
+          exit $code
+
+      - name: Summarize the vcpkg binary cache
+        # how many packages were restored, and the entries of the hash of a small port and of a tool of vcpkg: when the cache
+        # does not restore, the entry that differs between two runs is the cause
+        if: ${{ !cancelled() }}
+        shell: pwsh
+        run: |
+          $log = Get-Content "$env:RUNNER_TEMP\configure.log" -ErrorAction SilentlyContinue
+          $restored = $log | Select-String "Restored \d+ package" | Select-Object -First 1
+          $summary = @("### vcpkg binary cache (${{ matrix.preset }})", "")
+          $summary += $(if ($restored) { $restored.Line } else { "no restore line in the output" })
+          foreach ($port in "zlib", "vcpkg-cmake") {
+            $start = ($log | Select-String -Pattern "abientries for ${port}:" | Select-Object -First 1).LineNumber
+            if ($start) {
+              $block = @(); for ($i = $start - 1; $i -lt $log.Count; $i++) { $block += ($log[$i] -replace "^\[DEBUG\] ?", ""); if ($log[$i] -match "</abientries>") { break } }
+              $summary += @("", "~~~", $block, "~~~")
+            }
+          }
+          $summary | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+          $summary | Select-Object -First 3
 
       - name: Save the vcpkg binary cache
         # saved even if a later step fails, so that the dependencies are not built again on the next run
@@ -220,7 +249,7 @@ jobs:
         uses: actions/cache/save@v5
         with:
           path: ${{ runner.temp }}\vcpkg-binary-cache
-          key: vcpkg-${{ matrix.triplet }}-${{ steps.compiler.outputs.version }}-${{ hashFiles('vcpkg.json') }}
+          key: vcpkg-${{ matrix.triplet }}-${{ steps.compiler.outputs.version }}-${{ hashFiles('vcpkg.json', 'cmake/vcpkg_triplets/**', 'cmake/vcpkg_triplets_ci/**') }}
 
       - name: Build
         run: cmake --build --preset ${{ matrix.preset }} --parallel --target App Engine_Unit_Tests
@@ -231,5 +260,5 @@ jobs:
       - name: Build the consumer test
         # the consumer test is a separate project, so it uses the manifest and the packages installed for the Engine
         run: |
-          cmake -S tests/consumer -B out/build/consumer -G "${{ matrix.generator }}" -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} -DCMAKE_C_COMPILER=${{ matrix.c-compiler }} -DCMAKE_CXX_COMPILER=${{ matrix.cxx-compiler }} -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" -DVCPKG_TARGET_TRIPLET=${{ matrix.triplet }} -DVCPKG_MANIFEST_DIR="${{ github.workspace }}" -DVCPKG_INSTALLED_DIR="${{ github.workspace }}/out/build/${{ matrix.preset }}/vcpkg_installed"
+          cmake -S tests/consumer -B out/build/consumer -G "${{ matrix.generator }}" -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} -DCMAKE_C_COMPILER=${{ matrix.c-compiler }} -DCMAKE_CXX_COMPILER=${{ matrix.cxx-compiler }} -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" -DVCPKG_TARGET_TRIPLET=${{ matrix.vcpkg-triplet }} -DVCPKG_HOST_TRIPLET=x64-windows-ci "-DVCPKG_OVERLAY_TRIPLETS=${{ github.workspace }}/cmake/vcpkg_triplets_ci;${{ github.workspace }}/cmake/vcpkg_triplets" -DVCPKG_MANIFEST_DIR="${{ github.workspace }}" -DVCPKG_INSTALLED_DIR="${{ github.workspace }}/out/build/${{ matrix.preset }}/vcpkg_installed"
           cmake --build out/build/consumer --parallel

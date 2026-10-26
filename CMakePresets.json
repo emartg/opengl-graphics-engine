@@ -20,7 +20,10 @@
       "name": "vcpkg",
       "description": "Resolve the dependencies of vcpkg.json with vcpkg (requires the VCPKG_ROOT environment variable)",
       "hidden": true,
-      "toolchainFile": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
+      "toolchainFile": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+      "cacheVariables": {
+        "VCPKG_OVERLAY_TRIPLETS": "${sourceDir}/cmake/vcpkg_triplets"
+      }
     },
     {
       "name": "linux-only",
