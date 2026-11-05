@@ -34,16 +34,21 @@ This document describes how changes are made, reviewed, and released in this rep
 
 Every pull request with a notable change adds a line to the `[Unreleased]` section of the [Changelog](../CHANGELOG.md), under `Added`, `Changed`, `Deprecated`, `Removed`, `Fixed`, or `Security`.
 
+## Diagrams
+
+The diagrams are in `docs/diagrams/<subfolder>/`: each one is a Mermaid source (`<name>.mmd`) and its rendered image (`<name>.png`) side by side. The [diagrams guide](diagrams/README.md) has the index, the pinned command that renders them, and the steps to add one. `python docs/diagrams/diagrams.py check` (it needs only Python) verifies that every image has its source and the reverse, and the Diagrams workflow runs it on every pull request.
+
 ## Versions
 
 The project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html): before v1.0.0, minor versions (`0.x.0`) add features and may include breaking changes, and patch versions (`0.x.y`) only include fixes. Versions before v1.0.0 are published as pre-releases.
 
 ## Releases
 
-1. In a release pull request (e.g., `release/v0.9.0`):
+1. Before opening the release pull request, regenerate the diagrams with `python docs/diagrams/diagrams.py render`, look at each image against the code, and commit the images of the diagrams that changed (see the [diagrams guide](diagrams/README.md)).
+2. In a release pull request (e.g., `release/v0.9.0`):
    - Rename the `[Unreleased]` section of the changelog to the version and date (e.g., `## [0.9.0] - 2026-10-08`), add a new empty `[Unreleased]` section above it, and update the comparison links at the end of the file.
    - Make sure that the `project()` version in the top-level `CMakeLists.txt` matches the new version.
    - Update the status of the README and the [Limitations](limitations.md) and [Future Work](future_work.md) documents if needed.
-2. Merge the pull request once the CI passes.
-3. On GitHub, draft a new release: create the tag (`v0.9.0`) on `main` when publishing, use the title `Release v0.9.0 - <Highlights>`, write the release notes (Overview, sections per area, Upgrade Notes when needed, Summary, and the full changelog link), and mark it as a pre-release before v1.0.0.
-4. Publishing the release starts the Release workflow, which attaches the Windows package (`opengl-graphics-engine-<tag>-windows-x64.zip`) to it a few minutes later. Before the release, the package can be checked by starting the workflow manually (**Actions** > **Release** > **Run workflow**), which uploads it as an artifact of the run.
+3. Merge the pull request once the CI passes.
+4. On GitHub, draft a new release: create the tag (`v0.9.0`) on `main` when publishing, use the title `Release v0.9.0 - <Highlights>`, write the release notes (Overview, sections per area, Upgrade Notes when needed, Summary, and the full changelog link), and mark it as a pre-release before v1.0.0.
+5. Publishing the release starts the Release workflow, which attaches the Windows package (`opengl-graphics-engine-<tag>-windows-x64.zip`) to it a few minutes later. Before the release, the package can be checked by starting the workflow manually (**Actions** > **Release** > **Run workflow**), which uploads it as an artifact of the run.
