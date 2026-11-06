@@ -133,7 +133,7 @@ jobs:
   # Windows builds with MSVC and MinGW's GCC, with the dependencies built by vcpkg (manifest mode, see
   # vcpkg.json), and unit tests (the smoke tests do not run: the runners have no OpenGL 4.5 support).
   # The vcpkg packages are stored in a binary cache, so they are only built from source when the
-  # manifest or the compiler changes
+  # manifest, the triplets, or the versions of the compiler, CMake, or PowerShell change
   windows:
     name: Windows (${{ matrix.preset }})
     runs-on: windows-latest
@@ -181,14 +181,22 @@ jobs:
           Get-Command gcc, g++, x86_64-w64-mingw32-gcc, mingw32-make | Format-Table Name, Source -AutoSize
           gcc --version
 
-      - name: Identify the compiler version
-        # part of the key of the vcpkg binary cache, so that packages built by another compiler version are not reused
+      - name: Identify the compiler and tool versions
+        # part of the key of the vcpkg binary cache, so that packages built by another compiler version are not reused. The
+        # hash that vcpkg computes for every package also has the versions of CMake and PowerShell of the runner image (the
+        # entries cmake|<version> and powershell|<version>): if an image update changed one of them and not the compiler, the
+        # key would be the same, the restore would be an exact hit with archives of the old hash, vcpkg would build everything,
+        # and the save would be skipped, so the runs would stay cold until the key changed
         id: compiler
         shell: pwsh
         run: |
           if ("${{ matrix.toolchain }}" -eq "msvc") { $version = "msvc-$env:VCToolsVersion" } else { $version = "gcc-$(gcc -dumpfullversion)" }
           Write-Output "Compiler: $version"
           "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          $cmakeVersion = ((cmake --version | Select-Object -First 1) -split " ")[-1]
+          $tools = "cmake-$cmakeVersion-pwsh-$($PSVersionTable.PSVersion)"
+          Write-Output "Tools: $tools"
+          "tools=$tools" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
 
       - name: Set up vcpkg at the baseline of the manifest
         # after the MSVC developer environment, which may set VCPKG_ROOT to the vcpkg instance of Visual Studio
@@ -208,9 +216,9 @@ jobs:
         uses: actions/cache/restore@v5
         with:
           path: ${{ runner.temp }}\vcpkg-binary-cache
-          key: vcpkg-${{ matrix.triplet }}-${{ steps.compiler.outputs.version }}-${{ hashFiles('vcpkg.json', 'cmake/vcpkg_triplets/**', 'cmake/vcpkg_triplets_ci/**') }}
+          key: vcpkg-${{ matrix.triplet }}-${{ steps.compiler.outputs.version }}-${{ steps.compiler.outputs.tools }}-${{ hashFiles('vcpkg.json', 'cmake/vcpkg_triplets/**', 'cmake/vcpkg_triplets_ci/**') }}
           restore-keys: |
-            vcpkg-${{ matrix.triplet }}-${{ steps.compiler.outputs.version }}-
+            vcpkg-${{ matrix.triplet }}-${{ steps.compiler.outputs.version }}-${{ steps.compiler.outputs.tools }}-
 
       - name: Configure
         # vcpkg installs the dependencies of the manifest during the configuration (from the cache when available). The CI
@@ -240,6 +248,15 @@ jobs:
               $summary += @("", "~~~", $block, "~~~")
             }
           }
+          $cmakeEntry = $log | Select-String -Pattern "^\[DEBUG\]\s+cmake\|(\S+)" | Select-Object -First 1
+          $pwshEntry = $log | Select-String -Pattern "^\[DEBUG\]\s+powershell\|(\S+)" | Select-Object -First 1
+          if ($cmakeEntry -and $pwshEntry) {
+            $recorded = "cmake-$($cmakeEntry.Matches[0].Groups[1].Value)-pwsh-$($pwshEntry.Matches[0].Groups[1].Value)"
+            $inKey = "${{ steps.compiler.outputs.tools }}"
+            $line = $(if ($recorded -eq $inKey) { "Tool versions of the key: $inKey (the ones that vcpkg records)" } else { "Tool versions of the key: $inKey, but vcpkg records $recorded, so the key does not follow the hash" })
+            $summary += @("", $line)
+            Write-Output $line
+          }
           $summary | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
           $summary | Select-Object -First 3
 
@@ -249,7 +266,7 @@ jobs:
         uses: actions/cache/save@v5
         with:
           path: ${{ runner.temp }}\vcpkg-binary-cache
-          key: vcpkg-${{ matrix.triplet }}-${{ steps.compiler.outputs.version }}-${{ hashFiles('vcpkg.json', 'cmake/vcpkg_triplets/**', 'cmake/vcpkg_triplets_ci/**') }}
+          key: vcpkg-${{ matrix.triplet }}-${{ steps.compiler.outputs.version }}-${{ steps.compiler.outputs.tools }}-${{ hashFiles('vcpkg.json', 'cmake/vcpkg_triplets/**', 'cmake/vcpkg_triplets_ci/**') }}
 
       - name: Build
         run: cmake --build --preset ${{ matrix.preset }} --parallel --target App Engine_Unit_Tests
