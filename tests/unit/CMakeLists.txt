@@ -45,9 +45,12 @@ target_compile_definitions(Engine_Unit_Tests PRIVATE
 engine_stage_runtime_dependencies(Engine_Unit_Tests)
 
 # Register every GoogleTest test as a CTest test with the "unit" label. The tests are listed when
-# CTest runs (not after the build), so the runtime dependencies are already in place
+# CTest runs (not after the build), so the runtime dependencies are already in place. Listing them
+# starts the executable, and CTest waits 5 seconds for it by default: the first start on a loaded
+# machine (a runner of the continuous integration) can take longer, so it waits up to 60 seconds
 include(GoogleTest)
 gtest_discover_tests(Engine_Unit_Tests
 	DISCOVERY_MODE PRE_TEST
+	DISCOVERY_TIMEOUT 60
 	PROPERTIES LABELS unit
 )
