@@ -35,6 +35,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
+- The dependencies and packages diagram of the architecture guide shows `nlohmann_json` (a private dependency of Core, as a dotted arrow), says which libraries are packages of vcpkg or of the system, which are system libraries, and which are bundled source, writes "links to" on every arrow, and is rendered from its Mermaid source, which now has the layout, the colors, and the legend (the committed image was not the render of its source).
 - **Build requirements:** the Engine now needs **CMake 3.26** (it was 3.21) and a **C++23** compiler (it was C++20). The project, `Engine::Core`, `Engine::Platform`, the sample App, and the tests are compiled as C++23 (`CMAKE_CXX_STANDARD 23` and `cxx_std_23`), the minimum of CMake and the policies are 3.26 to 4.2, the presets ask for CMake 3.26, and the CI has a job that configures, builds, and tests with CMake 3.26.4. Upgrade note: `Engine::Core` and `Engine::Platform` ask for C++23 publicly, so a project that links them is compiled as C++23, and its CMake must be at least 3.26. The code of the Engine itself did not change; it was built with GCC 15.2, Clang 21.1, MinGW GCC 16.2, and MSVC 19.51 at C++23 without errors or warnings.
 - The lit shaders share the lights and the lighting functions through `resources/shaders/include/lighting.glsl`.
 - Render passes can have a different color format per attachment.

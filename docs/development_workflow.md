@@ -36,7 +36,7 @@ Every pull request with a notable change adds a line to the `[Unreleased]` secti
 
 ## Diagrams
 
-The diagrams are in `docs/diagrams/<subfolder>/`: each one is a Mermaid source (`<name>.mmd`) and its rendered image (`<name>.png`) side by side. The [diagrams guide](diagrams/README.md) has the index, the pinned command that renders them, and the steps to add one. `python docs/diagrams/diagrams.py check` (it needs only Python) verifies that every image has its source and the reverse, and the Diagrams workflow runs it on every pull request.
+The diagrams are in `docs/diagrams/<subfolder>/`: each one is a Mermaid source (`<name>.mmd`) and its rendered image (`<name>.png`) side by side. The [diagrams guide](diagrams/README.md) has the index, the pinned command that renders them, and the steps to add one. `python docs/diagrams/diagrams.py check` (it needs only Python) verifies that every image has its source and the reverse, and the Diagrams workflow runs it on every pull request. A new render of a diagram is committed only if it is more accurate or clearer than the image it replaces, together with its source, and diagrams go in `docs/` commits (a set of related diagrams with the documentation that shows them).
 
 ## Versions
 
