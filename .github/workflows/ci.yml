@@ -3,7 +3,7 @@
 # every platform and the smoke tests on Linux with a virtual display and Mesa's software OpenGL 4.5
 # renderer, builds and runs the consumer test, and checks the code formatting
 
-name: Add the CMake and PowerShell Versions to the vcpkg Cache Key
+name: CI
 
 on:
   push:
