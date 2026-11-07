@@ -27,10 +27,10 @@ The project is split into three top-level modules:
    - Dependencies: `platform`.
 
 This strict separation means the `core` can be linked into other applications (e.g., a simulation or scientific visualiser) without pulling in GLFW or ImGui, and that applications which need a window reuse the `platform` library instead of duplicating it.
-The following diagram (Fig. 1) shows the dependencies between the different modules and libraries in the project:
+The following diagram (Fig. 1) shows the dependencies between the modules and the libraries of the project: every arrow reads "links to" (the dotted one is a private link), and each library is a package of vcpkg or of the system, a system library, or bundled source:
 
 <div style="display:flex; justify-content:center; align-items:center; flex-wrap:wrap; gap:20px;">
-<img src="diagrams/dependencies/dependencies_and_packages.png" alt="dependencies_and_packages" title="Dependecies & Packages" style="height:500px; width:auto;" />
+<img src="diagrams/dependencies/dependencies_and_packages.png" alt="dependencies_and_packages" title="Dependencies and Packages" style="height:520px; width:auto;" />
 </div>
 <p><i>Fig 1. Dependencies and packages</i></p>
 <p></p>
