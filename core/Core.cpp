@@ -17,8 +17,7 @@
 #include "shader/Shader_Library.h"
 #include "material/Material_Library.h"
 #include "texture/Texture.h"
-#include "gizmos/Line.h"               // for directional light gizmo rendering
-#include "gizmos/TRIANGLE_FAN_PLANE.h" // for directional light gizmo rendering
+#include "gizmos/Line.h" // for directional light gizmo rendering
 #include "camera/Camera.h"
 #include "managers/Node_Manager.h"
 #include "managers/Input_Manager.h"
