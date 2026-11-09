@@ -104,22 +104,22 @@ Next, each phase is described step-by-step.
   - `Input_Manager` - translates raw input to camera/UI actions.
 - **`Light`** - Abstract base for directional, point, and spot lights. Each light owns a visual gizmo (wireframe shape) that is rendered in the gizmo pass.
 
-The following UML class diagrams (Figs. 4-8) detail the package layout, class hierarchies, and subsystem relationships.
+The following UML diagrams (Figs. 4-8) detail the package layout, class hierarchies, and subsystem relationships. Fig. 4 is the overview (the modules and how they relate), and Figs. 5-8 detail its boxes: the renderer, the GUI, and the assets (Fig. 5), the managers and libraries (Fig. 6), the scene entities (Fig. 7), and the utilities and the geometry data (Fig. 8).
 
 <div style="display:flex; justify-content:center; align-items:center; flex-wrap:wrap; gap:20px;"> 
-<img src="diagrams/uml/architecture_overview.png" alt="architecture_overview" title="Arquitecture Overview" style="height:250px; width:auto;" /> 
+<img src="diagrams/uml/architecture_overview.png" alt="architecture_overview" title="Architecture Overview" style="height:360px; width:auto;" />
 </div>
 <p><i>Fig 4. Architecture Overview</i></p>
 
 <div style="display:flex; justify-content:center; align-items:center; flex-wrap:wrap; gap:20px;">
-<img src="diagrams/uml/rendering_and_gui_subsystem.png" alt="rendering_and_gui_subsystem" title="Rendering & GUI Subsystem" style="height:800px; width:auto;" />
+<img src="diagrams/uml/rendering_and_gui_subsystem.png" alt="rendering_and_gui_subsystem" title="Renderer, GUI, and Assets" style="height:800px; width:auto;" />
 </div>
-<p><i>Fig 5. Rendering & GUI Subsystem</i></p>
+<p><i>Fig 5. Renderer, GUI, and Assets</i></p>
 
 <div style="display:flex; justify-content:center; align-items:center; flex-wrap:wrap; gap:20px;">
-<img src="diagrams/uml/managers_subsystem.png" alt="managers_subsystem" title="Managers Subsystem" style="height:600px; width:auto;" />
+<img src="diagrams/uml/managers_subsystem.png" alt="managers_subsystem" title="Managers and Libraries" style="height:600px; width:auto;" />
 </div>
-<p><i>Fig 6. Managers Subsystem</i></p>
+<p><i>Fig 6. Managers and Libraries</i></p>
 
 <div style="display:flex; justify-content:center; align-items:center; flex-wrap:wrap; gap:20px;">
 <img src="diagrams/uml/scene_entities_subsystem.png" alt="scene_entities_subsystem" title="Scene Entities Subsystem" style="height:750px; width:auto;" />
@@ -127,6 +127,6 @@ The following UML class diagrams (Figs. 4-8) detail the package layout, class hi
 <p><i>Fig 7. Scene Entities Subsystem</i></p>
 
 <div style="display:flex; justify-content:center; align-items:center; flex-wrap:wrap; gap:20px;">
-<img src="diagrams/uml/utilities_and_geometry_data.png" alt="utilities_and_geometry_data" title="Utilities and Geometry Data" style="height:850px; width:auto;" />
+<img src="diagrams/uml/utilities_and_geometry_data.png" alt="utilities_and_geometry_data" title="Utilities and Geometry Data" style="height:500px; width:auto;" />
 </div>
 <p><i>Fig 8. Utilities and Geometry Data</i></p>

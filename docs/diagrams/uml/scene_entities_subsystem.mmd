@@ -1,0 +1,111 @@
+---
+config:
+  layout: elk
+  fontFamily: "Segoe UI, Arial, sans-serif"
+  theme: base
+  themeVariables:
+    fontSize: 16px
+    lineColor: "#44546a"
+    edgeLabelBackground: "#ffffff"
+  class:
+    useMaxWidth: false
+---
+%% Module: Core. Belongs to architecture_overview (the box "Scene entities"). Shader and Texture are nodes of the scene graph too.
+classDiagram
+    direction LR
+    class Node {
+        <<abstract>>
+        #uint32 id
+        #string name
+        #Node_Type type
+        #position, rotation, scale
+        +draw()* const
+        +draw(shader)* const
+        +load()
+        +add_child(child)
+        +remove_child(child)
+        +get_children()
+        +is_composite() bool
+        +get_world_model_matrix()
+        +get_world_bounding_box()
+    }
+    class Model {
+        <<entity>>
+        +draw() const
+    }
+    class Assimp_Model {
+        <<entity>>
+        -load_assimp_model(path)
+    }
+    class Shape_Model {
+        <<entity>>
+        -create_mesh()
+    }
+    class Light {
+        <<abstract>>
+        #ambient, diffuse, specular
+        #Light_Type light_type
+        +create_gizmo()*
+        +get_gizmo()
+    }
+    class Directional_Light {
+        <<entity>>
+        +update_gizmo_direction_line()
+    }
+    class Point_Light {
+        <<entity>>
+        +create_gizmo()
+    }
+    class Spotlight {
+        <<entity>>
+        +create_gizmo()
+    }
+    class Camera {
+        <<entity>>
+        +get_view_matrix()
+        +process_keyboard(...)
+        +process_mouse_rotation(...)
+    }
+    class Texture {
+        <<entity>>
+        -Texture_Type texture_type
+        +bind(unit)
+        +load_cubemap_from_files(faces)
+    }
+    class Shader {
+        <<entity>>
+        +compile() bool
+        +use()
+        +set_mat4(...)
+    }
+    class Mesh {
+        +draw()
+        +get_bounding_box()
+    }
+    class Mesh_Geometry {
+        -vector~Vertex~ vertices
+        -vector~uint~ indices
+        +get_or_create(vertices, indices)$
+        +get_indices()
+        +draw()
+    }
+    class Material {
+        +apply()
+    }
+    Node <|-- Model
+    Node <|-- Light
+    Node <|-- Camera
+    Node <|-- Texture
+    Node <|-- Shader
+    Model <|-- Assimp_Model
+    Model <|-- Shape_Model
+    Light <|-- Directional_Light
+    Light <|-- Point_Light
+    Light <|-- Spotlight
+    Node o-- Node : children
+    Node --> Mesh : meshes
+    Node --> Texture : textures
+    Node --> Material : material
+    Mesh --> Mesh_Geometry : shared
+    Mesh --> Material
+    Light ..> Shape_Model : gizmo child

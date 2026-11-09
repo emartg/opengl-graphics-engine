@@ -1,0 +1,41 @@
+---
+config:
+  fontFamily: "Segoe UI, Arial, sans-serif"
+  theme: base
+  themeVariables:
+    fontSize: 16px
+    lineColor: "#44546a"
+    edgeLabelBackground: "#ffffff"
+---
+%% Overview of the engine: the modules (App, Platform, Core) and how they relate. The subsystem diagrams of this folder detail
+%% the boxes: managers_subsystem (Managers, libraries), rendering_and_gui_subsystem (Renderer, GUI, Assets),
+%% scene_entities_subsystem (Scene entities), and utilities_and_geometry_data (Utilities).
+block-beta
+    columns 5
+
+    Util("<b>Utilities</b><br/><i>Core, subsystem</i><br/>Random, String_Utils, Frustum,<br/>Bounding_Box, File_System_Utils,<br/>geometry data") Main("<b>main.cpp</b><br/><i>App, entry point</i><br/>main(), scene registry") space GLFW("<b>GLFW_Renderer</b><br/><i>Platform</i><br/>Window, input, ImGui") space
+    space:5
+    Core("<b>Core</b><br/><i>Core, singleton</i><br/>init(), run(), shutdown()") space Rend("<b>Renderer</b><br/><i>Core, abstract</i><br/>The frame and its passes") GUI("<b>GUI</b><br/><i>App, a Gui_Layer</i><br/>The editor windows") Ass("<b>Assets</b><br/><i>Core</i><br/>Asset_Registry<br/>Asset_Selection")
+    space:5
+    Ent("<b>Scene entities</b><br/><i>Core, subsystem</i><br/>Node, Model, Light, Camera,<br/>Shader, Texture, Mesh") space Mgr("<b>Managers, libraries</b><br/><i>Core, subsystem</i><br/>Scene, Node, Selection,<br/>Input, Shader, Material") AW("<b>Assets_Window</b><br/><i>App</i><br/>Lists and edits assets") space
+
+    Main-- "initializes, runs" -->Core
+    Main-. "creates" .->GLFW
+    Main-. "creates" .->GUI
+    Core-- "owns" -->Rend
+    Core-- "owns" -->Mgr
+    Core-. "uses" .->Util
+    GLFW-- "implements" -->Rend
+    GLFW-. "draws" .->GUI
+    GUI-. "edits" .->Mgr
+    GUI-- "owns" -->AW
+    AW-- "owns" -->Ass
+    Rend-. "reads" .->Mgr
+    Mgr-- "holds" -->Ent
+
+    classDef appBox fill:#d9eaf7,stroke:#1f4e79,color:#1f2d3d
+    classDef platformBox fill:#fff1dc,stroke:#d97706,color:#1f2d3d
+    classDef coreBox fill:#e8f4e8,stroke:#388e3c,color:#1f2d3d
+    class Main,GUI,AW appBox
+    class GLFW platformBox
+    class Ass,Util,Rend,Core,Mgr,Ent coreBox
