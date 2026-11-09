@@ -1,0 +1,107 @@
+---
+config:
+  layout: elk
+  fontFamily: "Segoe UI, Arial, sans-serif"
+  theme: base
+  themeVariables:
+    fontSize: 16px
+    lineColor: "#44546a"
+    edgeLabelBackground: "#ffffff"
+  class:
+    useMaxWidth: false
+---
+%% Modules: Core (Renderer, Render_Pass, assets), Platform (GLFW_Renderer, Gui_Layer), and App (GUI, Assets_Window). Belongs to
+%% architecture_overview (the boxes Renderer, GLFW_Renderer, GUI, Assets_Window, and Assets).
+classDiagram
+    direction TB
+    class GLFW_Renderer {
+        <<implementation>>
+        -GLFWwindow* window
+        -unique_ptr~Gui_Layer~ gui_layer
+        +poll_io_events()
+        +swap_buffers()
+        +wait_for_events()
+        +set_gui_layer(gui_layer)
+    }
+    class Renderer {
+        <<abstract>>
+        #Render_Pass* main_render_pass
+        +init()* bool
+        +create_window(width, height, title)* bool
+        +frame_start_config()
+        +render_scene()
+        +frame_end_config()
+        +set_shaders(shader_library) bool
+        +build_gui()
+        +render_gui()
+    }
+    class Gui_Layer {
+        <<interface>>
+        +configure()
+        +draw()*
+    }
+    class GUI {
+        <<GUI layer>>
+        -Assets_Window assets_window
+        -unique_ptr~Random~ randomizer
+        +configure()
+        +draw()
+        -draw_main_menu_bar()
+        -draw_scene_graph_window()
+        -draw_properties_window()
+        -draw_creation_window()
+        -draw_debug_window()
+        -draw_material_editor_window()
+    }
+    class Assets_Window {
+        <<window>>
+        -Asset_Registry registry
+        -Asset_Selection selection
+        +draw(position, size, bold_font, is_open)
+        +draw_selection_properties(bold_font)
+        +refresh()
+    }
+    class Asset_Registry {
+        +scan(root) bool
+        +create_folder(...), rename(...)
+        +move(...), remove(...)
+        +find_users(path)
+    }
+    class Asset_Selection {
+        +select(path), toggle(path)
+        +select_range(...)
+    }
+    class Render_Pass {
+        <<framebuffer>>
+        +create(specification)
+        +bind()
+        +get_texture_id(index)
+    }
+    class Selection_Manager {
+        <<manager>>
+        +render_picking_visualization(...)
+        +render_outline_mask(...)
+    }
+    class Shader {
+        <<entity>>
+        +use()
+    }
+    class Node {
+        <<abstract entity>>
+        +draw()*
+    }
+    class Material {
+        +apply()
+    }
+    GLFW_Renderer --|> Renderer
+    GLFW_Renderer *-- Gui_Layer : owns
+    GUI ..|> Gui_Layer
+    GUI *-- Assets_Window
+    Assets_Window *-- Asset_Registry
+    Assets_Window *-- Asset_Selection
+    Renderer *-- Render_Pass : main pass
+    Renderer --> Shader : internal shaders
+    Renderer ..> Node : draws
+    Renderer ..> Material : binds
+    Renderer ..> Selection_Manager : picking, outline
+    Selection_Manager *-- Render_Pass : picking, outline

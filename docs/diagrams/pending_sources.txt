@@ -1,11 +1,6 @@
 # The images of docs/diagrams/ that do not have their Mermaid source (<name>.mmd) yet: one path per line, relative to this folder.
 # `python docs/diagrams/diagrams.py check` accepts the images listed here. When a source is written, remove its line: the check
 # fails for a listed image that has its source, so this list can only shrink.
-uml/architecture_overview.png
-uml/managers_subsystem.png
-uml/rendering_and_gui_subsystem.png
-uml/scene_entities_subsystem.png
-uml/utilities_and_geometry_data.png
 pipeline/opengl4_rendering_pipeline.png
 pipeline/custom_rendering_pipeline.png
 gantt/estimated_dev_chronogram.png

@@ -1,0 +1,102 @@
+---
+config:
+  layout: elk
+  fontFamily: "Segoe UI, Arial, sans-serif"
+  theme: base
+  themeVariables:
+    fontSize: 16px
+    lineColor: "#44546a"
+    edgeLabelBackground: "#ffffff"
+  class:
+    useMaxWidth: false
+---
+%% Module: Core. Belongs to architecture_overview (the box "Managers, libraries"). Core owns the four managers and the two libraries.
+classDiagram
+    direction LR
+    class Core {
+        <<singleton>>
+        +get_instance()$ Core*
+        +init() bool
+        +run(max_frames)
+        +shutdown()
+    }
+    class Scene_Manager {
+        <<manager>>
+        +get_camera()
+        +get_skybox()
+        +load_skybox(faces or hdr_path)
+        +reset_camera()
+    }
+    class Node_Manager {
+        <<manager>>
+        +get_nodes(node_type)
+        +get_node_by_id(id)
+        +add_node(node)
+        +remove_node_by_id(id)
+    }
+    class Selection_Manager {
+        <<manager>>
+        +queue_pick(...)
+        +process_pending_pick(...)
+        +render_outline_mask(...)
+        +clear_selection()
+    }
+    class Input_Manager {
+        <<manager>>
+        +cursor_pos_callback(...)
+        +scroll_callback(...)
+        +key_callback(...)
+    }
+    class Shader_Library {
+        <<library>>
+        +load_directory(dir)
+        +reload(name)
+        +get(name)
+    }
+    class Material_Library {
+        <<library>>
+        +load_directory(dir, shader_library)
+        +add(material)
+        +get(name)
+    }
+    class Node {
+        <<abstract entity>>
+        +draw()*
+    }
+    class Camera {
+        <<entity>>
+        +get_view_matrix()
+    }
+    class Texture {
+        <<entity>>
+        +bind(unit)
+    }
+    class Shader {
+        <<entity>>
+        +use()
+    }
+    class Render_Pass {
+        <<framebuffer>>
+        +bind()
+    }
+    class Material {
+        +apply()
+    }
+    Core *-- Scene_Manager
+    Core *-- Node_Manager
+    Core *-- Selection_Manager
+    Core *-- Input_Manager
+    Core *-- Shader_Library
+    Core *-- Material_Library
+    Scene_Manager --> Camera : camera
+    Scene_Manager --> Texture : skybox
+    Node_Manager --> Node : stores
+    Selection_Manager *-- Render_Pass : picking, outline
+    Selection_Manager --> Shader : picking shader
+    Input_Manager ..> Camera : moves
+    Input_Manager ..> Selection_Manager : queues picks
+    Shader_Library o-- Shader
+    Material_Library o-- Material
+    Material_Library ..> Shader_Library : loads with
+    Material --> Shader
+    Material --> Texture
