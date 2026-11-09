@@ -218,6 +218,13 @@ void GLFW_Renderer::scroll_callback(GLFWwindow* window, double xoffset, double y
 
 void GLFW_Renderer::key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
+	// the keys belong to a GUI text field while the user types in it (erasing a digit with Delete must not delete the selected node,
+	// and Escape must not close the window). WantTextInput is used and not WantCaptureKeyboard, which is also true whenever a GUI window
+	// has the focus when keyboard navigation is enabled (for example after selecting a node in a window), and Delete and Escape must
+	// work then. The ImGui context does not exist before the GUI is initialized
+	if (ImGui::GetCurrentContext() && ImGui::GetIO().WantTextInput)
+		return;
+
 	// delegate the key callback to the Input_Manager
 	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
 		Core::get_instance()->get_input_manager()->key_callback("ESC_PRESSED");
