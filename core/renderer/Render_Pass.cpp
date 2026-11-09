@@ -151,7 +151,7 @@ void Render_Pass::create(const Render_Pass_Specification& spec)
 
 	// check if the framebuffer is complete, if not, print an error message
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-		std::cerr << "[ERROR::RENDERPASS::create] Framebuffer is not complete!" << std::endl;
+		std::cerr << "[ERROR::RENDER_PASS::create] Framebuffer is not complete!" << std::endl;
 
 	// unbind the framebuffer
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);

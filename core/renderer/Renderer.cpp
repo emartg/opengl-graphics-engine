@@ -63,7 +63,7 @@ Renderer::~Renderer()
 		main_render_pass = nullptr;
 	}
 
-	std::cout << "[RENDERER::~Renderer] Renderer destructor called" << std::endl;
+	std::cout << "[INFO::RENDERER::~Renderer] Renderer destructor called" << std::endl;
 }
 
 // Public Methods
@@ -454,7 +454,7 @@ void Renderer::render_scene()
 	//// print the elapsed time for rendering the scene with a counter to avoid spamming the console
 	// static uint32_t render_counter = 0;
 	// if ((render_counter++ % 60) == 0) // print every 60 frames
-	//	std::cout << "[PROFILER::RENDERER::render_scene] Scene rendered in "
+	//	std::cout << "[INFO::RENDERER::render_scene] Scene rendered in "
 	//	<< elapsed_time << " ms" << std::endl;
 }
 
@@ -1368,7 +1368,7 @@ void Renderer::update_dynamic_env_maps()
 	//// print the elapsed time for the dynamic env map update with a counter to avoid spamming the console
 	// static uint32_t render_counter = 0;
 	// if ((render_counter++ % 60) == 0) // print every 60 frames
-	//	std::cout << "[PROFILER::RENDERER::update_dynamic_env_maps] Dynamic env map update took "
+	//	std::cout << "[INFO::RENDERER::update_dynamic_env_maps] Dynamic env map update took "
 	//	<< elapsed_time << " ms" << std::endl;
 }
 

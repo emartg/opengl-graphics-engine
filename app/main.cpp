@@ -87,7 +87,7 @@ int main(int argc, char** argv)
 	const Scene_Info* scene = find_scene(options.scene_name);
 	if (!scene)
 	{ // if there is no scene with that name, print the available scenes and exit with an error code
-		std::cerr << "[ERROR::main] Unknown scene: '" << options.scene_name << "'" << std::endl;
+		std::cerr << "[ERROR::MAIN::main] Unknown scene: '" << options.scene_name << "'" << std::endl;
 		print_scenes();
 		return -1;
 	}
@@ -98,12 +98,12 @@ int main(int argc, char** argv)
 		std::error_code error;
 		if (!std::filesystem::is_directory(std::filesystem::path{ std::string{ options.assets_dir } }, error))
 		{
-			std::cerr << "[ERROR::main] The assets directory does not exist: '" << options.assets_dir << "'" << std::endl;
+			std::cerr << "[ERROR::MAIN::main] The assets directory does not exist: '" << options.assets_dir << "'" << std::endl;
 			return -1;
 		}
 	}
 
-	std::cout << "[INFO::main] Starting the application..." << std::endl;
+	std::cout << "[INFO::MAIN::main] Starting the application..." << std::endl;
 
 	Core* engine = Core::get_instance(); // retrieve the singleton instance of
 										 // the Core class
@@ -120,10 +120,10 @@ int main(int argc, char** argv)
 
 	// set up the chosen scene, with the chosen number of objects or the scene's default
 	if (options.object_count > 0 && scene->default_object_count == 0)
-		std::cerr << "[WARNING::main] The scene '" << scene->name << "' has a fixed number of objects, so --objects is ignored"
+		std::cerr << "[WARNING::MAIN::main] The scene '" << scene->name << "' has a fixed number of objects, so --objects is ignored"
 				  << std::endl;
 	const int object_count = options.object_count > 0 ? options.object_count : scene->default_object_count;
-	std::cout << "[INFO::main] Loading the scene '" << scene->name << "'";
+	std::cout << "[INFO::MAIN::main] Loading the scene '" << scene->name << "'";
 	if (scene->default_object_count > 0)
 		std::cout << " with " << object_count << " objects";
 	std::cout << std::endl;
@@ -135,7 +135,7 @@ int main(int argc, char** argv)
 	engine->shutdown(); // clean up resources in the correct order and shut down
 						// the engine
 
-	std::cout << "[SUCCESS::main] Application finished successfully" << std::endl;
+	std::cout << "[SUCCESS::MAIN::main] Application finished successfully" << std::endl;
 
 	return 0;
 }
@@ -152,7 +152,7 @@ bool parse_command_line(int argc, char** argv, App_Options& options)
 		}
 		if (i + 1 >= argc)
 		{ // if there is no next argument, print an error message and return false
-			std::cerr << "[ERROR::main::parse_command_line] Missing value for " << option << std::endl;
+			std::cerr << "[ERROR::MAIN::parse_command_line] Missing value for " << option << std::endl;
 			return false;
 		}
 		value = argv[++i];
@@ -165,7 +165,7 @@ bool parse_command_line(int argc, char** argv, App_Options& options)
 		auto [end, error] = std::from_chars(value.data(), value.data() + value.size(), number);
 		if (error != std::errc{} || end != value.data() + value.size() || number == 0 || number > maximum)
 		{
-			std::cerr << "[ERROR::main::parse_command_line] Invalid value for " << option << ": '" << value
+			std::cerr << "[ERROR::MAIN::parse_command_line] Invalid value for " << option << ": '" << value
 					  << "' (expected a positive integer";
 			if (maximum < std::numeric_limits<std::uint64_t>::max())
 				std::cerr << " no greater than " << maximum;
@@ -221,7 +221,7 @@ bool parse_command_line(int argc, char** argv, App_Options& options)
 		}
 		else
 		{ // if the argument is unknown, print an error message and return false
-			std::cerr << "[ERROR::main::parse_command_line] Unknown argument: " << argument << std::endl;
+			std::cerr << "[ERROR::MAIN::parse_command_line] Unknown argument: " << argument << std::endl;
 			return false;
 		}
 	}
@@ -263,17 +263,17 @@ bool initialize_core(Core* engine, bool interactive)
 
 	if (engine->init()) // initialize the engine (OpenGL, window, GUI, etc.)
 	{                   // if the initialization is successful, print a success message
-		std::cout << "[SUCCESS::main] Core initialized successfully" << std::endl;
+		std::cout << "[SUCCESS::MAIN::initialize_core] Core initialized successfully" << std::endl;
 	}
 	else
 	{
 		// if the initialization fails, print an error messages and shut down
 		// the engine, then prompt the user to exit
-		std::cerr << "[ERROR::main] Failed to initialize the Core engine" << std::endl;
+		std::cerr << "[ERROR::MAIN::initialize_core] Failed to initialize the Core engine" << std::endl;
 		engine->shutdown();
 		if (interactive)
 		{ // wait until the user presses a key before exiting
-			std::cout << "[INFO::main] Enter any key and press Enter to exit" << std::endl;
+			std::cout << "[INFO::MAIN::initialize_core] Enter any key and press Enter to exit" << std::endl;
 			std::cin.get();
 		}
 		return false; // indicate that the program should exit with an error

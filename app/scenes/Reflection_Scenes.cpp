@@ -141,7 +141,7 @@ void setup_test_scene_reflective_1(Core* engine)
 	}
 	else
 	{ // if the file does not exist, print an error message
-		std::cerr << "[WARNING::main::setup_test_scene_reflective_1] Assimp "
+		std::cerr << "[WARNING::REFLECTION_SCENES::setup_test_scene_reflective_1] Assimp "
 					 "model not found: "
 				  << model_file_path << std::endl;
 	}
@@ -154,13 +154,13 @@ void setup_test_scene_reflective_1(Core* engine)
 	}
 	else
 	{ // if the file does not exist, print an error message
-		std::cerr << "[ERROR::main::setup_test_scene_reflective_1] Skybox file "
+		std::cerr << "[ERROR::REFLECTION_SCENES::setup_test_scene_reflective_1] Skybox file "
 					 "not found: "
 				  << skybox_file_path << std::endl;
 	}
 
 	// print a success message indicating the test scene setup is complete
-	std::cout << "[SUCCESS::main::setup_test_scene_reflective_1] Test scene "
+	std::cout << "[SUCCESS::REFLECTION_SCENES::setup_test_scene_reflective_1] Test scene "
 				 "setup complete"
 			  << std::endl;
 }
@@ -278,7 +278,7 @@ void setup_test_scene_reflective_2(Core* engine)
 	}
 	else
 	{ // if the file does not exist, print an error message
-		std::cerr << "[WARNING::main::setup_test_scene_reflective_2] Assimp "
+		std::cerr << "[WARNING::REFLECTION_SCENES::setup_test_scene_reflective_2] Assimp "
 					 "model not found: "
 				  << model_file_path << std::endl;
 	}
@@ -291,13 +291,13 @@ void setup_test_scene_reflective_2(Core* engine)
 	}
 	else
 	{ // if the file does not exist, print an error message
-		std::cerr << "[ERROR::main::setup_test_scene_reflective_2] Skybox file "
+		std::cerr << "[ERROR::REFLECTION_SCENES::setup_test_scene_reflective_2] Skybox file "
 					 "not found: "
 				  << skybox_file_path << std::endl;
 	}
 
 	// print a success message indicating the test scene setup is complete
-	std::cout << "[SUCCESS::main::setup_test_scene_reflective_2] Test scene "
+	std::cout << "[SUCCESS::REFLECTION_SCENES::setup_test_scene_reflective_2] Test scene "
 				 "setup complete"
 			  << std::endl;
 }
@@ -412,7 +412,7 @@ void setup_test_scene_refractive_1(Core* engine)
 	}
 	else
 	{ // if the file does not exist, print an error message
-		std::cerr << "[WARNING::main::setup_test_scene_refractive_1] Assimp "
+		std::cerr << "[WARNING::REFLECTION_SCENES::setup_test_scene_refractive_1] Assimp "
 					 "model not found: "
 				  << model_file_path << std::endl;
 	}
@@ -425,13 +425,13 @@ void setup_test_scene_refractive_1(Core* engine)
 	}
 	else
 	{ // if the file does not exist, print an error message
-		std::cerr << "[ERROR::main::setup_test_scene_refractive_1] Skybox file "
+		std::cerr << "[ERROR::REFLECTION_SCENES::setup_test_scene_refractive_1] Skybox file "
 					 "not found: "
 				  << skybox_file_path << std::endl;
 	}
 
 	// print a success message indicating the test scene setup is complete
-	std::cout << "[SUCCESS::main::setup_test_scene_refractive_1] Test scene "
+	std::cout << "[SUCCESS::REFLECTION_SCENES::setup_test_scene_refractive_1] Test scene "
 				 "setup complete"
 			  << std::endl;
 }
@@ -549,7 +549,7 @@ void setup_test_scene_refractive_2(Core* engine)
 	}
 	else
 	{ // if the file does not exist, print an error message
-		std::cerr << "[WARNING::main::setup_test_scene_refractive_2] Assimp "
+		std::cerr << "[WARNING::REFLECTION_SCENES::setup_test_scene_refractive_2] Assimp "
 					 "model not found: "
 				  << model_file_path << std::endl;
 	}
@@ -562,13 +562,13 @@ void setup_test_scene_refractive_2(Core* engine)
 	}
 	else
 	{ // if the file does not exist, print an error message
-		std::cerr << "[ERROR::main::setup_test_scene_refractive_2] Skybox file "
+		std::cerr << "[ERROR::REFLECTION_SCENES::setup_test_scene_refractive_2] Skybox file "
 					 "not found: "
 				  << skybox_file_path << std::endl;
 	}
 
 	// print a success message indicating the test scene setup is complete
-	std::cout << "[SUCCESS::main::setup_test_scene_refractive_2] Test scene "
+	std::cout << "[SUCCESS::REFLECTION_SCENES::setup_test_scene_refractive_2] Test scene "
 				 "setup complete"
 			  << std::endl;
 }

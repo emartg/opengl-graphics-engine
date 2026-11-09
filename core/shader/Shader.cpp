@@ -231,7 +231,8 @@ bool Shader::check_compilation_linking_errors(GLuint shader, std::string type, c
 		if (!success)
 		{ // if compilation failed, retrieve the info log, print it, and return false
 			glGetShaderInfoLog(shader, 1024, NULL, info_log);
-			std::cerr << "[ERROR::SHADER::compile] Shader compilation error of type: " << type << "\n" << info_log << std::endl;
+			std::cerr << "[ERROR::SHADER::check_compilation_linking_errors] Shader compilation error of type: " << type << "\n"
+					  << info_log << std::endl;
 			// list the files of the source, since the messages identify them by their source string number
 			// (e.g., "0:12" or "0(12)" is line 12 of file 0, depending on the driver)
 			if (files.size() > 1)
@@ -248,7 +249,8 @@ bool Shader::check_compilation_linking_errors(GLuint shader, std::string type, c
 		if (!success)
 		{ // if linking the program failed, retrieve the info log, print it, and return false
 			glGetProgramInfoLog(shader, 1024, NULL, info_log);
-			std::cerr << "[ERROR::SHADER::compile] Shader linking error of type: " << type << "\n" << info_log << std::endl;
+			std::cerr << "[ERROR::SHADER::check_compilation_linking_errors] Shader linking error of type: " << type << "\n"
+					  << info_log << std::endl;
 			return false;
 		}
 	}
