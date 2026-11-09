@@ -25,19 +25,19 @@ GLFW_Renderer::~GLFW_Renderer()
 {
 	if (window)
 	{
-		std::cout << "[INFO::GLFWRENDERER::~GLFW_Renderer] Shutting down GLFW..." << std::endl;
+		std::cout << "[INFO::GLFW_RENDERER::~GLFW_Renderer] Shutting down GLFW..." << std::endl;
 		glfwDestroyWindow(window);
 		window = nullptr;
 	}
 	glfwTerminate();
-	std::cout << "[INFO::GLFWRENDERER::~GLFW_Renderer] GLFW shut down successfully" << std::endl;
+	std::cout << "[INFO::GLFW_RENDERER::~GLFW_Renderer] GLFW shut down successfully" << std::endl;
 }
 
 bool GLFW_Renderer::init() const
 {
 	if (glfwInit() == GLFW_FALSE)
 	{
-		std::cerr << "[ERROR::GLFWRENDERER::init_gui] Failed to initialize GLFW" << std::endl;
+		std::cerr << "[ERROR::GLFW_RENDERER::init] Failed to initialize GLFW" << std::endl;
 		return false;
 	}
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
@@ -48,7 +48,7 @@ bool GLFW_Renderer::init() const
 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
 
-	std::cout << "[SUCCESS::GLFWRENDERER::init_gui] GLFW initialized successfully" << std::endl;
+	std::cout << "[SUCCESS::GLFW_RENDERER::init] GLFW initialized successfully" << std::endl;
 	return true;
 }
 
@@ -58,7 +58,7 @@ bool GLFW_Renderer::create_window(int width, int height, const char* title)
 	if (!window)
 	{ // if the window (or its OpenGL context) cannot be created, print an error message and return false
 		// (GLFW is terminated by the destructor)
-		std::cerr << "[ERROR::GLFWRENDERER::create_window] Failed to create GLFW window "
+		std::cerr << "[ERROR::GLFW_RENDERER::create_window] Failed to create GLFW window "
 					 "(an OpenGL 4.5 core profile context is required; check that the GPU drivers are up to date)"
 				  << std::endl;
 		return false;
@@ -177,7 +177,7 @@ void GLFW_Renderer::shutdown_gui()
 {
 	if (gui_initialized)
 	{ // check if the GUI was initialized before shutting it down
-		std::cout << "[INFO::GLFWRENDERER::shutdown_gui] Shutting down GUI..." << std::endl;
+		std::cout << "[INFO::GLFW_RENDERER::shutdown_gui] Shutting down GUI..." << std::endl;
 		// destroy the application-specific GUI layer before the ImGui context it uses
 		gui_layer.reset();
 		// shut down the backends (which release their OpenGL objects) and destroy the ImGui context
@@ -187,7 +187,7 @@ void GLFW_Renderer::shutdown_gui()
 		gui_initialized = false;
 	}
 
-	std::cout << "[INFO::GLFWRENDERER::shutdown_gui] GUI shut down successfully" << std::endl;
+	std::cout << "[INFO::GLFW_RENDERER::shutdown_gui] GUI shut down successfully" << std::endl;
 }
 
 void GLFW_Renderer::framebuffer_size_callback(GLFWwindow* window, int width, int height)

@@ -875,9 +875,9 @@ void Assets_Window::set_status(const std::string& text, bool is_error)
 	status          = text;
 	status_is_error = is_error;
 	if (is_error)
-		std::cerr << "[WARNING::ASSETS_WINDOW] " << text << std::endl;
+		std::cerr << "[WARNING::ASSETS_WINDOW::set_status] " << text << std::endl;
 	else
-		std::cout << "[INFO::ASSETS_WINDOW] " << text << std::endl;
+		std::cout << "[INFO::ASSETS_WINDOW::set_status] " << text << std::endl;
 }
 
 void Assets_Window::fix_current_folder()

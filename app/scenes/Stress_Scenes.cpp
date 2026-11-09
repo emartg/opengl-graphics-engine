@@ -114,13 +114,13 @@ void setup_test_scene_geometric_stress_1(Core* engine, const int num_shapes)
 	}
 	else
 	{ // if the file does not exist, print an error message
-		std::cerr << "[ERROR::main::setup_test_scene_geometric_stress_1] "
+		std::cerr << "[ERROR::STRESS_SCENES::setup_test_scene_geometric_stress_1] "
 					 "Skybox file not found: "
 				  << skybox_file_path << std::endl;
 	}
 
 	// print a success message indicating the test scene setup is complete
-	std::cout << "[SUCCESS::main::setup_test_scene_geometric_stress_1] Test "
+	std::cout << "[SUCCESS::STRESS_SCENES::setup_test_scene_geometric_stress_1] Test "
 				 "scene setup complete"
 			  << std::endl;
 }
@@ -208,13 +208,13 @@ void setup_test_scene_geometric_stress_2(Core* engine, const int num_shapes)
 	}
 	else
 	{ // if the file does not exist, print an error message
-		std::cerr << "[ERROR::main::setup_test_scene_geometric_stress_2] "
+		std::cerr << "[ERROR::STRESS_SCENES::setup_test_scene_geometric_stress_2] "
 					 "Skybox file not found: "
 				  << skybox_file_path << std::endl;
 	}
 
 	// print a success message indicating the test scene setup is complete
-	std::cout << "[SUCCESS::main::setup_test_scene_geometric_stress_2] Test "
+	std::cout << "[SUCCESS::STRESS_SCENES::setup_test_scene_geometric_stress_2] Test "
 				 "scene setup complete"
 			  << std::endl;
 }
@@ -300,13 +300,13 @@ void setup_test_scene_reflective_stress(Core* engine, const int num_shapes)
 	}
 	else
 	{ // if the file does not exist, print an error message
-		std::cerr << "[ERROR::main::setup_test_scene_reflective_stress] Skybox "
+		std::cerr << "[ERROR::STRESS_SCENES::setup_test_scene_reflective_stress] Skybox "
 					 "file not found: "
 				  << skybox_file_path << std::endl;
 	}
 
 	// print a success message indicating the test scene setup is complete
-	std::cout << "[SUCCESS::main::setup_test_scene_reflective_stress] Test "
+	std::cout << "[SUCCESS::STRESS_SCENES::setup_test_scene_reflective_stress] Test "
 				 "scene setup complete"
 			  << std::endl;
 }

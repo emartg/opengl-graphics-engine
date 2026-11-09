@@ -105,7 +105,7 @@ void Node_Manager::add_node(std::shared_ptr<Node> node)
 	}
 
 	// print the type, id, and name of the added node
-	std::cout << "[INFO::NODEMANAGER::add_node] Added " << node_type << " node with id " << node->get_id() << " and name '"
+	std::cout << "[INFO::NODE_MANAGER::add_node] Added " << node_type << " node with id " << node->get_id() << " and name '"
 			  << node->get_name() << "'" << std::endl;
 }
 void Node_Manager::remove_node_by_id(std::uint32_t id)
@@ -130,7 +130,7 @@ void Node_Manager::remove_node_by_id(std::uint32_t id)
 
 	if (!found)
 	{ // if no node with the specified id was found, print an error message and return
-		std::cerr << "[ERROR::NODEMANAGER::remove_node_by_id] No node found with id " << id << std::endl;
+		std::cerr << "[ERROR::NODE_MANAGER::remove_node_by_id] No node found with id " << id << std::endl;
 		return;
 	}
 
@@ -144,7 +144,7 @@ void Node_Manager::remove_node_by_id(std::uint32_t id)
 		{ // if the node has a parent, remove it from the parent's children vector and print info
 			parent->remove_child(node_to_remove);
 
-			std::cout << "[INFO::NODEMANAGER::remove_node_by_id] Severed node id " << id << " from parent with id " << parent->get_id()
+			std::cout << "[INFO::NODE_MANAGER::remove_node_by_id] Severed node id " << id << " from parent with id " << parent->get_id()
 					  << std::endl;
 		}
 	}
@@ -155,7 +155,7 @@ void Node_Manager::remove_node_by_id(std::uint32_t id)
 		auto children = node_to_remove->get_children();
 		if (!children.empty())
 		{ // if the node has children, print info and recursively remove each child, then print confirmation
-			std::cout << "[INFO::NODEMANAGER::remove_node_by_id] Node with id " << id << " has " << children.size()
+			std::cout << "[INFO::NODE_MANAGER::remove_node_by_id] Node with id " << id << " has " << children.size()
 					  << " children. Removing children first..." << std::endl;
 
 			// create a copy of the children vector to avoid iteratior invalidation during removal
@@ -164,7 +164,7 @@ void Node_Manager::remove_node_by_id(std::uint32_t id)
 				if (child)
 					remove_node_by_id(child->get_id()); // recursive call to remove each child by its id
 
-			std::cout << "[INFO::NODEMANAGER::remove_node_by_id] All children of node with id " << id << " have been removed" << std::endl;
+			std::cout << "[INFO::NODE_MANAGER::remove_node_by_id] All children of node with id " << id << " have been removed" << std::endl;
 		}
 	}
 
@@ -181,7 +181,7 @@ void Node_Manager::remove_node_by_id(std::uint32_t id)
 	}
 
 	// print confirmation message
-	std::cout << "[INFO::NODEMANAGER::remove_node_by_id] Removed " << found_node_type << " node with id " << id << std::endl;
+	std::cout << "[INFO::NODE_MANAGER::remove_node_by_id] Removed " << found_node_type << " node with id " << id << std::endl;
 }
 
 // Private Methods
@@ -201,7 +201,9 @@ std::string Node_Manager::node_type_to_string(Node_Type type) const
 		case Node_Type::SHAPE_MODEL: node_type_string = "SHAPE_MODEL"; break;
 		case Node_Type::SHADER: node_type_string = "SHADER"; break;
 		case Node_Type::TEXTURE: node_type_string = "TEXTURE"; break;
-		default: std::cerr << "Node_Type not defined!" << std::endl; throw std::invalid_argument("Invalid node type");
+		default:
+			std::cerr << "[ERROR::NODE_MANAGER::node_type_to_string] Node_Type not defined!" << std::endl;
+			throw std::invalid_argument("Invalid node type");
 	}
 
 	return node_type_string;

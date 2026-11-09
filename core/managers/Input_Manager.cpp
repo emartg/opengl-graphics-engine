@@ -65,13 +65,13 @@ void Input_Manager::key_callback(std::string input)
 	auto core = Core::get_instance(); // get the Core instance
 	if (!core)                        // ensure the Core instance is valid before proceeding
 	{                                 // if the Core instance is null, print an error message and return
-		std::cerr << "[ERROR::INPUTMANAGER::key_callback] Core instance is null" << std::endl;
+		std::cerr << "[ERROR::INPUT_MANAGER::key_callback] Core instance is null" << std::endl;
 		return;
 	}
 	auto renderer = core->get_renderer(); // get the Renderer instance
 	if (!renderer)                        // ensure the Renderer instance is valid before proceeding
 	{                                     // if the Renderer instance is null, print an error message and return
-		std::cerr << "[ERROR::INPUTMANAGER::key_callback] Renderer instance is null" << std::endl;
+		std::cerr << "[ERROR::INPUT_MANAGER::key_callback] Renderer instance is null" << std::endl;
 		return;
 	}
 
@@ -79,7 +79,7 @@ void Input_Manager::key_callback(std::string input)
 	if (input == "ESC_PRESSED")
 	{ // if the 'Escape' key is pressed, set the window to close
 		const_cast<Renderer*>(renderer)->set_window_should_close();
-		std::cout << "[INFO::INPUTMANAGER::key_callback] Escape key pressed, closing window..." << std::endl;
+		std::cout << "[INFO::INPUT_MANAGER::key_callback] Escape key pressed, closing window..." << std::endl;
 	}
 	else if (input == "DEL_PRESSED")
 	{ // if the 'Delete' key is pressed, delete the selected node (if any) via the selection manager
@@ -91,14 +91,14 @@ void Input_Manager::key_callback(std::string input)
 
 		if (selected_node_id == 0)
 		{ // if no node is selected, print a warning message and return
-			std::cerr << "[WARNING::INPUTMANAGER::key_callback] Delete key pressed, but no node is selected" << std::endl;
+			std::cerr << "[WARNING::INPUT_MANAGER::key_callback] Delete key pressed, but no node is selected" << std::endl;
 			return;
 		}
 
 		auto node = node_manager->get_node_by_id(selected_node_id); // get the selected node
 		if (!node)
 		{ // if the selected node does not exist, print an error message and return
-			std::cerr << "[ERROR::INPUTMANAGER::key_callback] Delete key pressed, but selected node with id " << selected_node_id
+			std::cerr << "[ERROR::INPUT_MANAGER::key_callback] Delete key pressed, but selected node with id " << selected_node_id
 					  << " does not exist" << std::endl;
 			return;
 		}
@@ -107,14 +107,14 @@ void Input_Manager::key_callback(std::string input)
 		// as cameras cannot be deleted for now
 		if (node->get_type() == Node_Type::CAMERA)
 		{
-			std::cout << "[INFO::INPUTMANAGER::key_callback] Cameras cannot be deleted for now "
+			std::cout << "[INFO::INPUT_MANAGER::key_callback] Cameras cannot be deleted for now "
 						 "(id "
 					  << selected_node_id << ")" << std::endl;
 			return;
 		}
 
 		// if the node exists and can be deleted, print a message and delete it from the scene
-		std::cout << "[INFO::INPUTMANAGER::key_callback] Delete key pressed, deleting selected node " << node->get_name() << " (id "
+		std::cout << "[INFO::INPUT_MANAGER::key_callback] Delete key pressed, deleting selected node " << node->get_name() << " (id "
 				  << selected_node_id << ")" << std::endl;
 
 		selection_manager->delete_selected(node_manager.get());

@@ -110,7 +110,7 @@ void Assimp_Model::load_assimp_model(std::string const& path)
 	// check for errors in the importing process
 	if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
 	{
-		std::cerr << "[ERROR::ASSIMPMODEL::load_assimp_model] "
+		std::cerr << "[ERROR::ASSIMP_MODEL::load_assimp_model] "
 				  << "Assimp failed to load model from:\n\t" << path << "\n\tImporter error: " << importer.GetErrorString() << std::endl;
 		return;
 	}
@@ -147,7 +147,7 @@ void Assimp_Model::load_assimp_model(std::string const& path)
 	process_node(scene->mRootNode, scene);
 	imported_materials.clear(); // the meshes and the material library keep the materials
 
-	std::cout << "[SUCCESS::ASSIMPMODEL::load_assimp_model] Model loaded successfully from:\n\t" << path << std::endl;
+	std::cout << "[SUCCESS::ASSIMP_MODEL::load_assimp_model] Model loaded successfully from:\n\t" << path << std::endl;
 }
 
 void Assimp_Model::process_node(aiNode* node, const aiScene* scene)
@@ -278,7 +278,7 @@ std::vector<std::shared_ptr<Texture>> Assimp_Model::load_material_textures(aiMat
 	std::vector<std::shared_ptr<Texture>> loaded_textures;
 
 	GLuint texture_count = mat->GetTextureCount(type);
-	std::cout << "[INFO::ASSIMPMODEL::load_material_textures] Material has " << texture_count << " texture(s) of type "
+	std::cout << "[INFO::ASSIMP_MODEL::load_material_textures] Material has " << texture_count << " texture(s) of type "
 			  << Texture::texture_type_to_string(texture_type) << std::endl;
 
 	// iterate over all textures of the specified type in the material
@@ -288,7 +288,7 @@ std::vector<std::shared_ptr<Texture>> Assimp_Model::load_material_textures(aiMat
 		aiString str;
 		mat->GetTexture(type, i, &str);
 
-		std::cout << "[INFO::ASSIMPMODEL::load_material_textures] Raw texture path from Assimp: \"" << str.C_Str() << "\"" << std::endl;
+		std::cout << "[INFO::ASSIMP_MODEL::load_material_textures] Raw texture path from Assimp: \"" << str.C_Str() << "\"" << std::endl;
 
 		// check for embedded textures (those starting with '*'), which are not yet supported,
 		// hence why they are not loaded and a warning is issued
@@ -296,7 +296,7 @@ std::vector<std::shared_ptr<Texture>> Assimp_Model::load_material_textures(aiMat
 		if (path_c_string && path_c_string[0] == '*')
 		{
 			// embedded texture, warn and skip loading
-			std::cerr << "[WARNING::ASSIMPMODEL::load_material_textures] "
+			std::cerr << "[WARNING::ASSIMP_MODEL::load_material_textures] "
 						 "Embedded textures not supported, skipping texture:\n"
 					  << path_c_string << " of type " << Texture::texture_type_to_string(texture_type) << std::endl;
 			// TO DO: implement support for embedded textures in the future
@@ -306,13 +306,13 @@ std::vector<std::shared_ptr<Texture>> Assimp_Model::load_material_textures(aiMat
 		}
 
 		std::string texture_path = directory + str.C_Str(); // construct the full path to the texture file
-		std::cout << "[INFO::ASSIMPMODEL::load_material_textures] Full texture path: \"" << texture_path << "\"" << std::endl;
+		std::cout << "[INFO::ASSIMP_MODEL::load_material_textures] Full texture path: \"" << texture_path << "\"" << std::endl;
 
 		// check if the texture file exists at the constructed path, and if not, try alternative paths
 		std::ifstream test_file(texture_path);
 		if (!test_file.good())
 		{
-			std::cerr << "[WARNING::ASSIMPMODEL::load_material_textures] Texture file not found: " << texture_path << std::endl;
+			std::cerr << "[WARNING::ASSIMP_MODEL::load_material_textures] Texture file not found: " << texture_path << std::endl;
 
 			// texture might be just the filename without the directory,
 			// so try to locate it in the model directory and common subdirectories
@@ -338,7 +338,7 @@ std::vector<std::shared_ptr<Texture>> Assimp_Model::load_material_textures(aiMat
 				{ // if the file exists at this search path, use it and break out of the loop
 					texture_path = search_path;
 					found        = true;
-					std::cout << "[INFO::ASSIMPMODEL::load_material_textures] Found texture at: " << texture_path << std::endl;
+					std::cout << "[INFO::ASSIMP_MODEL::load_material_textures] Found texture at: " << texture_path << std::endl;
 					break;
 				}
 			}
@@ -347,7 +347,7 @@ std::vector<std::shared_ptr<Texture>> Assimp_Model::load_material_textures(aiMat
 			// issue an error and skip loading this texture
 			if (!found)
 			{
-				std::cerr << "[ERROR::ASSIMPMODEL::load_material_textures] Could not locate texture: " << filename << std::endl;
+				std::cerr << "[ERROR::ASSIMP_MODEL::load_material_textures] Could not locate texture: " << filename << std::endl;
 				continue;
 			}
 		}

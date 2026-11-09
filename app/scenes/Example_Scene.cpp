@@ -217,7 +217,7 @@ void setup_example_scene(Core* engine)
 	}
 	else
 	{ // if the file does not exist, print an error message
-		std::cerr << "[WARNING::main::setup_example_scene] Assimp model not found: " << model_file_path << std::endl;
+		std::cerr << "[WARNING::EXAMPLE_SCENE::setup_example_scene] Assimp model not found: " << model_file_path << std::endl;
 	}
 
 	// add all unregistered selectable nodes in the hierarchy
@@ -236,11 +236,11 @@ void setup_example_scene(Core* engine)
 	}
 	else
 	{ // if the file does not exist, print an error message
-		std::cerr << "[ERROR::main::setup_example_scene] Skybox file not found: " << skybox_file_path << std::endl;
+		std::cerr << "[ERROR::EXAMPLE_SCENE::setup_example_scene] Skybox file not found: " << skybox_file_path << std::endl;
 	}
 
 	// print a success message indicating the example scene setup is complete
-	std::cout << "[SUCCESS::main::setup_example_scene] Example scene setup "
+	std::cout << "[SUCCESS::EXAMPLE_SCENE::setup_example_scene] Example scene setup "
 				 "completed successfully"
 			  << std::endl;
 }

@@ -509,8 +509,8 @@ void GUI::draw_scene_graph_window()
 					dragged_node->set_rotation(rotation);
 					dragged_node->set_scale(scale);
 
-					std::cout << "[INFO::GUI] Node '" << dragged_node->get_name() << "' (id " << dragged_node_id << ") is now a root node"
-							  << std::endl;
+					std::cout << "[INFO::GUI::draw_scene_graph_window] Node '" << dragged_node->get_name() << "' (id " << dragged_node_id
+							  << ") is now a root node" << std::endl;
 				}
 			}
 
@@ -1374,7 +1374,8 @@ void GUI::draw_tree_node_recursive(const std::shared_ptr<Node>& node)
 			}
 			else if (!target_node->get_can_be_parent())
 			{
-				std::cerr << "[WARNING::GUI] Invalid drop: Target node '" << target_node->get_name() << "' cannot be a parent" << std::endl;
+				std::cerr << "[WARNING::GUI::draw_tree_node_recursive] Invalid drop: Target node '" << target_node->get_name()
+						  << "' cannot be a parent" << std::endl;
 				is_valid_operation = false;
 			}
 			else
@@ -1384,7 +1385,7 @@ void GUI::draw_tree_node_recursive(const std::shared_ptr<Node>& node)
 				{
 					if (p == dragged_node)
 					{ // if any ancestor of the target node is the dragged node, it's an invalid operation
-						std::cerr << "[WARNING::GUI] Invalid drop: "
+						std::cerr << "[WARNING::GUI::draw_tree_node_recursive] Invalid drop: "
 									 " Cannot parent a node to its own descendant"
 								  << std::endl;
 						is_valid_operation = false;
@@ -1419,8 +1420,8 @@ void GUI::draw_tree_node_recursive(const std::shared_ptr<Node>& node)
 				dragged_node->set_rotation(rotation);
 				dragged_node->set_scale(scale);
 
-				std::cout << "[INFO::GUI] Reparented node '" << dragged_node->get_name() << "' to '" << target_node->get_name() << "'"
-						  << std::endl;
+				std::cout << "[INFO::GUI::draw_tree_node_recursive] Reparented node '" << dragged_node->get_name() << "' to '"
+						  << target_node->get_name() << "'" << std::endl;
 			}
 		}
 

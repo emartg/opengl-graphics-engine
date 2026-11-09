@@ -46,7 +46,7 @@ void Selection_Manager::process_pending_pick(const Camera* camera, Node_Manager*
 		return;
 	if (!picking_shader)
 	{ // if no picking shader is set, print a warning and return
-		std::cerr << "[WARNING::SELECTIONMANAGER::process_pending_pick] Picking shader not set" << std::endl;
+		std::cerr << "[WARNING::SELECTION_MANAGER::process_pending_pick] Picking shader not set" << std::endl;
 		return;
 	}
 	if (width == 0 || height == 0)
@@ -152,7 +152,7 @@ void Selection_Manager::process_pending_pick(const Camera* camera, Node_Manager*
 	{ // if no object was picked, log deselection (if any) and clear selection if needed
 		if (previous_selected_id != 0)
 		{ // if there was a previous selection, log its deselection
-			std::cout << "[INFO::SELECTIONMANAGER::process_pending_pick] Deselected node '" << previous_selected_name << "' (id "
+			std::cout << "[INFO::SELECTION_MANAGER::process_pending_pick] Deselected node '" << previous_selected_name << "' (id "
 					  << previous_selected_id << ")" << std::endl;
 		}
 		clear_selection(); // ensures stale outline mask cannot persist
@@ -163,7 +163,7 @@ void Selection_Manager::process_pending_pick(const Camera* camera, Node_Manager*
 	auto picked_node = find_node_by_id(node_manager, picked_id);
 	if (!picked_node)
 	{ // if no node with that id exists, print a warning and clear selection (also clears outline mask)
-		std::cout << "[WARNING::SELECTIONMANAGER::process_pending_pick] No node with texture_id " << picked_id << std::endl;
+		std::cout << "[WARNING::SELECTION_MANAGER::process_pending_pick] No node with texture_id " << picked_id << std::endl;
 		clear_selection(); // ensures stale outline mask cannot persist
 		return;
 	}
@@ -228,11 +228,11 @@ void Selection_Manager::process_pending_pick(const Camera* camera, Node_Manager*
 
 		if (previous_selected_id != 0)
 		{ // if switching from another selection, print implicit deselection as well
-			std::cout << "[INFO::SELECTIONMANAGER::process_pending_pick] Deselected node '" << previous_selected_name << "' (id "
+			std::cout << "[INFO::SELECTION_MANAGER::process_pending_pick] Deselected node '" << previous_selected_name << "' (id "
 					  << previous_selected_id << ")" << std::endl;
 		}
 		// print info about the new selection
-		std::cout << "[INFO::SELECTIONMANAGER::process_pending_pick] Selected node '" << picked_node->get_name() << "' (id "
+		std::cout << "[INFO::SELECTION_MANAGER::process_pending_pick] Selected node '" << picked_node->get_name() << "' (id "
 				  << selected_node_id << ")" << std::endl;
 	}
 	// clicking same selected node leads to no logging or state change
@@ -347,7 +347,7 @@ void Selection_Manager::delete_selected(Node_Manager* node_manager)
 
 	if (node->get_type() == Node_Type::CAMERA)
 	{ // prevent deletion of cameras for now
-		std::cout << "[INFO::SELECTIONMANAGER::delete_selected] Cameras cannot be deleted for now "
+		std::cout << "[INFO::SELECTION_MANAGER::delete_selected] Cameras cannot be deleted for now "
 					 "(id "
 				  << selected_node_id << ")" << std::endl;
 		return;
@@ -360,7 +360,7 @@ void Selection_Manager::delete_selected(Node_Manager* node_manager)
 
 	// remove the selected node itself, print info, and clear selection
 	node_manager->remove_node_by_id(node->get_id()); // use the node manager to remove the node
-	std::cout << "[INFO::SELECTIONMANAGER::delete_selected] Selection (id " << selected_node_id << ") deleted" << std::endl;
+	std::cout << "[INFO::SELECTION_MANAGER::delete_selected] Selection (id " << selected_node_id << ") deleted" << std::endl;
 	selected_node_id = 0; // clear selection after deletion (0 means none)
 }
 
@@ -403,7 +403,7 @@ void Selection_Manager::resize(GLuint width, GLuint height)
 			glBindTexture(GL_TEXTURE_2D, 0);
 		}
 
-		std::cout << "[INFO::SELECTIONMANAGER::resize] Picking pass resized to " << width << "x" << height << std::endl;
+		std::cout << "[INFO::SELECTION_MANAGER::resize] Picking pass resized to " << width << "x" << height << std::endl;
 	}
 
 	// recreate the outline pass with an updated specification and print info
@@ -429,7 +429,7 @@ void Selection_Manager::resize(GLuint width, GLuint height)
 			glBindTexture(GL_TEXTURE_2D, 0);
 		}
 
-		std::cout << "[INFO::SELECTIONMANAGER::resize] Outline pass resized to " << width << "x" << height << std::endl;
+		std::cout << "[INFO::SELECTION_MANAGER::resize] Outline pass resized to " << width << "x" << height << std::endl;
 	}
 }
 
@@ -484,7 +484,7 @@ void Selection_Manager::render_outline_mask(const Camera* camera, Node_Manager* 
 	// reuse picking shader for geometry submission with encodedId = 1 (mask)
 	if (!picking_shader)
 	{ // if no picking shader is set, print a warning and return
-		std::cerr << "[WARNING::SELECTIONMANAGER::render_outline_mask] Picking shader not set;\n"
+		std::cerr << "[WARNING::SELECTION_MANAGER::render_outline_mask] Picking shader not set;\n"
 					 "cannot build outline mask"
 				  << std::endl;
 		return;
@@ -613,7 +613,7 @@ void Selection_Manager::ensure_picking_pass()
 		glBindTexture(GL_TEXTURE_2D, 0);
 	}
 
-	std::cout << "[INFO::SELECTIONMANAGER::ensure_picking_pass] Picking pass created with dimensions (" << width << "x" << height << ")"
+	std::cout << "[INFO::SELECTION_MANAGER::ensure_picking_pass] Picking pass created with dimensions (" << width << "x" << height << ")"
 			  << std::endl;
 }
 
@@ -645,7 +645,7 @@ void Selection_Manager::ensure_outline_pass()
 		glBindTexture(GL_TEXTURE_2D, 0);
 	}
 
-	std::cout << "[INFO::SELECTIONMANAGER::ensure_outline_pass] Outline pass created with dimensions (" << width << "x" << height << ")"
+	std::cout << "[INFO::SELECTION_MANAGER::ensure_outline_pass] Outline pass created with dimensions (" << width << "x" << height << ")"
 			  << std::endl;
 }
 
@@ -745,7 +745,7 @@ std::shared_ptr<Node> Selection_Manager::resolve_gizmo_to_light(Node_Manager* no
 {
 	if (!gizmoModel)
 	{
-		std::cerr << "[WARNING::SELECTIONMANAGER::resolve_gizmo_to_light] Invalid gizmo model provided" << std::endl;
+		std::cerr << "[WARNING::SELECTION_MANAGER::resolve_gizmo_to_light] Invalid gizmo model provided" << std::endl;
 		return nullptr;
 	}
 
@@ -753,13 +753,13 @@ std::shared_ptr<Node> Selection_Manager::resolve_gizmo_to_light(Node_Manager* no
 	auto parent = gizmoModel->get_parent();
 	if (parent && parent->get_type() == Node_Type::LIGHT)
 	{
-		std::cout << "[INFO::SELECTIONMANAGER::resolve_gizmo_to_light] Resolved gizmo model id " << gizmoModel->get_id()
+		std::cout << "[INFO::SELECTION_MANAGER::resolve_gizmo_to_light] Resolved gizmo model id " << gizmoModel->get_id()
 				  << " to owning parent light id " << parent->get_id() << std::endl;
 		return parent;
 	}
 
 	// if no valid parent light found, print a warning and return null
-	std::cerr << "[WARNING::SELECTIONMANAGER::resolve_gizmo_to_light] Could not resolve gizmo model id " << gizmoModel->get_id()
+	std::cerr << "[WARNING::SELECTION_MANAGER::resolve_gizmo_to_light] Could not resolve gizmo model id " << gizmoModel->get_id()
 			  << " to an owning parent light" << std::endl;
 	return nullptr;
 }
