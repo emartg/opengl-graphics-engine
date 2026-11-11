@@ -11,11 +11,13 @@
 #include <algorithm>
 #include <array>
 #include <cctype>
+#include <chrono>
 #include <fstream>
 #include <set>
 #include <sstream>
 #include <string_view>
 #include <system_error>
+#include <thread>
 #include <utility>
 #include <vector>
 
@@ -144,6 +146,44 @@ namespace
 		if (descriptor)
 			for (auto& entry : descriptor->texture_paths) entry.second = entry.second.lexically_normal();
 		return descriptor;
+	}
+
+	// Number of attempts of a rename or a deletion that a file system refuses because another program holds the item for a moment (on
+	// Windows, an antivirus scan or the search indexer holds the files that were just written or renamed), and the wait between them:
+	// about one second in all, which a person does not notice and which is much longer than those programs hold a file
+	constexpr int                       MAX_ATTEMPTS{ 20 };
+	constexpr std::chrono::milliseconds WAIT_BETWEEN_ATTEMPTS{ 50 };
+
+	// Returns true if an error of a file operation can go away by itself because the item is in use: "Permission denied", and on
+	// Windows also the sharing and lock violations (a file or folder that another program has open)
+	bool is_busy_error(const std::error_code& error)
+	{
+		if (error == std::errc::permission_denied)
+			return true;
+#ifdef _WIN32
+		// ERROR_ACCESS_DENIED, ERROR_SHARING_VIOLATION, and ERROR_LOCK_VIOLATION of the Windows API
+		constexpr int ACCESS_DENIED{ 5 };
+		constexpr int SHARING_VIOLATION{ 32 };
+		constexpr int LOCK_VIOLATION{ 33 };
+		if (error.category() == std::system_category())
+			return error.value() == ACCESS_DENIED || error.value() == SHARING_VIOLATION || error.value() == LOCK_VIOLATION;
+#endif
+		return false;
+	}
+
+	// Runs a file operation (a function of an std::error_code that it fills) again, after a short wait, while it fails because the
+	// item is in use, up to MAX_ATTEMPTS times. Any other error, and the last error, are returned as they are
+	template<typename Operation>
+	void retry_while_busy(Operation operation, std::error_code& error)
+	{
+		for (int attempt{ 1 }; attempt <= MAX_ATTEMPTS; ++attempt)
+		{
+			operation(error);
+			if (!error || !is_busy_error(error))
+				return;
+			if (attempt < MAX_ATTEMPTS)
+				std::this_thread::sleep_for(WAIT_BETWEEN_ATTEMPTS);
+		}
 	}
 } // namespace
 
@@ -383,7 +423,7 @@ bool Asset_Registry::rename(const fs::path& path, const std::string& new_name, f
 		return false;
 	}
 
-	fs::rename(source, target, file_error);
+	retry_while_busy([&](std::error_code& error_code) { fs::rename(source, target, error_code); }, file_error);
 	if (file_error)
 	{
 		error = "The item could not be renamed: " + file_error.message();
@@ -439,7 +479,7 @@ bool Asset_Registry::move(const fs::path& path, const fs::path& destination_fold
 	const std::string new_path = join(destination, fs::path{ old_path }.filename().string());
 
 	std::error_code file_error;
-	fs::rename(root / old_path, root / new_path, file_error);
+	retry_while_busy([&](std::error_code& error_code) { fs::rename(root / old_path, root / new_path, error_code); }, file_error);
 	if (file_error)
 	{
 		error = "The item could not be moved: " + file_error.message();
@@ -464,7 +504,7 @@ bool Asset_Registry::remove(const fs::path& path, std::string& error)
 	}
 
 	std::error_code file_error;
-	fs::remove_all(root / old_path, file_error);
+	retry_while_busy([&](std::error_code& error_code) { fs::remove_all(root / old_path, error_code); }, file_error);
 	if (file_error)
 	{
 		error = "The item could not be deleted: " + file_error.message();
