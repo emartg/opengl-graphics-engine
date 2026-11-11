@@ -6,11 +6,14 @@
  * use another one (find_users). They use temporary directories and need no OpenGL context.
  */
 
+#include <chrono>
 #include <filesystem>
 #include <fstream>
 #include <map>
+#include <memory>
 #include <sstream>
 #include <string>
+#include <thread>
 #include <vector>
 
 #include <gtest/gtest.h>
@@ -142,6 +145,69 @@ TEST_F(AssetReferencesTest, MovingOrRenamingAFolderOfTexturesUpdatesTheMaterials
 	EXPECT_EQ(texture_of("materials/oak.material.json", "albedo_map"), "archive/oak/a.png");
 	EXPECT_EQ(texture_of("materials/oak.material.json", "normal_map"), "archive/oak/dark/b.png");
 }
+
+#ifdef _WIN32
+// Windows refuses to rename a folder while another program holds a file inside it, and an antivirus scan or the search indexer
+// holds the files that were just written or renamed for a moment, so the registry waits and tries again
+TEST_F(AssetReferencesTest, MovingAFolderWaitsForAProgramThatHoldsAFileOfItForAMoment)
+{
+	create_file("textures/oak/a.png");
+	fs::create_directories(root / "archive");
+	scan();
+
+	// hold a file of the folder open for 100 milliseconds, as a scan does, so that the first attempts to move the folder are refused
+	auto holder = std::make_unique<std::ofstream>(root / "textures/oak/a.png", std::ios::app);
+	ASSERT_TRUE(holder->is_open());
+	std::thread releaser{ [&holder] {
+		std::this_thread::sleep_for(std::chrono::milliseconds{ 100 });
+		holder.reset();
+	} };
+
+	const bool moved = registry.move("textures/oak", "archive", result, error);
+	releaser.join();
+
+	EXPECT_TRUE(moved) << error;
+	EXPECT_TRUE(fs::exists(root / "archive/oak/a.png"));
+}
+
+TEST_F(AssetReferencesTest, RenamingAFolderWaitsForAProgramThatHoldsAFileOfItForAMoment)
+{
+	create_file("textures/wood/a.png");
+	scan();
+
+	auto holder = std::make_unique<std::ofstream>(root / "textures/wood/a.png", std::ios::app);
+	ASSERT_TRUE(holder->is_open());
+	std::thread releaser{ [&holder] {
+		std::this_thread::sleep_for(std::chrono::milliseconds{ 100 });
+		holder.reset();
+	} };
+
+	const bool renamed = registry.rename("textures/wood", "oak", result, error);
+	releaser.join();
+
+	EXPECT_TRUE(renamed) << error;
+	EXPECT_TRUE(fs::exists(root / "textures/oak/a.png"));
+}
+
+TEST_F(AssetReferencesTest, DeletingAFolderWaitsForAProgramThatHoldsAFileOfItForAMoment)
+{
+	create_file("textures/wood/a.png");
+	scan();
+
+	auto holder = std::make_unique<std::ofstream>(root / "textures/wood/a.png", std::ios::app);
+	ASSERT_TRUE(holder->is_open());
+	std::thread releaser{ [&holder] {
+		std::this_thread::sleep_for(std::chrono::milliseconds{ 100 });
+		holder.reset();
+	} };
+
+	const bool removed = registry.remove("textures/wood", error);
+	releaser.join();
+
+	EXPECT_TRUE(removed) << error;
+	EXPECT_FALSE(fs::exists(root / "textures/wood"));
+}
+#endif
 
 // Moving and Renaming Materials
 // -----------------------------
