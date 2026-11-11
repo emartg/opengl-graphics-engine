@@ -29,6 +29,12 @@ enum class Camera_Movement
 class Camera : public Node
 {
 public:
+	// Public Constants
+	// ----------------
+	// distances of the near and far planes of the perspective projection, in world units
+	static constexpr GLfloat NEAR_PLANE = 0.1f;
+	static constexpr GLfloat FAR_PLANE  = 100.0f;
+
 	// Constructors
 	// ------------
 	// Constructor with vectors
@@ -85,6 +91,11 @@ public:
 
 	// Returns the view matrix calculated using Euler Angles and the LookAt Matrix
 	glm::mat4 get_view_matrix() const;
+	// Returns the perspective projection matrix that the renderer uses for a window of the given aspect ratio (width over height):
+	// the zoom of the camera is the vertical field of view in degrees, and the planes are NEAR_PLANE and FAR_PLANE.
+	// An application that draws on the image of the scene (for example, its own highlight of the selected node)
+	// combines it with the view matrix to project the points of the scene to the screen
+	glm::mat4 get_projection_matrix(GLfloat aspect_ratio) const;
 
 	// Processes input received from any keyboard-like input system.
 	// Accepts input parameter in the form of defined enum class (to abstract it from windowing systems)

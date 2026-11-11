@@ -52,6 +52,11 @@ glm::mat4 Camera::get_view_matrix() const
 	return glm::lookAt(position, position + front, up);
 }
 
+glm::mat4 Camera::get_projection_matrix(GLfloat aspect_ratio) const
+{
+	return glm::perspective(glm::radians(zoom), aspect_ratio, NEAR_PLANE, FAR_PLANE);
+}
+
 void Camera::process_keyboard(Camera_Movement direction, GLfloat delta_time)
 {
 	GLfloat velocity = movement_speed * delta_time;
