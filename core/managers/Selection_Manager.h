@@ -26,6 +26,8 @@ class Node_Manager;
 // Struct to hold outline parameters for the selected node
 struct Outline_Params
 {
+	bool      enabled{ true };            // whether the outline of the selected node is drawn - an application that highlights
+										  // the selection in its own way turns it off
 	glm::vec3 color{ 0.0f, 0.95f, 1.0f }; // outline color - highly visible cyan by default
 	GLuint    thickness{ 2 };             // outline thickness in pixels - 2 by default (must be >= 1)
 };
