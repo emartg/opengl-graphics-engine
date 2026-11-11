@@ -792,6 +792,18 @@ void GUI::draw_debug_window()
 			auto& selection_manager = Core::get_instance()->get_selection_manager();
 			auto& outline_params    = selection_manager->get_outline_params(); // copy current outline params
 
+			// check box to draw or not the outline of the selected node (the color and thickness controls follow it)
+			bool is_outline_enabled = outline_params.enabled;
+			ImGui::Text("\t\t");
+			ImGui::SameLine();
+			if (ImGui::Checkbox("Selection Outline", &is_outline_enabled))
+			{ // if the check box is changed, update the outline params in the Selection_Manager
+				Outline_Params updated = outline_params;
+				updated.enabled        = is_outline_enabled;
+				selection_manager->set_outline_params(updated);
+			}
+			ImGui::BeginDisabled(!is_outline_enabled); // the controls below do nothing when the outline is off
+
 			// palette of vibrant outline colors (first item is the default color)
 			static const std::vector<std::pair<const char*, glm::vec3>> outline_color_palette = {
 				{ "Cyan", glm::vec3{ 0.00f, 0.95f, 1.00f } },    { "Lime", glm::vec3{ 0.30f, 1.00f, 0.30f } },
@@ -843,6 +855,21 @@ void GUI::draw_debug_window()
 				}
 				ImGui::EndCombo(); // end the combo box
 			}
+
+			// input field for the outline thickness in pixels (a radius, at least 1)
+			int outline_thickness = static_cast<int>(outline_params.thickness);
+			ImGui::Text("\t\t");
+			ImGui::SameLine();
+			ImGui::Text("Outline Thickness");
+			ImGui::SameLine();
+			ImGui::SetNextItemWidth(100.0f); // set a fixed width for the input field
+			if (ImGui::InputInt("##OutlineThickness", &outline_thickness))
+			{ // if the input field is changed, update the outline params in the Selection_Manager
+				Outline_Params updated = outline_params;
+				updated.thickness      = static_cast<GLuint>(std::clamp(outline_thickness, 1, 10)); // keep it in a reasonable range [1, 10]
+				selection_manager->set_outline_params(updated);
+			}
+			ImGui::EndDisabled();
 		};
 
 		// scene settings section title

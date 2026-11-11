@@ -907,9 +907,10 @@ void Renderer::composite_to_screen()
 
 	// depending on the debug mode and whether there is a selection,
 	// render the outline mask or the picking visualization
-	if (screen_debug_params.debug_mode <= 1 && selection_manager->get_selected_node_id() != 0)
+	if (screen_debug_params.debug_mode <= 1 && selection_manager->get_selected_node_id() != 0 &&
+		selection_manager->get_outline_params().enabled)
 	{
-		// if debug mode is either normal mode (1) or Inverted Colors mode (3), and there is a selection,
+		// if debug mode is either normal mode (1) or Inverted Colors mode (3), there is a selection, and the outline is enabled,
 		// render the outline mask
 		auto camera = core->get_scene_manager()->get_camera();
 		selection_manager->render_outline_mask(camera.get(), core->get_node_manager().get());
@@ -981,10 +982,11 @@ void Renderer::composite_to_screen()
 	}
 
 	// local variables for outline parameters
-	// there is only and outline if there is a selected node and the outline mask texture is available
-	const bool has_outline = selection_manager->get_selected_node_id() != 0 && selection_manager->get_outline_mask_texture_id() != 0;
-	glm::vec3  outline_color{ 0.0f };
-	GLuint     outline_thickness = 0;
+	// there is only an outline if it is enabled, there is a selected node, and the outline mask texture is available
+	const bool has_outline = selection_manager->get_outline_params().enabled && selection_manager->get_selected_node_id() != 0 &&
+		selection_manager->get_outline_mask_texture_id() != 0;
+	glm::vec3 outline_color{ 0.0f };
+	GLuint    outline_thickness = 0;
 
 	auto& params = selection_manager->get_outline_params(); // get the outline parameters
 	if (screen_debug_params.debug_mode <= 1 && has_outline)
