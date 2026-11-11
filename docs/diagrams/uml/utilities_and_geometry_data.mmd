@@ -8,17 +8,19 @@ config:
     edgeLabelBackground: "#ffffff"
 ---
 %% Modules: Core (utilities, geometry, and the header data of the renderer and the lights) and App (CUBE.h and PLANE.h). Belongs to
-%% architecture_overview (the box "Utilities"). The relations are written on each card ("used by"), not drawn.
+%% architecture_overview (the block "Utilities and Geometry Data"). Mermaid cannot lay out unrelated classes of a class diagram in a
+%% grid (it stacks them in one row or one column), so the class blocks are drawn in a block diagram, with the compartments of a UML
+%% class (name with stereotype, attributes, operations) and a last compartment with the classes that use it; the dependencies
+%% between these classes are the two dotted arrows.
 block-beta
     columns 4
 
-    FS("<b>File_System_Utils</b><br/><i>utility</i><br/>get_executable_directory()<br/>find_first_existing_directory()<br/><i>used by Core</i>") Rnd("<b>Random</b><br/><i>utility</i><br/>generate_random_float()<br/>generate_random_color()<br/>generate_random_position()<br/>generate_random_rotation()<br/><i>used by GUI, the scenes</i>") Str("<b>String_Utils</b><br/><i>utility</i><br/>to_uppercase(), to_lowercase()<br/>get_file_extension()<br/>to_clean_display_name()<br/>is_glsl_identifier()<br/><i>used by Material, Material_Library,</i><br/><i>Shader_Library, GUI, the scenes</i>") Pre("<b>Shader_Preprocessor</b><br/><i>utility</i><br/>load(path) : Shader_Source<br/>resolves #include<br/><br/><i>used by Shader</i>")
-    BB("<b>Bounding_Box</b><br/><i>geometry</i><br/>is_valid(), expand()<br/>transformed(matrix)<br/><br/><i>used by Node, Mesh,</i><br/><i>Mesh_Geometry, Renderer</i>") Fr("<b>Frustum</b><br/><i>geometry</i><br/>intersects(Bounding_Box)<br/>contains(point)<br/><br/><i>used by Renderer</i>") Ln("<b>Line</b><br/><i>gizmo primitive</i><br/>draw()<br/>update_vertices()<br/>default: TRIANGLE_FAN_PLANE.h<br/><i>used by Directional_Light</i>") space
-    CD("<b>Core data headers</b><br/><i>header data</i><br/>SKYBOX.h<br/>SCREEN_QUAD.h<br/><br/><i>used by Renderer</i>") GD("<b>Gizmo data headers</b><br/><i>header data</i><br/>TRIANGLE_FAN_PLANE.h<br/>DECAHEDRON.h<br/>HEX_PYRAMID.h<br/><i>used by the three lights</i>") AD("<b>App data headers</b><br/><i>header data</i><br/>CUBE.h<br/>PLANE.h<br/><br/><i>used by GUI, the scenes</i>") space
+    FS("<i>&laquo;utility&raquo;</i><br/><b>File_System_Utils</b><hr/><div align='left'><u>+get_executable_directory() : path</u><br/><u>+find_first_existing_directory() : path</u></div><hr/><div align='left'><i>used by:</i> Core</div>") Rnd("<i>&laquo;utility&raquo;</i><br/><b>Random</b><hr/><div align='left'>-engine : mt19937</div><hr/><div align='left'>+generate_random_float(min, max) : float<br/>+generate_random_color() : vec4<br/>+generate_random_position(...) : vec3<br/>+generate_random_rotation(...) : quat<br/>+generate_random_direction() : vec3</div><hr/><div align='left'><i>used by:</i> GUI, the scenes</div>") Str("<i>&laquo;utility&raquo;</i><br/><b>String_Utils</b><hr/><div align='left'><u>+to_uppercase(text) : string</u><br/><u>+to_lowercase(text) : string</u><br/><u>+get_file_extension(path) : string</u><br/><u>+to_clean_display_name(name) : string</u><br/><u>+is_glsl_identifier(text) : bool</u></div><hr/><div align='left'><i>used by:</i> Material, Material_Library,<br/>Shader_Library, GUI, the scenes</div>") Pre("<i>&laquo;utility&raquo;</i><br/><b>Shader_Preprocessor</b><hr/><div align='left'><u>+load(path) : Shader_Source</u></div><hr/><div align='left'><i>used by:</i> Shader</div>")
+    Fr("<i>&laquo;geometry&raquo;</i><br/><b>Frustum</b><hr/><div align='left'>-planes : array of 6 vec4</div><hr/><div align='left'>+intersects(box) : bool<br/>+contains(point) : bool</div><hr/><div align='left'><i>used by:</i> Renderer</div>") space BB("<i>&laquo;geometry&raquo;</i><br/><b>Bounding_Box</b><hr/><div align='left'>-min_corner : vec3<br/>-max_corner : vec3</div><hr/><div align='left'>+is_valid() : bool<br/>+expand(point or box)<br/>+transformed(matrix) : Bounding_Box</div><hr/><div align='left'><i>used by:</i> Node, Mesh, Mesh_Geometry,<br/>Renderer</div>") AD("<i>&laquo;header data&raquo;</i><br/><b>App data headers</b><hr/><div align='left'>CUBE.h<br/>PLANE.h</div><hr/><div align='left'><i>used by:</i> GUI, the scenes</div>")
+    Ln("<i>&laquo;gizmo primitive&raquo;</i><br/><b>Line</b><hr/><div align='left'>-vertices : vector of float</div><hr/><div align='left'>+draw()<br/>+update_vertices(vertices)<br/>+deallocate_resources()</div><hr/><div align='left'><i>used by:</i> Directional_Light</div>") space GD("<i>&laquo;header data&raquo;</i><br/><b>Gizmo data headers</b><hr/><div align='left'>TRIANGLE_FAN_PLANE.h<br/>DECAHEDRON.h<br/>HEX_PYRAMID.h</div><hr/><div align='left'><i>used by:</i> the three lights, Line</div>") CD("<i>&laquo;header data&raquo;</i><br/><b>Core data headers</b><hr/><div align='left'>SKYBOX.h<br/>SCREEN_QUAD.h</div><hr/><div align='left'><i>used by:</i> Renderer</div>")
 
-    classDef utility fill:#e8f4e8,stroke:#388e3c,color:#1f2d3d
-    classDef geometry fill:#d9eaf7,stroke:#1f4e79,color:#1f2d3d
-    classDef data fill:#fff1dc,stroke:#d97706,color:#1f2d3d
-    class FS,Rnd,Str,Pre utility
-    class BB,Fr,Ln geometry
-    class CD,GD,AD data
+    Fr-. "tests" .->BB
+    Ln-. "default vertices" .->GD
+
+    classDef umlClass fill:#fff4dd,stroke:#eedebb,color:#333333
+    class FS,Rnd,Str,Pre,Fr,BB,AD,Ln,GD,CD umlClass
