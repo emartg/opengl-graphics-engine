@@ -107,7 +107,7 @@ Next, each phase is described step-by-step.
 The following UML diagrams (Figs. 4-8) detail the package layout, class hierarchies, and subsystem relationships. Fig. 4 is the overview (the modules and how they relate), and Figs. 5-8 detail its boxes: the renderer, the GUI, and the assets (Fig. 5), the managers and libraries (Fig. 6), the scene entities (Fig. 7), and the utilities and the geometry data (Fig. 8).
 
 <div style="display:flex; justify-content:center; align-items:center; flex-wrap:wrap; gap:20px;"> 
-<img src="diagrams/uml/architecture_overview.png" alt="architecture_overview" title="Architecture Overview" style="height:360px; width:auto;" />
+<img src="diagrams/uml/architecture_overview.png" alt="architecture_overview" title="Architecture Overview" style="height:600px; width:auto;" />
 </div>
 <p><i>Fig 4. Architecture Overview</i></p>
 
