@@ -12,7 +12,7 @@ Based on the experience gained and the limitations identified, the following imp
 
 | Version | Content |
 | ------- | ------- |
-| **v0.10.0** | Data-driven material system: shaders and materials as assets defined in files (with their shader, parameters, textures, and render state), assigned to objects and created, edited, and saved at runtime from the editor, replacing the hard-coded shader assignment; reflective and refractive materials sampling the environment maps. |
+| **v0.10.0** | Asset and material workflow of the editor: shaders and materials as assets defined in files (with their shader, parameters, textures, and render state), assigned to objects and created, edited, and saved at runtime from the editor, replacing the hard-coded shader assignment, with reflective and refractive materials sampling the environment maps; an assets directory organized in folders on disk, with an Assets window that creates, imports, browses, and moves the assets (materials, models, skyboxes, shapes, lights, and textures) and drops models, shapes, lights, skyboxes, and materials onto the scene, with icons and material previews, replacing the Creation window; a layout with side panels around a central viewport; and the material of an object edited in the Properties window, with its color and opacity as parameters of the material. |
 | **v0.11.0** | Deferred shading (G-buffer and lighting pass) and shadow mapping (directional lights first). |
 | **v0.12.0** | Normal mapping, Physically Based Rendering (PBR), Screen Space Ambient Occlusion (SSAO), and post-processing (tone mapping, gamma correction). |
 | **v0.13.0** | Order-independent transparency, compute shaders, and particles. |
