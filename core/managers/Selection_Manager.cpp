@@ -84,10 +84,10 @@ void Selection_Manager::process_pending_pick(const Camera* camera, Node_Manager*
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f); // black id (0) means no selection
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	// compute view and projection matrices from the camera
-	glm::mat4 projection =
-		glm::perspective(glm::radians(camera->get_zoom()), static_cast<float>(width) / static_cast<float>(height), 0.1f, 100.0f);
-	glm::mat4 view = camera->get_view_matrix();
+	// compute view and projection matrices from the camera (the projection of the renderer, so that what is picked and
+	// outlined matches what is drawn, whatever the clip planes of the camera)
+	glm::mat4 projection = camera->get_projection_matrix(width, height);
+	glm::mat4 view       = camera->get_view_matrix();
 
 	// render every model once; encode each node's own id (no root promotion)
 	auto& model_nodes = node_manager->get_nodes(Node_Type::MODEL);
@@ -263,10 +263,10 @@ void Selection_Manager::render_picking_visualization(const Camera* camera, Node_
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f); // black id (0) means no selection
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	// compute view and projection matrices from the camera
-	glm::mat4 projection =
-		glm::perspective(glm::radians(camera->get_zoom()), static_cast<float>(width) / static_cast<float>(height), 0.1f, 100.0f);
-	glm::mat4 view = camera->get_view_matrix();
+	// compute view and projection matrices from the camera (the projection of the renderer, so that what is picked and
+	// outlined matches what is drawn, whatever the clip planes of the camera)
+	glm::mat4 projection = camera->get_projection_matrix(width, height);
+	glm::mat4 view       = camera->get_view_matrix();
 
 	// render all selectable models (including gizmos - lights themselves are not drawn; their gizmos are)
 	auto& model_nodes = node_manager->get_nodes(Node_Type::MODEL);
@@ -534,10 +534,10 @@ void Selection_Manager::render_outline_mask(const Camera* camera, Node_Manager* 
 		return;
 	} // no model to outline, clear mask and return
 
-	// compute view and projection matrices from the camera
-	glm::mat4 projection =
-		glm::perspective(glm::radians(camera->get_zoom()), static_cast<float>(width) / static_cast<float>(height), 0.1f, 100.0f);
-	glm::mat4 view = camera->get_view_matrix();
+	// compute view and projection matrices from the camera (the projection of the renderer, so that what is picked and
+	// outlined matches what is drawn, whatever the clip planes of the camera)
+	glm::mat4 projection = camera->get_projection_matrix(width, height);
+	glm::mat4 view       = camera->get_view_matrix();
 
 	// render entire hierarchy of the selected root model with a constant mask value of 1
 	picking_shader->use();
