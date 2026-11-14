@@ -3,7 +3,7 @@
  * This file contains the unit tests of the Camera class: the perspective projection that the renderer, the picking, and the
  * outline of the selection use (which depends on the zoom of the camera, on the aspect ratio or the size of the window, and on
  * the clip planes of the camera), the clip planes and their validation, the setters of the position, the angles, and the zoom,
- * and look_at.
+ * look_at, and that a camera cannot be selected.
  */
 
 #include <cmath>
@@ -228,4 +228,14 @@ TEST(CameraTest, LookingStraightDownIsLimitedAndLookingAtItsOwnPositionIsRefused
 	ASSERT_TRUE(camera.look_at(camera.get_position() - glm::vec3{ 0.0f, 10.0f, 0.0f }));
 	EXPECT_EQ(camera.get_pitch(), -89.0f);
 	EXPECT_TRUE(is_finite(camera.get_right()));
+}
+
+TEST(CameraTest, ACameraCannotBeSelected)
+{
+	Camera camera{ "Camera" };
+
+	// a camera is moved with the mouse and never selected, unless an application says otherwise
+	EXPECT_FALSE(camera.get_is_selectable());
+	camera.set_is_selectable(true);
+	EXPECT_TRUE(camera.get_is_selectable());
 }

@@ -6,6 +6,7 @@
 #include "Selection_Manager.h"
 
 #include "Node_Manager.h"
+#include "Scene_Manager.h"
 #include "../Core.h"
 #include "../Node.h"
 #include "../shader/Shader.h"
@@ -369,11 +370,16 @@ void Selection_Manager::delete_selected(Node_Manager* node_manager)
 		return;
 	}
 
-	if (node->get_type() == Node_Type::CAMERA)
-	{ // prevent deletion of cameras for now
-		std::cout << "[INFO::SELECTION_MANAGER::delete_selected] Cameras cannot be deleted for now "
-					 "(id "
-				  << selected_node_id << ")" << std::endl;
+	if (!node->get_is_selectable())
+	{ // a node that cannot be selected (a camera, for example) is not deleted through the selection
+		std::cout << "[INFO::SELECTION_MANAGER::delete_selected] Node '" << node->get_name() << "' (id " << selected_node_id
+				  << ") cannot be selected, so it is not deleted" << std::endl;
+		return;
+	}
+	if (node == Core::get_instance()->get_scene_manager()->get_camera())
+	{ // the active camera of the scene is never deleted, even if an application made it selectable: the renderer needs it
+		std::cout << "[INFO::SELECTION_MANAGER::delete_selected] Node '" << node->get_name() << "' (id " << selected_node_id
+				  << ") is the active camera of the scene, so it is not deleted" << std::endl;
 		return;
 	}
 
