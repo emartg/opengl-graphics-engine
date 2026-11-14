@@ -103,13 +103,12 @@ void Input_Manager::key_callback(std::string input)
 			return;
 		}
 
-		// if the selected node is a camera, print an info message and return,
-		// as cameras cannot be deleted for now
-		if (node->get_type() == Node_Type::CAMERA)
+		// a node that cannot be selected (a camera, for example) is not deleted through the selection, even if an application
+		// selected it by its id
+		if (!node->get_is_selectable())
 		{
-			std::cout << "[INFO::INPUT_MANAGER::key_callback] Cameras cannot be deleted for now "
-						 "(id "
-					  << selected_node_id << ")" << std::endl;
+			std::cout << "[INFO::INPUT_MANAGER::key_callback] Node '" << node->get_name() << "' (id " << selected_node_id
+					  << ") cannot be selected, so it is not deleted" << std::endl;
 			return;
 		}
 
