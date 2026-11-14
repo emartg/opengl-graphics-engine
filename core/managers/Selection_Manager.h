@@ -11,6 +11,7 @@
 #include <optional>
 #include <cstdint>
 #include <memory>
+#include <vector>
 
 #include <glad/glad.h> // holds all OpenGL type declarations
 #include <glm/glm.hpp>
@@ -71,6 +72,17 @@ public:
 
 	// Ensure internal picking FBO matches window size
 	void resize(GLuint width, GLuint height);
+
+	// Returns the nodes of a hierarchy that the picking draws, in the order of a depth-first traversal from its root: the
+	// visible nodes that can be selected. An invisible node is left out with its descendants (it is not drawn), and a node
+	// that cannot be selected is left out alone (its children are still considered), so that a click goes through it
+	static std::vector<std::shared_ptr<Node>> collect_pickable_nodes(const std::shared_ptr<Node>& root);
+	// Returns the nodes of a hierarchy that the outline mask draws: the root and its descendants that can be selected (a
+	// node that cannot be selected is left out alone, its children are still considered)
+	static std::vector<std::shared_ptr<Node>> collect_outlined_nodes(const std::shared_ptr<Node>& root);
+	// Returns the nearest ancestor of a node that can be selected, or nullptr if there is none (a repeated click on a node
+	// climbs to it)
+	static std::shared_ptr<Node> find_selectable_ancestor(const std::shared_ptr<Node>& node);
 
 	// Sets picking shader (obtained after compilation)
 	void set_picking_shader(const std::shared_ptr<Shader>& shader) { picking_shader = shader; }

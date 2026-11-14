@@ -140,6 +140,7 @@ public:
 	bool              get_is_visible() const { return is_visible; }
 	bool              get_is_two_sided() const { return is_two_sided; }
 	bool              get_is_draggable() const { return is_draggable; }
+	bool              get_is_selectable() const { return is_selectable; }
 	bool              get_can_be_parent() const { return can_be_parent; }
 
 	void set_albedo(const glm::vec4& albedo) { this->albedo = albedo; }
@@ -153,6 +154,11 @@ public:
 	void set_is_visible(bool is_visible) { this->is_visible = is_visible; }
 	void set_is_two_sided(bool is_two_sided) { this->is_two_sided = is_two_sided; }
 	void set_is_draggable(bool is_draggable) { this->is_draggable = is_draggable; }
+	// Sets whether the node can be selected (true by default). A node that cannot be selected is still drawn, but the picking
+	// leaves it out, so that a click goes through it to the nodes behind it, the Scene Graph of an editor does not select it, and
+	// it is never outlined; its children keep their own setting. Meant for helper geometry drawn over a scene (a translucent
+	// volume, guides, measuring aids) that must stay visible without catching the clicks on the objects inside or behind it
+	void set_is_selectable(bool is_selectable) { this->is_selectable = is_selectable; }
 	void set_can_be_parent(bool can_be_parent) { this->can_be_parent = can_be_parent; }
 
 	// Gets the world position of the node, taking into account the hierarchical transformations
@@ -246,8 +252,9 @@ protected:
 	Gizmo_Type gizmo_type; // type of gizmo, if any
 
 	// behavioral flags
-	bool is_draggable;  // whether the node can be dragged in the scene graph
-	bool can_be_parent; // whether the node can be a parent to other nodes
+	bool is_draggable;          // whether the node can be dragged in the scene graph
+	bool is_selectable{ true }; // whether the node can be selected (picked in the view or chosen in the scene graph)
+	bool can_be_parent;         // whether the node can be a parent to other nodes
 
 	// Static Protected Attributes
 	// ---------------------------

@@ -108,26 +108,16 @@ void Selection_Manager::process_pending_pick(const Camera* camera, Node_Manager*
 		if (visited.count(model_node->get_id()))
 			continue; // skip if already visited
 
-		// draw this node and all its descendants with their own ids
-		std::vector<std::shared_ptr<Node>> stack{ model_node };
-		while (!stack.empty())
-		{ // perform DFS to process all child models in the hierarchy
-			auto& current = stack.back();
-			stack.pop_back();
-			if (!current)
-				continue; // skip null nodes
-			if (!current->get_is_visible())
-				continue; // skip invisible nodes
-
+		// draw the visible nodes of this hierarchy that can be selected, each with its own id (a node that cannot be selected
+		// is not drawn, so a click goes through it to what is behind it)
+		for (const auto& current : collect_pickable_nodes(model_node))
+		{
 			visited.insert(current->get_id()); // mark this node as visited
 
 			// set model matrix and encoded id uniform, then draw the model
 			picking_shader->set_mat4("u_model", current->get_world_model_matrix());
 			picking_shader->set_int("u_encoded_id", static_cast<GLint>(current->get_id()));
 			current->draw(*picking_shader);
-
-			// push child models onto the stack for processing
-			for (const auto& child : current->get_children()) stack.push_back(child);
 		}
 	}
 
@@ -193,8 +183,8 @@ void Selection_Manager::process_pending_pick(const Camera* camera, Node_Manager*
 
 		if (same_as_last && within_threshold)
 		{ // if picking the same model within the threshold, climb to parent if any
-			if (auto parent = model_comp->get_parent())
-			{ // if there is a parent, switch selection to it
+			if (auto parent = find_selectable_ancestor(model_comp))
+			{ // if there is a parent that can be selected, switch selection to it
 				picked_node = parent;
 				// update cycle state to the new parent to allow further climbing
 				last_picked_id = parent->get_id();
@@ -286,26 +276,16 @@ void Selection_Manager::render_picking_visualization(const Camera* camera, Node_
 		if (visited.count(node->get_id()))
 			continue; // skip if already visited
 
-		// DFS to draw this node and all its descendants with their own ids
-		std::vector<std::shared_ptr<Node>> stack{ model_node };
-		while (!stack.empty())
-		{ // perform DFS to process all child models in the hierarchy
-			auto& current = stack.back();
-			stack.pop_back();
-			if (!current)
-				continue; // skip null nodes
-			if (!current->get_is_visible())
-				continue; // skip invisible nodes
-
+		// draw the visible nodes of this hierarchy that can be selected, each with its own id (a node that cannot be selected
+		// is not drawn, so a click goes through it to what is behind it)
+		for (const auto& current : collect_pickable_nodes(model_node))
+		{
 			visited.insert(current->get_id()); // mark this node as visited
 
 			// set model matrix and encoded id uniform, then draw the model
 			picking_shader->set_mat4("u_model", current->get_world_model_matrix());
 			picking_shader->set_int("u_encoded_id", static_cast<GLint>(current->get_id()));
 			current->draw(*picking_shader);
-
-			// push child models onto the stack for processing
-			for (const auto& child : current->get_children()) stack.push_back(child);
 		}
 	}
 
@@ -314,6 +294,50 @@ void Selection_Manager::render_picking_visualization(const Camera* camera, Node_
 		glEnable(GL_CULL_FACE); // restore culling state if needed
 	if (s_rgb_was_enabled)
 		glEnable(GL_FRAMEBUFFER_SRGB); // restore sRGB state if needed
+}
+
+std::vector<std::shared_ptr<Node>> Selection_Manager::collect_pickable_nodes(const std::shared_ptr<Node>& root)
+{
+	std::vector<std::shared_ptr<Node>> nodes;
+	std::vector<std::shared_ptr<Node>> stack{ root };
+	// depth-first traversal of the hierarchy
+	while (!stack.empty())
+	{
+		const std::shared_ptr<Node> current{ stack.back() }; // a copy: pop_back destroys the element of the stack
+		stack.pop_back();
+		if (!current || !current->get_is_visible())
+			continue; // an invisible node is not drawn, and neither are its descendants
+		if (current->get_is_selectable())
+			nodes.push_back(current);
+		for (const auto& child : current->get_children()) stack.push_back(child);
+	}
+	return nodes;
+}
+
+std::vector<std::shared_ptr<Node>> Selection_Manager::collect_outlined_nodes(const std::shared_ptr<Node>& root)
+{
+	std::vector<std::shared_ptr<Node>> nodes;
+	std::vector<std::shared_ptr<Node>> stack{ root };
+	// depth-first traversal of the hierarchy
+	while (!stack.empty())
+	{
+		const std::shared_ptr<Node> current{ stack.back() }; // a copy: pop_back destroys the element of the stack
+		stack.pop_back();
+		if (!current)
+			continue;
+		if (current->get_is_selectable())
+			nodes.push_back(current);
+		for (const auto& child : current->get_children()) stack.push_back(child);
+	}
+	return nodes;
+}
+
+std::shared_ptr<Node> Selection_Manager::find_selectable_ancestor(const std::shared_ptr<Node>& node)
+{
+	for (auto ancestor{ node ? node->get_parent() : nullptr }; ancestor; ancestor = ancestor->get_parent())
+		if (ancestor->get_is_selectable())
+			return ancestor;
+	return nullptr;
 }
 
 std::shared_ptr<Node> Selection_Manager::get_selected_node(Node_Manager* node_manager) const
@@ -546,23 +570,13 @@ void Selection_Manager::render_outline_mask(const Camera* camera, Node_Manager* 
 
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); // ensure solid fill for outline mask
 
-	// DFS traversal to render selected model and its children (no climb to root)
-	std::vector<std::shared_ptr<Node>> stack;
-	stack.push_back(model); // start from the selected model
-	while (!stack.empty())
-	{ // perform DFS to process all child models in the hierarchy
-		auto& current = stack.back();
-		stack.pop_back();
-		if (!current)
-			continue; // skip null nodes
-
+	// render the selected model and its descendants (no climb to root), leaving out the nodes that cannot be selected
+	for (const auto& current : collect_outlined_nodes(model))
+	{
 		// set model matrix and encoded id uniform, then draw the model
 		picking_shader->set_mat4("u_model", current->get_world_model_matrix());
 		picking_shader->set_int("u_encoded_id", 1); // constant mask value of 1 for outline
 		current->draw(*picking_shader);
-
-		// push child models onto the stack for processing
-		for (auto& child : current->get_children()) stack.push_back(child);
 	}
 
 	outline_pass.unbind(); // unbind FBO after rendering
@@ -692,6 +706,8 @@ bool Selection_Manager::is_outline_eligible(const std::shared_ptr<Node>& node) c
 {
 	if (!node)
 		return false; // null node is not outline-eligible
+	if (!node->get_is_selectable())
+		return false; // a node that cannot be selected is never outlined
 
 	// check node type for outline eligibility
 	if (node->get_type() == Node_Type::COMPOSITE_ASSIMP_MODEL || node->get_type() == Node_Type::COMPOSITE_SHAPE_MODEL ||
