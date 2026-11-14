@@ -1366,8 +1366,14 @@ void GUI::draw_tree_node_recursive(const std::shared_ptr<Node>& node)
 	if (scene_graph_auto_open_ids.contains(node->get_id()))
 		ImGui::SetNextItemOpen(true, ImGuiCond_Always);
 
-	// draw the tree node and get whether it is open
+	// draw the tree node and get whether it is open; a node that cannot be selected is listed greyed out (a click on it does
+	// not select it, see handle_node_selection)
+	const bool is_selectable = node->get_is_selectable();
+	if (!is_selectable)
+		ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled));
 	bool node_open = ImGui::TreeNodeEx(node_label.c_str(), flags);
+	if (!is_selectable)
+		ImGui::PopStyleColor();
 
 	// DRAG SOURCE: only make draggable nodes a drag source
 	if (node->get_is_draggable() && ImGui::BeginDragDropSource())
@@ -1512,6 +1518,14 @@ void GUI::handle_node_selection(std::uint32_t node_id)
 					  << ") to a parent light. Selection will not change" << std::endl;
 			return;
 		}
+	}
+
+	// a node that cannot be selected (for example helper geometry of the scene) is not selected from the Scene Graph either
+	if (node && !node->get_is_selectable())
+	{
+		std::cout << "[INFO::GUI::handle_node_selection] Node '" << node->get_name() << "' (id " << node_id << ") cannot be selected"
+				  << std::endl;
+		return;
 	}
 
 	// if the selected node is already selected, do not proceed (no redundant selection and logging)
