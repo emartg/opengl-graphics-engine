@@ -256,9 +256,8 @@ void Renderer::render_scene()
 	}
 
 	// compute view and projection transformations
-	glm::mat4 projection =
-		camera->get_projection_matrix(static_cast<GLfloat>(core->get_screen_width()) / static_cast<GLfloat>(core->get_screen_height()));
-	glm::mat4 view = camera->get_view_matrix();
+	glm::mat4 projection = camera->get_projection_matrix(core->get_screen_width(), core->get_screen_height());
+	glm::mat4 view       = camera->get_view_matrix();
 
 	// transpose of the upper-left 3x3 submatrix of the view matrix, used for environment mapping
 	// (i.e., the inverse matrix of the rotation part of the view matrix)
