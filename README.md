@@ -137,7 +137,7 @@ Another CMake Project](docs/build_instructions.md#using-the-engine-from-another-
 
 ## Usage
 
-- **Camera** - Drag with right mouse button to orbit, scroll to zoom.
+- **Camera** - Drag with the right mouse button to orbit around the selected object (or the origin), drag with the middle button to pan, and scroll to move closer or farther.
 - **Select** - Left-click on any renderable object to select it (outline appears). Double-click to select the parent group.
 - **GUI Panels** - All panels are draggable, resizable, collapsible, and closable; the *View* menu of the menu bar shows or hides each of them and resets the layout.
   - *Scene Graph* - drag nodes to reparent; drop on the bottom area to make the node a root.

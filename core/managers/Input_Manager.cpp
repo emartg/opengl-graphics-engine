@@ -1,7 +1,7 @@
 /*
- * Input_Manager.h
+ * Input_Manager.cpp
  * This file implements the Input_Manager class, which is responsible for handling user input:
- * - Mouse cursor position and scroll input
+ * - Mouse cursor position, mouse buttons, and scroll input, which move the camera about a pivot (orbit, pan, and dolly)
  * - Keyboard key input
  */
 
@@ -12,17 +12,12 @@
 #include "Selection_Manager.h"
 #include "../Core.h"
 #include "../camera/Camera.h"
+#include "../light/Light.h"
 #include "../renderer/Renderer.h"
 
 // Constructor
 // -----------
-Input_Manager::Input_Manager() :
-	last_mouse_x{},
-	last_mouse_y{},
-	mouse_sensitivity{ 1.0f },
-	first_mouse{ true },
-	camera_control_enabled{ false }
-{}
+Input_Manager::Input_Manager() : last_mouse_x{}, last_mouse_y{}, first_mouse{ true }, camera_control_enabled{ false } {}
 
 // Destructor
 // ----------
@@ -31,7 +26,7 @@ Input_Manager::~Input_Manager() = default;
 // Public Methods
 // --------------
 // Callback Methods
-void Input_Manager::cursor_pos_callback(GLdouble xpos, GLdouble ypos, std::string input)
+void Input_Manager::cursor_pos_callback(GLdouble xpos, GLdouble ypos)
 {
 	if (first_mouse) // to prevent the camera from jumping to the mouse position on the first input
 	{
@@ -40,24 +35,45 @@ void Input_Manager::cursor_pos_callback(GLdouble xpos, GLdouble ypos, std::strin
 		first_mouse  = false;
 	}
 
-	GLfloat xoffset = xpos - last_mouse_x;
-	GLfloat yoffset = last_mouse_y - ypos; // reversed since y-coordinates range from bottom to top
-	last_mouse_x    = xpos;
-	last_mouse_y    = ypos;
+	// movement of the mouse in pixels since the last position: to the right and down are positive
+	const GLfloat dx = static_cast<GLfloat>(xpos) - last_mouse_x;
+	const GLfloat dy = static_cast<GLfloat>(ypos) - last_mouse_y;
+	last_mouse_x     = static_cast<GLfloat>(xpos);
+	last_mouse_y     = static_cast<GLfloat>(ypos);
 
-	if (camera_control_enabled) // only process mouse input if camera control is enabled
-	{
-		if (input == "MIDDLE_HOLD") // middle mouse button hold for translation
-			Core::get_instance()->get_scene_manager()->get_camera()->process_mouse_translation(xoffset, yoffset);
-		else if (input == "RMB_HOLD") // right mouse button hold for rotation
-			Core::get_instance()->get_scene_manager()->get_camera()->process_mouse_rotation(xoffset, yoffset);
-	}
+	// the camera moves only during a drag that started over the view (it goes on while the mouse is over a window of the GUI)
+	if (camera_drag == Camera_Drag::NONE)
+		return;
+	const auto& camera = Core::get_instance()->get_scene_manager()->get_camera();
+	if (!camera)
+		return;
+
+	if (camera_drag == Camera_Drag::ORBIT)
+		Camera_Controller::orbit(*camera, drag_pivot, dx, dy, camera_control_params);
+	else
+		Camera_Controller::pan(*camera, drag_pivot, dx, dy, Core::get_instance()->get_screen_height());
 }
 
 void Input_Manager::scroll_callback(GLdouble xoffset, GLdouble yoffset)
 {
-	if (camera_control_enabled) // only process scroll input if camera control is enabled
-		Core::get_instance()->get_scene_manager()->get_camera()->process_mouse_scroll(yoffset, 2.5f);
+	if (!camera_control_enabled) // only process scroll input if camera control is enabled (not over a window of the GUI)
+		return;
+	const auto& camera = Core::get_instance()->get_scene_manager()->get_camera();
+	if (camera) // the wheel moves the camera towards or away from the pivot, and does not change the field of view
+		Camera_Controller::dolly(*camera, find_pivot(), static_cast<GLfloat>(yoffset), camera_control_params);
+}
+
+void Input_Manager::mouse_button_callback(std::string input)
+{
+	if (input == "RMB_RELEASED" && camera_drag == Camera_Drag::ORBIT)
+		camera_drag = Camera_Drag::NONE;
+	else if (input == "MIDDLE_RELEASED" && camera_drag == Camera_Drag::PAN)
+		camera_drag = Camera_Drag::NONE;
+	else if ((input == "RMB_PRESSED" || input == "MIDDLE_PRESSED") && camera_control_enabled)
+	{ // a drag starts only over the view; its pivot is the one of the moment the button is pressed
+		camera_drag = (input == "RMB_PRESSED") ? Camera_Drag::ORBIT : Camera_Drag::PAN;
+		drag_pivot  = find_pivot();
+	}
 }
 
 void Input_Manager::key_callback(std::string input)
@@ -119,4 +135,23 @@ void Input_Manager::key_callback(std::string input)
 		selection_manager->delete_selected(node_manager.get());
 	}
 	// any other key has no action (and pressing it is not an error), so it is ignored
+}
+
+// Private Methods
+// ---------------
+glm::vec3 Input_Manager::find_pivot() const
+{
+	auto core = Core::get_instance();
+	auto node = core->get_selection_manager()->get_selected_node(core->get_node_manager().get());
+	if (!node)
+		return glm::vec3{ 0.0f }; // nothing is selected: the origin of the world
+
+	// a light is found by its gizmo, which has the geometry
+	if (node->get_type() == Node_Type::LIGHT)
+		if (auto gizmo = static_cast<Light*>(node.get())->get_gizmo())
+			node = gizmo;
+
+	// the center of the bounding box of the node and its descendants, or its position if it has no geometry
+	const Bounding_Box box{ node->get_world_bounding_box() };
+	return box.is_valid() ? box.get_center() : node->get_world_position();
 }

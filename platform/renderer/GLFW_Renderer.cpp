@@ -198,16 +198,8 @@ void GLFW_Renderer::framebuffer_size_callback(GLFWwindow* window, int width, int
 
 void GLFW_Renderer::cursor_pos_callback(GLFWwindow* window, double xpos, double ypos)
 {
-	std::string button;
-	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_MIDDLE) == GLFW_PRESS)
-		button = "MIDDLE_HOLD"; // middle mouse button hold for translation
-	else if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS)
-		button = "RMB_HOLD"; // right mouse button hold for rotation
-	else
-		button = ""; // no button pressed
-
-	// delegate the cursor position callback to the Input_Manager
-	Core::get_instance()->get_input_manager()->cursor_pos_callback(xpos, ypos, button);
+	// delegate the cursor position callback to the Input_Manager (it knows whether a drag of the camera is active)
+	Core::get_instance()->get_input_manager()->cursor_pos_callback(xpos, ypos);
 }
 
 void GLFW_Renderer::scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
@@ -262,5 +254,17 @@ void GLFW_Renderer::mouse_button_callback(GLFWwindow* window, int button, int ac
 		// queue a pick request in the selection manager
 		auto core = Core::get_instance();
 		core->get_selection_manager()->queue_pick(xpos, ypos, fb_width, fb_height);
+	}
+	else if (button == GLFW_MOUSE_BUTTON_RIGHT || button == GLFW_MOUSE_BUTTON_MIDDLE)
+	{ // the right button orbits the camera and the middle button pans it, while it is held
+		const std::string name{ button == GLFW_MOUSE_BUTTON_RIGHT ? "RMB" : "MIDDLE" };
+		if (action == GLFW_PRESS)
+		{
+			if (ImGui::GetIO().WantCaptureMouse)
+				return; // a drag of the camera starts only over the view, not over the GUI
+			Core::get_instance()->get_input_manager()->mouse_button_callback(name + "_PRESSED");
+		}
+		else if (action == GLFW_RELEASE) // a release always ends the drag, also over the GUI
+			Core::get_instance()->get_input_manager()->mouse_button_callback(name + "_RELEASED");
 	}
 }
