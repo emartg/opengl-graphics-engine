@@ -142,8 +142,10 @@ private:
 	static constexpr float MIN_DIRECTION_VALUE{ -1.0f }, MAX_DIRECTION_VALUE{ 1.0f };
 	static constexpr float MIN_SCALE_VALUE{ 0.001f }, MAX_SCALE_VALUE{ 100.0f };
 	static constexpr float MIN_CUTOFF_VALUE{ 0.0f }, MAX_CUTOFF_VALUE{ 45.0f };
-	static constexpr float POSITION_SPEED{ 0.15f }, ROTATION_SPEED{ 1.0f }, DIRECTION_SPEED{ 0.01f }, SCALE_SPEED{ 0.002f },
-		CUTOFF_ANGLES_SPEED{ 0.25f };
+	// speeds of the drag fields: the change for each pixel that the mouse moves (Shift makes a drag 10 times faster and Alt 100 times
+	// slower)
+	static constexpr float POSITION_SPEED{ 0.01f }, ROTATION_SPEED{ 0.5f }, DIRECTION_SPEED{ 0.005f }, SCALE_SPEED{ 0.002f },
+		CUTOFF_ANGLES_SPEED{ 0.1f };
 	static constexpr float POSITION_RESET_VALUE{ 0.0f }, ROTATION_RESET_VALUE{ 0.0f }, DIRECTION_RESET_VALUE{ 0.0f },
 		SCALE_RESET_VALUE{ 1.0f }, INNER_CUTOFF_RESET_VALUE{ 12.5f }, OUTER_CUTOFF_RESET_VALUE{ 32.5f };
 	// default values for distances from the origin
@@ -244,8 +246,9 @@ private:
 		glm::vec4&         color,
 		bool               show_label         = true,
 		float              color_picker_width = ImGui::GetContentRegionAvail().x);
-	// Creates a 3-component vector control with input fields and buttons
-	// and returns true if any of the components were changed
+	// Creates a 3-component vector control with a drag field and a reset button for each component (a drag changes the value by
+	// the speed for each pixel, and a double click or Ctrl+click types a value, kept within the limits) and returns true if any of
+	// the components were changed
 	bool draw_vec3_control(
 		const std::string& label,
 		glm::vec3&         values,
@@ -257,8 +260,7 @@ private:
 		float              reset_value         = 0.0f,
 		float              reset_button_width  = BUTTON_WIDTH,
 		float              reset_button_height = BUTTON_HEIGHT);
-	// Draws a float control with an input field and arrow buttons
-	// and returns true if the value was changed
+	// Draws a float control with a drag field and a reset button (as draw_vec3_control) and returns true if the value was changed
 	bool draw_float_control(
 		const std::string& label,
 		float&             value,
