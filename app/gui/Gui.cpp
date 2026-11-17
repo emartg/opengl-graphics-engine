@@ -48,6 +48,17 @@
 
 // Namespaces
 // ----------
+// Namespace for the layout of the drag fields (unnamed to limit scope to this file)
+namespace
+{
+	// Returns the width of a drag field that takes the place of an input field of the given width and its two arrow buttons, so that
+	// the layout of the windows does not change
+	float drag_field_width(float input_field_width)
+	{
+		return input_field_width + 2.0f * (ImGui::GetFrameHeight() + ImGui::GetStyle().ItemSpacing.x);
+	}
+} // namespace
+
 // Namespace for cubemap face handling (unnamed to limit scope to this file)
 namespace
 {
@@ -863,7 +874,7 @@ void GUI::draw_debug_window()
 			ImGui::Text("Outline Thickness");
 			ImGui::SameLine();
 			ImGui::SetNextItemWidth(100.0f); // set a fixed width for the input field
-			if (ImGui::InputInt("##OutlineThickness", &outline_thickness))
+			if (ImGui::DragInt("##OutlineThickness", &outline_thickness, 0.05f, 1, 10, "%d", ImGuiSliderFlags_AlwaysClamp))
 			{ // if the input field is changed, update the outline params in the Selection_Manager
 				Outline_Params updated = outline_params;
 				updated.thickness      = static_cast<GLuint>(std::clamp(outline_thickness, 1, 10)); // keep it in a reasonable range [1, 10]
@@ -1039,12 +1050,15 @@ void GUI::draw_debug_window()
 				ImGui::Text("Grid Line Count      ");
 				ImGui::SameLine();               // keep the input field on the same line as the label
 				ImGui::SetNextItemWidth(100.0f); // set a fixed width for the input field
-				if (ImGui::InputInt(
+				if (ImGui::DragInt(
 						"##GridLineCount",
 						(int*)&params.grid_line_count,
-						1,
-						10)) // set step values for the input field (normal and fast)
-				{            // if the input field is changed, update the number of grid lines
+						0.2f, // a line for every 5 pixels of a drag
+						2,
+						1000,
+						"%d",
+						ImGuiSliderFlags_AlwaysClamp))
+				{ // if the input field is changed, update the number of grid lines
 					// clamp the value to a reasonable range [2, 1000]
 					if (params.grid_line_count < 2)
 						params.grid_line_count = 2;
@@ -1060,12 +1074,14 @@ void GUI::draw_debug_window()
 				ImGui::Text("Grid Line Thickness  ");
 				ImGui::SameLine();               // keep the input field on the same line as the label
 				ImGui::SetNextItemWidth(100.0f); // set a fixed width for the input field
-				if (ImGui::InputFloat(
+				if (ImGui::DragFloat(
 						"##GridLineThickness",
 						&params.grid_line_thickness,
-						0.05f,
-						0.5f, // set step values for the input field (normal and fast)
-						"%.2f"))
+						0.01f, // the change for each pixel of a drag
+						1.0f,
+						10.0f,
+						"%.2f",
+						ImGuiSliderFlags_AlwaysClamp))
 				{ // if the input field is changed, update the grid line thickness
 					// clamp the value to a reasonable range [1.0, 10.0]
 					params.grid_line_thickness = std::clamp(params.grid_line_thickness, 1.0f, 10.0f);
@@ -3003,121 +3019,36 @@ bool GUI::draw_vec3_control(
 	// store previous values so that we can check if any value has changed
 	glm::vec3 previous_values = values;
 
-	// x component
-	ImGui::PushID("x");
-	ImGui::Text("  X  "); // display the label for the x component
-	ImGui::SameLine();
-	ImGui::SetNextItemWidth(input_field_width); // set the width of the input field for the x component
-	if (ImGui::InputFloat(
-			"##x",
-			&values.x,
-			0.0f,
-			0.0f, // no step buttons
-			"%.3f"))
-	{                         // if the input field is used
-		value_changed = true; // set the value_changed flag to true
+	// each component is a drag field: a drag changes the value by the speed for each pixel that the mouse moves (Shift faster, Alt
+	// slower), and a double click or Ctrl+click types a value, which is kept within the limits
+	constexpr std::array<const char*, 3> COMPONENT_NAMES{ "X", "Y", "Z" };
+	for (int component{ 0 }; component < 3; ++component)
+	{
+		ImGui::PushID(component); // a unique id scope for each component
+		ImGui::Text("  %s  ", COMPONENT_NAMES[component]);
+		ImGui::SameLine();
+		ImGui::SetNextItemWidth(drag_field_width(input_field_width));
+		if (ImGui::DragFloat(
+				"##value",
+				&values[component],
+				speed,
+				min_input_field_value,
+				max_input_field_value,
+				"%.3f",
+				ImGuiSliderFlags_AlwaysClamp))
+			value_changed = true;
+		ImGui::SameLine();
+		if (ImGui::Button("Reset", ImVec2(ImGui::GetContentRegionAvail().x, reset_button_height)))
+		{                                    // if the Reset button is pressed
+			values[component] = reset_value; // reset the component to the reset value
+			value_changed     = true;
+		}
+		ImGui::PopID(); // end the unique id scope for the component
 	}
-	ImGui::SameLine();
-	// enable repeat mode for the arrow buttons (allows holding down the button to change value continuously)
-	ImGui::PushButtonRepeat(true);
-	if (ImGui::ArrowButton("##upX", ImGuiDir_Up))
-	{                         // if the up arrow button is pressed
-		values.x += speed;    // increase the x component by speed
-		value_changed = true; // set the value_changed flag to true
-	}
-	ImGui::SameLine();
-	if (ImGui::ArrowButton("##downX", ImGuiDir_Down))
-	{                         // if the down arrow button is pressed
-		values.x -= speed;    // decrease the x component by speed
-		value_changed = true; // set the value_changed flag to true
-	}
-	ImGui::PopButtonRepeat(); // end the repeat mode for the arrow buttons
-	ImGui::SameLine();
-	if (ImGui::Button("Reset", ImVec2(ImGui::GetContentRegionAvail().x, reset_button_height)))
-	{                                // if the Reset button is pressed
-		values.x      = reset_value; // reset the x component to the reset value
-		value_changed = true;        // set the value_changed flag to true
-	}
-	ImGui::PopID(); // end the unique id scope for the x component
-
-	// y component
-	ImGui::PushID("y");
-	ImGui::Text("  Y  "); // display the label for the y component
-	ImGui::SameLine();
-	ImGui::SetNextItemWidth(input_field_width); // set the width of the input field for the y component
-	if (ImGui::InputFloat(
-			"##y",
-			&values.y,
-			0.0f,
-			0.0f, // no step buttons
-			"%.3f"))
-	{                         // if the input field is used
-		value_changed = true; // set the value_changed flag to true
-	}
-	ImGui::SameLine();
-	// enable repeat mode for the arrow buttons (allows holding down the button to change value continuously)
-	ImGui::PushButtonRepeat(true);
-	if (ImGui::ArrowButton("##upY", ImGuiDir_Up))
-	{                         // if the up arrow button is pressed
-		values.y += speed;    // increase the y component by speed
-		value_changed = true; // set the value_changed flag to true
-	}
-	ImGui::SameLine();
-	if (ImGui::ArrowButton("##downY", ImGuiDir_Down))
-	{                         // if the down arrow button is pressed
-		values.y -= speed;    // decrease the y component by speed
-		value_changed = true; // set the value_changed flag to true
-	}
-	ImGui::PopButtonRepeat(); // end the repeat mode for the arrow buttons
-	ImGui::SameLine();
-	if (ImGui::Button("Reset", ImVec2(ImGui::GetContentRegionAvail().x, reset_button_height)))
-	{                                // if the Reset button is pressed
-		values.y      = reset_value; // reset the y component to the reset value
-		value_changed = true;        // set the value_changed flag to true
-	}
-	ImGui::PopID(); // end the unique id scope for the y component
-
-	// z component
-	ImGui::PushID("z");
-	ImGui::Text("  Z  "); // display the label for the z component
-	ImGui::SameLine();
-	ImGui::SetNextItemWidth(input_field_width); // set the width of the input field for the z component
-	if (ImGui::InputFloat(
-			"##z",
-			&values.z,
-			0.0f,
-			0.0f, // no step buttons
-			"%.3f"))
-	{                         // if the input field is used
-		value_changed = true; // set the value_changed flag to true
-	}
-	ImGui::SameLine();
-	// enable repeat mode for the arrow buttons (allows holding down the button to change value continuously)
-	ImGui::PushButtonRepeat(true);
-	if (ImGui::ArrowButton("##upZ", ImGuiDir_Up))
-	{                         // if the up arrow button is pressed
-		values.z += speed;    // increase the z component by speed
-		value_changed = true; // set the value_changed flag to true
-	}
-	ImGui::SameLine();
-	// enable repeat mode for the arrow buttons (allows holding down the button to change value continuously)
-	if (ImGui::ArrowButton("##downZ", ImGuiDir_Down))
-	{                         // if the down arrow button is pressed
-		values.z -= speed;    // decrease the z component by speed
-		value_changed = true; // set the value_changed flag to true
-	}
-	ImGui::PopButtonRepeat(); // end the repeat mode for the arrow buttons
-	ImGui::SameLine();
-	if (ImGui::Button("Reset", ImVec2(ImGui::GetContentRegionAvail().x, reset_button_height)))
-	{                                // if the Reset button is pressed
-		values.z      = reset_value; // reset the z component to the reset value
-		value_changed = true;        // set the value_changed flag to true
-	}
-	ImGui::PopID(); // end the unique id scope for the z component
 
 	ImGui::PopID(); // end the unique id scope for the label
 
-	// clamp values to the specified range
+	// clamp values to the specified range (a reset value can be outside of it)
 	values.x = std::clamp(values.x, min_input_field_value, max_input_field_value);
 	values.y = std::clamp(values.y, min_input_field_value, max_input_field_value);
 	values.z = std::clamp(values.z, min_input_field_value, max_input_field_value);
@@ -3166,33 +3097,12 @@ bool GUI::draw_float_control(
 
 	ImGui::Text("%s", label.c_str()); // display the label for the control
 
+	// a drag field (as in draw_vec3_control): a drag changes the value by the speed for each pixel, and a double click or Ctrl+click
+	// types a value, which is kept within the limits
 	ImGui::SameLine();
-	ImGui::SetNextItemWidth(input_field_width); // set the width of the input field
-	if (ImGui::InputFloat(
-			"##val",
-			&value,
-			0.0f,
-			0.0f, // no step buttons
-			"%.2f"))
-	{ // if the input field is used
+	ImGui::SetNextItemWidth(drag_field_width(input_field_width));
+	if (ImGui::DragFloat("##val", &value, speed, min_input_field_value, max_input_field_value, "%.2f", ImGuiSliderFlags_AlwaysClamp))
 		value_changed = true;
-	} // set the value_changed flag to true
-
-	// enable repeat mode for the arrow buttons (allows holding down the button to change value continuously)
-	ImGui::PushButtonRepeat(true);
-	ImGui::SameLine();
-	if (ImGui::ArrowButton("##up", ImGuiDir_Up))
-	{                         // if the up arrow button is pressed
-		value += speed;       // increase the value by speed
-		value_changed = true; // set the value_changed flag to true
-	}
-	ImGui::SameLine();
-	if (ImGui::ArrowButton("##down", ImGuiDir_Down))
-	{                         // if the down arrow button is pressed
-		value -= speed;       // decrease the value by speed
-		value_changed = true; // set the value_changed flag to true
-	}
-	ImGui::PopButtonRepeat(); // end the repeat mode for the arrow buttons
 	ImGui::SameLine();
 	if (ImGui::Button("Reset", ImVec2(ImGui::GetContentRegionAvail().x, reset_button_height)))
 	{                                // if the Reset button is pressed
@@ -3200,7 +3110,7 @@ bool GUI::draw_float_control(
 		value_changed = true;        // set the value_changed flag to true
 	}
 
-	// clamp the value to the specified range
+	// clamp the value to the specified range (a reset value can be outside of it)
 	value = std::clamp(value, min_input_field_value, max_input_field_value);
 
 	ImGui::PopID(); // end the unique id scope for the label
