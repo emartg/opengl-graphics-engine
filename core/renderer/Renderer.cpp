@@ -14,6 +14,7 @@
 
 #include "Renderer.h"
 
+#include <bit>
 #include <cstddef>
 #include <cstring>
 #include <functional>
@@ -64,6 +65,18 @@ Renderer::~Renderer()
 	}
 
 	std::cout << "[INFO::RENDERER::~Renderer] Renderer destructor called" << std::endl;
+}
+
+// Public Static Methods
+// ---------------------
+GLuint Renderer::get_skybox_face_size(GLint equirect_width, GLint max_size)
+{
+	// half the width (twice the texels of the quarter of the image that a face spans), as a power of two within the limits
+	const GLuint half_width{ equirect_width > 0 ? static_cast<GLuint>(equirect_width) / 2 : 0 };
+	GLuint       size{ std::bit_ceil(std::clamp(half_width, MIN_SKYBOX_FACE_SIZE, MAX_SKYBOX_FACE_SIZE)) };
+	if (max_size > 0)
+		size = std::min(size, static_cast<GLuint>(max_size));
+	return size;
 }
 
 // Public Methods
@@ -1152,8 +1165,13 @@ void Renderer::convert_hdr_to_cubemap_if_needed()
 	GLint prev_fbo{};
 	glGetIntegerv(GL_FRAMEBUFFER_BINDING, &prev_fbo); // get currently bound FBO
 
-	// set the capture resolution to 4096x4096 (sufficient for good quality skyboxes)
-	const GLuint capture_size{ 4096 };
+	// size the faces from the width of the image (see get_skybox_face_size), so that they keep its detail without using memory
+	// for more: a 4096 x 2048 image gives faces of 2048 x 2048 (about 200 MB with their mipmaps, instead of the 800 MB that faces
+	// of 4096 x 4096 took, for practically the same picture)
+	GLint equirect_width{ 0 }, max_cube_map_size{ 0 };
+	glGetTextureLevelParameteriv(skybox->get_texture_id(), 0, GL_TEXTURE_WIDTH, &equirect_width);
+	glGetIntegerv(GL_MAX_CUBE_MAP_TEXTURE_SIZE, &max_cube_map_size);
+	const GLuint capture_size{ get_skybox_face_size(equirect_width, max_cube_map_size) };
 
 	// bind capture FBO and (re)configure depth RBO for the capture dimensions
 	glBindFramebuffer(GL_FRAMEBUFFER, hdr_to_cubemap_fbo);
@@ -1243,7 +1261,7 @@ void Renderer::convert_hdr_to_cubemap_if_needed()
 	hdr_to_cubemap_converted = true; // mark as converted to avoid redundant conversions
 
 	std::cout << "[SUCCESS::RENDERER::convert_hdr_to_cubemap_if_needed] Converted HDR (src texId = " << hdr_source_tex_id
-			  << ") to cubemap (texId = " << env_cubemap << ")" << std::endl;
+			  << ") to cubemap (texId = " << env_cubemap << ", faces of " << capture_size << " x " << capture_size << ")" << std::endl;
 
 	// reset source id so a new HDR selection triggers fresh conversion logic properly
 	hdr_source_tex_id = env_cubemap; // the active skybox is now the cubemap
