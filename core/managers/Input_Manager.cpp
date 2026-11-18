@@ -128,8 +128,8 @@ void Input_Manager::key_callback(std::string input)
 			return;
 		}
 
-		// if the node exists and can be deleted, print a message and delete it from the scene
-		std::cout << "[INFO::INPUT_MANAGER::key_callback] Delete key pressed, deleting selected node " << node->get_name() << " (id "
+		// if the node exists, print a message and let the selection manager delete it (it keeps a node that cannot be deleted)
+		std::cout << "[INFO::INPUT_MANAGER::key_callback] Delete key pressed for the selected node " << node->get_name() << " (id "
 				  << selected_node_id << ")" << std::endl;
 
 		selection_manager->delete_selected(node_manager.get());

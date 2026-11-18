@@ -2,7 +2,8 @@
  * SelectionManagerTest.cpp
  * This file contains the unit tests of the rules of the Selection_Manager class that need no OpenGL context: which nodes of a
  * hierarchy the picking and the outline mask draw, and to which ancestor a repeated click climbs, for nodes that can or cannot
- * be selected (Node::set_is_selectable) and that are visible or not, and lights in a hierarchy, drawn through their gizmos.
+ * be selected (Node::set_is_selectable) and that are visible or not, lights in a hierarchy, drawn through their gizmos, and which
+ * node keeps a hierarchy from being deleted (Node::set_is_deletable).
  */
 
 #include <memory>
@@ -41,6 +42,43 @@ namespace
 		return names;
 	}
 } // namespace
+
+TEST(SelectionManagerTest, ANodeCanBeMovedAndDeletedByDefault)
+{
+	const auto node = make_node("node");
+
+	EXPECT_TRUE(node->get_is_movable());
+	EXPECT_TRUE(node->get_is_deletable());
+	node->set_is_movable(false);
+	node->set_is_deletable(false);
+	EXPECT_FALSE(node->get_is_movable());
+	EXPECT_FALSE(node->get_is_deletable());
+}
+
+TEST(SelectionManagerTest, ANodeThatCannotBeDeletedKeepsItsAncestorsFromBeingDeleted)
+{
+	const auto root   = make_node("root");
+	const auto middle = make_node("middle");
+	const auto leaf   = make_node("leaf");
+	const auto other  = make_node("other");
+	root->add_child(middle);
+	root->add_child(other);
+	middle->add_child(leaf);
+
+	// every node can be deleted
+	EXPECT_EQ(Selection_Manager::find_undeletable_node(root), nullptr);
+
+	// a leaf that cannot be deleted blocks the deletion of its ancestors, not of its siblings or itself alone
+	leaf->set_is_deletable(false);
+	EXPECT_EQ(Selection_Manager::find_undeletable_node(root), leaf);
+	EXPECT_EQ(Selection_Manager::find_undeletable_node(middle), leaf);
+	EXPECT_EQ(Selection_Manager::find_undeletable_node(other), nullptr);
+
+	// the root itself is found first
+	root->set_is_deletable(false);
+	EXPECT_EQ(Selection_Manager::find_undeletable_node(root), root);
+	EXPECT_EQ(Selection_Manager::find_undeletable_node(nullptr), nullptr);
+}
 
 TEST(SelectionManagerTest, ANodeCanBeSelectedByDefault)
 {

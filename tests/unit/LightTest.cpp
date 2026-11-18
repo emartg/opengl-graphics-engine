@@ -2,7 +2,7 @@
  * LightTest.cpp
  * This file contains the unit tests of the lights that need no OpenGL context: a light follows its parent (its position and
  * direction are relative to the parent, like the transform of a node, and the renderer lights the scene with them in world
- * space), it can be dragged into a hierarchy but cannot be a parent, and a new parent keeps it where it is in the world
+ * space), it can be moved into a hierarchy but cannot be a parent, and a new parent keeps it where it is in the world
  * (Node::rebase_transform, also tested for an ordinary node). The gizmos of the lights need an OpenGL context, so the lights of
  * these tests have none, and the gizmos are covered by the smoke tests and by driving the App.
  */
@@ -54,11 +54,11 @@ namespace
 	constexpr glm::vec3 GREY{ 0.5f };
 } // namespace
 
-TEST(LightTest, ALightCanBeDraggedIntoAHierarchyButCannotBeAParent)
+TEST(LightTest, ALightCanBeMovedIntoAHierarchyButCannotBeAParent)
 {
 	Point_Light light{ "light" };
 
-	EXPECT_TRUE(light.get_is_draggable());
+	EXPECT_TRUE(light.get_is_movable());
 	EXPECT_FALSE(light.get_can_be_parent());
 }
 

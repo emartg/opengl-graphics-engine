@@ -33,9 +33,11 @@ Camera::Camera(const std::string& name, const glm::vec3 position, const glm::vec
 	// update the camera vectors based on the initial values
 	recalculate_vectors();
 
-	// a camera is moved with the mouse, never selected: the Scene Graph of an editor lists it greyed out, it is not outlined, and it
-	// is not deleted through the selection (an application can still call set_is_selectable(true) on it)
+	// a camera is moved with the mouse, never selected: the Scene Graph of an editor lists it greyed out and it is not outlined
+	// (an application can still call set_is_selectable(true) on it); it is not moved like a node (the constructor of Node above
+	// receives false), and the user cannot delete it, even if an application makes it selectable
 	set_is_selectable(false);
+	set_is_deletable(false);
 }
 
 Camera::Camera(
