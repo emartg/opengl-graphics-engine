@@ -9,6 +9,8 @@
 
 #include <algorithm>
 
+#include <glm/gtx/matrix_decompose.hpp> // to split a matrix into a translation, a rotation, and a scale
+
 #include "shader/Shader.h"
 #include "model/mesh/Mesh.h"
 #include "texture/Texture.h"
@@ -98,6 +100,22 @@ const glm::vec3 Node::get_world_position() const
 	// get the world model matrix and extract the translation component
 	glm::mat4 world_model_matrix = get_world_model_matrix();
 	return glm::vec3(world_model_matrix[3]); // return the translation part
+}
+
+void Node::rebase_transform(const glm::mat4& old_parent_world, const glm::mat4& new_parent_world)
+{
+	// the world transform of the node under its old parent, expressed relative to the new parent
+	const glm::mat4 local_transform = glm::inverse(new_parent_world) * old_parent_world * get_model_matrix();
+
+	// split the new local transform into the position, the rotation, and the scale of the node
+	glm::vec3 scale, translation, skew;
+	glm::quat rotation;
+	glm::vec4 perspective;
+	glm::decompose(local_transform, scale, rotation, translation, skew, perspective);
+
+	set_position(translation);
+	set_rotation(rotation);
+	set_scale(scale);
 }
 
 Bounding_Box Node::get_local_bounding_box() const

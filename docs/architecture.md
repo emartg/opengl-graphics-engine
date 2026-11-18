@@ -102,7 +102,7 @@ Next, each phase is described step-by-step.
   - `Node_Manager` - stores and retrieves nodes by ID.
   - `Selection_Manager` - handles color-picking and outlining.
   - `Input_Manager` - translates raw input to camera/UI actions.
-- **`Light`** - Abstract base for directional, point, and spot lights. Each light owns a visual gizmo (wireframe shape) that is rendered in the gizmo pass.
+- **`Light`** - Abstract base for directional, point, and spot lights. Each light owns a visual gizmo (wireframe shape) that is rendered in the gizmo pass. Its position and direction are relative to its parent, like the transform of a node, so a light placed in a hierarchy (a lamp inside a model, for example) follows it.
 
 The following UML diagrams (Figs. 4-8) detail the package layout, class hierarchies, and subsystem relationships. Fig. 4 is the overview (the modules and how they relate), and Figs. 5-8 detail its boxes: the renderer, the GUI, and the assets (Fig. 5), the managers and libraries (Fig. 6), the scene entities (Fig. 7), and the utilities and the geometry data (Fig. 8).
 

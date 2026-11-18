@@ -308,7 +308,8 @@ std::vector<std::shared_ptr<Node>> Selection_Manager::collect_pickable_nodes(con
 		stack.pop_back();
 		if (!current || !current->get_is_visible())
 			continue; // an invisible node is not drawn, and neither are its descendants
-		if (current->get_is_selectable())
+		// a light in a hierarchy is drawn through its gizmo, its child (drawing the light would draw the gizmo a second time)
+		if (current->get_is_selectable() && current->get_type() != Node_Type::LIGHT)
 			nodes.push_back(current);
 		for (const auto& child : current->get_children()) stack.push_back(child);
 	}
@@ -326,7 +327,8 @@ std::vector<std::shared_ptr<Node>> Selection_Manager::collect_outlined_nodes(con
 		stack.pop_back();
 		if (!current)
 			continue;
-		if (current->get_is_selectable())
+		// a light in a hierarchy is outlined through its gizmo, its child
+		if (current->get_is_selectable() && current->get_type() != Node_Type::LIGHT)
 			nodes.push_back(current);
 		for (const auto& child : current->get_children()) stack.push_back(child);
 	}

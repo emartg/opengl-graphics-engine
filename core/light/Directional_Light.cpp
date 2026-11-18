@@ -100,6 +100,12 @@ void Directional_Light::set_direction_and_align_gizmo(const glm::vec3& direction
 	update_gizmo_direction_line();
 }
 
+void Directional_Light::transform_light(const glm::mat4& change)
+{
+	set_position(glm::vec3{ change * glm::vec4{ position, 1.0f } });
+	set_direction_only(glm::mat3{ change } * direction);
+}
+
 void Directional_Light::create_gizmo()
 {
 	// compute the initial rotation of the gizmo based on the light's direction
@@ -146,6 +152,9 @@ void Directional_Light::sync_gizmo_position_from_light()
 
 void Directional_Light::update_gizmo_direction_line()
 {
+	if (!gizmo_direction_line)
+		return; // the line exists only once the gizmo is created
+
 	glm::vec3 start            = position; // set the new start point
 	glm::vec3 normal_direction = glm::normalize(direction);
 	glm::vec3 end              = start + normal_direction * gizmo_direction_line_length; // set the new end point

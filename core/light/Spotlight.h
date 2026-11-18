@@ -40,8 +40,12 @@ public:
 	// Public Methods
 	// --------------
 	// Getters
+	// The position and the direction are relative to the parent of the light (like the transform of a node), and those in world
+	// space follow the parent
 	glm::vec3 get_position() const { return position; }
 	glm::vec3 get_direction() const { return direction; }
+	glm::vec3 get_position_in_world() const { return to_world_point(position); }
+	glm::vec3 get_direction_in_world() const { return to_world_direction(direction); }
 	GLfloat   get_inner_cutoff() const { return inner_cutoff; }
 	GLfloat   get_outer_cutoff() const { return outer_cutoff; }
 	GLfloat   get_constant() const { return constant; }
@@ -77,6 +81,12 @@ public:
 	// Static Public Functions
 	// -----------------------
 	static GLuint get_spotlight_count() { return spotlight_count; }
+
+protected:
+	// Protected Methods
+	// -----------------
+	// Applies a change of space to the position and the direction of the light (the gizmo keeps its own orientation)
+	void transform_light(const glm::mat4& change) override;
 
 private:
 	// Static Private Attributes

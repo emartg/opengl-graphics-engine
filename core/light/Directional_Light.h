@@ -44,8 +44,11 @@ public:
 	void draw(const Shader& shader) const override;
 
 	// Getters
+	// The position (of the gizmo only) and the direction are relative to the parent of the light (like the transform of a node),
+	// and the direction in world space follows the parent
 	glm::vec3              get_position() const { return position; }
 	glm::vec3              get_direction() const { return direction; }
+	glm::vec3              get_direction_in_world() const { return to_world_direction(direction); }
 	std::shared_ptr<Line>& get_gizmo_direction_line() { return gizmo_direction_line; }
 	GLfloat                get_gizmo_direction_line_length() { return gizmo_direction_line_length; }
 
@@ -78,6 +81,12 @@ public:
 	// Static Public Functions
 	// -----------------------
 	static GLuint get_directional_light_count() { return directional_light_count; }
+
+protected:
+	// Protected Methods
+	// -----------------
+	// Applies a change of space to the position and the direction of the light (the gizmo keeps its own orientation)
+	void transform_light(const glm::mat4& change) override;
 
 private:
 	// Static Private Attributes

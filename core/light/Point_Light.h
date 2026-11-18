@@ -35,7 +35,10 @@ public:
 	// Public Methods
 	// --------------
 	// Getters
+	// The position is relative to the parent of the light (like the position of a node), and the position in world space
+	// follows the parent
 	glm::vec3 get_position() const { return position; }
+	glm::vec3 get_position_in_world() const { return to_world_point(position); }
 	GLfloat   get_constant() const { return constant; }
 	GLfloat   get_linear() const { return linear; }
 	GLfloat   get_quadratic() const { return quadratic; }
@@ -54,6 +57,12 @@ public:
 	// Static Public Functions
 	// -----------------------
 	static GLuint get_point_light_count() { return point_light_count; }
+
+protected:
+	// Protected Methods
+	// -----------------
+	// Applies a change of space to the position of the light
+	void transform_light(const glm::mat4& change) override;
 
 private:
 	// Static Private Attributes

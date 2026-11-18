@@ -73,6 +73,12 @@ void Spotlight::set_direction_and_align_gizmo(const glm::vec3& direction)
 		gizmo->set_forward(this->direction);
 }
 
+void Spotlight::transform_light(const glm::mat4& change)
+{
+	set_position(glm::vec3{ change * glm::vec4{ position, 1.0f } });
+	set_direction_only(glm::mat3{ change } * direction);
+}
+
 void Spotlight::create_gizmo()
 {
 	// compute the initial rotation of the gizmo based on the light's direction
