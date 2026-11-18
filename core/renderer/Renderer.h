@@ -73,6 +73,21 @@ public:
 	// pure virtual destructor, must be defined to allow derived classes to implement it
 	virtual ~Renderer();
 
+	// Public Static Methods
+	// ---------------------
+	// Returns the size of the faces of the cube map made from an equirectangular (HDR) skybox of the given width: half the width.
+	// A face spans a quarter of the image (90 of its 360 degrees), and twice as many texels keep its detail through the second
+	// filtering, when the sky is drawn (a quarter of the width visibly softens it); more only spends memory. Rounded up to a power
+	// of two, kept between MIN_SKYBOX_FACE_SIZE and MAX_SKYBOX_FACE_SIZE, and within max_size (the largest cube map that the
+	// driver supports; 0 or less for no such limit)
+	static GLuint get_skybox_face_size(GLint equirect_width, GLint max_size);
+
+	// Public Constants
+	// ----------------
+	// limits of the size of the faces of a skybox converted from an equirectangular image (see get_skybox_face_size)
+	static constexpr GLuint MIN_SKYBOX_FACE_SIZE{ 64 };
+	static constexpr GLuint MAX_SKYBOX_FACE_SIZE{ 4096 };
+
 	// Public Methods
 	// --------------
 	virtual bool init() const = 0;
