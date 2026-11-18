@@ -3,7 +3,7 @@
  * This file contains the unit tests of the Camera class: the perspective projection that the renderer, the picking, and the
  * outline of the selection use (which depends on the zoom of the camera, on the aspect ratio or the size of the window, and on
  * the clip planes of the camera), the clip planes and their validation, the setters of the position, the angles, and the zoom,
- * look_at, and that a camera cannot be selected.
+ * look_at, and that a camera cannot be selected, deleted, or moved like a node.
  */
 
 #include <cmath>
@@ -238,4 +238,13 @@ TEST(CameraTest, ACameraCannotBeSelected)
 	EXPECT_FALSE(camera.get_is_selectable());
 	camera.set_is_selectable(true);
 	EXPECT_TRUE(camera.get_is_selectable());
+}
+
+TEST(CameraTest, ACameraCannotBeDeletedOrMovedLikeANode)
+{
+	Camera camera{ "Camera" };
+
+	// the user cannot delete it, even if an application makes it selectable, nor move it in the scene graph of an editor
+	EXPECT_FALSE(camera.get_is_deletable());
+	EXPECT_FALSE(camera.get_is_movable());
 }

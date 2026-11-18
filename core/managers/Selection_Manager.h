@@ -83,6 +83,9 @@ public:
 	// Returns the nearest ancestor of a node that can be selected, or nullptr if there is none (a repeated click on a node
 	// climbs to it)
 	static std::shared_ptr<Node> find_selectable_ancestor(const std::shared_ptr<Node>& node);
+	// Returns the first node of a hierarchy (its root, or a descendant in a depth-first traversal) that cannot be deleted, or
+	// nullptr if every node can be: deleting the root would delete it, so the root is not deleted through the selection
+	static std::shared_ptr<Node> find_undeletable_node(const std::shared_ptr<Node>& root);
 
 	// Sets picking shader (obtained after compilation)
 	void set_picking_shader(const std::shared_ptr<Shader>& shader) { picking_shader = shader; }

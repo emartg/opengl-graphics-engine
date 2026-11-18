@@ -17,7 +17,8 @@ Light::Light(
 	const glm::vec3             specular,
 	const std::shared_ptr<Node> gizmo,
 	const Light_Type            light_type) :
-	// a light can be dragged into a hierarchy (it follows its parent), and it cannot be a parent itself (its only child is its gizmo)
+	// a light can be moved, also into a hierarchy (it follows its parent), and it cannot be a parent itself (its only child is
+	// its gizmo)
 	Node(name, Node_Type::LIGHT, ALBEDO, POSITION, ROTATION, SCALE, FORWARD, FORWARD, Gizmo_Type::NONE, true, false),
 	ambient{ ambient },
 	diffuse{ diffuse },

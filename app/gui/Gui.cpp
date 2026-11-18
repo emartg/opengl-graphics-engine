@@ -452,7 +452,8 @@ void GUI::draw_scene_graph_window()
 			"Left click empty space: Clear selection\n"
 			"Drag models and lights to group/ungroup\n"
 			"Drop on empty space to make a root node\n"
-			"Del/Supr: Delete selected node");
+			"Del/Supr: Delete selected node\n"
+			"Greyed out: cannot be selected");
 		ImGui::Separator();
 
 		// create a child window to hold the tree. this provides a consistent background
@@ -501,8 +502,8 @@ void GUI::draw_scene_graph_window()
 				std::uint32_t dragged_node_id = *(const std::uint32_t*)payload->Data;
 				auto          dragged_node    = node_manager->get_node_by_id(dragged_node_id);
 
-				// only process if the dragged node exists, is draggable, and has a parent
-				if (dragged_node && dragged_node->get_is_draggable() && dragged_node->get_parent())
+				// only process if the dragged node exists, can be moved, and has a parent
+				if (dragged_node && dragged_node->get_is_movable() && dragged_node->get_parent())
 				{
 					// the world transform of the old parent, to keep the node where it is in the world
 					const glm::mat4 old_parent_world = dragged_node->get_parent()->get_world_model_matrix();
@@ -601,6 +602,10 @@ void GUI::draw_properties_window()
 
 			ImGui::Separator();
 
+			// a node that cannot be moved shows its transform, disabled (see draw_model_controls and the light controls)
+			if (!selected->get_is_movable())
+				ImGui::TextDisabled("This node cannot be moved.");
+
 			// depending on the type of the selected node, draw the corresponding controls
 			if (selected->get_type() == Node_Type::LIGHT)
 			{                                                      // if the selected node is a light, draw the light controls
@@ -621,10 +626,18 @@ void GUI::draw_properties_window()
 
 			ImGui::Separator();
 
+			// a node that cannot be deleted, or that contains one, keeps the button disabled, with the reason below it
+			const auto undeletable = Selection_Manager::find_undeletable_node(selected);
+			ImGui::BeginDisabled(undeletable != nullptr);
 			if (ImGui::Button("Delete", ImVec2(ImGui::GetContentRegionAvail().x, 0.0f)))
 			{ // if the Delete button is clicked, delete the selected node via the selection manager
 				selection_manager->delete_selected(node_manager.get());
 			}
+			ImGui::EndDisabled();
+			if (undeletable == selected)
+				ImGui::TextDisabled("This node cannot be deleted.");
+			else if (undeletable)
+				ImGui::TextWrapped("It cannot be deleted: it contains '%s', which cannot be deleted.", undeletable->get_name().c_str());
 		}
 
 		ImGui::End(); // end the Properties window
@@ -1384,8 +1397,8 @@ void GUI::draw_tree_node_recursive(const std::shared_ptr<Node>& node)
 	if (!is_selectable)
 		ImGui::PopStyleColor();
 
-	// DRAG SOURCE: only make draggable nodes a drag source
-	if (node->get_is_draggable() && ImGui::BeginDragDropSource())
+	// DRAG SOURCE: only the nodes that can be moved are a drag source
+	if (node->get_is_movable() && ImGui::BeginDragDropSource())
 	{
 		// set payload to carry the node id
 		std::uint32_t node_id = node->get_id();
@@ -1642,6 +1655,9 @@ void GUI::draw_directional_light_controls(Directional_Light* directional_light)
 		directional_light->set_diffuse(color); // set the new color of the directional light
 	}
 
+	// the position and the direction of a light that cannot be moved are shown, but cannot be changed
+	ImGui::BeginDisabled(!directional_light->get_is_movable());
+
 	// get the position of the directional light (it only serves visualization purposes)
 	glm::vec3 pos = directional_light->get_position();
 	// create a control for the x, y, and z components of the directional light's position
@@ -1682,6 +1698,8 @@ void GUI::draw_directional_light_controls(Directional_Light* directional_light)
 		}
 	}
 
+	ImGui::EndDisabled(); // end of the position and the direction
+
 	ImGui::PopID(); // use PopID to end the unique id scope for the directional light
 }
 
@@ -1697,6 +1715,9 @@ void GUI::draw_point_light_controls(Point_Light* point_light)
 	{                                    // if the color control is used
 		point_light->set_diffuse(color); // set the new color of the point light
 	}
+
+	// the position of a light that cannot be moved is shown, but cannot be changed
+	ImGui::BeginDisabled(!point_light->get_is_movable());
 
 	// get the position of the point light
 	glm::vec3 pos = point_light->get_position();
@@ -1714,6 +1735,8 @@ void GUI::draw_point_light_controls(Point_Light* point_light)
 		point_light->set_position(pos); // set the new position of the point light
 	}
 
+	ImGui::EndDisabled(); // end of the position
+
 	ImGui::PopID(); // use PopID to end the unique id scope for the point light
 }
 
@@ -1729,6 +1752,9 @@ void GUI::draw_spotlight_controls(Spotlight* spotlight)
 	{                                  // if the color control is used
 		spotlight->set_diffuse(color); // set the new color of the spotlight
 	}
+
+	// the position and the direction of a light that cannot be moved are shown, but cannot be changed
+	ImGui::BeginDisabled(!spotlight->get_is_movable());
 
 	// get the position of the spotlight
 	glm::vec3 pos = spotlight->get_position();
@@ -1769,6 +1795,8 @@ void GUI::draw_spotlight_controls(Spotlight* spotlight)
 			spotlight->set_direction_only(gizmo->get_forward());
 		}
 	}
+
+	ImGui::EndDisabled(); // end of the position and the direction
 
 	// get the inner and outer cut-off angles of the spotlight and
 	// convert them from radians (cosine) to degrees for the controls
@@ -1868,6 +1896,9 @@ void GUI::draw_model_controls(Node* model)
 		}
 	}
 
+	// the transform of a node that cannot be moved is shown, but cannot be changed
+	ImGui::BeginDisabled(!model->get_is_movable());
+
 	// get the position of the model
 	glm::vec3 pos = model->get_position();
 	// create a control for the x, y, and z components of the model's position
@@ -1917,6 +1948,8 @@ void GUI::draw_model_controls(Node* model)
 	{                            // if the control is used
 		model->set_scale(scale); // set the new scale of the model
 	}
+
+	ImGui::EndDisabled(); // end of the transform
 
 	ImGui::PopID(); // use PopID to end the unique id scope for the model
 }

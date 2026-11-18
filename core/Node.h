@@ -74,7 +74,7 @@ public:
 		const glm::vec3    forward       = FORWARD,
 		const glm::vec3    mesh_forward  = FORWARD,
 		const Gizmo_Type   gizmo_type    = Gizmo_Type::NONE,
-		bool               is_draggable  = true,
+		bool               is_movable    = true,
 		bool               can_be_parent = true) :
 		id{ ++node_count },
 		name{ name },
@@ -87,7 +87,7 @@ public:
 		mesh_forward{ mesh_forward },
 		gizmo_type{ gizmo_type },
 		is_visible{ true },
-		is_draggable{ is_draggable },
+		is_movable{ is_movable },
 		can_be_parent{ can_be_parent },
 		children{} // initialize children vector as empty
 	{}
@@ -139,7 +139,8 @@ public:
 	const Gizmo_Type& get_gizmo_type() const { return gizmo_type; }
 	bool              get_is_visible() const { return is_visible; }
 	bool              get_is_two_sided() const { return is_two_sided; }
-	bool              get_is_draggable() const { return is_draggable; }
+	bool              get_is_movable() const { return is_movable; }
+	bool              get_is_deletable() const { return is_deletable; }
 	bool              get_is_selectable() const { return is_selectable; }
 	bool              get_can_be_parent() const { return can_be_parent; }
 
@@ -153,7 +154,14 @@ public:
 	void set_gizmo_type(Gizmo_Type gizmo_type) { this->gizmo_type = gizmo_type; }
 	void set_is_visible(bool is_visible) { this->is_visible = is_visible; }
 	void set_is_two_sided(bool is_two_sided) { this->is_two_sided = is_two_sided; }
-	void set_is_draggable(bool is_draggable) { this->is_draggable = is_draggable; }
+	// Sets whether the user can move the node (true by default): change its position, rotation, and scale in the Properties
+	// window of an editor, and its parent by dragging it in the Scene Graph. A node that cannot be moved still moves with its
+	// parent, and an application can still move it from its code
+	void set_is_movable(bool is_movable) { this->is_movable = is_movable; }
+	// Sets whether the user can delete the node (true by default). A node that cannot be deleted is not deleted through the
+	// selection, and neither is any of its ancestors (deleting a group would delete it); an application can still remove it
+	// from its code (Node_Manager::remove_node_by_id)
+	void set_is_deletable(bool is_deletable) { this->is_deletable = is_deletable; }
 	// Sets whether the node can be selected (true by default). A node that cannot be selected is still drawn, but the picking
 	// leaves it out, so that a click goes through it to the nodes behind it, the Scene Graph of an editor does not select it, and
 	// it is never outlined; its children keep their own setting. Meant for helper geometry drawn over a scene (a translucent
@@ -258,7 +266,8 @@ protected:
 	Gizmo_Type gizmo_type; // type of gizmo, if any
 
 	// behavioral flags
-	bool is_draggable;          // whether the node can be dragged in the scene graph
+	bool is_movable;            // whether the user can move the node (its transform, and its parent in the scene graph)
+	bool is_deletable{ true };  // whether the user can delete the node (and any of its ancestors)
 	bool is_selectable{ true }; // whether the node can be selected (picked in the view or chosen in the scene graph)
 	bool can_be_parent;         // whether the node can be a parent to other nodes
 

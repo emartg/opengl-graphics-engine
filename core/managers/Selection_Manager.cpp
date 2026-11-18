@@ -343,6 +343,23 @@ std::shared_ptr<Node> Selection_Manager::find_selectable_ancestor(const std::sha
 	return nullptr;
 }
 
+std::shared_ptr<Node> Selection_Manager::find_undeletable_node(const std::shared_ptr<Node>& root)
+{
+	std::vector<std::shared_ptr<Node>> stack{ root };
+	// depth-first traversal of the hierarchy
+	while (!stack.empty())
+	{
+		const std::shared_ptr<Node> current{ stack.back() }; // a copy: pop_back destroys the element of the stack
+		stack.pop_back();
+		if (!current)
+			continue;
+		if (!current->get_is_deletable())
+			return current;
+		for (const auto& child : current->get_children()) stack.push_back(child);
+	}
+	return nullptr;
+}
+
 std::shared_ptr<Node> Selection_Manager::get_selected_node(Node_Manager* node_manager) const
 {
 	if (selected_node_id == 0)
@@ -376,6 +393,16 @@ void Selection_Manager::delete_selected(Node_Manager* node_manager)
 	{ // a node that cannot be selected (a camera, for example) is not deleted through the selection
 		std::cout << "[INFO::SELECTION_MANAGER::delete_selected] Node '" << node->get_name() << "' (id " << selected_node_id
 				  << ") cannot be selected, so it is not deleted" << std::endl;
+		return;
+	}
+	if (const auto undeletable = find_undeletable_node(node))
+	{ // a node that cannot be deleted is kept, and so is a group that contains one (deleting the group would delete it)
+		if (undeletable == node)
+			std::cout << "[INFO::SELECTION_MANAGER::delete_selected] Node '" << node->get_name() << "' (id " << selected_node_id
+					  << ") cannot be deleted" << std::endl;
+		else
+			std::cout << "[INFO::SELECTION_MANAGER::delete_selected] Node '" << node->get_name() << "' (id " << selected_node_id
+					  << ") is not deleted, since it contains '" << undeletable->get_name() << "', which cannot be deleted" << std::endl;
 		return;
 	}
 	if (node == Core::get_instance()->get_scene_manager()->get_camera())
