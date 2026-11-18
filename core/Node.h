@@ -171,6 +171,12 @@ public:
 	glm::mat4 get_rotation_matrix() const;
 	glm::mat4 get_scale_matrix() const;
 
+	// Changes the local transform of the node so that it stays where it is in the world when it moves from a parent whose world
+	// model matrix is old_parent_world to one whose world model matrix is new_parent_world (the identity matrix for no parent).
+	// Called after the node is given its new parent (a scale or a rotation that the new transform cannot hold, such as a shear,
+	// is lost). A light overrides it, since its position and direction are kept apart from its transform
+	virtual void rebase_transform(const glm::mat4& old_parent_world, const glm::mat4& new_parent_world);
+
 	// Gets the bounding box of the node's own meshes, in local space (invalid if the node has no meshes)
 	Bounding_Box get_local_bounding_box() const;
 	// Gets the bounding box of the node's own meshes, in world space (taking into account the hierarchical

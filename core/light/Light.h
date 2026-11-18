@@ -79,12 +79,27 @@ public:
 	void set_specular(glm::vec3 specular) { this->specular = specular; }
 	void set_light_type(Light_Type type) { light_type = type; }
 
+	// Keeps the light where it is in the world when it is given a new parent: its position and direction (which are relative to its
+	// parent, like a transform) are expressed relative to the new parent, and so is its gizmo, while the transform of the light
+	// itself stays as it is (the identity, unless an application set one)
+	void rebase_transform(const glm::mat4& old_parent_world, const glm::mat4& new_parent_world) override;
+
 	// create the gizmo for the light
 	virtual void create_gizmo() = 0;
 	// Syncronize gizmo's diffuse color with the light's diffuse color
 	void sync_gizmo_color_from_light();
 
 protected:
+	// Protected Methods
+	// -----------------
+	// Converts a point or a direction given relative to the parent of the light (the space of its position and direction) to
+	// world space, so that a light follows its parent; the direction is normalized
+	glm::vec3 to_world_point(const glm::vec3& point) const;
+	glm::vec3 to_world_direction(const glm::vec3& direction) const;
+
+	// Applies a change of space (an affine matrix) to the position and the direction of the light, if it has them
+	virtual void transform_light(const glm::mat4& change) = 0;
+
 	// Protected Attributes
 	// --------------------
 	glm::vec3 ambient;

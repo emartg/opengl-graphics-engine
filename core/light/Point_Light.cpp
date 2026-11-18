@@ -50,6 +50,11 @@ void Point_Light::set_position(glm::vec3 position)
 		gizmo->set_position(position);
 }
 
+void Point_Light::transform_light(const glm::mat4& change)
+{
+	set_position(glm::vec3{ change * glm::vec4{ position, 1.0f } });
+}
+
 void Point_Light::create_gizmo()
 {
 	// create a decahedron shape for the point light gizmo

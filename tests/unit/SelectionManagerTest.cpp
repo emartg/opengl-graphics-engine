@@ -2,7 +2,7 @@
  * SelectionManagerTest.cpp
  * This file contains the unit tests of the rules of the Selection_Manager class that need no OpenGL context: which nodes of a
  * hierarchy the picking and the outline mask draw, and to which ancestor a repeated click climbs, for nodes that can or cannot
- * be selected (Node::set_is_selectable) and that are visible or not.
+ * be selected (Node::set_is_selectable) and that are visible or not, and lights in a hierarchy, drawn through their gizmos.
  */
 
 #include <memory>
@@ -12,6 +12,7 @@
 #include <gtest/gtest.h>
 
 #include "core/Node.h"
+#include "core/light/Point_Light.h"
 #include "core/managers/Selection_Manager.h"
 
 namespace
@@ -126,4 +127,18 @@ TEST(SelectionManagerTest, ARepeatedClickClimbsToTheNearestAncestorThatCanBeSele
 	EXPECT_EQ(Selection_Manager::find_selectable_ancestor(helper), root);
 	EXPECT_EQ(Selection_Manager::find_selectable_ancestor(root), nullptr); // a root has no ancestor
 	EXPECT_EQ(Selection_Manager::find_selectable_ancestor(nullptr), nullptr);
+}
+
+TEST(SelectionManagerTest, ALightInAHierarchyIsPickedAndOutlinedThroughItsGizmo)
+{
+	const auto group = make_node("group");
+	const auto light = std::make_shared<Point_Light>("light");
+	const auto gizmo = make_node("gizmo"); // stands for the gizmo of the light, which needs an OpenGL context
+	gizmo->set_gizmo_type(Gizmo_Type::POINT_LIGHT);
+	group->add_child(light);
+	light->add_child(gizmo);
+
+	// the light itself is left out: drawing it would draw its gizmo a second time, with the transform of the light
+	EXPECT_EQ(names_of(Selection_Manager::collect_pickable_nodes(group)), (std::vector<std::string>{ "group", "gizmo" }));
+	EXPECT_EQ(names_of(Selection_Manager::collect_outlined_nodes(group)), (std::vector<std::string>{ "group", "gizmo" }));
 }

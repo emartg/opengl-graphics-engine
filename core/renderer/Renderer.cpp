@@ -288,6 +288,10 @@ void Renderer::render_scene()
 		if (!node->get_is_visible())
 			return; // skip invisible nodes
 
+		// a light in a hierarchy is drawn with the gizmos of the lights (below), together with its gizmo, which is its child
+		if (node->get_type() == Node_Type::LIGHT)
+			return;
+
 		// if the node is not a pure container, add it to the list of drawables
 		if (node->get_type() != Node_Type::COMPOSITE_MODEL)
 			drawable_nodes.push_back(node);
@@ -404,7 +408,8 @@ void Renderer::render_scene()
 				continue; // skip invisible gizmos
 
 			// set the model matrix and albedo color for the light gizmo
-			single_albedo_shader->set_mat4("u_model", gizmo->get_model_matrix());
+			// the world model matrix, so that the gizmo of a light follows the parent of the light
+			single_albedo_shader->set_mat4("u_model", gizmo->get_world_model_matrix());
 			// use light's diffuse color for the gizmo (to match light color)
 			single_albedo_shader->set_vec3("u_albedo", light->get_diffuse());
 
@@ -419,9 +424,9 @@ void Renderer::render_scene()
 					auto& direction_line = directional_light->get_gizmo_direction_line();
 					if (direction_line)
 					{
-						// set the model matrix and albedo color for the direction line
-						// identity matrix for the line (as it does not need any further transformation)
-						single_albedo_shader->set_mat4("u_model", glm::mat4(1.0f));
+						// set the model matrix and albedo color for the direction line: the vertices of the line are
+						// relative to the parent of the light, like its position and direction
+						single_albedo_shader->set_mat4("u_model", directional_light->get_world_model_matrix());
 						// use light's diffuse color for the direction line (to match light color)
 						single_albedo_shader->set_vec3("u_albedo", directional_light->get_diffuse());
 
@@ -638,7 +643,7 @@ void Renderer::upload_lights()
 				auto directional_light = dynamic_cast<Directional_Light*>(light);
 				directional_lights.push_back(
 					Light_Data{ glm::vec4{ 0.0f, 0.0f, 0.0f, DIRECTIONAL_LIGHT },
-								glm::vec4{ directional_light->get_direction(), 0.0f },
+								glm::vec4{ directional_light->get_direction_in_world(), 0.0f },
 								glm::vec4{ directional_light->get_ambient(), 0.0f },
 								glm::vec4{ directional_light->get_diffuse(), 0.0f },
 								glm::vec4{ directional_light->get_specular(), 0.0f },
@@ -650,7 +655,7 @@ void Renderer::upload_lights()
 			{
 				auto point_light = dynamic_cast<Point_Light*>(light);
 				point_lights.push_back(
-					Light_Data{ glm::vec4{ point_light->get_position(), POINT_LIGHT },
+					Light_Data{ glm::vec4{ point_light->get_position_in_world(), POINT_LIGHT },
 								glm::vec4{ 0.0f },
 								glm::vec4{ point_light->get_ambient(), 0.0f },
 								glm::vec4{ point_light->get_diffuse(), 0.0f },
@@ -663,8 +668,8 @@ void Renderer::upload_lights()
 			{
 				auto spotlight = dynamic_cast<Spotlight*>(light);
 				spotlights.push_back(
-					Light_Data{ glm::vec4{ spotlight->get_position(), SPOTLIGHT },
-								glm::vec4{ spotlight->get_direction(), 0.0f },
+					Light_Data{ glm::vec4{ spotlight->get_position_in_world(), SPOTLIGHT },
+								glm::vec4{ spotlight->get_direction_in_world(), 0.0f },
 								glm::vec4{ spotlight->get_ambient(), 0.0f },
 								glm::vec4{ spotlight->get_diffuse(), 0.0f },
 								glm::vec4{ spotlight->get_specular(), 0.0f },

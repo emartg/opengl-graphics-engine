@@ -450,7 +450,7 @@ void GUI::draw_scene_graph_window()
 		ImGui::TextWrapped(
 			"Left click: Select node\n"
 			"Left click empty space: Clear selection\n"
-			"Drag models to group/ungroup\n"
+			"Drag models and lights to group/ungroup\n"
 			"Drop on empty space to make a root node\n"
 			"Del/Supr: Delete selected node");
 		ImGui::Separator();
@@ -504,21 +504,14 @@ void GUI::draw_scene_graph_window()
 				// only process if the dragged node exists, is draggable, and has a parent
 				if (dragged_node && dragged_node->get_is_draggable() && dragged_node->get_parent())
 				{
-					// preserve the node's world transform before un-parenting
-					const glm::mat4 world_transform = dragged_node->get_world_model_matrix();
+					// the world transform of the old parent, to keep the node where it is in the world
+					const glm::mat4 old_parent_world = dragged_node->get_parent()->get_world_model_matrix();
 
 					// remove from old parent. this sets the node's parent to nullptr
 					dragged_node->get_parent()->remove_child(dragged_node);
 
-					// decompose the world matrix and set it as the new local transform
-					glm::vec3 scale, translation, skew;
-					glm::quat rotation;
-					glm::vec4 perspective;
-					glm::decompose(world_transform, scale, rotation, translation, skew, perspective);
-
-					dragged_node->set_position(translation);
-					dragged_node->set_rotation(rotation);
-					dragged_node->set_scale(scale);
+					// express the transform of the node relative to the world (no parent)
+					dragged_node->rebase_transform(old_parent_world, glm::mat4{ 1.0f });
 
 					std::cout << "[INFO::GUI::draw_scene_graph_window] Node '" << dragged_node->get_name() << "' (id " << dragged_node_id
 							  << ") is now a root node" << std::endl;
@@ -1446,28 +1439,19 @@ void GUI::draw_tree_node_recursive(const std::shared_ptr<Node>& node)
 			// if the operation is valid, proceed with re-parenting and transform preservation
 			if (is_valid_operation)
 			{
-				// preserve the world transform before re-parenting
-				const glm::mat4 world_transform = dragged_node->get_world_model_matrix();
+				// the world transform of the old parent (the identity for a root node), to keep the node where it is in the world
+				glm::mat4 old_parent_world{ 1.0f };
 
 				// re-parent the node
 				if (auto old_parent = dragged_node->get_parent())
+				{
+					old_parent_world = old_parent->get_world_model_matrix();
 					old_parent->remove_child(dragged_node);
+				}
 				target_node->add_child(dragged_node);
 
-				// calculate the new local transform to maintain the original world transform
-				const glm::mat4 parent_world_transform         = target_node->get_world_model_matrix();
-				const glm::mat4 parent_world_transform_inverse = glm::inverse(parent_world_transform);
-				const glm::mat4 new_local_transform            = parent_world_transform_inverse * world_transform;
-
-				// decompose the new local matrix and apply it to the dragged node
-				glm::vec3 scale, translation, skew;
-				glm::quat rotation;
-				glm::vec4 perspective;
-				glm::decompose(new_local_transform, scale, rotation, translation, skew, perspective);
-
-				dragged_node->set_position(translation);
-				dragged_node->set_rotation(rotation);
-				dragged_node->set_scale(scale);
+				// express the transform of the node (or the position and direction of a light) relative to the new parent
+				dragged_node->rebase_transform(old_parent_world, target_node->get_world_model_matrix());
 
 				std::cout << "[INFO::GUI::draw_tree_node_recursive] Reparented node '" << dragged_node->get_name() << "' to '"
 						  << target_node->get_name() << "'" << std::endl;

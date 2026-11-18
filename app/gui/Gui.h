@@ -18,8 +18,6 @@
 #include <vector>
 
 #include <glm/glm.hpp>
-#define GLM_ENABLE_EXPERIMENTAL
-#include <glm/gtx/matrix_decompose.hpp> // for glm::decompose
 
 #include <imgui.h>
 #include <imgui_internal.h>
