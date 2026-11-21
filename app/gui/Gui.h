@@ -13,6 +13,7 @@
 #include <array>
 #include <iostream>
 #include <memory>
+#include <span>
 #include <string>
 #include <unordered_set>
 #include <vector>
@@ -57,6 +58,31 @@ public:
 	void draw() override;
 
 private:
+	// Private Types
+	// -------------
+	// A window of a side bar, as configure_gui_layout sees it: whether it is shown, its share of the height of the bar, and
+	// where its position and size are stored
+	struct Bar_Window
+	{
+		bool    is_shown;
+		float*  share;
+		ImVec2* position;
+		ImVec2* size;
+	};
+	// A splitter of the side bars: the inner edge of a bar (dragged sideways, it changes the width of the bar) or the gap
+	// between two windows of a bar (dragged up or down, it moves height from one window to the other)
+	struct Layout_Splitter
+	{
+		std::string label;                  // label of the invisible window that holds the splitter
+		ImVec2      position, size;         // rectangle of the splitter in the display
+		bool        is_bar_edge{ false };   // the inner edge of a bar (otherwise the gap between two windows)
+		bool        is_left_bar{ false };   // whether it belongs to the left bar
+		float*      upper_share{ nullptr }; // shares of the windows above and below a gap
+		float*      lower_share{ nullptr };
+		float       upper_top{ 0.0f };   // top of the window above a gap
+		float       pair_height{ 0.0f }; // height of the two windows of a gap and of the gap itself
+	};
+
 	// Private Attributes
 	// ------------------
 	std::unique_ptr<Random> randomizer; // random generator to get random colors, positions, etc.
@@ -85,22 +111,16 @@ private:
 	// last selected id used to refresh the auto-open ids set (allows manual collapsing)
 	std::uint32_t last_auto_open_selected_id{ 0 };
 
-	// parameters for the GUI layout and windows
-	// relative widths and heights of the windows relative to the display size
-	float scene_graph_window_relative_width, scene_graph_window_relative_height;
-	float assets_window_relative_width, assets_window_relative_height;
-	float creation_window_relative_width, creation_window_relative_height;
-	float properties_window_relative_width, properties_window_relative_height;
-	float debug_window_relative_width, debug_window_relative_height;
-	// offsets the windows from the edges of the display
-	float scene_graph_window_x_offset, scene_graph_window_y_offset;
-	float assets_window_x_offset, assets_window_y_offset;
-	float properties_window_x_offset, properties_window_y_offset;
-	float creation_window_x_offset, creation_window_y_offset;
-	float debug_window_x_offset, debug_window_y_offset;
-	// padding of the windows from the edges of the display
-	ImVec2 window_position_padding, window_size_padding;
-	// positions and sizes of the windows in the display
+	// the side bars of the layout: the left bar holds the Scene Graph and the Assets windows, and the right bar the Properties,
+	// the Creation, and the Debug windows. Each bar spans the height below the menu bar, its width is a fraction of the width of
+	// the display, and each window of a bar takes a share of its height (a hidden window leaves its share to the others, and a
+	// bar without a window shown is not drawn). The splitters of the bars change these values (set by init_gui_layout_attributes)
+	float                left_bar_relative_width{ 0.0f }, right_bar_relative_width{ 0.0f };
+	std::array<float, 2> left_bar_shares{};  // Scene Graph, Assets
+	std::array<float, 3> right_bar_shares{}; // Properties, Creation, Debug
+	// the splitters of the current frame (set by configure_gui_layout, drawn by draw_layout_splitters)
+	std::vector<Layout_Splitter> layout_splitters;
+	// positions and sizes of the windows in the display (set by configure_gui_layout every frame)
 	ImVec2 scene_graph_window_position, properties_window_position, creation_window_position, debug_window_position;
 	ImVec2 scene_graph_window_size, properties_window_size, creation_window_size, debug_window_size;
 	ImVec2 assets_window_position, assets_window_size;
@@ -149,16 +169,29 @@ private:
 	// default values for distances from the origin
 	static constexpr float MIN_DISTANCE_TO_ORIGIN{ 4.0f }, MAX_DISTANCE_TO_ORIGIN{ 15.0f };
 
+	// the size of the gaps around the windows of the side bars, where the splitters are, and the limits of the splitters
+	static constexpr float LAYOUT_GAP{ 10.0f };
+	static constexpr float MIN_BAR_WIDTH{ 220.0f }, MAX_BAR_RELATIVE_WIDTH{ 0.4f };
+	static constexpr float MIN_BAR_WINDOW_HEIGHT{ 80.0f };
+	// flags of the windows of the side bars: their position and size come from the layout, so they cannot be moved, resized, or
+	// collapsed by themselves
+	static constexpr ImGuiWindowFlags BAR_WINDOW_FLAGS{ ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoMove |
+														ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse };
+
 	// Private Methods
 	// ---------------
-	// Initializes the GUI layout attributes that do not depend on the display size
+	// Sets the default layout: the widths of the side bars and the shares of their windows
 	void init_gui_layout_attributes();
 
 	// Configures the ImGui style (fonts, colors, etc.)
 	void configure_gui_style();
 
-	// Sets the GUI layout attributes based on the current display size
+	// Sets the positions and the sizes of the windows of the side bars, and their splitters, for the current display size
 	void configure_gui_layout();
+	// Lays out the windows of one side bar (from top to bottom) in the given horizontal span, and adds its splitters
+	void lay_out_side_bar(std::span<const Bar_Window> windows, float left, float width, bool is_left_bar);
+	// Draws the splitters of the side bars, and applies the drag of the one that the user holds
+	void draw_layout_splitters();
 	// Draws the GUI windows
 	void draw_gui_windows();
 
@@ -166,7 +199,7 @@ private:
 	void draw_main_menu_bar();
 	// Handles input events for ImGui
 	void handle_gui_input() const;
-	// Resets all GUI windows to their default layout for the current display size
+	// Shows every window again and resets the side bars to their default layout
 	void reset_gui_layout();
 
 	// Draws the Scene Graph Window with a hierarchical tree view of all nodes
