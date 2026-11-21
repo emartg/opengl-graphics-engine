@@ -122,13 +122,15 @@ void Assets_Window::draw(const ImVec2& position, const ImVec2& size, ImFont* bol
 	if (!*is_open)
 		return;
 
-	// set initial size and position for the window
-	ImGui::SetNextWindowSize(size, ImGuiCond_Appearing);
-	ImGui::SetNextWindowPos(position, ImGuiCond_Appearing);
-	ImGui::SetNextWindowCollapsed(false, ImGuiCond_Appearing);
+	// the position and the size come from the layout of the GUI, every frame
+	ImGui::SetNextWindowSize(size, ImGuiCond_Always);
+	ImGui::SetNextWindowPos(position, ImGuiCond_Always);
 
 	ImGui::PushFont(bold_font);
-	ImGui::Begin("ASSETS", is_open, ImGuiWindowFlags_NoFocusOnAppearing);
+	ImGui::Begin(
+		"ASSETS",
+		is_open,
+		ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
 	ImGui::PopFont();
 
 	ensure_scanned();

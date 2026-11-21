@@ -168,31 +168,12 @@ void GUI::draw()
 // ---------------
 void GUI::init_gui_layout_attributes()
 {
-	// set the private variables for the GUI layout
-	scene_graph_window_relative_width  = 0.25f;
-	scene_graph_window_relative_height = 0.55f;
-	assets_window_relative_width       = 0.25f;
-	assets_window_relative_height      = 1.0f - scene_graph_window_relative_height;
-	properties_window_relative_width   = 0.25f;
-	properties_window_relative_height  = 0.4f;
-	creation_window_relative_width     = 0.25f;
-	creation_window_relative_height    = 0.2f;
-	debug_window_relative_width        = 0.25f;
-	debug_window_relative_height       = 0.4f;
-
-	scene_graph_window_x_offset = 0.0f;
-	scene_graph_window_y_offset = 0.0f;
-	assets_window_x_offset      = 0.0f;
-	assets_window_y_offset      = scene_graph_window_relative_height;
-	properties_window_x_offset  = 1.0f - properties_window_relative_width;
-	properties_window_y_offset  = 0.0f;
-	creation_window_x_offset    = 1.0f - creation_window_relative_width;
-	creation_window_y_offset    = properties_window_relative_height;
-	debug_window_x_offset       = 1.0f - debug_window_relative_width;
-	debug_window_y_offset       = 1.0f - debug_window_relative_height;
-
-	window_position_padding = ImVec2{ 10.f, 10.0f };
-	window_size_padding     = ImVec2{ 20.f, 20.0f };
+	// the default layout: each bar takes a quarter of the width of the display; the Scene Graph takes a little more than half of
+	// the left bar, and the Properties and the Debug windows twice the height of the Creation window
+	left_bar_relative_width  = 0.25f;
+	right_bar_relative_width = 0.25f;
+	left_bar_shares          = { 0.55f, 0.45f };
+	right_bar_shares         = { 0.4f, 0.2f, 0.4f };
 }
 
 void GUI::configure_gui_style()
@@ -286,65 +267,156 @@ void GUI::configure_gui_style()
 
 void GUI::configure_gui_layout()
 {
-	ImGuiIO& io = ImGui::GetIO(); // get ImGui IO object for font and style settings
+	const ImGuiIO& io = ImGui::GetIO();
+	layout_splitters.clear();
 
-	// the windows are laid out in the area below the menu bar
-	const float top    = ImGui::GetFrameHeight();
-	const float height = io.DisplaySize.y - top;
+	// the windows of each side bar, from top to bottom
+	const std::array<Bar_Window, 2> left_windows{
+		Bar_Window{ show_scene_graph_window, &left_bar_shares[0], &scene_graph_window_position, &scene_graph_window_size },
+		Bar_Window{ show_assets_window, &left_bar_shares[1], &assets_window_position, &assets_window_size }
+	};
+	const std::array<Bar_Window, 3> right_windows{
+		Bar_Window{ show_properties_window, &right_bar_shares[0], &properties_window_position, &properties_window_size },
+		Bar_Window{ show_creation_window, &right_bar_shares[1], &creation_window_position, &creation_window_size },
+		Bar_Window{ show_debug_window, &right_bar_shares[2], &debug_window_position, &debug_window_size }
+	};
 
-	// position of the Scene Graph Window - top left corner with padding
-	scene_graph_window_position = ImVec2{
-		io.DisplaySize.x * scene_graph_window_x_offset + window_position_padding.x, // x position
-		top + height * scene_graph_window_y_offset + window_position_padding.y      // y position
+	// the width of a bar in pixels, kept within its limits (a narrow display may not hold the smallest width), or 0 if none of
+	// its windows is shown
+	const auto bar_width = [&io](float relative_width, std::span<const Bar_Window> windows) {
+		const bool any_shown = std::any_of(windows.begin(), windows.end(), [](const Bar_Window& window) { return window.is_shown; });
+		if (!any_shown)
+			return 0.0f;
+		return std::min(std::max(relative_width * io.DisplaySize.x, MIN_BAR_WIDTH), MAX_BAR_RELATIVE_WIDTH * io.DisplaySize.x);
 	};
-	// size (width and height) of the Scene Graph Window (it ends where the Assets Window starts, like the windows of
-	// the right side)
-	scene_graph_window_size = ImVec2{
-		io.DisplaySize.x * scene_graph_window_relative_width - window_size_padding.x, // width
-		height * scene_graph_window_relative_height - window_size_padding.y * 0.5f    // height
-	};
-	// position of the Assets Window - left side, below the Scene Graph with padding
-	assets_window_position = ImVec2{
-		io.DisplaySize.x * assets_window_x_offset + window_position_padding.x, // x position
-		top + height * assets_window_y_offset + window_position_padding.y      // y position
-	};
-	// size (width and height) of the Assets Window (it ends at the bottom edge with padding)
-	assets_window_size = ImVec2{
-		io.DisplaySize.x * assets_window_relative_width - window_size_padding.x, // width
-		height * assets_window_relative_height - window_size_padding.y           // height
-	};
-	// position of the Properties Window - top right corner with padding
-	properties_window_position = ImVec2{
-		io.DisplaySize.x * properties_window_x_offset + window_position_padding.x, // x position
-		top + height * properties_window_y_offset + window_position_padding.y      // y position
-	};
-	// size (width and height) of the Properties Window
-	properties_window_size = ImVec2{
-		io.DisplaySize.x * properties_window_relative_width - window_size_padding.x, // width
-		height * properties_window_relative_height - window_size_padding.y * 0.5f    // height
-	};
-	// position of the Creation Window - right side, below Properties with padding
-	creation_window_position = ImVec2{
-		io.DisplaySize.x * creation_window_x_offset + window_position_padding.x, // x position
-		top + height * creation_window_y_offset + window_position_padding.y      // y position
-	};
-	// size (width and height) of the Creation Window
-	// (account for the padding between Creation and Debug Windows)
-	creation_window_size = ImVec2{
-		io.DisplaySize.x * creation_window_relative_width - window_size_padding.x, // width
-		height * creation_window_relative_height - window_position_padding.y       // height
-	};
-	// position of the Debug Window - bottom right corner with padding
-	// (no vertical padding at top since Creation window handles the gap)
-	debug_window_position = ImVec2{
-		io.DisplaySize.x * debug_window_x_offset + window_position_padding.x, // x position
-		top + height * debug_window_y_offset + window_position_padding.y      // y position
-	};
-	// size (width and height) of the Debug Window
-	debug_window_size = ImVec2{
-		io.DisplaySize.x * debug_window_relative_width - window_size_padding.x, // width
-		height * debug_window_relative_height - window_size_padding.y           // height
-	};
+	const float left_width  = bar_width(left_bar_relative_width, left_windows);
+	const float right_width = bar_width(right_bar_relative_width, right_windows);
+
+	lay_out_side_bar(left_windows, 0.0f, left_width, true);
+	lay_out_side_bar(right_windows, io.DisplaySize.x - right_width, right_width, false);
+}
+
+void GUI::lay_out_side_bar(std::span<const Bar_Window> windows, float left, float width, bool is_left_bar)
+{
+	if (width <= 0.0f)
+		return; // the bar is not drawn
+
+	// the bar spans the height below the menu bar; the windows shown divide it after the gaps above, between, and below them
+	const float top         = ImGui::GetFrameHeight();
+	const float height      = ImGui::GetIO().DisplaySize.y - top;
+	std::size_t shown_count = 0;
+	float       total_share = 0.0f;
+	for (const auto& window : windows)
+		if (window.is_shown)
+		{
+			++shown_count;
+			total_share += *window.share;
+		}
+	const float available = std::max(height - LAYOUT_GAP * static_cast<float>(shown_count + 1), 0.0f);
+
+	// each window is placed below the previous one, and a splitter fills the gap between two windows
+	float             y{ top + LAYOUT_GAP };
+	const Bar_Window* upper{ nullptr };
+	float             upper_top{ 0.0f }, upper_height{ 0.0f };
+	for (const auto& window : windows)
+	{
+		if (!window.is_shown)
+			continue;
+		const float window_height = total_share > 0.0f ? available * *window.share / total_share : 0.0f;
+		*window.position          = ImVec2{ left + LAYOUT_GAP, y };
+		*window.size              = ImVec2{ width - 2.0f * LAYOUT_GAP, window_height };
+		if (upper)
+		{
+			Layout_Splitter splitter;
+			splitter.label = std::string{ is_left_bar ? "##left_bar_gap_" : "##right_bar_gap_" } + std::to_string(layout_splitters.size());
+			splitter.position    = ImVec2{ left + LAYOUT_GAP, y - LAYOUT_GAP };
+			splitter.size        = ImVec2{ width - 2.0f * LAYOUT_GAP, LAYOUT_GAP };
+			splitter.is_left_bar = is_left_bar;
+			splitter.upper_share = upper->share;
+			splitter.lower_share = window.share;
+			splitter.upper_top   = upper_top;
+			splitter.pair_height = upper_height + LAYOUT_GAP + window_height;
+			layout_splitters.push_back(std::move(splitter));
+		}
+		upper        = &window;
+		upper_top    = y;
+		upper_height = window_height;
+		y += window_height + LAYOUT_GAP;
+	}
+
+	// the inner edge of the bar: the gap between its windows and the rest of the display
+	Layout_Splitter edge;
+	edge.label       = is_left_bar ? "##left_bar_edge" : "##right_bar_edge";
+	edge.position    = ImVec2{ is_left_bar ? left + width - LAYOUT_GAP : left, top };
+	edge.size        = ImVec2{ LAYOUT_GAP, height };
+	edge.is_bar_edge = true;
+	edge.is_left_bar = is_left_bar;
+	layout_splitters.push_back(std::move(edge));
+}
+
+void GUI::draw_layout_splitters()
+{
+	const ImGuiIO& io = ImGui::GetIO();
+
+	// each splitter is an invisible window over its gap, so that it takes the mouse like the windows (and the camera does not)
+	constexpr ImGuiWindowFlags flags{ ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings |
+									  ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav };
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{ 0.0f, 0.0f });
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowMinSize, ImVec2{ 1.0f, 1.0f });
+	for (const auto& splitter : layout_splitters)
+	{
+		ImGui::SetNextWindowPos(splitter.position);
+		ImGui::SetNextWindowSize(splitter.size);
+		ImGui::Begin(splitter.label.c_str(), nullptr, flags);
+		ImGui::InvisibleButton("##splitter", splitter.size);
+		const bool is_hovered{ ImGui::IsItemHovered() };
+		const bool is_held{ ImGui::IsItemActive() };
+
+		if (is_hovered || is_held)
+		{ // the cursor and a line along the middle of the gap show that it can be dragged
+			ImGui::SetMouseCursor(splitter.is_bar_edge ? ImGuiMouseCursor_ResizeEW : ImGuiMouseCursor_ResizeNS);
+			const ImU32  color{ ImGui::GetColorU32(is_held ? ImGuiCol_SeparatorActive : ImGuiCol_SeparatorHovered) };
+			const ImVec2 middle{ splitter.position.x + splitter.size.x * 0.5f, splitter.position.y + splitter.size.y * 0.5f };
+			if (splitter.is_bar_edge)
+				ImGui::GetWindowDrawList()->AddLine(
+					ImVec2{ middle.x, splitter.position.y },
+					ImVec2{ middle.x, splitter.position.y + splitter.size.y },
+					color,
+					2.0f);
+			else
+				ImGui::GetWindowDrawList()->AddLine(
+					ImVec2{ splitter.position.x, middle.y },
+					ImVec2{ splitter.position.x + splitter.size.x, middle.y },
+					color,
+					2.0f);
+		}
+
+		if (is_held && splitter.is_bar_edge && io.DisplaySize.x > 0.0f)
+		{ // the edge follows the mouse: the width of the bar, as a fraction of the display, within its limits
+			const float width =
+				splitter.is_left_bar ? io.MousePos.x + LAYOUT_GAP * 0.5f : io.DisplaySize.x - io.MousePos.x + LAYOUT_GAP * 0.5f;
+			const float relative_width = std::clamp(width / io.DisplaySize.x, 0.0f, MAX_BAR_RELATIVE_WIDTH);
+			(splitter.is_left_bar ? left_bar_relative_width : right_bar_relative_width) =
+				std::max(relative_width, MIN_BAR_WIDTH / io.DisplaySize.x);
+		}
+		else if (is_held && !splitter.is_bar_edge)
+		{ // the gap follows the mouse: the two windows share their heights differently, each keeping a minimum height
+			const float heights{ splitter.pair_height - LAYOUT_GAP };
+			if (heights > 2.0f * MIN_BAR_WINDOW_HEIGHT)
+			{
+				const float upper_height = std::clamp(
+					io.MousePos.y - LAYOUT_GAP * 0.5f - splitter.upper_top,
+					MIN_BAR_WINDOW_HEIGHT,
+					heights - MIN_BAR_WINDOW_HEIGHT);
+				const float shares{ *splitter.upper_share + *splitter.lower_share };
+				*splitter.upper_share = shares * upper_height / heights;
+				*splitter.lower_share = shares - *splitter.upper_share;
+			}
+		}
+		ImGui::End();
+	}
+	ImGui::PopStyleVar(3);
 }
 
 void GUI::draw_gui_windows()
@@ -355,6 +427,7 @@ void GUI::draw_gui_windows()
 	draw_properties_window();
 	draw_creation_window();
 	draw_debug_window();
+	draw_layout_splitters();
 	draw_material_editor_window();
 }
 
@@ -397,32 +470,10 @@ void GUI::handle_gui_input() const
 
 void GUI::reset_gui_layout()
 {
-	// every window is shown again
+	// every window is shown again, and the side bars take their default widths and shares (the windows follow them from the
+	// next frame, since configure_gui_layout places them every frame)
 	show_scene_graph_window = show_assets_window = show_properties_window = show_creation_window = show_debug_window = true;
-
-	// recalculate layout for current window size
-	configure_gui_layout();
-
-	// reset all window states (positions, sizes, collapsed states)
-	ImGui::SetWindowPos("SCENE GRAPH", scene_graph_window_position);
-	ImGui::SetWindowSize("SCENE GRAPH", scene_graph_window_size);
-	ImGui::SetWindowCollapsed("SCENE GRAPH", false);
-
-	ImGui::SetWindowPos("ASSETS", assets_window_position);
-	ImGui::SetWindowSize("ASSETS", assets_window_size);
-	ImGui::SetWindowCollapsed("ASSETS", false);
-
-	ImGui::SetWindowPos("DEBUG", debug_window_position);
-	ImGui::SetWindowSize("DEBUG", debug_window_size);
-	ImGui::SetWindowCollapsed("DEBUG", false);
-
-	ImGui::SetWindowPos("PROPERTIES", properties_window_position);
-	ImGui::SetWindowSize("PROPERTIES", properties_window_size);
-	ImGui::SetWindowCollapsed("PROPERTIES", false);
-
-	ImGui::SetWindowPos("CREATION", creation_window_position);
-	ImGui::SetWindowSize("CREATION", creation_window_size);
-	ImGui::SetWindowCollapsed("CREATION", false);
+	init_gui_layout_attributes();
 
 	// log info message
 	std::cout << "[INFO::GUI::reset_gui_layout] GUI layout reset to default" << std::endl;
@@ -434,16 +485,14 @@ void GUI::draw_scene_graph_window()
 	if (!show_scene_graph_window)
 		return;
 
-	// set initial size and position for the Scene Graph Window
-	ImGui::SetNextWindowSize(scene_graph_window_size, ImGuiCond_Appearing);
-	ImGui::SetNextWindowPos(scene_graph_window_position, ImGuiCond_Appearing);
-	// set the Scene Graph Window to be expanded (i.e. not minimized)
-	ImGui::SetNextWindowCollapsed(false, ImGuiCond_Appearing);
+	// the position and the size come from the layout of the side bars (configure_gui_layout), every frame
+	ImGui::SetNextWindowSize(scene_graph_window_size, ImGuiCond_Always);
+	ImGui::SetNextWindowPos(scene_graph_window_position, ImGuiCond_Always);
 
 	{ // show a window that displays the scene graph as a hierarchical tree
 		// begin the Scene Graph window
 		ImGui::PushFont(bold_font);
-		ImGui::Begin("SCENE GRAPH", &show_scene_graph_window, ImGuiWindowFlags_NoFocusOnAppearing);
+		ImGui::Begin("SCENE GRAPH", &show_scene_graph_window, BAR_WINDOW_FLAGS);
 		ImGui::PopFont();
 
 		// display instruction text
@@ -572,16 +621,14 @@ void GUI::draw_properties_window()
 	auto& node_manager      = Core::get_instance()->get_node_manager();
 	auto& selection_manager = Core::get_instance()->get_selection_manager();
 
-	// set initial size and position for the Properties Window
-	ImGui::SetNextWindowSize(properties_window_size, ImGuiCond_Appearing);
-	ImGui::SetNextWindowPos(properties_window_position, ImGuiCond_Appearing);
-	// set the Properties Window to be expanded (i.e. not minimized)
-	ImGui::SetNextWindowCollapsed(false, ImGuiCond_Appearing);
+	// the position and the size come from the layout of the side bars (configure_gui_layout), every frame
+	ImGui::SetNextWindowSize(properties_window_size, ImGuiCond_Always);
+	ImGui::SetNextWindowPos(properties_window_position, ImGuiCond_Always);
 
 	{ // show a window that allows the user to change the properties of the nodes in the scene
 		// begin the Properties window
 		ImGui::PushFont(bold_font);
-		ImGui::Begin("PROPERTIES", &show_properties_window, ImGuiWindowFlags_NoFocusOnAppearing);
+		ImGui::Begin("PROPERTIES", &show_properties_window, BAR_WINDOW_FLAGS);
 		ImGui::PopFont();
 
 		auto selected = selection_manager->get_selected_node(node_manager.get());
@@ -655,16 +702,14 @@ void GUI::draw_creation_window()
 	if (!show_creation_window)
 		return;
 
-	// set initial size and position for the create Window
-	ImGui::SetNextWindowSize(creation_window_size, ImGuiCond_Appearing);
-	ImGui::SetNextWindowPos(creation_window_position, ImGuiCond_Appearing);
-	// set the create Window to be expanded (i.e. not minimized)
-	ImGui::SetNextWindowCollapsed(false, ImGuiCond_Appearing);
+	// the position and the size come from the layout of the side bars (configure_gui_layout), every frame
+	ImGui::SetNextWindowSize(creation_window_size, ImGuiCond_Always);
+	ImGui::SetNextWindowPos(creation_window_position, ImGuiCond_Always);
 
 	{ // show a window that contains buttons to add new objects to the scene
 		// begin the Creation window
 		ImGui::PushFont(bold_font);
-		ImGui::Begin("CREATION", &show_creation_window, ImGuiWindowFlags_NoFocusOnAppearing);
+		ImGui::Begin("CREATION", &show_creation_window, BAR_WINDOW_FLAGS);
 		ImGui::PopFont();
 
 		// button to add a new directional light to the scene
@@ -782,16 +827,14 @@ void GUI::draw_debug_window()
 	if (!show_debug_window)
 		return;
 
-	// set initial size and position for the Debug Window
-	ImGui::SetNextWindowSize(debug_window_size, ImGuiCond_Appearing);
-	ImGui::SetNextWindowPos(debug_window_position, ImGuiCond_Appearing);
-	// set the Debug Window to be expanded (i.e. not minimized)
-	ImGui::SetNextWindowCollapsed(false, ImGuiCond_Appearing);
+	// the position and the size come from the layout of the side bars (configure_gui_layout), every frame
+	ImGui::SetNextWindowSize(debug_window_size, ImGuiCond_Always);
+	ImGui::SetNextWindowPos(debug_window_position, ImGuiCond_Always);
 
 	{ // show a window that contains debug information and controls
 		// begin the Debug window
 		ImGui::PushFont(bold_font);
-		ImGui::Begin("DEBUG", &show_debug_window, ImGuiWindowFlags_NoFocusOnAppearing);
+		ImGui::Begin("DEBUG", &show_debug_window, BAR_WINDOW_FLAGS);
 		ImGui::PopFont();
 
 		// get the renderer screen debug params from the Core instance

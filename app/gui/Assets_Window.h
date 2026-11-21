@@ -27,9 +27,9 @@ class Assets_Window
 public:
 	// Public Methods
 	// --------------
-	// Draws the window. The position and the size are used when the window appears (the layout is reset from the GUI),
-	// and the bold font draws the titles. The window has a close button that clears is_open, and nothing is drawn
-	// while it is false
+	// Draws the window at the given position and size (the place that the layout of the GUI gives it, every frame; it cannot be
+	// moved, resized, or collapsed by itself), with the titles in the bold font. The window has a close button that clears
+	// is_open, and nothing is drawn while it is false
 	void draw(const ImVec2& position, const ImVec2& size, ImFont* bold_font, bool* is_open);
 
 	// Draws, read only, the attributes of the selected assets and folders (for the Properties window)
