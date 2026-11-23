@@ -186,7 +186,8 @@ private:
 	// Configures the ImGui style (fonts, colors, etc.)
 	void configure_gui_style();
 
-	// Sets the positions and the sizes of the windows of the side bars, and their splitters, for the current display size
+	// Sets the positions and the sizes of the windows of the side bars, and their splitters, for the current display size, and
+	// gives the Core the area between the bars as the scene viewport (where the scene is drawn and picked)
 	void configure_gui_layout();
 	// Lays out the windows of one side bar (from top to bottom) in the given horizontal span, and adds its splitters
 	void lay_out_side_bar(std::span<const Bar_Window> windows, float left, float width, bool is_left_bar);

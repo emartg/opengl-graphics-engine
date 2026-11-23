@@ -204,6 +204,9 @@ void GLFW_Renderer::cursor_pos_callback(GLFWwindow* window, double xpos, double 
 
 void GLFW_Renderer::scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
+	if (!is_cursor_in_scene_viewport(window))
+		return; // the wheel moves the camera only over the view of the scene
+
 	// delegate the scroll callback to the Input_Manager
 	Core::get_instance()->get_input_manager()->scroll_callback(xoffset, yoffset);
 }
@@ -239,32 +242,57 @@ void GLFW_Renderer::mouse_button_callback(GLFWwindow* window, int button, int ac
 		if (io.WantCaptureMouse)
 			return; // ignore clicks over GUI
 
-		// get the current cursor position
+		// get the current cursor position in pixels of the framebuffer (on high-DPI displays, the window size in screen coordinates
+		// differs from the framebuffer size in pixels)
 		double xpos, ypos;
-		glfwGetCursorPos(window, &xpos, &ypos);
+		get_cursor_in_framebuffer(window, xpos, ypos);
 
-		// use the actual default framebuffer size for correct Y-inversion and HiDPI support
-		// - Y-flip: OpenGL's origin is at the bottom-left corner,
-		//   while windowing systems have it at the top-left
-		// - HiDPI: the window size in screen coordinates may differ from the framebuffer size in pixels
-		//   on high-DPI displays
-		int fb_width, fb_height;
-		glfwGetFramebufferSize(window, &fb_width, &fb_height);
-
-		// queue a pick request in the selection manager
-		auto core = Core::get_instance();
-		core->get_selection_manager()->queue_pick(xpos, ypos, fb_width, fb_height);
+		// only a click over the scene viewport picks, at its position in the viewport (whose size the picking pass has)
+		auto                 core           = Core::get_instance();
+		const Scene_Viewport scene_viewport = core->get_scene_viewport();
+		if (!scene_viewport.contains(xpos, ypos))
+			return;
+		core->get_selection_manager()->queue_pick(
+			xpos - scene_viewport.x,
+			ypos - scene_viewport.y,
+			static_cast<GLsizei>(scene_viewport.width),
+			static_cast<GLsizei>(scene_viewport.height));
 	}
 	else if (button == GLFW_MOUSE_BUTTON_RIGHT || button == GLFW_MOUSE_BUTTON_MIDDLE)
 	{ // the right button orbits the camera and the middle button pans it, while it is held
 		const std::string name{ button == GLFW_MOUSE_BUTTON_RIGHT ? "RMB" : "MIDDLE" };
 		if (action == GLFW_PRESS)
 		{
-			if (ImGui::GetIO().WantCaptureMouse)
-				return; // a drag of the camera starts only over the view, not over the GUI
+			if (ImGui::GetIO().WantCaptureMouse || !is_cursor_in_scene_viewport(window))
+				return; // a drag of the camera starts only over the view, not over the GUI or outside the scene viewport
 			Core::get_instance()->get_input_manager()->mouse_button_callback(name + "_PRESSED");
 		}
 		else if (action == GLFW_RELEASE) // a release always ends the drag, also over the GUI
 			Core::get_instance()->get_input_manager()->mouse_button_callback(name + "_RELEASED");
 	}
+}
+
+// Private Static Methods
+// ----------------------
+void GLFW_Renderer::get_cursor_in_framebuffer(GLFWwindow* window, double& x, double& y)
+{
+	glfwGetCursorPos(window, &x, &y);
+
+	// the cursor is in screen coordinates: scale it by the ratio of the framebuffer size to the window size (1 unless the display
+	// has a high DPI)
+	int window_width, window_height, framebuffer_width, framebuffer_height;
+	glfwGetWindowSize(window, &window_width, &window_height);
+	glfwGetFramebufferSize(window, &framebuffer_width, &framebuffer_height);
+	if (window_width > 0 && window_height > 0)
+	{
+		x *= static_cast<double>(framebuffer_width) / window_width;
+		y *= static_cast<double>(framebuffer_height) / window_height;
+	}
+}
+
+bool GLFW_Renderer::is_cursor_in_scene_viewport(GLFWwindow* window)
+{
+	double x, y;
+	get_cursor_in_framebuffer(window, x, y);
+	return Core::get_instance()->get_scene_viewport().contains(x, y);
 }

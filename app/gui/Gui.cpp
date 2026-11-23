@@ -9,7 +9,7 @@
 #include <algorithm>
 #include <array>
 #include <cctype> // for std::tolower
-#include <cmath>  // for std::abs
+#include <cmath>  // for std::abs and std::lround
 #include <cstdint>
 #include <filesystem>
 #include <limits> // for std::numeric_limits
@@ -294,6 +294,19 @@ void GUI::configure_gui_layout()
 
 	lay_out_side_bar(left_windows, 0.0f, left_width, true);
 	lay_out_side_bar(right_windows, io.DisplaySize.x - right_width, right_width, false);
+
+	// the scene is drawn in the area that the bars leave, below the menu bar; the Core measures it in pixels of the framebuffer,
+	// which differ from the coordinates of the GUI on high-DPI displays (each edge is rounded, so that the area and the bars meet)
+	const ImVec2 scale{ io.DisplayFramebufferScale };
+	const long   left{ std::lround(left_width * scale.x) };
+	const long   right{ std::lround((io.DisplaySize.x - right_width) * scale.x) };
+	const long   top{ std::lround(ImGui::GetFrameHeight() * scale.y) };
+	const long   bottom{ std::lround(io.DisplaySize.y * scale.y) };
+	Core::get_instance()->set_scene_viewport(
+		Scene_Viewport{ static_cast<GLint>(left),
+						static_cast<GLint>(top),
+						static_cast<GLuint>(std::max(right - left, 0L)),
+						static_cast<GLuint>(std::max(bottom - top, 0L)) });
 }
 
 void GUI::lay_out_side_bar(std::span<const Bar_Window> windows, float left, float width, bool is_left_bar)

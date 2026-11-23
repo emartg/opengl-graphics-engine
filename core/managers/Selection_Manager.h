@@ -46,8 +46,9 @@ public:
 
 	// Public Methods
 	// --------------
-	// Queues a pick request at the given window coordinates (origin top-left from the windowing API)
-	void queue_pick(GLdouble mouse_x, GLdouble mouse_y, GLsizei window_width, GLsizei window_height);
+	// Queues a pick request at the given position in the scene viewport (in pixels from its top-left corner, as the windowing API
+	// measures them), whose size the picking pass has
+	void queue_pick(GLdouble mouse_x, GLdouble mouse_y, GLsizei viewport_width, GLsizei viewport_height);
 
 	// Called from the renderer at frame start to perform the queued pick (if any)
 	void process_pending_pick(const Camera* camera, Node_Manager* node_manager);

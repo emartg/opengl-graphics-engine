@@ -51,7 +51,7 @@ void Input_Manager::cursor_pos_callback(GLdouble xpos, GLdouble ypos)
 	if (camera_drag == Camera_Drag::ORBIT)
 		Camera_Controller::orbit(*camera, drag_pivot, dx, dy, camera_control_params);
 	else
-		Camera_Controller::pan(*camera, drag_pivot, dx, dy, Core::get_instance()->get_screen_height());
+		Camera_Controller::pan(*camera, drag_pivot, dx, dy, Core::get_instance()->get_scene_viewport().height);
 }
 
 void Input_Manager::scroll_callback(GLdouble xoffset, GLdouble yoffset)

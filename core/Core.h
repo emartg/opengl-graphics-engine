@@ -15,12 +15,15 @@
 #include <memory>
 #include <filesystem>
 #include <cstdint>
+#include <optional>
 
 #include <glad/glad.h> // holds all OpenGL type declarations
 #include <stb_image.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+
+#include "renderer/Scene_Viewport.h"
 
 // Forward declaration of classes to avoid cyclic includes and allow virtual interfaces and pointers
 class Camera;
@@ -64,6 +67,8 @@ private:
 
 	// screen settings
 	GLuint screen_width{ 1600 }, screen_height{ 1000 }; // default screen width and height
+	// the rectangle of the framebuffer where the application draws the scene, or none for the whole framebuffer (the default)
+	std::optional<Scene_Viewport> requested_scene_viewport;
 
 	// absolute path of the Engine's resources directory (shaders, fonts, etc.)
 	std::filesystem::path resources_dir;
@@ -142,11 +147,22 @@ public:
 	// (e.g., "materials/default.material.json")
 	std::string get_asset_path(const std::string& relative_path) const;
 
+	// Returns the rectangle of the framebuffer where the scene is drawn: the one set with set_scene_viewport, kept inside the
+	// framebuffer (Scene_Viewport::clipped_to), or the whole framebuffer if none was set. The projection of the camera, the
+	// offscreen render pass, the picking, and the outline of the selection all have its size
+	Scene_Viewport get_scene_viewport() const;
+
 	// Setters
 	void set_renderer(Renderer* renderer) { this->renderer = renderer; }
 
 	void set_screen_width(GLuint width) { screen_width = width; }
 	void set_screen_height(GLuint height) { screen_height = height; }
+	// Sets the rectangle of the framebuffer where the scene is drawn (e.g., the area that the windows of a GUI leave free), in
+	// pixels from the top-left corner of the framebuffer; the rest of the framebuffer is cleared. It may change every frame: the
+	// frame uses the rectangle that is set when the scene is rendered (a GUI layer sets it while it is drawn, before that)
+	void set_scene_viewport(const Scene_Viewport& viewport) { requested_scene_viewport = viewport; }
+	// Draws the scene on the whole framebuffer again (the default)
+	void reset_scene_viewport() { requested_scene_viewport.reset(); }
 	// Sets the resources directory explicitly (must be called before init() to take effect on
 	// the engine's shaders); otherwise, it is located automatically during init()
 	void set_resources_dir(const std::filesystem::path& dir) { resources_dir = dir; }

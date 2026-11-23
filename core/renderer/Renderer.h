@@ -250,11 +250,12 @@ protected:
 	// Uploads the lights of the scene to the light buffer (in world space, sorted by type), and binds it
 	void upload_lights();
 
-	// Ensures the offscreen render pass is created with the current window size
+	// Ensures the offscreen render pass, and the picking and outline passes of the selection manager, have the size of the scene
+	// viewport (Core::get_scene_viewport)
 	void ensure_offscren_render_pass();
 	// Initializes the screen quad if it has not been initialized yet
 	void init_screen_quad();
-	// Composites the offscreen render pass texture to the screen
+	// Composites the offscreen render pass texture into the scene viewport of the screen, and clears the rest of the screen
 	void composite_to_screen();
 
 	// Creates and configures the skybox cube buffers if not already done

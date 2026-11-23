@@ -70,4 +70,13 @@ private:
 	static void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 	static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 	static void mouse_button_callback(GLFWwindow* window, int button, int action, int mods);
+
+	// Private Static Methods
+	// ----------------------
+	// Returns the position of the cursor in pixels of the framebuffer, from its top-left corner (the windowing system gives it in
+	// screen coordinates, which differ from the pixels of the framebuffer on high-DPI displays)
+	static void get_cursor_in_framebuffer(GLFWwindow* window, double& x, double& y);
+	// Returns true if the cursor is over the scene viewport (Core::get_scene_viewport), where clicks pick, drags move the camera,
+	// and the wheel dollies it
+	static bool is_cursor_in_scene_viewport(GLFWwindow* window);
 };
