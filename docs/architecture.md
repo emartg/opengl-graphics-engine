@@ -23,7 +23,7 @@ The project is split into three top-level modules:
 
 3. **`app` (executable)** - Sample application (scene editor). It contains:
    - The example and test scenes.
-   - The ImGui editor interface (`GUI`, a `Gui_Layer`, with a menu bar whose View menu shows and hides the windows, and its windows laid out every frame in a left and a right side bar with splitters) and its ASSETS window (`Assets_Window`).
+   - The ImGui editor interface (`GUI`, a `Gui_Layer`, with a menu bar whose View menu shows and hides the windows, and its windows laid out every frame in a left and a right side bar with splitters, which leave the area between them to the scene as its viewport) and its ASSETS window (`Assets_Window`).
    - Dependencies: `platform`.
 
 This strict separation means the `core` can be linked into other applications (e.g., a simulation or scientific visualiser) without pulling in GLFW or ImGui, and that applications which need a window reuse the `platform` library instead of duplicating it.
@@ -62,7 +62,7 @@ Next, each phase is described step-by-step.
 
 ### Phase 2: Pre-Render Computations
 
-- Ensures the off-screen framebuffer (FBO) exists and matches the window size.
+- Ensures the off-screen framebuffer (FBO), and the picking and outline passes, exist and match the size of the scene viewport: the whole window, or the rectangle that an application sets with `Core::set_scene_viewport` (for example, the area between the side bars of the App).
 - Converts HDR skybox images to cubemaps if needed.
 - Updates dynamic environment maps for reflective/refractive models (captures six faces per object).
 - Processes any pending color-picking queries.
@@ -83,12 +83,12 @@ Next, each phase is described step-by-step.
 
 ### Phase 5: Presentation
 
-- Composites the off-screen FBO to the default framebuffer (allows debug overlays and post-processing).
+- Composites the off-screen FBO into the scene viewport of the default framebuffer, whose other parts are cleared (allows debug overlays and post-processing).
 - Swaps window buffers using `glfwSwapBuffers()`.
 
 ## Key Classes
 
-- **`Core`** - Singleton orchestrator. Initialises subsystems, manages the main loop, and delegates responsibilities.
+- **`Core`** - Singleton orchestrator. Initialises subsystems, manages the main loop, and delegates responsibilities. It also holds the scene viewport (`Scene_Viewport`), the rectangle of the window where the scene is drawn and picked, which an application can set every frame.
 - **`Renderer`** - Abstract interface for rendering. `GLFW_Renderer` (in `platform`) is the concrete GLFW implementation.
 - **`Node`** - Base class for all scene entities. Implements the **Composite pattern** (parent-child hierarchy). Contains transform logic (position, rotation, scale) and virtual methods (`load()`, `draw()`, `deallocate_resources()`), and three flags for the user's actions on it: whether it can be selected, moved (its transform and its parent), and deleted.
 - **`Shader_Library`** - Holds the shader programs as assets: it loads every descriptor file (`<name>.shader.json`, with the program's name and the files of its stages) of a directory, compiles the programs (resolving their `#include` directives with `Shader_Preprocessor`), finds them by name, and reloads them at runtime. The engine's shaders are described in `resources/shaders`, and applications can load their own directories.

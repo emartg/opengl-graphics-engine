@@ -217,7 +217,7 @@ void Renderer::frame_start_config()
 	delta_time            = current_frame - last_frame_time;
 	last_frame_time       = current_frame;
 
-	ensure_offscren_render_pass(); // ensure offscreen target matches current window size
+	ensure_offscren_render_pass(); // ensure the offscreen target matches the scene viewport (which the GUI may have just changed)
 
 	auto  core          = Core::get_instance();
 	auto& scene_manager = core->get_scene_manager();
@@ -268,9 +268,10 @@ void Renderer::render_scene()
 		return;
 	}
 
-	// compute view and projection transformations
-	glm::mat4 projection = camera->get_projection_matrix(core->get_screen_width(), core->get_screen_height());
-	glm::mat4 view       = camera->get_view_matrix();
+	// compute view and projection transformations (the aspect ratio is the one of the scene viewport, where the scene is shown)
+	const Scene_Viewport scene_viewport{ core->get_scene_viewport() };
+	glm::mat4            projection = camera->get_projection_matrix(scene_viewport.width, scene_viewport.height);
+	glm::mat4            view       = camera->get_view_matrix();
 
 	// transpose of the upper-left 3x3 submatrix of the view matrix, used for environment mapping
 	// (i.e., the inverse matrix of the rotation part of the view matrix)
@@ -833,13 +834,18 @@ void Renderer::render_opaque_nodes(const std::vector<std::shared_ptr<Node>>& nod
 
 void Renderer::ensure_offscren_render_pass()
 {
-	// get the core instance and screen dimensions
-	auto      core   = Core::get_instance();
-	const int width  = core->get_screen_width();
-	const int height = core->get_screen_height();
+	// get the core instance and the size of the scene viewport, which the offscreen target has
+	auto                 core           = Core::get_instance();
+	const Scene_Viewport scene_viewport = core->get_scene_viewport();
+	const int            width          = static_cast<int>(scene_viewport.width);
+	const int            height         = static_cast<int>(scene_viewport.height);
 
 	if (width <= 0 || height <= 0)
 		return; // ensure valid dimensions
+
+	// the picking and outline passes have the same size, so that a pixel of the view is the same pixel in each of them (the
+	// selection manager recreates them only when the size changes)
+	core->get_selection_manager()->resize(scene_viewport.width, scene_viewport.height);
 
 	// if the dimensions have changed or the FBO is not created yet,
 	// recreate the offscreen render pass with the new dimensions
@@ -911,10 +917,11 @@ void Renderer::init_screen_quad()
 
 void Renderer::composite_to_screen()
 {
-	// get the core instance and screen dimensions
-	auto         core   = Core::get_instance();
-	const GLuint width  = core->get_screen_width();
-	const GLuint height = core->get_screen_height();
+	// get the core instance, the screen dimensions, and the scene viewport (the part of the screen where the scene is shown)
+	auto                 core           = Core::get_instance();
+	const Scene_Viewport scene_viewport = core->get_scene_viewport();
+	const GLuint         width          = scene_viewport.width;
+	const GLuint         height         = scene_viewport.height;
 
 	// get the selection manager from the core instance
 	auto selection_manager = core->get_selection_manager();
@@ -939,13 +946,15 @@ void Renderer::composite_to_screen()
 	// unbind offscreen target, effectively switching back to the default framebuffer
 	main_render_pass->unbind();
 
-	// draw the offscreen color texture to the back buffer via a screen quad
-	glViewport(0, 0, width, height);           // set the viewport to the screen dimensions
+	// clear the color of the whole default framebuffer (a clear ignores the viewport), so that the parts of the screen outside the
+	// scene viewport have the clear color, and keep the depth and stencil buffers intact
+	clear_buffers(Buffer_Type::COLOR);
+
+	// draw the offscreen color texture to the back buffer via a screen quad that fills the scene viewport (OpenGL counts the rows of
+	// the framebuffer from the bottom)
+	glViewport(scene_viewport.x, scene_viewport.get_opengl_y(core->get_screen_height()), width, height);
 	glDisable(GL_DEPTH_TEST);                  // depth test is not needed for screen quad rendering
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); // ensure we are in fill mode for the screen quad
-
-	// clear the default framebuffer color (keep depth and stencil buffers intact)
-	clear_buffers(Buffer_Type::COLOR);
 
 	if (!screen_quad_shader)
 	{ // if the screen shader is not set, print an error message and return
@@ -965,7 +974,7 @@ void Renderer::composite_to_screen()
 	screen_quad_shader->set_float(prefix + "grid_line_thickness", screen_debug_params.grid_line_thickness);
 	screen_quad_shader->set_vec3(prefix + "grid_bg_color", screen_debug_params.grid_bg_color);
 	screen_quad_shader->set_vec3(prefix + "grid_line_color", screen_debug_params.grid_line_color);
-	// set the screen dimensions as a uniform in the screen fragment shader
+	// set the size of the scene viewport (the size of the offscreen texture) as a uniform in the screen fragment shader
 	screen_quad_shader->set_vec2("u_screen_size", glm::vec2(width, height));
 
 	// bind the offscreen render pass texture to texture unit 0 and set it as the active texture
@@ -1057,6 +1066,9 @@ void Renderer::composite_to_screen()
 	glBindTexture(GL_TEXTURE_2D, 0);
 
 	glEnable(GL_DEPTH_TEST); // re-enable the depth test for subsequent rendering
+
+	// the rest of the frame (the GUI) is drawn on the whole screen
+	glViewport(0, 0, core->get_screen_width(), core->get_screen_height());
 }
 
 void Renderer::init_skybox_cube()

@@ -32,10 +32,10 @@ Selection_Manager::~Selection_Manager()
 
 // Public Methods
 // --------------
-void Selection_Manager::queue_pick(GLdouble mouse_x, GLdouble mouse_y, GLsizei window_width, GLsizei window_height)
+void Selection_Manager::queue_pick(GLdouble mouse_x, GLdouble mouse_y, GLsizei viewport_width, GLsizei viewport_height)
 {
 	// convert from windowing API's top-left to OpenGL bottom-left coordinates
-	GLint ogl_y = static_cast<GLint>(window_height - 1 - mouse_y);
+	GLint ogl_y = static_cast<GLint>(viewport_height - 1 - mouse_y);
 	// store pending pick (i.e., do not process immediately, wait for frame start)
 	pending_pick = glm::ivec2(static_cast<GLint>(mouse_x), ogl_y);
 }

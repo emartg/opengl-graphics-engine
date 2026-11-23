@@ -225,9 +225,6 @@ bool Core::init()
 	// set the viewport to the window size
 	renderer->set_viewport(screen_width, screen_height);
 
-	// initialize selection manager picking FBO with current window size
-	if (selection_manager)
-		selection_manager->resize(screen_width, screen_height);
 	// configure OpenGL global state
 	renderer->config_opengl();
 	// initialize the user interface
@@ -355,16 +352,19 @@ void Core::framebuffer_size_callback(GLint width, GLint height)
 	screen_width  = static_cast<GLuint>(std::max(0, width));
 	screen_height = static_cast<GLuint>(std::max(0, height));
 
-	// a minimized window has an empty framebuffer (0 x 0), which is not rendered (see run): the viewport and the
-	// picking/outline FBOs keep their sizes until the window is restored
+	// a minimized window has an empty framebuffer (0 x 0), which is not rendered (see run): the viewport keeps its size until the
+	// window is restored
 	if (screen_width == 0 || screen_height == 0)
 		return;
 
-	// update the default framebuffer viewport
+	// update the default framebuffer viewport (the offscreen, picking, and outline passes follow the scene viewport at the start of
+	// the next frame, see Renderer::ensure_offscren_render_pass)
 	if (renderer)
 		renderer->set_viewport(screen_width, screen_height);
+}
 
-	// keep picking/outline FBOs in sync with the default framebuffer size (the actual window size)
-	if (selection_manager)
-		selection_manager->resize(width, height);
+Scene_Viewport Core::get_scene_viewport() const
+{
+	const Scene_Viewport whole_framebuffer{ 0, 0, screen_width, screen_height };
+	return requested_scene_viewport.value_or(whole_framebuffer).clipped_to(screen_width, screen_height);
 }

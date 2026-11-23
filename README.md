@@ -20,7 +20,7 @@ A **modular, extensible 3D graphics engine** built from scratch with OpenGL 4.5.
 - **Reflection & Refraction** - Dynamic per-object environment maps with ping-pong buffering to avoid recursion.
 - **Transparency & Blending** - Alpha channel support with back-to-front sorting for correct blending.
 - **Color Picking & Outlining** - Click-to-select objects using off-screen color encoding; selected objects are highlighted with a depth-aware outline.
-- **ImGui Editor** - Rich GUI panels, arranged in a left and a right side bar:
+- **ImGui Editor** - Rich GUI panels, arranged in a left and a right side bar around the view of the scene:
   - *Scene Graph* - tree view with drag-and-drop reparenting.
   - *Properties* - real-time editing of transforms, color, opacity, light parameters, etc.
   - *Debug* - visualisation modes (Normal, Inverted Colors, Picking Colors, Grid Overlay) and performance stats.
@@ -139,7 +139,7 @@ Another CMake Project](docs/build_instructions.md#using-the-engine-from-another-
 
 - **Camera** - Drag with the right mouse button to orbit around the selected object (or the origin), drag with the middle button to pan, and scroll to move closer or farther.
 - **Select** - Left-click on any renderable object to select it (outline appears). Double-click to select the parent group.
-- **GUI Panels** - The panels live in two side bars: the left one holds the *Scene Graph* and *Assets* panels, and the right one the *Properties*, *Creation*, and *Debug* panels. Drag the inner edge of a bar to change its width, and the gap between two panels to share the height between them. Each panel can be closed (the others of its bar take its place, and a bar without panels disappears); the *View* menu of the menu bar shows or hides each of them and resets the layout. The *Material Editor* is a floating window.
+- **GUI Panels** - The panels live in two side bars: the left one holds the *Scene Graph* and *Assets* panels, and the right one the *Properties*, *Creation*, and *Debug* panels. Drag the inner edge of a bar to change its width, and the gap between two panels to share the height between them. Each panel can be closed (the others of its bar take its place, and a bar without panels disappears); the *View* menu of the menu bar shows or hides each of them and resets the layout. The scene is drawn in the area between the bars, which no panel covers, and clicks, drags, and the wheel act on the scene only there. The *Material Editor* is a floating window.
   - *Scene Graph* - drag nodes to reparent; drop on the bottom area to make the node a root.
   - *Properties* - modify transforms, color, opacity, light parameters, etc.
   - *Creation* - create new lights, primitives, or import models/skyboxes.
