@@ -60,7 +60,7 @@ For a detailed class diagram and pipeline description, see the [Architecture Gui
 | GLM | 1.0.3 | Vector/matrix mathematics |
 | stb_image | 2.30 | Image loading (`.jpg`, `.png`, etc.) |
 | Dear ImGui | 1.91.6 | Immediate-mode GUI |
-| Assimp | 6.0.5 | 3D model import |
+| Assimp | 6.0.6 | 3D model import |
 | nlohmann/json | 3.12.0 | JSON parsing (shader descriptors) |
 
 On Windows, GLFW, GLM, Assimp, and nlohmann/json are built by [vcpkg](https://github.com/microsoft/vcpkg) from the `vcpkg.json` manifest (the versions above); on Linux, the versions of the system packages are used.
