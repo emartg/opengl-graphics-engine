@@ -1034,12 +1034,16 @@ void Renderer::composite_to_screen()
 		outline_depth_tex = selection_manager->get_outline_depth_texture_id();
 	}
 
-	// inform the shader if depth textures are available and set a small bias to avoid z-fighting
-	// (need at least the scene depth texture for depth-aware outline rendering,
-	// outline depth is tested within the shader if available)
+	// inform the shader if depth textures are available (need at least the scene depth texture for depth-aware outline rendering,
+	// outline depth is tested within the shader if available), give it the clip planes of the camera, which turn the depths into
+	// distances, and the fraction of the distance by which the selected object must be in front of the scene to be outlined
+	// (a small bias, so that the outline does not flicker where the object touches another surface)
 	const bool depth = scene_depth_tex != 0;
 	screen_quad_shader->set_int("u_has_depth_textures", depth ? 1 : 0);
-	screen_quad_shader->set_float("u_outline_depth_bias", 0.0005f);
+	const auto& camera = core->get_scene_manager()->get_camera();
+	screen_quad_shader->set_float("u_near_plane", camera ? camera->get_near_plane() : Camera::NEAR_PLANE);
+	screen_quad_shader->set_float("u_far_plane", camera ? camera->get_far_plane() : Camera::FAR_PLANE);
+	screen_quad_shader->set_float("u_outline_relative_bias", OUTLINE_RELATIVE_DEPTH_BIAS);
 
 	// bind depth textures to texture units 2 and 3 (only if available)
 	glActiveTexture(GL_TEXTURE2);

@@ -35,8 +35,15 @@ uniform int u_has_depth_textures;			// 1 if depth textures are bound (scene and 
 uniform sampler2D u_scene_depth_texture;	// full screen depth texture of the scene
 uniform sampler2D u_outline_depth_texture;	// depth texture of the selected object, 
 											// i.e. where the outline mask > 0
-uniform float u_outline_depth_bias;			// depth bias to apply when comparing depths 
-											// for depth-aware outline, avoiding z-fighting artifacts
+uniform float u_outline_relative_bias;		// the selected surface must be nearer than the scene behind the outline
+											// by this fraction of its distance (so that touching surfaces do not flicker)
+uniform float u_near_plane;					// near and far planes of the camera, which turn the depths
+uniform float u_far_plane;					// of the depth textures into distances from the camera
+
+// one step of the 24-bit depth textures: the depths of the selected object and of the scene must differ by a few of them, so
+// that the precision of the buffer (coarse far from the camera) cannot decide whether the outline is drawn
+const float DEPTH_STEP = 1.0 / 16777215.0;
+const float MIN_DEPTH_STEPS = 4.0;
 
 // screen debug mode parameters to control the rendering mode
 uniform Screen_Debug_Params u_screen_debug_params;
@@ -55,6 +62,14 @@ vec3 boost(vec3 c);
 
 // Outputs the outline mask value at the given UV coordinates (1.0 = inside object silhouette, 0.0 = outside)
 float sample_mask(vec2 uv);
+
+// Returns the distance from the camera, along its direction, of a depth of the depth textures (from 0 at the near plane to 1 at
+// the far plane, which is not linear in the distance)
+float linear_depth(float depth);
+
+// Returns true if the selected object, at the given depth, is in front of the scene at the given depth, so that the outline is
+// drawn there (and not over what hides the object)
+bool is_in_front(float selected_depth, float scene_depth);
 
 void main()
 {
@@ -165,9 +180,8 @@ void main()
 					}
 				}
 			}
-			// draw outline only if selected surface is in front (smaller depth value) by a small bias
-			// to avoid z-fighting artifacts, otherwise draw the base color
-			if (selected_depth + u_outline_depth_bias < scene_depth)
+			// draw outline only if selected surface is in front of the scene, otherwise draw the base color
+			if (is_in_front(selected_depth, scene_depth))
 				FragColor = vec4(u_outline_color, 1.0);
 			else
 				FragColor = base_color;
@@ -238,4 +252,26 @@ vec3 boost(vec3 c)
 float sample_mask(vec2 uv)
 {
 	return texture(u_outline_mask_texture, uv).r;
+}
+
+float linear_depth(float depth)
+{
+	float ndc_z = depth * 2.0 - 1.0; // the depth in normalized device coordinates (from -1 to 1)
+	return 2.0 * u_near_plane * u_far_plane / (u_far_plane + u_near_plane - ndc_z * (u_far_plane - u_near_plane));
+}
+
+bool is_in_front(float selected_depth, float scene_depth)
+{
+	// nothing was drawn there, or only the sky (which is drawn at the far plane): the object is in front of it, however close it
+	// is to the far plane (a fixed bias in depth would hide the outline of an object near the far plane, where the depth is
+	// close to 1 even for objects far apart)
+	if (scene_depth >= 1.0)
+		return true;
+
+	// the two depths must differ by more than the precision of the depth textures
+	if (selected_depth + MIN_DEPTH_STEPS * DEPTH_STEP >= scene_depth)
+		return false;
+
+	// the distances are compared, so that the bias is the same fraction of the distance at any depth
+	return linear_depth(selected_depth) * (1.0 + u_outline_relative_bias) < linear_depth(scene_depth);
 }

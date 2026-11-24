@@ -198,6 +198,10 @@ protected:
 	GLuint                  light_ssbo{ 0 };
 	std::size_t             light_count_last_frame{ 0 };
 
+	// fraction of its distance by which the selected object must be in front of the scene behind its outline for the outline to be
+	// drawn there (the depths are compared as distances, so the same fraction holds near and far from the camera)
+	static constexpr GLfloat OUTLINE_RELATIVE_DEPTH_BIAS{ 0.001f };
+
 	// buffers for the skybox cube
 	GLuint skybox_vao{}, skybox_vbo{}, skybox_ebo{};
 
