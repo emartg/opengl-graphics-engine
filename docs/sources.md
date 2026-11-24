@@ -21,7 +21,7 @@ under its MIT License (see `LICENSE`).
 |---|---|---|---|---|---|
 | [GLFW](https://www.glfw.org) | 3.5.1 | Window, input, OpenGL context | Marcus Geelnard and the GLFW contributors | zlib License | vcpkg or system package |
 | [GLM](https://github.com/g-truc/glm) | 1.0.3 | Vector and matrix mathematics | G-Truc Creation | MIT License (also offered under the Happy Bunny License; either may be used) | vcpkg or system package |
-| [Assimp](https://github.com/assimp/assimp) | 6.0.5 | 3D model import | The assimp team | BSD 3-Clause | vcpkg or system package |
+| [Assimp](https://github.com/assimp/assimp) | 6.0.6 | 3D model import | The assimp team | BSD 3-Clause | vcpkg or system package |
 | [nlohmann/json](https://github.com/nlohmann/json) | 3.12.0 | JSON descriptors of shaders and materials | Niels Lohmann | MIT License | vcpkg or system package |
 | [GoogleTest](https://github.com/google/googletest) | 1.18.0 | Unit tests (only with `ENGINE_BUILD_TESTS`) | Google | BSD 3-Clause | installed package, or a pinned download |
 | [Dear ImGui](https://github.com/ocornut/imgui) | 1.91.6 | Immediate-mode GUI | Omar Cornut and contributors | MIT License (its bundled `stb_rect_pack` 1.01 and `stb_truetype` 1.26 are public domain, as their headers state) | Bundled in `external/include/ImGui` |
