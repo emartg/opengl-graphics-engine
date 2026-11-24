@@ -64,7 +64,7 @@ Next, each phase is described step-by-step.
 
 - Ensures the off-screen framebuffer (FBO), and the picking and outline passes, exist and match the size of the scene viewport: the whole window, or the rectangle that an application sets with `Core::set_scene_viewport` (for example, the area between the side bars of the App).
 - Converts HDR skybox images to cubemaps if needed.
-- Updates dynamic environment maps for reflective/refractive models (captures six faces per object).
+- Updates dynamic environment maps for reflective/refractive models (captures six faces per object, with the clip planes of the scene's camera, so that a reflection shows what the camera can see at the scale of the scene).
 - Processes any pending color-picking queries.
 
 ### Phase 3: Scene Setup & Uniforms

@@ -102,6 +102,10 @@ public:
 	// keeps the current planes when they are not valid: both must be finite, the near plane greater than 0, and the far plane
 	// greater than the near one. An application whose scene is very large or very small sets planes that fit it
 	bool set_clip_planes(GLfloat near_plane, GLfloat far_plane);
+	// Sets the speed of the movement with the keyboard (process_keyboard), in world units per second, and returns true. Returns
+	// false and keeps the current speed when it is not finite or not greater than 0. An application whose scene is very large or
+	// very small sets a speed that fits it, as it sets the clip planes (Reset keeps both)
+	bool set_movement_speed(GLfloat speed);
 	// Sets the zoom, which is the vertical field of view of the projection in degrees, limited to the range from 1 to 90 degrees
 	// that the mouse wheel also respects
 	void set_zoom(GLfloat zoom);
@@ -139,8 +143,8 @@ public:
 	// Expects the offset value in the y direction and the sensitivity of the scroll
 	void process_mouse_scroll(GLfloat yoffset, GLfloat sensitivity = 1.0f);
 
-	// Resets the camera to its default values (its position, direction, speed, sensitivity, and zoom). The clip planes are
-	// kept: they fit the scale of the scene, which a reset of the view does not change
+	// Resets the camera to its default values (its position, direction, sensitivity, and zoom). The clip planes and the movement
+	// speed are kept: they fit the scale of the scene, which a reset of the view does not change
 	void Reset();
 
 private:

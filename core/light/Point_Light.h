@@ -42,12 +42,19 @@ public:
 	GLfloat   get_constant() const { return constant; }
 	GLfloat   get_linear() const { return linear; }
 	GLfloat   get_quadratic() const { return quadratic; }
+	// Returns the distance, in world units, that the light reaches by its linear term (4.5 / linear, the inverse of set_range), or
+	// infinity when the linear term is 0
+	GLfloat get_range() const;
 
 	// Setters
 	void set_position(glm::vec3 position);
 	void set_constant(GLfloat constant) { this->constant = constant; }
 	void set_linear(GLfloat linear) { this->linear = linear; }
 	void set_quadratic(GLfloat quadratic) { this->quadratic = quadratic; }
+	// Sets the linear and quadratic terms of the attenuation for a light that reaches about the given distance, in world units
+	// (Light::get_attenuation_for_range; the constant term is 1), and returns true. Returns false and keeps the current terms when
+	// the range is not finite or not greater than 0. The default terms are those of a range of about 50, for a scene in metres
+	bool set_range(GLfloat range);
 
 	// Creates the gizmo for the point light
 	void create_gizmo() override;

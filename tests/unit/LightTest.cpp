@@ -3,10 +3,13 @@
  * This file contains the unit tests of the lights that need no OpenGL context: a light follows its parent (its position and
  * direction are relative to the parent, like the transform of a node, and the renderer lights the scene with them in world
  * space), it can be moved into a hierarchy but cannot be a parent, and a new parent keeps it where it is in the world
- * (Node::rebase_transform, also tested for an ordinary node). The gizmos of the lights need an OpenGL context, so the lights of
- * these tests have none, and the gizmos are covered by the smoke tests and by driving the App.
+ * (Node::rebase_transform, also tested for an ordinary node); the attenuation of a range, and the scale of the gizmos. The gizmos
+ * themselves need an OpenGL context, so the lights of these tests have none, and the gizmos are covered by the smoke tests and by
+ * driving the App.
  */
 
+#include <array>
+#include <limits>
 #include <memory>
 #include <string>
 
@@ -149,4 +152,83 @@ TEST(LightTest, ANewParentKeepsAnOrdinaryNodeWhereItIsInTheWorld)
 
 	const glm::mat4 rebased{ node->get_world_model_matrix() };
 	for (int column = 0; column < 4; ++column) expect_near(glm::vec3{ rebased[column] }, glm::vec3{ world[column] });
+}
+
+TEST(LightTest, TheAttenuationOfARangeFollowsTheUsualTableOfAttenuationTerms)
+{
+	// rows of the usual table (range, linear, quadratic); the table rounds its terms, so they are compared within a tolerance
+	const float table[][3]{ { 7.0f, 0.7f, 1.8f },
+							{ 13.0f, 0.35f, 0.44f },
+							{ 50.0f, 0.09f, 0.032f },
+							{ 100.0f, 0.045f, 0.0075f },
+							{ 3250.0f, 0.0014f, 0.000007f } };
+	for (const auto& row : table)
+	{
+		const glm::vec2 attenuation{ Light::get_attenuation_for_range(row[0]) };
+		EXPECT_NEAR(attenuation.x, row[1], 0.1f * row[1]) << "range " << row[0];
+		EXPECT_NEAR(attenuation.y, row[2], 0.2f * row[2]) << "range " << row[0];
+	}
+}
+
+TEST(LightTest, TheRangeOfAPointLightAndASpotlightSetsTheirAttenuation)
+{
+	Point_Light point_light{ "point" };
+	Spotlight   spotlight{ "spot" };
+
+	// the default terms are those of a range of about 50, for a scene in metres
+	EXPECT_NEAR(point_light.get_range(), 50.0f, 1e-3f);
+	EXPECT_NEAR(spotlight.get_range(), 50.0f, 1e-3f);
+
+	// the same light in a scene in centimetres reaches 5 metres with a range of 500
+	EXPECT_TRUE(point_light.set_range(500.0f));
+	EXPECT_TRUE(spotlight.set_range(500.0f));
+	for (const auto& [constant, linear, quadratic, range] :
+		 { std::array<float, 4>{ point_light.get_constant(),
+								 point_light.get_linear(),
+								 point_light.get_quadratic(),
+								 point_light.get_range() },
+		   std::array<float, 4>{ spotlight.get_constant(), spotlight.get_linear(), spotlight.get_quadratic(), spotlight.get_range() } })
+	{
+		EXPECT_FLOAT_EQ(constant, 1.0f);
+		EXPECT_FLOAT_EQ(linear, 4.5f / 500.0f);
+		EXPECT_FLOAT_EQ(quadratic, 75.0f / (500.0f * 500.0f));
+		EXPECT_NEAR(range, 500.0f, 1e-2f);
+	}
+}
+
+TEST(LightTest, AnInvalidRangeKeepsTheAttenuation)
+{
+	Point_Light point_light{ "point" };
+	Spotlight   spotlight{ "spot" };
+
+	for (const float range : { 0.0f, -10.0f, std::numeric_limits<float>::infinity(), std::numeric_limits<float>::quiet_NaN() })
+	{
+		EXPECT_FALSE(point_light.set_range(range));
+		EXPECT_FALSE(spotlight.set_range(range));
+	}
+	EXPECT_FLOAT_EQ(point_light.get_linear(), 0.09f);
+	EXPECT_FLOAT_EQ(point_light.get_quadratic(), 0.032f);
+	EXPECT_FLOAT_EQ(spotlight.get_linear(), 0.09f);
+	EXPECT_FLOAT_EQ(spotlight.get_quadratic(), 0.032f);
+}
+
+TEST(LightTest, TheScaleOfTheGizmoCanBeSetAndInvalidScalesAreRefused)
+{
+	Point_Light       point_light{ "point" };
+	Spotlight         spotlight{ "spot" };
+	Directional_Light directional_light{ "directional" };
+
+	// the defaults, for a scene in metres
+	EXPECT_EQ(point_light.get_gizmo_scale(), glm::vec3{ 0.3f });
+	EXPECT_EQ(spotlight.get_gizmo_scale(), glm::vec3{ 0.3f });
+	EXPECT_EQ(directional_light.get_gizmo_scale(), glm::vec3{ 0.4f });
+
+	// a gizmo of 5 units, for example 5 centimetres in a scene in centimetres (create_gizmo uses it)
+	EXPECT_TRUE(point_light.set_gizmo_scale(glm::vec3{ 5.0f }));
+	EXPECT_EQ(point_light.get_gizmo_scale(), glm::vec3{ 5.0f });
+
+	EXPECT_FALSE(point_light.set_gizmo_scale(glm::vec3{ 1.0f, 0.0f, 1.0f }));
+	EXPECT_FALSE(point_light.set_gizmo_scale(glm::vec3{ -1.0f }));
+	EXPECT_FALSE(point_light.set_gizmo_scale(glm::vec3{ std::numeric_limits<float>::quiet_NaN() }));
+	EXPECT_EQ(point_light.get_gizmo_scale(), glm::vec3{ 5.0f });
 }

@@ -6,6 +6,10 @@
 
 #include "Spotlight.h"
 
+#include <cmath>
+#include <iostream>
+#include <limits>
+
 #include "../model/Shape_Model.h"  // to create the gizmo for the Spotlight
 #include "../gizmos/HEX_PYRAMID.h" // the Spotlight gizmo is a hexagonal pyramid
 
@@ -48,6 +52,7 @@ Spotlight::Spotlight(
 	quadratic{ quadratic }
 {
 	spotlight_count++;
+	gizmo_scale = GIZMO_SCALE;
 }
 
 // Public Methods
@@ -96,7 +101,7 @@ void Spotlight::create_gizmo()
 		glm::vec4(diffuse, 1.0f), // set the color of the gizmo to the light's diffuse color
 		position,                 // set the position of the gizmo to the light's position
 		rotation,                 // set the rotation of the gizmo based on the light's direction
-		GIZMO_SCALE,              // set the scale of the gizmo to a predefined constant
+		gizmo_scale,              // set the scale of the gizmo (GIZMO_SCALE unless set_gizmo_scale changed it)
 		direction,                // set the forward direction of the gizmo to the light's direction
 		mesh_forward              // set the mesh's forward direction to the local space forward direction
 	);
@@ -113,4 +118,24 @@ void Spotlight::sync_gizmo_position_from_light()
 	auto gizmo = get_gizmo(); // get the gizmo representing the light
 	if (gizmo)
 		gizmo->set_position(position); // set the gizmo's position to the light's position
+}
+
+GLfloat Spotlight::get_range() const
+{
+	return linear > 0.0f ? 4.5f / linear : std::numeric_limits<GLfloat>::infinity();
+}
+
+bool Spotlight::set_range(GLfloat range)
+{
+	if (!std::isfinite(range) || range <= 0.0f)
+	{
+		std::cerr << "[WARNING::SPOTLIGHT::set_range] Invalid range (" << range
+				  << "): it must be greater than 0; the attenuation is not changed" << std::endl;
+		return false;
+	}
+	const glm::vec2 attenuation{ get_attenuation_for_range(range) };
+	constant  = 1.0f;
+	linear    = attenuation.x;
+	quadratic = attenuation.y;
+	return true;
 }
