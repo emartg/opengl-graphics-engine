@@ -50,7 +50,7 @@ The first configuration of each triplet builds GLFW, Assimp, and their dependenc
 
 The presets pass the folder `cmake/vcpkg_triplets` to vcpkg (`VCPKG_OVERLAY_TRIPLETS`). It has the triplet `x64-mingw-dynamic` of vcpkg with one change: the `PATH` reaches the build of the packages but is not part of their hash (ABI). With the triplet of vcpkg, any difference in the `PATH` (another terminal, VS Code started from another shell, a runner of the CI) changes the hash of every MinGW package, so vcpkg builds them all again instead of restoring them from its binary cache. The first configuration after this change builds the packages once more, and later ones restore them. The CI uses the triplets of `cmake/vcpkg_triplets_ci`, which also leave the compiler out of the hash (see [Continuous Integration](#continuous-integration)).
 
-The commands that use Ninja with MSVC must run in a Visual Studio Developer PowerShell, which adds `cl.exe`, the Windows SDK, and the MSVC libraries to the environment of the current terminal (VS Code's CMake Tools does it automatically for the presets, but not for its integrated terminal). The Developer PowerShell shortcut of the Start menu targets x86 by default, so enter an x64 one from any PowerShell (including VS Code's terminal) instead:
+The commands that use Ninja with MSVC must run in a Visual Studio Developer PowerShell, which adds `cl.exe`, the Windows SDK, and the MSVC libraries to the environment of the current terminal. Do not count on VS Code to provide it: its integrated terminal does not, and its CMake panel may not either (see [Building with VS Code](#building-with-vs-code)). The Developer PowerShell shortcut of the Start menu targets x86 by default, so enter an x64 one from any PowerShell (including VS Code's terminal) instead:
 
 ```powershell
 # Enter the x64 developer environment of the latest Visual Studio, keeping the current directory
@@ -63,6 +63,8 @@ $env:VCPKG_ROOT = [Environment]::GetEnvironmentVariable("VCPKG_ROOT", "User")
 ```
 
 The environment only applies to the current terminal, so repeat these commands in every new terminal (`Get-Command cl` shows whether it is active). The Visual Studio generators locate MSVC by themselves, so they do not need it.
+
+**An environment change lasts until the terminal is closed.** Entering the developer shell, putting MinGW on the `PATH`, or setting `VCPKG_ROOT` changes the environment of the whole terminal, also when the commands run inside a script block (`{ ... }`). A later configuration with another compiler then finds the wrong tools (for example MinGW's linker in an MSVC build folder, see [Troubleshooting](#troubleshooting)). Use one terminal for each compiler, and open a new terminal before building with another one. `Get-Command cl, g++ -ErrorAction SilentlyContinue` shows which compilers the current terminal finds.
 
 CMake only reads the toolchain file when a build directory is configured for the first time. Build directories configured before the presets used vcpkg (or without `VCPKG_ROOT`) must be reconfigured from scratch: run **CMake: Delete Cache and Reconfigure** in VS Code, or `cmake --fresh --preset <preset>`, or delete the build directory.
 
@@ -77,23 +79,24 @@ The generator is part of the directory name because CMake does not allow a build
 
 `out/install/<configuration>` is an optional installation prefix. It is populated only by `cmake --install` and is separate from the build tree; normal compilation does not require it. The `.vs` folder contains Visual Studio's local metadata and can remain in place.
 
-## Building with VS Code (recommended)
+## Building with VS Code
 
-The repository contains CMake presets for the supported Windows workflow: MSVC x64 with Ninja (or the Visual Studio generators), and the dependencies built by vcpkg (see [Dependency Resolution](#dependency-resolution)). Both VS Code and Visual Studio use the same canonical output directories. Do not configure or build from both IDEs at the same time.
+The repository contains CMake presets for the supported Windows workflow: MSVC x64 with Ninja or with the Visual Studio generators, and MinGW, with the dependencies built by vcpkg (see [Dependency Resolution](#dependency-resolution)). VS Code, Visual Studio, and a terminal use the same build directories (one per preset), so do not configure or build the same preset from two of them at the same time.
+
+**Which presets work in VS Code:** the Visual Studio presets (`vs2022-msvc-*` and `vs2026-msvc-*`) and the MinGW presets (`mingw-gcc-vcpkg-*`, with `MINGW_ROOT` set) work in any VS Code window, since the Visual Studio generator finds MSVC by itself and the MinGW presets find GCC through `MINGW_ROOT`. The Ninja presets with MSVC (`ninja-msvc-*`) need the developer environment, which VS Code does not always provide: if their configuration reports that `cl` is not found, use a Visual Studio preset in VS Code, or close every VS Code window and start VS Code from an x64 developer PowerShell (`code .` in the repository root, after the commands of [Dependency Resolution](#dependency-resolution)), so that it inherits the environment.
+
+**Turn off the configuration on open:** add `"cmake.configureOnOpen": false` to the workspace settings (`.vscode/settings.json`). Otherwise CMake Tools configures the selected preset when the folder opens, possibly in an environment without its compiler, and the build directory keeps the tools it found (see [Troubleshooting](#troubleshooting)). Configure explicitly instead, after choosing the preset.
 
 1. Install the **CMake Tools** and **C/C++** extensions.
 2. Open the repository root in VS Code.
 3. Open the Command Palette with `Ctrl+Shift+P` and run **CMake: Select Configure Preset**.
-4. Select the desired preset: Ninja/MSVC, Visual Studio 2022/2026, or MinGW Makefiles with GCC and vcpkg. Each preset names its generator, compiler, dependency provider, and configuration.
-5. Run **CMake: Configure**. CMake Tools may configure automatically when the folder opens; run it manually after changing presets or clearing a cache.
+4. Select the desired preset: Visual Studio 2022/2026, MinGW Makefiles with GCC and vcpkg, or Ninja/MSVC (see above). Each preset names its generator, compiler, dependency provider, and configuration.
+5. Run **CMake: Configure** (also after changing presets or clearing a cache).
 6. Run **CMake: Set Build Target** and select `App`.
 7. Run **CMake: Build**. This builds `GLAD`, `STB_IMAGE`, `Core`, and `App`.
 8. For Debug, open **Run and Debug**, select `Debug App (CMake)`, and press `F5`. For Release, use **CMake: Build** and launch the resulting executable from its `bin` directory.
 
-The generated executables are:
-
-- Debug: `out/build/ninja-msvc-debug/bin/App.exe`
-- Release: `out/build/ninja-msvc-release/bin/App.exe`
+The generated executable is `out/build/<preset>/bin/App.exe` (for example `out/build/ninja-msvc-debug/bin/App.exe`; the Visual Studio presets add a `Debug` or `Release` folder, for example `out/build/vs2026-msvc-debug/bin/Debug/App.exe`).
 
 Use **CMake: Delete Cache and Reconfigure** if changing generators, compilers, or dependency locations. Do not use the generated active-file compiler tasks; they compile only one source file and do not link the project.
 
@@ -153,25 +156,45 @@ Visual Studio reads these configurations from `CMakePresets.json`, as VS Code do
 
 The supported MinGW workflow uses the `MinGW Makefiles` generator, GCC, and vcpkg. The preset name follows that combination: `mingw-gcc-vcpkg-debug` or `mingw-gcc-vcpkg-release`.
 
+Some MinGW distributions include their own `cmake.exe`, built without a certificate bundle, so once MinGW's `bin` folder is first in the `PATH`, a plain `cmake` may be that one, and a new build directory fails to download GoogleTest (see [Troubleshooting](#troubleshooting)). Run CMake and CTest by their full paths instead (the folder below is the default of the CMake installer; `Get-Command cmake -All` lists the CMakes of the `PATH`):
+
 ```powershell
-# Make GCC discoverable in this terminal.
+# Make GCC discoverable in this terminal, and use your own vcpkg clone
 $env:Path = "$env:MINGW_ROOT\bin;$env:Path"
 $env:VCPKG_ROOT = [Environment]::GetEnvironmentVariable("VCPKG_ROOT", "User")
 
-# Configure and build Debug.
-cmake --fresh --preset mingw-gcc-vcpkg-debug
-cmake --build --preset mingw-gcc-vcpkg-debug --parallel
+# CMake and CTest of the CMake installer, not the ones of MinGW
+$cmake = "$env:ProgramFiles\CMake\bin\cmake.exe"
+$ctest = "$env:ProgramFiles\CMake\bin\ctest.exe"
+
+# Configure and build Debug
+& $cmake --fresh --preset mingw-gcc-vcpkg-debug
+& $cmake --build --preset mingw-gcc-vcpkg-debug --parallel
 ```
 
 ```powershell
-# Optional: use the release preset for Release builds.
-cmake --fresh --preset mingw-gcc-vcpkg-release
-cmake --build --preset mingw-gcc-vcpkg-release --parallel
+# Optional: use the release preset for Release builds
+& $cmake --fresh --preset mingw-gcc-vcpkg-release
+& $cmake --build --preset mingw-gcc-vcpkg-release --parallel
 ```
+
+MinGW must stay in the `PATH` to run the App and the tests, since they load its runtime DLLs. Build with another compiler in a new terminal.
 
 The preset expands `$env{VCPKG_ROOT}` when configuring, so no developer-specific path is committed to the repository. Use `cmake --fresh` after changing compiler or dependency locations because CMake caches the toolchain file. Do not reuse a build directory configured for a different generator or compiler.
 
-For Visual Studio 2026, use the generator name reported by `cmake --help` and a directory such as `out/build/vs2026-msvc-debug`. Do not reuse a directory configured for another generator or compiler.
+## Visual Studio Presets from the Command Line
+
+The Visual Studio presets (`vs2026-msvc-debug`, `vs2026-msvc-release`, `vs2022-msvc-debug`, and `vs2022-msvc-release`) use the Visual Studio generators, which find MSVC by themselves, so they run from an ordinary PowerShell, without the developer environment. They are multi-configuration: the build directory holds the configuration in a subfolder, and CTest needs it with `-C`:
+
+```powershell
+$env:VCPKG_ROOT = [Environment]::GetEnvironmentVariable("VCPKG_ROOT", "User")
+cmake --preset vs2026-msvc-debug -DENGINE_BUILD_TESTS=ON
+cmake --build --preset vs2026-msvc-debug --target App Engine_Unit_Tests
+ctest --test-dir out/build/vs2026-msvc-debug -C Debug --output-on-failure --no-tests=error
+out\build\vs2026-msvc-debug\bin\Debug\App.exe
+```
+
+Use `-C Release` with the Release presets.
 
 ## Linux with GCC or Clang
 
@@ -199,9 +222,13 @@ so VS Code and `cmake --list-presets` only show usable configurations.
 
 From Windows, the Linux build can be tested through WSL2 (Windows Subsystem for Linux):
 install Ubuntu with `wsl --install`, clone the repository inside the WSL file system (e.g., `~/src`),
-and follow the steps above. WSLg displays the window on the Windows desktop, and the OpenGL context is
+and follow the steps above. Do not build a Windows checkout through `/mnt/c`: it is slow, and its files have
+Windows line endings, which make the unit test that rewrites the materials byte for byte fail. WSLg displays the window on the Windows desktop, and the OpenGL context is
 provided by Mesa (hardware-accelerated through the D3D12 backend, or by the `llvmpipe` software renderer).
 VS Code can open the WSL folder directly with the **WSL** extension (`code .` from the WSL terminal).
+To run the smoke tests in WSL without opening windows on the Windows desktop (where key presses would reach them),
+run them on a virtual display, without the variables of WSLg:
+`env -u WAYLAND_DISPLAY -u XDG_RUNTIME_DIR xvfb-run -a ctest --test-dir out/build/ninja-gcc-debug -L smoke --output-on-failure --no-tests=error`.
 
 ## Using the Engine from Another CMake Project
 
@@ -332,22 +359,22 @@ With the `ENGINE_BUILD_TESTS` option enabled, the build registers two kinds of t
 - **Unit tests** (label `unit`): the `Engine_Unit_Tests` executable, written with [GoogleTest](https://github.com/google/googletest), tests the Core classes that do not require an OpenGL context (e.g., `String_Utils`, `File_System_Utils`, and `Random`), so they run on any machine. GoogleTest is taken from an installed package if one is found (e.g., `libgtest-dev` on Linux), and is otherwise downloaded (pinned version and hash) during the configuration.
 - **Smoke tests** (label `smoke`): run `App --frames 120` (the example scene) and a few frames of each test scene (with 10 objects in the stress test scenes), and fail if the App exits with an error code (e.g., the OpenGL 4.5 context cannot be created, or a shader fails to compile) or prints any `[ERROR` message. Other tests check that an unknown scene name is rejected, that the App runs with `--assets-dir` set to the engine's assets, and that a missing assets directory is rejected.
 
-The build presets only build the App, so the unit test executable must be requested explicitly:
+The build presets only build the App, so the unit test executable must be requested explicitly. When it was not built, CTest prints `No tests were found!!!` and still returns 0, so a script that checks the exit code would go on as if the tests had passed: `--no-tests=error` makes CTest fail instead.
 
 ```bash
 # Configure with tests enabled, build, and run the tests (Linux example)
 cmake --preset ninja-gcc-debug -DENGINE_BUILD_TESTS=ON
 cmake --build --preset ninja-gcc-debug --target App Engine_Unit_Tests
-ctest --test-dir out/build/ninja-gcc-debug --output-on-failure
+ctest --test-dir out/build/ninja-gcc-debug --output-on-failure --no-tests=error
 
 # Run only the unit tests, or only the smoke tests
-ctest --test-dir out/build/ninja-gcc-debug -L unit --output-on-failure
-ctest --test-dir out/build/ninja-gcc-debug -L smoke --output-on-failure
+ctest --test-dir out/build/ninja-gcc-debug -L unit --output-on-failure --no-tests=error
+ctest --test-dir out/build/ninja-gcc-debug -L smoke --output-on-failure --no-tests=error
 ```
 
 The unit test executable can also be run directly (e.g., `out/build/ninja-gcc-debug/bin/Engine_Unit_Tests`), which accepts GoogleTest's options, such as `--gtest_filter=StringUtilsTest.*`.
 
-On Windows, use the corresponding preset (e.g., `ninja-msvc-debug`). Visual Studio generators are multi-configuration, so they also need the configuration: `ctest --test-dir out/build/vs2026-msvc-debug -C Debug --output-on-failure`. The smoke tests open a window, so they require a display with OpenGL 4.5 support; on a headless Linux machine they can run in a virtual X server with Mesa's software renderer (e.g., `xvfb-run -a ctest --test-dir out/build/ninja-gcc-debug --output-on-failure`).
+On Windows, use the corresponding preset (e.g., `ninja-msvc-debug`). Visual Studio generators are multi-configuration, so they also need the configuration: `ctest --test-dir out/build/vs2026-msvc-debug -C Debug --output-on-failure --no-tests=error`. With MinGW, run CTest by its full path (see [MinGW with GCC and vcpkg](#mingw-with-gcc-and-vcpkg)), with MinGW in the `PATH`. The smoke tests open a window, so they require a display with OpenGL 4.5 support; on a headless Linux machine they can run in a virtual X server with Mesa's software renderer (e.g., `xvfb-run -a ctest --test-dir out/build/ninja-gcc-debug --output-on-failure`).
 
 ## Continuous Integration
 
@@ -422,12 +449,14 @@ Remove-Item -Recurse -Force out\build
 
 - **`Restored 0 package(s)`: the first configure builds every package:** The first configuration of a preset builds the dependencies (10 to 30 minutes); later ones restore them from vcpkg's binary cache. If a later configuration says `Restored 0 package(s)` and builds everything again, the hash of the packages changed. With MinGW, the usual cause was the `PATH`, which vcpkg's triplet puts in the hash; the presets now use `cmake/vcpkg_triplets`, which leaves it out (the first configuration after updating builds the packages once more). A compiler upgrade also builds them again, on purpose. To find another cause, configure twice with `-DVCPKG_INSTALL_OPTIONS=--debug`, copy the lines between `<abientries for zlib:` and `</abientries>` of each run, and compare them: the entry that differs is what changed.
 - **`Restored 0 package(s)` after a runner image update: the cache of the CI does not restore:** The hash of every package has the versions of CMake and PowerShell that vcpkg finds (the entries `cmake|<version>` and `powershell|<version>` in the lines between `<abientries for zlib:` and `</abientries>`), and on GitHub they are the ones of the runner image. The key of the cache has them too (`cmake-<version>-pwsh-<version>`), so the first run after an image update that changes one of them is cold on purpose (about 14 minutes with MinGW and 10 with MSVC), saves a new cache, and the next runs restore it. If the runs stay cold, read the summary of the Windows jobs: it says how many packages were restored and whether the versions of the key are the ones that vcpkg records; if they are not, or all the entries of two runs are equal, compare the full entries of `zlib` of both runs. As a last resort, delete the entries named `vcpkg-...` in **Actions**, **Caches** on GitHub and run the jobs again.
-- **vcpkg waits for a filesystem lock, or the installed folder is inconsistent:** Two vcpkg runs on the same vcpkg folder (two terminals, or VS Code and a terminal) wait for each other's lock (`buildtrees\vcpkg-running.lock` in `VCPKG_ROOT`): wait for the first one, or stop it. A run that was interrupted can leave the installed folder of the build inconsistent (packages missing or half installed): delete `out\build\<preset>\vcpkg_installed` and configure again; the packages come back from the binary cache.
-- **A build folder holds the tools of another compiler:** A build folder that was configured with one compiler and is configured again with another (for example a manual build folder that was used with MinGW and then with MSVC) keeps the tools in its `CMakeCache.txt`: for example MinGW's `ld.exe` and `ar.exe` under MSVC, which fails with `unrecognised emulation mode`. Delete `CMakeCache.txt` and the folder `CMakeFiles` of that build folder (or the whole folder) and configure again, or add `--fresh` to the configuration command. Each preset has its own build folder, so this only happens with a build folder that you chose yourself.
-- **`cl` is not found:** The Ninja presets with MSVC (`ninja-msvc-debug` and `ninja-msvc-release`) need a Visual Studio developer shell: `cl` is not in the `PATH` of a plain PowerShell. The Visual Studio presets (`vs2022-msvc-*` and `vs2026-msvc-*`) do not need it. Enter an x64 developer shell with the commands of [Dependency Resolution](#dependency-resolution), restore `VCPKG_ROOT` as they show (see the next entry), and check the compiler with `Get-Command cl` before configuring.
+- **vcpkg waits for a filesystem lock, or the installed folder is inconsistent:** Two vcpkg runs on the same vcpkg folder (a configuration, a build, or `vcpkg install`, from two terminals, VS Code, or another project that uses the same clone) wait for each other's lock: the second one prints `waiting to take filesystem lock on ...\buildtrees\vcpkg-running.lock` until the first one finishes, and then goes on by itself. Wait for it, or stop the other run if it is not needed; `Get-CimInstance Win32_Process | Where-Object Name -match 'vcpkg|cmake' | Select-Object ProcessId, Name, CommandLine` shows which one is running. Never delete the lock file while vcpkg runs. A run that was interrupted can leave the installed folder of the build inconsistent (packages missing or half installed): delete `out\build\<preset>\vcpkg_installed` and configure again; the packages come back from the binary cache.
+- **A build folder holds the tools of another compiler:** CMake keeps the tools that it found at the first configuration of a build folder in its `CMakeCache.txt`, and a later configuration in another environment does not replace them. This also happens with a preset's own build folder: a `ninja-msvc-*` folder configured first without the developer environment (for example by VS Code when it opened the folder, or in a terminal where MinGW was in the `PATH`) caches MinGW's `ld.exe` and `ar.exe`, and later fails with `ld.exe: unrecognised emulation mode` even in a developer shell, or the compiler identification fails with `cl ... no such file or directory`. `Select-String -Path out\build\<preset>\CMakeCache.txt -Pattern '^CMAKE_LINKER|^CMAKE_AR|^CMAKE_CXX_COMPILER:'` shows them. Configure the folder again from scratch in the right environment with `--fresh` (or delete it), and turn off the configuration on open of VS Code (see [Building with VS Code](#building-with-vs-code)).
+- **`cl` is not found:** The Ninja presets with MSVC (`ninja-msvc-debug` and `ninja-msvc-release`) need a Visual Studio developer shell: `cl` is not in the `PATH` of a plain PowerShell, nor in VS Code's integrated terminal, and VS Code's CMake panel may not provide it either. The Visual Studio presets (`vs2022-msvc-*` and `vs2026-msvc-*`) do not need it. Delete the build folder that the failed configuration left (or use `--fresh`), enter an x64 developer shell with the commands of [Dependency Resolution](#dependency-resolution), restore `VCPKG_ROOT` as they show (see the next entry), and check the compiler with `Get-Command cl` before configuring. In VS Code, use a Visual Studio preset, or start VS Code from the developer shell (see [Building with VS Code](#building-with-vs-code)).
 - **`VCPKG_ROOT` points to Visual Studio's own vcpkg:** The Visual Studio developer shell sets `VCPKG_ROOT` to the vcpkg that comes with Visual Studio, which failed to build the packages. Use your own clone of vcpkg (one that contains the `builtin-baseline` commit of `vcpkg.json`): set `VCPKG_ROOT` as a user environment variable, and in a developer shell restore it after entering the shell (`$env:VCPKG_ROOT = [Environment]::GetEnvironmentVariable("VCPKG_ROOT", "User")`). Check it with `$env:VCPKG_ROOT` before configuring.
 - **The tools that the summary shows locally can differ from the ones of the runner:** The summary of the Windows jobs of the CI (the line `Tool versions of the key`), and the debug output of vcpkg (`-DVCPKG_INSTALL_OPTIONS=--debug`), list `cmake|<version>` and `powershell|<version>` among the entries of the hash of every package. vcpkg uses the CMake and the PowerShell of the `PATH` only when they are at least the versions that its own tool list pins (`scripts\vcpkg-tools.json` in the vcpkg clone), and downloads the pinned ones otherwise, so the versions in a log of this PC can differ from the versions in the summary of the runner, and so can the hashes. Compare logs of the same machine: if the versions differ between two runs on the same machine, the `PATH` changed (another CMake or PowerShell comes first), and the packages are built again.
 - **The configuration fails downloading GoogleTest with `SSL peer certificate or SSH remote key was not OK`:** With the tests on (`-DENGINE_BUILD_TESTS=ON`) and `$env:MINGW_ROOT\bin` first in the `PATH`, a plain `cmake` can be the one that some MinGW distributions include. It is built with GnuTLS and has no certificate bundle (`no trust anchors configured` in the log), so it cannot verify github.com when it downloads GoogleTest (status 60). `Get-Command cmake -All` lists the CMakes of the `PATH`: run the one of Kitware (for example `C:\Program Files\CMake\bin\cmake.exe`, which uses the certificates of Windows), or put its folder before the one of MinGW. Do not set `CMAKE_TLS_VERIFY=0`, which turns the verification off.
+- **VS Code and a terminal configure the same build folder, and the cache is cleared:** CMake Tools passes the compiler with its full path, while a terminal configuration passes `cl`, so CMake sees another compiler and clears the cache of the build folder, in the environment of whoever configured last. Use one of them for each build folder at a time; for a configuration from a terminal next to VS Code, use another build folder (`cmake --preset <preset> -B out/build/<another name>`).
+- **CTest prints `No tests were found!!!`:** The tests were not built: configure with `-DENGINE_BUILD_TESTS=ON` and build `--target App Engine_Unit_Tests` (the build presets only build the App). CTest still returns 0 in that case, so add `--no-tests=error` to make it fail.
 - **A unit test fails with `Permission denied` on Windows:** The tests of the asset registry (`AssetReferencesTest` and `AssetOperationsFilesTest`) rename, move, and delete folders in the temporary directory, and Windows refuses that while another program (an antivirus scan, the search indexer, OneDrive, or a File Explorer window open in the folder) holds the folder or a file in it. The registry tries again for about a second before it reports the error, which is enough for a scan of a few files. If a test still fails, a program holds the folder for longer: run the tests in a terminal where `TEMP` and `TMP` point to a folder outside your user profile (for example `$env:TEMP = "C:\Dev\ut_tmp"; $env:TMP = $env:TEMP`) and, if they pass, exclude the temporary directory of your user in the antivirus. To look at a failure, repeat the test alone with `ctest --test-dir out/build/<preset> -R <test name> --repeat until-fail:20 --output-on-failure`.
 - **GLFW not found, and no `Running vcpkg install` in the output:** The build directory was configured before without the vcpkg toolchain, and CMake ignores a new toolchain file in an existing build directory. Reconfigure it with `cmake --fresh --preset <preset>` (or **CMake: Delete Cache and Reconfigure** in VS Code).
 - **`Could not find toolchain file: /scripts/buildsystems/vcpkg.cmake`:** `VCPKG_ROOT` is not set in the current process. Set it as a user environment variable (see [Dependency Resolution](#dependency-resolution)) and restart VS Code or the terminal.
@@ -435,6 +464,6 @@ Remove-Item -Recurse -Force out\build
 - **Environment value looks correct but CMake uses another path:** The current terminal may have inherited a stale `VCPKG_ROOT`. Run `$env:VCPKG_ROOT = [Environment]::GetEnvironmentVariable("VCPKG_ROOT", "User")`, or close and reopen VS Code.
 - **GLAD errors:** `core/glad.c` and `external/include/glad/glad.h` are generated with glad 0.1.36 for OpenGL 4.5 Core, without extensions. If they are missing, regenerate them from the [GLAD service](https://glad.dav1d.de/#profile=core&language=c&specification=gl&loader=on&api=gl%3D4.5) or with `pip install glad==0.1.36` and `python -m glad --profile=core --api="gl=4.5" --generator=c --spec=gl --extensions="" --out-path <dir>`.
 - **Failed to create GLFW window:** The engine requires an OpenGL 4.5 core profile context. Update the GPU drivers, and check the version reported by the GPU (e.g., with the `glxinfo -B` command on Linux, or tools such as GPU Caps Viewer or OpenGL Extensions Viewer on Windows). Remote desktop sessions and some virtual machines only provide older OpenGL versions.
-- **DLL missing when running an executable:** With MSVC, vcpkg copies the DLLs beside the executable after each build, and with MinGW, `engine_stage_runtime_dependencies` does; rebuild the target if they are missing. MinGW executables also need the MinGW runtime DLLs (e.g., `libstdc++-6.dll`), so run them with `$env:MINGW_ROOT\bin` in the `PATH`.
+- **DLL missing when running an executable (or exit code `0xc0000135`):** With MSVC, vcpkg copies the DLLs beside the executable after each build, and with MinGW, `engine_stage_runtime_dependencies` does; rebuild the target if they are missing. MinGW executables also need the MinGW runtime DLLs (e.g., `libstdc++-6.dll`), so run them with `$env:MINGW_ROOT\bin` in the `PATH`.
 
 For additional help, consult the main [README](../README.md) or raise an issue in the repository (if you have one).
