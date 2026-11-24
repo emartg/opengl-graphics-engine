@@ -35,6 +35,7 @@ Directional_Light::Directional_Light(
 	gizmo_direction_line{ nullptr }
 {
 	directional_light_count++;
+	gizmo_scale = GIZMO_SCALE;
 }
 
 // Public Methods
@@ -123,7 +124,7 @@ void Directional_Light::create_gizmo()
 		glm::vec4(diffuse, 1.0f), // set the color of the gizmo to the light's diffuse color
 		position,                 // set the position of the gizmo to the light's position
 		rotation,                 // set the rotation of the gizmo based on the light's direction
-		GIZMO_SCALE,              // set the scale of the gizmo to a predefined constant
+		gizmo_scale,              // set the scale of the gizmo (GIZMO_SCALE unless set_gizmo_scale changed it)
 		direction,                // set the forward direction of the gizmo to the light's direction
 		mesh_forward              // set the mesh's forward direction to the local space forward direction
 	);

@@ -142,6 +142,18 @@ bool Camera::set_clip_planes(GLfloat near_plane, GLfloat far_plane)
 	return true;
 }
 
+bool Camera::set_movement_speed(GLfloat speed)
+{
+	if (!std::isfinite(speed) || speed <= 0.0f)
+	{
+		std::cerr << "[WARNING::CAMERA::set_movement_speed] Invalid movement speed (" << speed
+				  << "): it must be greater than 0; the speed is not changed" << std::endl;
+		return false;
+	}
+	movement_speed = speed;
+	return true;
+}
+
 void Camera::set_zoom(GLfloat zoom)
 {
 	// the same range as process_mouse_scroll, so that the field of view never distorts or flips the image
@@ -168,7 +180,6 @@ void Camera::Reset()
 	world_up          = initial_up;
 	yaw               = initial_yaw;
 	pitch             = initial_pitch;
-	movement_speed    = SPEED;
 	mouse_sensitivity = SENSITIVITY;
 	zoom              = ZOOM;
 	recalculate_vectors();

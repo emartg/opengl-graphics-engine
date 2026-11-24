@@ -8,6 +8,9 @@
 
 #include "../texture/Texture.h"
 
+#include <cmath>
+#include <iostream>
+
 // Constructors
 // ------------
 Light::Light(
@@ -28,6 +31,21 @@ Light::Light(
 
 // Public Methods
 // --------------
+bool Light::set_gizmo_scale(const glm::vec3& scale)
+{
+	for (int i{ 0 }; i < 3; ++i)
+		if (!std::isfinite(scale[i]) || scale[i] <= 0.0f)
+		{
+			std::cerr << "[WARNING::LIGHT::set_gizmo_scale] Invalid gizmo scale (" << scale.x << ", " << scale.y << ", " << scale.z
+					  << "): every component must be greater than 0; the scale is not changed" << std::endl;
+			return false;
+		}
+	gizmo_scale = scale;
+	if (auto gizmo = get_gizmo())
+		gizmo->set_scale(scale);
+	return true;
+}
+
 void Light::draw() const
 {
 	auto gizmo = get_gizmo(); // get the gizmo representing the light
@@ -69,6 +87,13 @@ void Light::sync_gizmo_color_from_light()
 	auto gizmo = get_gizmo(); // get the gizmo representing the light
 	if (gizmo)
 		gizmo->set_albedo(glm::vec4(diffuse, 1.0f)); // set gizmo's albedo to the light's diffuse color
+}
+
+// Public Static Methods
+// ---------------------
+glm::vec2 Light::get_attenuation_for_range(GLfloat range)
+{
+	return glm::vec2{ 4.5f / range, 75.0f / (range * range) };
 }
 
 // Protected Methods

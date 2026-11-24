@@ -1483,8 +1483,12 @@ void Renderer::capture_dynamic_env_map_for_model(const std::shared_ptr<Node>& mo
 		return;
 	}
 
-	// set up capture projection and views for the 6 cubemap faces
-	glm::mat4       capture_proj    = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
+	// set up capture projection and views for the 6 cubemap faces: the planes are the ones of the scene's camera, so that a
+	// reflection shows what the camera can see, at the scale of the scene (fixed planes cut it off at a fixed distance)
+	const auto&     scene_camera    = Core::get_instance()->get_scene_manager()->get_camera();
+	const GLfloat   capture_near    = scene_camera ? scene_camera->get_near_plane() : Camera::NEAR_PLANE;
+	const GLfloat   capture_far     = scene_camera ? scene_camera->get_far_plane() : Camera::FAR_PLANE;
+	glm::mat4       capture_proj    = glm::perspective(glm::radians(90.0f), 1.0f, capture_near, capture_far);
 	const glm::vec3 pos             = model->get_world_position(); // capture from the model's position in world space
 	glm::mat4       capture_views[] = {
 		// 6 view matrices for the 6 faces of the cubemap (right, left, top, bottom, front, back)

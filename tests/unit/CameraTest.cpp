@@ -3,7 +3,7 @@
  * This file contains the unit tests of the Camera class: the perspective projection that the renderer, the picking, and the
  * outline of the selection use (which depends on the zoom of the camera, on the aspect ratio or the size of the window, and on
  * the clip planes of the camera), the clip planes and their validation, the setters of the position, the angles, and the zoom,
- * look_at, and that a camera cannot be selected, deleted, or moved like a node.
+ * look_at, the movement speed (kept by a reset), and that a camera cannot be selected, deleted, or moved like a node.
  */
 
 #include <cmath>
@@ -247,4 +247,24 @@ TEST(CameraTest, ACameraCannotBeDeletedOrMovedLikeANode)
 	// the user cannot delete it, even if an application makes it selectable, nor move it in the scene graph of an editor
 	EXPECT_FALSE(camera.get_is_deletable());
 	EXPECT_FALSE(camera.get_is_movable());
+}
+
+TEST(CameraTest, TheMovementSpeedCanBeSetAndAResetKeepsIt)
+{
+	Camera          camera{ "Camera" };
+	const glm::vec3 start{ camera.get_position() };
+
+	// a speed for a scene in centimetres: one second forward moves 250 units along the direction of the camera
+	EXPECT_TRUE(camera.set_movement_speed(250.0f));
+	camera.process_keyboard(Camera_Movement::FORWARD, 1.0f);
+	EXPECT_NEAR(glm::length(camera.get_position() - start), 250.0f, 1e-2f);
+
+	// the reset puts the view back but keeps the speed, like the clip planes, since both fit the scale of the scene
+	camera.Reset();
+	EXPECT_EQ(camera.get_position(), start);
+	EXPECT_FLOAT_EQ(camera.get_movement_speed(), 250.0f);
+
+	for (const float speed : { 0.0f, -1.0f, std::numeric_limits<float>::infinity(), std::numeric_limits<float>::quiet_NaN() })
+		EXPECT_FALSE(camera.set_movement_speed(speed));
+	EXPECT_FLOAT_EQ(camera.get_movement_speed(), 250.0f);
 }
