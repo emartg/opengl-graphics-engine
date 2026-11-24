@@ -73,7 +73,9 @@ CMake (≥3.26) with the Ninja generator is recommended, but any generator works
 
 See the detailed [Build Instructions](docs/build_instructions.md) for platform-specific steps. In short:
 
-```bash
+From an x64 Visual Studio Developer PowerShell (the Ninja presets with MSVC need `cl` in the `PATH`; see the build instructions):
+
+```powershell
 # Configure the default Ninja/MSVC x64 Debug preset (vcpkg builds the dependencies on the first configuration)
 cmake --preset ninja-msvc-debug
 
@@ -84,7 +86,7 @@ cmake --build --preset ninja-msvc-debug
 ./out/build/ninja-msvc-debug/bin/App.exe
 ```
 
-In VS Code, install **CMake Tools** and **C/C++**, select the `Ninja MSVC x64 + vcpkg Debug` or `Ninja MSVC x64 + vcpkg Release` configure preset, configure the project, set `App` as the build target, and use **CMake: Build** or the `Debug App (CMake)` launch configuration. Visual Studio uses the same presets from `CMakePresets.json`, while native Visual Studio or other generators use their own descriptive build directory. See the [Build Instructions](docs/build_instructions.md) for the complete IDE and CLI workflows.
+In VS Code, install **CMake Tools** and **C/C++**, select a Visual Studio preset (for example `vs2026-msvc-debug`, which finds MSVC by itself) or a MinGW preset, configure the project, set `App` as the build target, and use **CMake: Build** or the `Debug App (CMake)` launch configuration. The Ninja presets with MSVC work in VS Code only when it was started from a developer PowerShell, and the build instructions recommend `"cmake.configureOnOpen": false` so that a preset is never configured in the wrong environment. Visual Studio uses the same presets from `CMakePresets.json`, while native Visual Studio or other generators use their own descriptive build directory. See the [Build Instructions](docs/build_instructions.md) for the complete IDE and CLI workflows.
 
 Every Windows preset uses vcpkg: the dependencies are declared in `vcpkg.json` (vcpkg manifest mode), so vcpkg builds and installs them during the first configuration (`x64-windows` triplet with MSVC, `x64-mingw-dynamic` with MinGW). Before configuring, clone and bootstrap [vcpkg](https://github.com/microsoft/vcpkg), and set `VCPKG_ROOT` (and, for MinGW, `MINGW_ROOT`) as user environment variables:
 
@@ -93,14 +95,17 @@ Every Windows preset uses vcpkg: the dependencies are declared in `vcpkg.json` (
 [Environment]::SetEnvironmentVariable("MINGW_ROOT", "C:\path\to\mingw64", "User")
 ```
 
-Restart VS Code after changing these variables. For MinGW, use the `mingw-gcc-vcpkg-debug` or `mingw-gcc-vcpkg-release` preset, which use the MinGW Makefiles generator and GCC. In a new ordinary PowerShell terminal, configure and build with:
+Restart VS Code after changing these variables. For MinGW, use the `mingw-gcc-vcpkg-debug` or `mingw-gcc-vcpkg-release` preset, which use the MinGW Makefiles generator and GCC. In a new ordinary PowerShell terminal, configure and build with the CMake of the CMake installer, called by its full path (a MinGW distribution may include its own `cmake.exe`, which cannot download over HTTPS):
 
 ```powershell
 $env:Path = "$env:MINGW_ROOT\bin;$env:Path"
 $env:VCPKG_ROOT = [Environment]::GetEnvironmentVariable("VCPKG_ROOT", "User")
-cmake --fresh --preset mingw-gcc-vcpkg-debug
-cmake --build --preset mingw-gcc-vcpkg-debug --parallel
+$cmake = "$env:ProgramFiles\CMake\bin\cmake.exe"
+& $cmake --fresh --preset mingw-gcc-vcpkg-debug
+& $cmake --build --preset mingw-gcc-vcpkg-debug --parallel
 ```
+
+These commands change the environment of the terminal until it is closed: build with another compiler in a new terminal.
 
 Use the release preset for Release builds. If CMake reports that GLFW or Assimp is missing, verify that `VCPKG_ROOT` points to an up-to-date vcpkg Git clone that contains the `builtin-baseline` commit of `vcpkg.json`, then reconfigure with `cmake --fresh`. A Visual Studio Developer PowerShell may set `VCPKG_ROOT` to the vcpkg instance of Visual Studio; restore your own with `$env:VCPKG_ROOT = [Environment]::GetEnvironmentVariable("VCPKG_ROOT", "User")`.
 
