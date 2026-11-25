@@ -65,6 +65,24 @@ glm::mat4 Camera::get_projection_matrix(GLfloat aspect_ratio) const
 	return glm::perspective(glm::radians(zoom), aspect_ratio, near_plane, far_plane);
 }
 
+Ray Camera::get_ray(GLfloat x, GLfloat y, GLuint width, GLuint height) const
+{
+	// the point at the far plane under (x, y), seen from the position of the camera
+	const glm::vec3 far_point{ unproject(x, y, 1.0f, width, height) };
+	return Ray{ position, glm::normalize(far_point - position) };
+}
+
+glm::vec3 Camera::unproject(GLfloat x, GLfloat y, GLfloat depth, GLuint width, GLuint height) const
+{
+	// normalized device coordinates: x from -1 at the left edge to 1 at the right one, y from 1 at the top to -1 at the bottom (the
+	// view is measured from its top-left corner), and z from -1 at the near plane to 1 at the far plane
+	const GLfloat   w{ width == 0 ? 1.0f : static_cast<GLfloat>(width) };
+	const GLfloat   h{ height == 0 ? 1.0f : static_cast<GLfloat>(height) };
+	const glm::vec4 ndc{ 2.0f * x / w - 1.0f, 1.0f - 2.0f * y / h, 2.0f * depth - 1.0f, 1.0f };
+	const glm::vec4 world{ glm::inverse(get_projection_matrix(width, height) * get_view_matrix()) * ndc };
+	return glm::vec3{ world } / world.w;
+}
+
 glm::mat4 Camera::get_projection_matrix(GLuint width, GLuint height) const
 {
 	// a framebuffer of height 0 (a minimized window) has no aspect ratio, and a division by 0 would fill the matrix with infinities

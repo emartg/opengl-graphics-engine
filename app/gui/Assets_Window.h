@@ -16,11 +16,13 @@
 #include <array>
 #include <cstdint>
 #include <map>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
 
 #include <imgui.h>
+#include <glm/glm.hpp>
 
 class Assets_Window
 {
@@ -37,6 +39,18 @@ public:
 
 	// Scans the assets directory again (e.g., after its files changed outside the App), keeping what is still selected
 	void refresh();
+
+	// Draws the target of the dragged assets over the scene: an invisible window over the scene viewport (its position and size
+	// in the coordinates of the GUI), behind the other windows, which takes the mouse only while items of this window are dragged
+	// (otherwise the clicks and the drags reach the scene). One model or one skybox is accepted: the text next to the cursor says
+	// what dropping it does (a model rests on the surface under the cursor, or on the ground plane y = 0; a skybox replaces the
+	// skybox of the scene), and why anything else is refused. The drop only asks: place_dropped_asset does it in the next frame
+	void draw_scene_drop_target(const ImVec2& position, const ImVec2& size);
+
+	// Places the asset that was dropped onto the scene in the last frame, if any: a model is imported, rests with the bottom centre
+	// of its bounding box on the point where it was dropped, and becomes the selection; a skybox replaces the skybox of the scene.
+	// The result is written in the status of the window. Called at the start of a frame, before the windows are drawn
+	void place_dropped_asset();
 
 	// Getters
 	// -------
@@ -58,6 +72,14 @@ private:
 		NEW_FOLDER,
 		RENAME,
 		DELETE
+	};
+
+	// An asset dropped onto the scene, which place_dropped_asset places in the next frame
+	struct Scene_Drop
+	{
+		std::string path;                      // relative to the assets directory
+		Asset_Type  type{ Asset_Type::MODEL }; // a model or a skybox
+		glm::vec3   point{ 0.0f };             // where a model is placed, in world units
 	};
 
 	// A row of the list of the window: a folder or an asset
@@ -93,6 +115,12 @@ private:
 	std::map<std::string, std::uintmax_t>            size_cache;      // sizes of the files, so that they are not asked every frame
 	std::string                                      properties_path; // item whose attributes are in properties_rows
 	std::vector<std::pair<std::string, std::string>> properties_rows; // attributes of that item (name and value)
+
+	// asset dropped onto the scene, which place_dropped_asset places in the next frame
+	std::optional<Scene_Drop> pending_scene_drop;
+	// what dropping the dragged items onto the scene does, or why they are refused, shown next to the cursor at the end of draw (the
+	// target of the scene is drawn before the drag source, whose own text would otherwise replace it)
+	std::string scene_drop_text;
 
 	// Private Methods
 	// ---------------
@@ -145,6 +173,14 @@ private:
 
 	// Returns why the dragged items cannot be moved into a folder, or an empty text if all of them can
 	std::string get_drop_error(const std::string& folder) const;
+
+	// Returns why the dragged items cannot be dropped onto the scene at the cursor (at the given point of the framebuffer, in pixels
+	// from its top-left corner), or an empty text if they can, in which case the drop is filled (and the action is the text that
+	// tells the user what dropping does)
+	std::string get_scene_drop_error(double framebuffer_x, double framebuffer_y, Scene_Drop& drop, std::string& action) const;
+
+	// Shows the reason why the dragged items are refused over the scene next to the cursor, and in the status when they are dropped
+	void refuse_scene_drop(const std::string& reason);
 
 	// Moves items (and what is inside the folders) into a folder, updating the selection, the current folder, and the messages
 	void move_items(const std::vector<std::string>& paths, const std::string& folder);

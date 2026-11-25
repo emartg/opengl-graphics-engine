@@ -368,3 +368,28 @@ Scene_Viewport Core::get_scene_viewport() const
 	const Scene_Viewport whole_framebuffer{ 0, 0, screen_width, screen_height };
 	return requested_scene_viewport.value_or(whole_framebuffer).clipped_to(screen_width, screen_height);
 }
+
+std::optional<glm::vec3> Core::find_surface_point(GLdouble x, GLdouble y) const
+{
+	const Scene_Viewport viewport{ get_scene_viewport() };
+	const auto           camera = scene_manager ? scene_manager->get_camera() : nullptr;
+	if (!renderer || !camera || !viewport.contains(x, y))
+		return std::nullopt;
+
+	// the pixel of the offscreen image under the point (the image has the size of the scene viewport)
+	const GLint                  pixel_x{ static_cast<GLint>(x - viewport.x) };
+	const GLint                  pixel_y{ static_cast<GLint>(y - viewport.y) };
+	const std::optional<GLfloat> depth{ renderer->read_scene_depth(pixel_x, pixel_y) };
+	if (!depth || *depth >= 1.0f)
+		return std::nullopt; // nothing was drawn there, or only the sky
+	return camera->unproject(pixel_x + 0.5f, pixel_y + 0.5f, *depth, viewport.width, viewport.height);
+}
+
+std::optional<Ray> Core::get_scene_ray(GLdouble x, GLdouble y) const
+{
+	const Scene_Viewport viewport{ get_scene_viewport() };
+	const auto           camera = scene_manager ? scene_manager->get_camera() : nullptr;
+	if (!camera || !viewport.contains(x, y))
+		return std::nullopt;
+	return camera->get_ray(static_cast<GLfloat>(x - viewport.x), static_cast<GLfloat>(y - viewport.y), viewport.width, viewport.height);
+}

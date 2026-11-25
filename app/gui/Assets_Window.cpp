@@ -8,8 +8,13 @@
 #include "Assets_Window.h"
 
 #include "core/Core.h"
+#include "core/camera/Camera.h"
+#include "core/managers/Node_Manager.h"
+#include "core/managers/Scene_Manager.h"
 #include "core/managers/Selection_Manager.h"
 #include "core/material/Material_Library.h"
+#include "core/model/Assimp_Model.h"
+#include "core/utils/string/String_Utils.h"
 
 #include <algorithm>
 #include <cctype>
@@ -37,6 +42,9 @@ namespace
 
 	// maximum number of lines of a list in a dialog or in the Properties window before it is cut
 	constexpr std::size_t MAX_LISTED_ITEMS{ 12 };
+
+	// the six images of a cubemap skybox, in the order of Scene_Manager::load_skybox (right, left, top, bottom, front, back)
+	constexpr const char* CUBEMAP_FACES[]{ "posx", "negx", "posy", "negy", "posz", "negz" };
 
 	// Returns the folder of a path (relative, with "/" separators), empty if it is in the directory itself
 	std::string parent_of(const std::string& path)
@@ -152,6 +160,10 @@ void Assets_Window::draw(const ImVec2& position, const ImVec2& size, ImFont* bol
 	draw_dialogs();
 
 	ImGui::End();
+
+	// over the scene, what dropping the dragged items does (or why they are refused) replaces the text of the drag source
+	if (!scene_drop_text.empty())
+		ImGui::SetTooltip("%s", scene_drop_text.c_str());
 
 	if (just_appeared)
 	{                                   // in the first frame the window must not take the focus
@@ -601,6 +613,115 @@ void Assets_Window::delete_items(const std::vector<std::string>& paths)
 		set_status("Deleted " + std::to_string(deleted) + " item(s). " + errors, true);
 }
 
+void Assets_Window::draw_scene_drop_target(const ImVec2& position, const ImVec2& size)
+{
+	const ImGuiPayload* dragged = ImGui::GetDragDropPayload();
+	const bool          is_dragging_items{ dragged != nullptr && dragged->IsDataType(ITEMS_PAYLOAD) };
+	scene_drop_text.clear();
+
+	// the window is behind every other window (it is drawn first, and never brought to the front); without items being dragged it
+	// takes no input, so that the clicks, the drags, and the wheel reach the scene
+	ImGuiWindowFlags flags{ ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoSavedSettings |
+							ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNav |
+							ImGuiWindowFlags_NoMove };
+	if (!is_dragging_items)
+		flags |= ImGuiWindowFlags_NoInputs;
+	ImGui::SetNextWindowPos(position, ImGuiCond_Always);
+	ImGui::SetNextWindowSize(size, ImGuiCond_Always);
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{ 0.0f, 0.0f });
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+	ImGui::Begin("##scene_drop_target", nullptr, flags);
+	if (is_dragging_items && size.x > 0.0f && size.y > 0.0f)
+	{
+		ImGui::SetCursorScreenPos(position);
+		ImGui::InvisibleButton("##scene", size);
+		if (ImGui::BeginDragDropTarget())
+		{
+			// the cursor in pixels of the framebuffer, as the Core measures the scene viewport
+			const ImGuiIO&    io = ImGui::GetIO();
+			Scene_Drop        drop;
+			std::string       action;
+			const std::string error = get_scene_drop_error(
+				io.MousePos.x * io.DisplayFramebufferScale.x,
+				io.MousePos.y * io.DisplayFramebufferScale.y,
+				drop,
+				action);
+			if (error.empty())
+			{
+				scene_drop_text = action;
+				if (ImGui::AcceptDragDropPayload(ITEMS_PAYLOAD) != nullptr)
+					pending_scene_drop = drop; // placed at the start of the next frame
+			}
+			else
+				refuse_scene_drop(error);
+			ImGui::EndDragDropTarget();
+		}
+	}
+	ImGui::End();
+	ImGui::PopStyleVar(2);
+}
+
+void Assets_Window::place_dropped_asset()
+{
+	if (!pending_scene_drop)
+		return;
+	const Scene_Drop drop{ *pending_scene_drop };
+	pending_scene_drop.reset();
+
+	auto           core = Core::get_instance();
+	const fs::path absolute_path{ registry.get_root() / drop.path };
+	if (drop.type == Asset_Type::MODEL)
+	{
+		auto model =
+			std::make_shared<Assimp_Model>(String_Utils::to_clean_display_name(name_of(drop.path)), absolute_path.generic_string());
+		model->set_name(String_Utils::generate_id_prefixed_name(model));
+
+		// the model rests on the point: the bottom centre of its bounding box goes there (a model without geometry is placed by its
+		// origin)
+		const Bounding_Box box{ model->get_world_bounding_box() };
+		if (box.is_valid())
+		{
+			const glm::vec3 centre{ box.get_center() };
+			model->set_position(model->get_position() + drop.point - glm::vec3{ centre.x, box.get_min().y, centre.z });
+		}
+		else
+			model->set_position(drop.point);
+
+		// what a drop creates becomes the selection (which unselects the assets)
+		const std::uint32_t id{ model->get_id() };
+		const std::string   name{ model->get_name() };
+		core->get_node_manager()->add_node(std::move(model));
+		core->get_selection_manager()->set_selected_node_id(id);
+		selection.clear();
+		std::ostringstream text;
+		text << std::fixed << std::setprecision(2) << "Placed \"" << name << "\" at (" << drop.point.x << ", " << drop.point.y << ", "
+			 << drop.point.z << ").";
+		set_status(text.str(), false);
+		return;
+	}
+
+	// a skybox: an HDR image, or the six images of a cubemap folder
+	bool is_loaded{ false };
+	if (fs::is_directory(absolute_path))
+	{
+		std::vector<std::string> faces;
+		for (const char* face : CUBEMAP_FACES)
+			for (const auto& entry : fs::directory_iterator{ absolute_path })
+				if (entry.is_regular_file() && entry.path().stem() == face)
+				{
+					faces.push_back(entry.path().generic_string());
+					break;
+				}
+		is_loaded = faces.size() == 6 && core->get_scene_manager()->load_skybox(faces);
+	}
+	else
+		is_loaded = core->get_scene_manager()->load_skybox(absolute_path.generic_string());
+	if (is_loaded)
+		set_status("The skybox is now \"" + name_of(drop.path) + "\".", false);
+	else
+		set_status("The skybox \"" + name_of(drop.path) + "\" could not be loaded.", true);
+}
+
 void Assets_Window::draw_drag_source(const std::string& path)
 {
 	if (!ImGui::BeginDragDropSource())
@@ -692,6 +813,57 @@ std::string Assets_Window::get_drop_error(const std::string& folder) const
 			return "\"" + name_of(path) + "\": " + error;
 	}
 	return {};
+}
+
+std::string Assets_Window::get_scene_drop_error(double framebuffer_x, double framebuffer_y, Scene_Drop& drop, std::string& action) const
+{
+	if (dragged_paths.size() != 1)
+		return "Drop one model or one skybox onto the scene";
+	const Asset* asset = registry.find_by_path(dragged_paths.front());
+	if (asset == nullptr)
+		return "A folder cannot be dropped onto the scene";
+
+	drop.path              = asset->path.generic_string();
+	drop.type              = asset->type;
+	const auto        core = Core::get_instance();
+	const std::string name{ name_of(drop.path) };
+	switch (asset->type)
+	{
+		case Asset_Type::MODEL:
+		{
+			// on the surface under the cursor, or else on the ground plane (y = 0) where the cursor's ray meets it within the far plane
+			if (const std::optional<glm::vec3> point = core->find_surface_point(framebuffer_x, framebuffer_y))
+				drop.point = *point;
+			else
+			{
+				const std::optional<Ray>   ray      = core->get_scene_ray(framebuffer_x, framebuffer_y);
+				const auto&                camera   = core->get_scene_manager()->get_camera();
+				const std::optional<float> distance = ray ? ray->intersect_horizontal_plane(0.0f) : std::nullopt;
+				if (!distance || !camera || *distance > camera->get_far_plane())
+					return "There is no surface under the cursor, and the ground plane (y = 0) is not in view there";
+				drop.point = ray->at(*distance);
+			}
+			action = "Place \"" + name + "\" here";
+			return {};
+		}
+		case Asset_Type::SKYBOX:
+			if (name.ends_with(".skybox.json"))
+				return "Skybox descriptors cannot be loaded yet";
+			action = "Use \"" + name + "\" as the skybox";
+			return {};
+		case Asset_Type::MATERIAL: return "Materials cannot be dropped onto the scene yet";
+		default: return Asset_Registry::to_string(asset->type) + " assets cannot be dropped onto the scene";
+	}
+}
+
+void Assets_Window::refuse_scene_drop(const std::string& reason)
+{
+	// as refuse_dragged_items, but nothing is placed rather than moved (the reason is shown at the end of draw)
+	scene_drop_text = reason;
+	const ImGuiPayload* dropped =
+		ImGui::AcceptDragDropPayload(ITEMS_PAYLOAD, ImGuiDragDropFlags_AcceptBeforeDelivery | ImGuiDragDropFlags_AcceptNoDrawDefaultRect);
+	if (dropped != nullptr && dropped->IsDelivery())
+		set_status("Nothing was placed. " + reason + ".", true);
 }
 
 void Assets_Window::move_items(const std::vector<std::string>& paths, const std::string& folder)

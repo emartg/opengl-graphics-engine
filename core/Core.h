@@ -24,6 +24,7 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include "renderer/Scene_Viewport.h"
+#include "utils/geometry/Ray.h"
 
 // Forward declaration of classes to avoid cyclic includes and allow virtual interfaces and pointers
 class Camera;
@@ -151,6 +152,14 @@ public:
 	// framebuffer (Scene_Viewport::clipped_to), or the whole framebuffer if none was set. The projection of the camera, the
 	// offscreen render pass, the picking, and the outline of the selection all have its size
 	Scene_Viewport get_scene_viewport() const;
+	// Returns the point of the surface drawn at a point of the framebuffer (in pixels from its top-left corner, as for
+	// set_scene_viewport), read from the depth of the last rendered frame, or nothing when the point is outside the scene viewport,
+	// over the sky or empty space, or there is no camera. A GUI layer calls it while it is drawn, so it finds what is on the screen
+	// (for example, where to place an object that is dropped onto the scene). Transparent objects are not found
+	std::optional<glm::vec3> find_surface_point(GLdouble x, GLdouble y) const;
+	// Returns the ray from the camera through a point of the framebuffer (in pixels from its top-left corner), or nothing when the
+	// point is outside the scene viewport or there is no camera
+	std::optional<Ray> get_scene_ray(GLdouble x, GLdouble y) const;
 
 	// Setters
 	void set_renderer(Renderer* renderer) { this->renderer = renderer; }
