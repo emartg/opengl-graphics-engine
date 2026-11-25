@@ -46,13 +46,16 @@ public:
 
 	// Draws the target of the dragged assets over the scene: an invisible window over the scene viewport (its position and size
 	// in the coordinates of the GUI), behind the other windows, which takes the mouse only while items of this window are dragged
-	// (otherwise the clicks and the drags reach the scene). One model or one skybox is accepted: the text next to the cursor says
-	// what dropping it does (a model rests on the surface under the cursor, or on the ground plane y = 0; a skybox replaces the
-	// skybox of the scene), and why anything else is refused. The drop only asks: place_dropped_asset does it in the next frame
+	// (otherwise the clicks and the drags reach the scene). One model, shape, light, skybox, or material is accepted: the text next
+	// to the cursor says what dropping it does (a model, a shape, or a light rests on the surface under the cursor, or on the ground
+	// plane y = 0; a skybox replaces the skybox of the scene; a material is given to the model under the cursor), and why anything
+	// else is refused. The drop only asks: place_dropped_asset does it in the next frame
 	void draw_scene_drop_target(const ImVec2& position, const ImVec2& size);
 
-	// Places the asset that was dropped onto the scene in the last frame, if any: a model is imported, rests with the bottom centre
-	// of its bounding box on the point where it was dropped, and becomes the selection; a skybox replaces the skybox of the scene.
+	// Places the asset that was dropped onto the scene in the last frame, if any: a model is imported, and a shape or a light is
+	// built from its descriptor (in the units of the scene); it rests with the bottom centre of its bounding box (of its gizmo, for a
+	// light) on the point where it was dropped, and becomes the selection. A skybox replaces the skybox of the scene, and a material
+	// is given to its model.
 	// The result is written in the status of the window. Called at the start of a frame, before the windows are drawn
 	void place_dropped_asset();
 
@@ -87,8 +90,8 @@ private:
 	struct Scene_Drop
 	{
 		std::string   path;                      // relative to the assets directory
-		Asset_Type    type{ Asset_Type::MODEL }; // a model or a skybox
-		glm::vec3     point{ 0.0f };             // where a model is placed, in world units
+		Asset_Type    type{ Asset_Type::MODEL }; // a model, a shape, a light, a skybox, or a material
+		glm::vec3     point{ 0.0f };             // where a model, a shape, or a light is placed, in world units
 		std::uint32_t node_id{ 0 };              // the model that a material is given to
 	};
 
@@ -191,6 +194,11 @@ private:
 
 	// Shows the reason why the dragged items are refused over the scene next to the cursor, and in the status when they are dropped
 	void refuse_scene_drop(const std::string& reason);
+
+	// Places the shape or the light of a drop, built from its descriptor, and selects it
+	void place_shape_or_light(const Scene_Drop& drop, const std::filesystem::path& file);
+	// Adds to the scene a node that a drop created, selects it, and writes where it was placed in the status
+	void finish_placing(const std::shared_ptr<Node>& node, const glm::vec3& point);
 
 	// Returns why a material cannot be given to a node (none, a light's gizmo, a group, the camera...), or an empty text if it can
 	static std::string get_material_target_error(const Node* node);

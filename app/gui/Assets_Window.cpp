@@ -9,6 +9,10 @@
 
 #include "core/Core.h"
 #include "core/camera/Camera.h"
+#include "core/asset/Node_Factory.h"
+#include "core/light/Directional_Light.h"
+#include "core/light/Point_Light.h"
+#include "core/light/Spotlight.h"
 #include "core/managers/Node_Manager.h"
 #include "core/managers/Scene_Manager.h"
 #include "core/managers/Selection_Manager.h"
@@ -35,6 +39,16 @@ namespace fs = std::filesystem;
 
 namespace
 {
+	// Returns how far something must move so that the bottom centre of its box is on a point (nothing for a box without
+	// geometry)
+	glm::vec3 get_offset_to_rest_on(const Bounding_Box& box, const glm::vec3& point)
+	{
+		if (!box.is_valid())
+			return glm::vec3{ 0.0f };
+		const glm::vec3 centre{ box.get_center() };
+		return point - glm::vec3{ centre.x, box.get_min().y, centre.z };
+	}
+
 	// colors of the messages
 	const ImVec4 ERROR_COLOR{ 1.0f, 0.4f, 0.4f, 1.0f };
 	const ImVec4 SUCCESS_COLOR{ 0.6f, 0.9f, 0.6f, 1.0f };
@@ -706,23 +720,18 @@ void Assets_Window::place_dropped_asset()
 		// origin)
 		const Bounding_Box box{ model->get_world_bounding_box() };
 		if (box.is_valid())
-		{
-			const glm::vec3 centre{ box.get_center() };
-			model->set_position(model->get_position() + drop.point - glm::vec3{ centre.x, box.get_min().y, centre.z });
-		}
+			model->set_position(model->get_position() + get_offset_to_rest_on(box, drop.point));
 		else
 			model->set_position(drop.point);
 
-		// what a drop creates becomes the selection (which unselects the assets)
-		const std::uint32_t id{ model->get_id() };
-		const std::string   name{ model->get_name() };
-		core->get_node_manager()->add_node(std::move(model));
-		core->get_selection_manager()->set_selected_node_id(id);
-		selection.clear();
-		std::ostringstream text;
-		text << std::fixed << std::setprecision(2) << "Placed \"" << name << "\" at (" << drop.point.x << ", " << drop.point.y << ", "
-			 << drop.point.z << ").";
-		set_status(text.str(), false);
+		core->get_node_manager()->add_node(model);
+		finish_placing(model, drop.point);
+		return;
+	}
+
+	if (drop.type == Asset_Type::SHAPE || drop.type == Asset_Type::LIGHT)
+	{
+		place_shape_or_light(drop, absolute_path);
 		return;
 	}
 
@@ -765,6 +774,64 @@ void Assets_Window::place_dropped_asset()
 		set_status("The skybox is now \"" + name_of(drop.path) + "\".", false);
 	else
 		set_status("The skybox \"" + name_of(drop.path) + "\" could not be loaded.", true);
+}
+
+void Assets_Window::place_shape_or_light(const Scene_Drop& drop, const fs::path& file)
+{
+	auto          core = Core::get_instance();
+	const GLfloat units_per_metre{ core->get_scene_manager()->get_units_per_metre() };
+	std::string   error;
+
+	if (drop.type == Asset_Type::SHAPE)
+	{
+		const auto descriptor = Node_Factory::load_shape_descriptor(file, error);
+		if (!descriptor)
+		{
+			set_status("The shape \"" + name_of(drop.path) + "\" could not be loaded: " + error, true);
+			return;
+		}
+		const auto shape = Node_Factory::create_shape(*descriptor, drop.point, units_per_metre);
+		shape->set_position(shape->get_position() + get_offset_to_rest_on(shape->get_world_bounding_box(), drop.point));
+		core->get_node_manager()->add_node(shape);
+		finish_placing(shape, drop.point);
+		return;
+	}
+
+	const auto descriptor = Node_Factory::load_light_descriptor(file, error);
+	if (!descriptor)
+	{
+		set_status("The light \"" + name_of(drop.path) + "\" could not be loaded: " + error, true);
+		return;
+	}
+	const auto light = Node_Factory::create_light(*descriptor, drop.point, units_per_metre);
+	const auto gizmo = light->get_gizmo();
+	if (gizmo)
+	{ // a light has no shape of its own: its gizmo is what rests on the point (its position moves with it)
+		const glm::vec3 offset{ get_offset_to_rest_on(gizmo->get_world_bounding_box(), drop.point) };
+		const auto      move = [&offset](auto& moved_light) {
+			moved_light.set_position(moved_light.get_position() + offset);
+		};
+		if (const auto directional_light = std::dynamic_pointer_cast<Directional_Light>(light))
+			move(*directional_light);
+		else if (const auto point_light = std::dynamic_pointer_cast<Point_Light>(light))
+			move(*point_light);
+		else if (const auto spotlight = std::dynamic_pointer_cast<Spotlight>(light))
+			move(*spotlight);
+		core->get_node_manager()->add_node(gizmo); // the gizmo is registered for picking, before its light
+	}
+	core->get_node_manager()->add_node(light);
+	finish_placing(light, drop.point);
+}
+
+void Assets_Window::finish_placing(const std::shared_ptr<Node>& node, const glm::vec3& point)
+{
+	// what a drop creates becomes the selection (which unselects the assets)
+	Core::get_instance()->get_selection_manager()->set_selected_node_id(node->get_id());
+	selection.clear();
+	std::ostringstream text;
+	text << std::fixed << std::setprecision(2) << "Placed \"" << node->get_name() << "\" at (" << point.x << ", " << point.y << ", "
+		 << point.z << ").";
+	set_status(text.str(), false);
 }
 
 void Assets_Window::draw_drag_source(const std::string& path)
@@ -863,7 +930,7 @@ std::string Assets_Window::get_drop_error(const std::string& folder) const
 std::string Assets_Window::get_scene_drop_error(double framebuffer_x, double framebuffer_y, Scene_Drop& drop, std::string& action) const
 {
 	if (dragged_paths.size() != 1)
-		return "Drop one model or one skybox onto the scene";
+		return "Drop one asset at a time onto the scene";
 	const Asset* asset = registry.find_by_path(dragged_paths.front());
 	if (asset == nullptr)
 		return "A folder cannot be dropped onto the scene";
@@ -875,6 +942,8 @@ std::string Assets_Window::get_scene_drop_error(double framebuffer_x, double fra
 	switch (asset->type)
 	{
 		case Asset_Type::MODEL:
+		case Asset_Type::SHAPE:
+		case Asset_Type::LIGHT:
 		{
 			// on the surface under the cursor, or else on the ground plane (y = 0) where the cursor's ray meets it within the far plane
 			if (const std::optional<glm::vec3> point = core->find_surface_point(framebuffer_x, framebuffer_y))
