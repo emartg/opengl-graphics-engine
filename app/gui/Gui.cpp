@@ -1727,7 +1727,7 @@ void GUI::draw_directional_light_controls(Directional_Light* directional_light)
 	glm::vec3 pos = directional_light->get_position();
 	// create a control for the x, y, and z components of the directional light's position
 	if (draw_vec3_control(
-			"position",
+			"Position",
 			pos,
 			false, // this is not a scale control
 			MIN_POSITION_VALUE,
@@ -1746,7 +1746,7 @@ void GUI::draw_directional_light_controls(Directional_Light* directional_light)
 		glm::vec3 rotation_in_degrees = gizmo->get_rotation_in_euler_angles();
 		// create a control for the x, y, and z components of the directional light's rotation
 		if (draw_vec3_control(
-				"Rotation",
+				"Direction (Rotation)",
 				rotation_in_degrees,
 				false, // this is not a scale control
 				MIN_ROTATION_VALUE,
@@ -1788,7 +1788,7 @@ void GUI::draw_point_light_controls(Point_Light* point_light)
 	glm::vec3 pos = point_light->get_position();
 	// create a control for the x, y, and z components of the point light's position
 	if (draw_vec3_control(
-			"position",
+			"Position",
 			pos,
 			false, // this is not a scale control
 			MIN_POSITION_VALUE,
@@ -1825,7 +1825,7 @@ void GUI::draw_spotlight_controls(Spotlight* spotlight)
 	glm::vec3 pos = spotlight->get_position();
 	// create a control for the x, y, and z components of the spotlight's position
 	if (draw_vec3_control(
-			"position",
+			"Position",
 			pos,
 			false, // this is not a scale control
 			MIN_POSITION_VALUE,
@@ -1844,7 +1844,7 @@ void GUI::draw_spotlight_controls(Spotlight* spotlight)
 		glm::vec3 rotation_in_degrees = gizmo->get_rotation_in_euler_angles();
 		// create a control for the x, y, and z components of the spotlight's rotation
 		if (draw_vec3_control(
-				"Rotation",
+				"Direction (Rotation)",
 				rotation_in_degrees,
 				false, // this is not a scale control
 				MIN_ROTATION_VALUE,
@@ -1868,7 +1868,7 @@ void GUI::draw_spotlight_controls(Spotlight* spotlight)
 	float inner_cutoff = glm::degrees(glm::acos(spotlight->get_inner_cutoff()));
 	float outer_cutoff = glm::degrees(glm::acos(spotlight->get_outer_cutoff()));
 	// create controls for the inner and outer cut-off angles of the spotlight
-	ImGui::Text("Cut-off Angles (in degrees):");
+	ImGui::Text("Cut-Off Angles (in degrees):");
 	if (draw_float_control(
 			"Inner",
 			inner_cutoff,
@@ -1968,7 +1968,7 @@ void GUI::draw_model_controls(Node* model)
 	glm::vec3 pos = model->get_position();
 	// create a control for the x, y, and z components of the model's position
 	if (draw_vec3_control(
-			"position",
+			"Position",
 			pos,
 			false, // this is not a scale control
 			MIN_POSITION_VALUE,
@@ -2046,7 +2046,7 @@ void GUI::draw_create_directional_light_popup()
 		draw_color_control("Albedo", albedo_rgb);
 		new_albedo = glm::vec4(albedo_rgb, 1.0f); // set alpha to 1.0f
 		draw_vec3_control(
-			"position",
+			"Position",
 			new_position,
 			false, // this is not a scale control
 			MIN_POSITION_VALUE,
@@ -2118,7 +2118,7 @@ void GUI::draw_create_point_light_popup()
 		draw_color_control("Albedo", albedo_rgb);
 		new_albedo = glm::vec4(albedo_rgb, 1.0f); // set alpha to 1.0f
 		draw_vec3_control(
-			"position",
+			"Position",
 			new_position,
 			false, // this is not a scale control
 			MIN_POSITION_VALUE,
@@ -2178,7 +2178,7 @@ void GUI::draw_create_spotlight_popup()
 		draw_color_control("Albedo", albedo_rgb);
 		new_albedo = glm::vec4(albedo_rgb, 1.0f); // set alpha to 1.0f
 		draw_vec3_control(
-			"position",
+			"Position",
 			new_position,
 			false, // this is not a scale control
 			MIN_POSITION_VALUE,
@@ -2273,7 +2273,7 @@ void GUI::draw_create_plane_shape_popup()
 		// display controls to set the color, position, and size of the new plane shape
 		draw_color_control("Color", new_albedo);
 		draw_vec3_control(
-			"position",
+			"Position",
 			new_position,
 			false, // this is not a scale control
 			MIN_POSITION_VALUE,
@@ -2359,7 +2359,7 @@ void GUI::draw_create_cube_shape_popup()
 		// display controls to set the color, position, and size of the new cube shape
 		draw_color_control("Color", new_albedo);
 		draw_vec3_control(
-			"position",
+			"Position",
 			new_position,
 			false, // this is not a scale control
 			MIN_POSITION_VALUE,
