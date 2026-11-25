@@ -98,7 +98,7 @@ Next, each phase is described step-by-step.
 - **`Assets_Window`** (App) - The ASSETS window of the editor, in the lower part of the left column. It draws the folders and assets of the assets directory using an `Asset_Registry` (which does the file operations) and an `Asset_Selection`, and keeps only what belongs to the window: the folder that is shown, the search text, the dialogs (new folder, rename, and delete), the items that are being dragged onto a folder (the move is done at the start of the next frame, with the reasons of the registry, `get_move_error`, shown next to the cursor and, when the items are dropped, in the status), and the messages of the last operation. `GUI` shows the attributes of the selected assets in the Properties window, and unselects the assets when something of the scene is selected.
 - **`Render_Pass`** - Encapsulates off-screen framebuffer management (FBO, attachments, resolution). Used for color picking and environment map captures.
 - **Managers** - Dedicated services:
-  - `Scene_Manager` - holds the root node.
+  - `Scene_Manager` - holds the camera and the skybox of the scene, and the unit of the scene (`set_units_per_metre`, 1 by default: a scene in metres), which gives the camera the defaults of that unit (`Camera::apply_units`: its clip planes, its speed, and the position that a reset restores, without moving it) and converts lengths given in metres.
   - `Node_Manager` - stores and retrieves nodes by ID.
   - `Selection_Manager` - handles color-picking and outlining.
   - `Input_Manager` - translates raw input to camera/UI actions.

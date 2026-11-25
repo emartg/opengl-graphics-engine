@@ -87,6 +87,8 @@ public:
 	GLfloat   get_zoom() const { return zoom; }
 	GLfloat   get_near_plane() const { return near_plane; }
 	GLfloat   get_far_plane() const { return far_plane; }
+	// Returns the number of world units in a metre that the camera's defaults were set for (apply_units; 1 by default)
+	GLfloat get_units_per_metre() const { return units_per_metre; }
 
 	// Setters
 	// Moves the camera to a position, in world units, without turning it (its direction and its angles do not change). Like
@@ -106,6 +108,14 @@ public:
 	// false and keeps the current speed when it is not finite or not greater than 0. An application whose scene is very large or
 	// very small sets a speed that fits it, as it sets the clip planes (Reset keeps both)
 	bool set_movement_speed(GLfloat speed);
+	// Sets the defaults of the camera for a scene with the given number of world units in a metre (for example 100 for a scene in
+	// centimetres), and returns true: the clip planes become 0.1 m and 100 m (NEAR_PLANE and FAR_PLANE times it), the movement speed
+	// 2.5 m per second, and the position that Reset restores becomes the default position in that unit, but only if it is the default
+	// position (a position given to the constructor is kept). It never moves the camera: its current position, its direction, and its
+	// zoom stay as they are, so a camera that the application already placed stays where it is. The planes and the speed set before it
+	// are replaced, so the overrides (set_clip_planes, set_movement_speed) come after it. Returns false and changes nothing when the
+	// number is not finite or not greater than 0
+	bool apply_units(GLfloat units_per_metre);
 	// Sets the zoom, which is the vertical field of view of the projection in degrees, limited to the range from 1 to 90 degrees
 	// that the mouse wheel also respects
 	void set_zoom(GLfloat zoom);
@@ -167,6 +177,7 @@ private:
 	GLfloat zoom;
 	GLfloat near_plane{ NEAR_PLANE };
 	GLfloat far_plane{ FAR_PLANE };
+	GLfloat units_per_metre{ 1.0f }; // the unit that the defaults of the camera were set for (apply_units)
 
 	// initial values for camera reset
 	glm::vec3 initial_position;

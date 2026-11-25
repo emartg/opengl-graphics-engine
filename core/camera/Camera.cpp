@@ -154,6 +154,27 @@ bool Camera::set_movement_speed(GLfloat speed)
 	return true;
 }
 
+bool Camera::apply_units(GLfloat units_per_metre)
+{
+	if (!std::isfinite(units_per_metre) || units_per_metre <= 0.0f)
+	{
+		std::cerr << "[WARNING::CAMERA::apply_units] Invalid number of units per metre (" << units_per_metre
+				  << "): it must be greater than 0; the camera is not changed" << std::endl;
+		return false;
+	}
+
+	// the position that Reset restores follows the unit only while it is the default position (in the previous unit): a position
+	// given to the constructor belongs to the application and is kept
+	if (initial_position == POSITION * this->units_per_metre)
+		initial_position = POSITION * units_per_metre;
+
+	near_plane            = NEAR_PLANE * units_per_metre;
+	far_plane             = FAR_PLANE * units_per_metre;
+	movement_speed        = SPEED * units_per_metre;
+	this->units_per_metre = units_per_metre;
+	return true;
+}
+
 void Camera::set_zoom(GLfloat zoom)
 {
 	// the same range as process_mouse_scroll, so that the field of view never distorts or flips the image
