@@ -10,6 +10,8 @@
 #include "../camera/Camera.h"
 #include "../texture/Texture.h"
 
+#include <cmath>
+
 // Public Methods
 // --------------
 GLboolean Scene_Manager::load_skybox(const std::vector<std::string>& faces)
@@ -50,6 +52,20 @@ GLboolean Scene_Manager::load_skybox(const std::string& hdr_path)
 	// if the skybox is loaded successfully, print a success message and return true
 	std::cout << "[SUCCESS::SCENE_MANAGER::load_skybox] HDR skybox loaded successfully" << std::endl;
 	return GL_TRUE;
+}
+
+bool Scene_Manager::set_units_per_metre(GLfloat units_per_metre)
+{
+	if (!std::isfinite(units_per_metre) || units_per_metre <= 0.0f)
+	{
+		std::cerr << "[WARNING::SCENE_MANAGER::set_units_per_metre] Invalid number of units per metre (" << units_per_metre
+				  << "): it must be greater than 0; the unit of the scene is not changed" << std::endl;
+		return false;
+	}
+	this->units_per_metre = units_per_metre;
+	if (camera)
+		camera->apply_units(units_per_metre);
+	return true;
 }
 
 void Scene_Manager::reset_camera()

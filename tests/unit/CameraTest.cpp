@@ -3,7 +3,8 @@
  * This file contains the unit tests of the Camera class: the perspective projection that the renderer, the picking, and the
  * outline of the selection use (which depends on the zoom of the camera, on the aspect ratio or the size of the window, and on
  * the clip planes of the camera), the clip planes and their validation, the setters of the position, the angles, and the zoom,
- * look_at, the movement speed (kept by a reset), and that a camera cannot be selected, deleted, or moved like a node.
+ * look_at, the movement speed (kept by a reset), the defaults of a unit (apply_units, which never moves the camera), and that a
+ * camera cannot be selected, deleted, or moved like a node.
  */
 
 #include <cmath>
@@ -267,4 +268,65 @@ TEST(CameraTest, TheMovementSpeedCanBeSetAndAResetKeepsIt)
 	for (const float speed : { 0.0f, -1.0f, std::numeric_limits<float>::infinity(), std::numeric_limits<float>::quiet_NaN() })
 		EXPECT_FALSE(camera.set_movement_speed(speed));
 	EXPECT_FLOAT_EQ(camera.get_movement_speed(), 250.0f);
+}
+
+TEST(CameraTest, ApplyingAUnitSetsThePlanesAndTheSpeedButNeverMovesTheCamera)
+{
+	Camera camera{ "Camera" };
+
+	// the application places the camera before it sets the unit of its scene
+	camera.set_position(glm::vec3{ 5.0f, 40.0f, 120.0f });
+	camera.set_yaw(-60.0f);
+	camera.set_zoom(30.0f);
+	const glm::vec3 front{ camera.get_front() };
+
+	EXPECT_TRUE(camera.apply_units(100.0f)); // a scene in centimetres
+	EXPECT_FLOAT_EQ(camera.get_units_per_metre(), 100.0f);
+	EXPECT_FLOAT_EQ(camera.get_near_plane(), Camera::NEAR_PLANE * 100.0f);
+	EXPECT_FLOAT_EQ(camera.get_far_plane(), Camera::FAR_PLANE * 100.0f);
+	EXPECT_FLOAT_EQ(camera.get_movement_speed(), 250.0f);
+
+	// the camera stays where the application put it, looking the same way
+	EXPECT_EQ(camera.get_position(), (glm::vec3{ 5.0f, 40.0f, 120.0f }));
+	EXPECT_EQ(camera.get_front(), front);
+	EXPECT_FLOAT_EQ(camera.get_yaw(), -60.0f);
+	EXPECT_FLOAT_EQ(camera.get_zoom(), 30.0f);
+
+	// the default position that Reset restores follows the unit: (16, 6, 16) metres in centimetres
+	camera.Reset();
+	EXPECT_EQ(camera.get_position(), (glm::vec3{ 1600.0f, 600.0f, 1600.0f }));
+	EXPECT_FLOAT_EQ(camera.get_near_plane(), Camera::NEAR_PLANE * 100.0f); // a reset keeps the planes and the speed
+	EXPECT_FLOAT_EQ(camera.get_movement_speed(), 250.0f);
+}
+
+TEST(CameraTest, APositionGivenToTheConstructorStaysTheResetPositionWhenAUnitIsApplied)
+{
+	Camera camera{ "Camera", glm::vec3{ 1.0f, 2.0f, 3.0f } };
+
+	EXPECT_TRUE(camera.apply_units(100.0f));
+	camera.set_position(glm::vec3{ 50.0f });
+	camera.Reset();
+	EXPECT_EQ(camera.get_position(), (glm::vec3{ 1.0f, 2.0f, 3.0f }));
+}
+
+TEST(CameraTest, OverridesAfterAUnitWinAndAnInvalidUnitChangesNothing)
+{
+	Camera camera{ "Camera" };
+
+	EXPECT_TRUE(camera.apply_units(100.0f));
+	EXPECT_TRUE(camera.set_clip_planes(1.0f, 10000.0f)); // a nearer near plane for small objects, after the unit
+	EXPECT_FLOAT_EQ(camera.get_near_plane(), 1.0f);
+	EXPECT_FLOAT_EQ(camera.get_far_plane(), 10000.0f);
+
+	for (const float units : { 0.0f, -100.0f, std::numeric_limits<float>::infinity(), std::numeric_limits<float>::quiet_NaN() })
+		EXPECT_FALSE(camera.apply_units(units));
+	EXPECT_FLOAT_EQ(camera.get_units_per_metre(), 100.0f);
+	EXPECT_FLOAT_EQ(camera.get_near_plane(), 1.0f);
+	EXPECT_FLOAT_EQ(camera.get_far_plane(), 10000.0f);
+
+	// back to metres: the defaults of metres again, and the default position of Reset in metres
+	EXPECT_TRUE(camera.apply_units(1.0f));
+	EXPECT_FLOAT_EQ(camera.get_near_plane(), Camera::NEAR_PLANE);
+	camera.Reset();
+	EXPECT_EQ(camera.get_position(), (glm::vec3{ 16.0f, 6.0f, 16.0f }));
 }
