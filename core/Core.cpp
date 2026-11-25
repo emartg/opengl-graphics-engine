@@ -393,3 +393,13 @@ std::optional<Ray> Core::get_scene_ray(GLdouble x, GLdouble y) const
 		return std::nullopt;
 	return camera->get_ray(static_cast<GLfloat>(x - viewport.x), static_cast<GLfloat>(y - viewport.y), viewport.width, viewport.height);
 }
+
+std::shared_ptr<Node> Core::find_node_at(GLdouble x, GLdouble y) const
+{
+	const Scene_Viewport viewport{ get_scene_viewport() };
+	const auto           camera = scene_manager ? scene_manager->get_camera() : nullptr;
+	if (!selection_manager || !camera || !viewport.contains(x, y))
+		return nullptr;
+	return selection_manager
+		->find_node_at(static_cast<GLint>(x - viewport.x), static_cast<GLint>(y - viewport.y), camera.get(), node_manager.get());
+}

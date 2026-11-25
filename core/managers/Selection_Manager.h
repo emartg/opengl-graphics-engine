@@ -65,6 +65,11 @@ public:
 	// Returns a shared_ptr to the currently selected node (may be null)
 	std::shared_ptr<Node> get_selected_node(Node_Manager* node_manager) const;
 
+	// Returns the node drawn at a pixel of the scene viewport (from its top-left corner), found by rendering the picking pass now
+	// and reading that pixel, or nullptr where no node that can be selected is drawn. The selection does not change (e.g., to show
+	// what is under the cursor while something is dragged over the scene)
+	std::shared_ptr<Node> find_node_at(GLint x, GLint y, const Camera* camera, Node_Manager* node_manager);
+
 	// Clears the selection and explicitly clears the outline mask
 	void clear_selection();
 

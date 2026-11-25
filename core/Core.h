@@ -35,6 +35,7 @@ class Scene_Manager;
 class Selection_Manager;
 class Shader_Library;
 class Material_Library;
+class Node;
 
 class Core
 {
@@ -160,6 +161,10 @@ public:
 	// Returns the ray from the camera through a point of the framebuffer (in pixels from its top-left corner), or nothing when the
 	// point is outside the scene viewport or there is no camera
 	std::optional<Ray> get_scene_ray(GLdouble x, GLdouble y) const;
+	// Returns the node drawn at a point of the framebuffer (in pixels from its top-left corner), found by rendering the picking pass
+	// (Selection_Manager::find_node_at), or nullptr when there is none, the point is outside the scene viewport, or there is no
+	// camera. The selection does not change
+	std::shared_ptr<Node> find_node_at(GLdouble x, GLdouble y) const;
 
 	// Setters
 	void set_renderer(Renderer* renderer) { this->renderer = renderer; }

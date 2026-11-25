@@ -229,6 +229,22 @@ void Selection_Manager::process_pending_pick(const Camera* camera, Node_Manager*
 	// clicking same selected node leads to no logging or state change
 }
 
+std::shared_ptr<Node> Selection_Manager::find_node_at(GLint x, GLint y, const Camera* camera, Node_Manager* node_manager)
+{
+	if (!camera || !node_manager || x < 0 || y < 0 || x >= static_cast<GLint>(width) || y >= static_cast<GLint>(height))
+		return nullptr;
+
+	// the picking buffer of the current scene, with every node that can be selected encoded by its id, read at the pixel (OpenGL
+	// counts the rows from the bottom)
+	render_picking_visualization(camera, node_manager);
+	if (picking_pass.get_fbo_id() == 0)
+		return nullptr;
+	picking_pass.bind();
+	const std::uint32_t id = read_pixel_id(x, static_cast<GLint>(height) - 1 - y);
+	picking_pass.unbind();
+	return id != 0 ? find_node_by_id(node_manager, id) : nullptr;
+}
+
 void Selection_Manager::render_picking_visualization(const Camera* camera, Node_Manager* node_manager)
 {
 	// if shader, camera, or node manager are missing, return

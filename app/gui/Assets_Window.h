@@ -16,6 +16,7 @@
 #include <array>
 #include <cstdint>
 #include <map>
+#include <memory>
 #include <optional>
 #include <string>
 #include <utility>
@@ -23,6 +24,9 @@
 
 #include <imgui.h>
 #include <glm/glm.hpp>
+
+class Material;
+class Node;
 
 class Assets_Window
 {
@@ -52,6 +56,11 @@ public:
 	// The result is written in the status of the window. Called at the start of a frame, before the windows are drawn
 	void place_dropped_asset();
 
+	// Takes the dragged items over a node of another window (for example an entry of the Scene Graph), inside its drop target
+	// (between BeginDragDropTarget and EndDragDropTarget): one material is accepted over a model, and given to it in the next frame,
+	// as when it is dropped onto the model in the scene; anything else is refused with the reason
+	void accept_material_drop(const std::shared_ptr<Node>& node);
+
 	// Getters
 	// -------
 	// Returns true if assets or folders are selected (an asset that is selected counts as the selection of the App)
@@ -77,9 +86,10 @@ private:
 	// An asset dropped onto the scene, which place_dropped_asset places in the next frame
 	struct Scene_Drop
 	{
-		std::string path;                      // relative to the assets directory
-		Asset_Type  type{ Asset_Type::MODEL }; // a model or a skybox
-		glm::vec3   point{ 0.0f };             // where a model is placed, in world units
+		std::string   path;                      // relative to the assets directory
+		Asset_Type    type{ Asset_Type::MODEL }; // a model or a skybox
+		glm::vec3     point{ 0.0f };             // where a model is placed, in world units
+		std::uint32_t node_id{ 0 };              // the model that a material is given to
 	};
 
 	// A row of the list of the window: a folder or an asset
@@ -181,6 +191,17 @@ private:
 
 	// Shows the reason why the dragged items are refused over the scene next to the cursor, and in the status when they are dropped
 	void refuse_scene_drop(const std::string& reason);
+
+	// Returns why a material cannot be given to a node (none, a light's gizmo, a group, the camera...), or an empty text if it can
+	static std::string get_material_target_error(const Node* node);
+
+	// Draws a frame around the node on the screen (the rectangle that its bounding box covers in the scene viewport), to show which
+	// model a dragged material is given to
+	static void draw_node_highlight(const Node& node);
+
+	// Returns the material of the library whose descriptor is the given file, loading it into the library if it is not there yet
+	// (e.g., a descriptor added to the assets directory while the App runs), or nullptr (and the error) if it cannot be loaded
+	std::shared_ptr<Material> find_or_load_material(const std::filesystem::path& file, std::string& error) const;
 
 	// Moves items (and what is inside the folders) into a folder, updating the selection, the current folder, and the messages
 	void move_items(const std::vector<std::string>& paths, const std::string& folder);

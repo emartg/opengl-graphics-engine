@@ -12,7 +12,10 @@
 #include "core/managers/Node_Manager.h"
 #include "core/managers/Scene_Manager.h"
 #include "core/managers/Selection_Manager.h"
+#include "core/Node.h"
+#include "core/material/Material.h"
 #include "core/material/Material_Library.h"
+#include "core/shader/Shader_Library.h"
 #include "core/model/Assimp_Model.h"
 #include "core/utils/string/String_Utils.h"
 
@@ -649,6 +652,9 @@ void Assets_Window::draw_scene_drop_target(const ImVec2& position, const ImVec2&
 			if (error.empty())
 			{
 				scene_drop_text = action;
+				if (drop.type == Asset_Type::MATERIAL)
+					if (const auto node = Core::get_instance()->get_node_manager()->get_node_by_id(drop.node_id))
+						draw_node_highlight(*node);
 				if (ImGui::AcceptDragDropPayload(ITEMS_PAYLOAD) != nullptr)
 					pending_scene_drop = drop; // placed at the start of the next frame
 			}
@@ -659,6 +665,26 @@ void Assets_Window::draw_scene_drop_target(const ImVec2& position, const ImVec2&
 	}
 	ImGui::End();
 	ImGui::PopStyleVar(2);
+}
+
+void Assets_Window::accept_material_drop(const std::shared_ptr<Node>& node)
+{
+	const ImGuiPayload* dragged = ImGui::GetDragDropPayload();
+	if (dragged == nullptr || !dragged->IsDataType(ITEMS_PAYLOAD))
+		return;
+
+	const Asset*      asset = dragged_paths.size() == 1 ? registry.find_by_path(dragged_paths.front()) : nullptr;
+	const std::string error = (asset == nullptr || asset->type != Asset_Type::MATERIAL)
+		? std::string{ "Only one material can be dropped onto a node" }
+		: get_material_target_error(node.get());
+	if (!error.empty())
+	{
+		refuse_scene_drop(error);
+		return;
+	}
+	scene_drop_text = "Give \"" + name_of(dragged_paths.front()) + "\" to \"" + node->get_name() + "\"";
+	if (ImGui::AcceptDragDropPayload(ITEMS_PAYLOAD) != nullptr)
+		pending_scene_drop = Scene_Drop{ asset->path.generic_string(), Asset_Type::MATERIAL, glm::vec3{ 0.0f }, node->get_id() };
 }
 
 void Assets_Window::place_dropped_asset()
@@ -697,6 +723,25 @@ void Assets_Window::place_dropped_asset()
 		text << std::fixed << std::setprecision(2) << "Placed \"" << name << "\" at (" << drop.point.x << ", " << drop.point.y << ", "
 			 << drop.point.z << ").";
 		set_status(text.str(), false);
+		return;
+	}
+
+	if (drop.type == Asset_Type::MATERIAL)
+	{
+		const std::shared_ptr<Node> node = core->get_node_manager()->get_node_by_id(drop.node_id);
+		std::string                 error;
+		const auto                  material = node ? find_or_load_material(absolute_path, error) : nullptr;
+		if (!node)
+			set_status("Nothing was given: the model is no longer in the scene.", true);
+		else if (!material)
+			set_status("The material \"" + name_of(drop.path) + "\" could not be loaded: " + error, true);
+		else
+		{ // the model takes the material (as with the Material combo of the Properties window) and becomes the selection
+			node->set_material(material);
+			core->get_selection_manager()->set_selected_node_id(node->get_id());
+			selection.clear();
+			set_status("Gave the material \"" + material->get_name() + "\" to \"" + node->get_name() + "\".", false);
+		}
 		return;
 	}
 
@@ -851,7 +896,17 @@ std::string Assets_Window::get_scene_drop_error(double framebuffer_x, double fra
 				return "Skybox descriptors cannot be loaded yet";
 			action = "Use \"" + name + "\" as the skybox";
 			return {};
-		case Asset_Type::MATERIAL: return "Materials cannot be dropped onto the scene yet";
+		case Asset_Type::MATERIAL:
+		{
+			// onto the model under the cursor, found by picking (every frame while the material is dragged over the scene)
+			const std::shared_ptr<Node> node  = core->find_node_at(framebuffer_x, framebuffer_y);
+			const std::string           error = get_material_target_error(node.get());
+			if (!error.empty())
+				return error;
+			drop.node_id = node->get_id();
+			action       = "Give \"" + name + "\" to \"" + node->get_name() + "\"";
+			return {};
+		}
 		default: return Asset_Registry::to_string(asset->type) + " assets cannot be dropped onto the scene";
 	}
 }
@@ -864,6 +919,75 @@ void Assets_Window::refuse_scene_drop(const std::string& reason)
 		ImGui::AcceptDragDropPayload(ITEMS_PAYLOAD, ImGuiDragDropFlags_AcceptBeforeDelivery | ImGuiDragDropFlags_AcceptNoDrawDefaultRect);
 	if (dropped != nullptr && dropped->IsDelivery())
 		set_status("Nothing was placed. " + reason + ".", true);
+}
+
+std::string Assets_Window::get_material_target_error(const Node* node)
+{
+	if (node == nullptr)
+		return "Drop the material onto a model";
+	if (node->get_gizmo_type() != Gizmo_Type::NONE)
+		return "A material is given to a model, not to a light";
+	switch (node->get_type())
+	{
+		case Node_Type::MODEL:
+		case Node_Type::ASSIMP_MODEL:
+		case Node_Type::SHAPE_MODEL: return {};
+		case Node_Type::CAMERA: return "A material is given to a model, not to the camera";
+		case Node_Type::LIGHT: return "A material is given to a model, not to a light";
+		default: return "A material is given to a model, not to a group";
+	}
+}
+
+void Assets_Window::draw_node_highlight(const Node& node)
+{
+	const auto           core   = Core::get_instance();
+	const auto&          camera = core->get_scene_manager()->get_camera();
+	const Scene_Viewport viewport{ core->get_scene_viewport() };
+	const Bounding_Box   box{ node.get_world_bounding_box() };
+	if (!camera || !box.is_valid() || viewport.width == 0 || viewport.height == 0)
+		return;
+
+	// the eight corners of the box on the screen, in the coordinates of the GUI (a box that reaches behind the camera is not framed)
+	const glm::mat4 projection_view{ camera->get_projection_matrix(viewport.width, viewport.height) * camera->get_view_matrix() };
+	const ImGuiIO&  io = ImGui::GetIO();
+	ImVec2          low{ FLT_MAX, FLT_MAX }, high{ -FLT_MAX, -FLT_MAX };
+	for (int corner{ 0 }; corner < 8; ++corner)
+	{
+		const glm::vec3 point{ (corner & 1) ? box.get_max().x : box.get_min().x,
+							   (corner & 2) ? box.get_max().y : box.get_min().y,
+							   (corner & 4) ? box.get_max().z : box.get_min().z };
+		const glm::vec4 clip{ projection_view * glm::vec4{ point, 1.0f } };
+		if (clip.w <= 1e-6f)
+			return;
+		const float x = (viewport.x + (clip.x / clip.w + 1.0f) * 0.5f * viewport.width) / io.DisplayFramebufferScale.x;
+		const float y = (viewport.y + (1.0f - clip.y / clip.w) * 0.5f * viewport.height) / io.DisplayFramebufferScale.y;
+		low           = ImVec2{ std::min(low.x, x), std::min(low.y, y) };
+		high          = ImVec2{ std::max(high.x, x), std::max(high.y, y) };
+	}
+
+	// drawn over the scene only (the frame is cut at the edges of the scene viewport)
+	ImDrawList*  draw_list = ImGui::GetForegroundDrawList();
+	const ImVec2 area_min{ viewport.x / io.DisplayFramebufferScale.x, viewport.y / io.DisplayFramebufferScale.y };
+	const ImVec2 area_max{ (viewport.x + viewport.width) / io.DisplayFramebufferScale.x,
+						   (viewport.y + viewport.height) / io.DisplayFramebufferScale.y };
+	draw_list->PushClipRect(area_min, area_max, true);
+	draw_list->AddRect(low, high, ImGui::GetColorU32(ImGuiCol_DragDropTarget), 0.0f, 0, 2.0f);
+	draw_list->PopClipRect();
+}
+
+std::shared_ptr<Material> Assets_Window::find_or_load_material(const fs::path& file, std::string& error) const
+{
+	auto core = Core::get_instance();
+	for (const auto& material : core->get_material_library()->get_materials())
+	{
+		std::error_code code;
+		if (!material->get_file_path().empty() && fs::equivalent(material->get_file_path(), file, code))
+			return material;
+	}
+
+	// not in the library yet: loaded with the shaders of the library, and added to it (with a numeric suffix if its name is taken)
+	std::shared_ptr<Material> material = Material_Library::load_file(file, *core->get_shader_library(), error);
+	return material ? core->get_material_library()->add(material) : nullptr;
 }
 
 void Assets_Window::move_items(const std::vector<std::string>& paths, const std::string& folder)

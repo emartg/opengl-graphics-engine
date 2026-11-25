@@ -1474,10 +1474,12 @@ void GUI::draw_tree_node_recursive(const std::shared_ptr<Node>& node)
 		ImGui::EndDragDropSource(); // end the drag source
 	}
 
-	// DROP TARGET: only make nodes that can be parents a drop target
-	if (node->get_can_be_parent() && ImGui::BeginDragDropTarget())
+	// DROP TARGET: every node takes a material dragged from the Assets window (given to it if it is a model), and the nodes that
+	// can be parents take the nodes dragged in the Scene Graph
+	if (ImGui::BeginDragDropTarget())
 	{
-		if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("SCENE_GRAPH_NODE"))
+		assets_window.accept_material_drop(node);
+		if (const ImGuiPayload* payload = node->get_can_be_parent() ? ImGui::AcceptDragDropPayload("SCENE_GRAPH_NODE") : nullptr)
 		{
 			// get the node manager from the Core instance to resolve node ids to node pointers
 			auto&         node_manager    = Core::get_instance()->get_node_manager();
