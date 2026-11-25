@@ -154,6 +154,9 @@ void GUI::draw()
 {
 	// the selection of the App is either something of the scene or assets: selecting something of the scene (in the
 	// viewport or in the Scene Graph window) unselects the assets (selecting an asset unselects the scene itself)
+	// an asset dropped onto the scene in the last frame is placed first, so that what it creates is selected in this frame
+	assets_window.place_dropped_asset();
+
 	const std::uint32_t scene_selection_id = Core::get_instance()->get_selection_manager()->get_selected_node_id();
 	if (scene_selection_id != 0 && scene_selection_id != last_scene_selection_id)
 		assets_window.clear_selection();
@@ -302,6 +305,9 @@ void GUI::configure_gui_layout()
 	const long   right{ std::lround((io.DisplaySize.x - right_width) * scale.x) };
 	const long   top{ std::lround(ImGui::GetFrameHeight() * scale.y) };
 	const long   bottom{ std::lround(io.DisplaySize.y * scale.y) };
+	scene_area_position = ImVec2{ left_width, ImGui::GetFrameHeight() };
+	scene_area_size =
+		ImVec2{ std::max(io.DisplaySize.x - right_width - left_width, 0.0f), std::max(io.DisplaySize.y - ImGui::GetFrameHeight(), 0.0f) };
 	Core::get_instance()->set_scene_viewport(
 		Scene_Viewport{ static_cast<GLint>(left),
 						static_cast<GLint>(top),
@@ -434,6 +440,8 @@ void GUI::draw_layout_splitters()
 
 void GUI::draw_gui_windows()
 {
+	// the target of the assets dropped onto the scene first, so that it stays behind every other window
+	assets_window.draw_scene_drop_target(scene_area_position, scene_area_size);
 	draw_main_menu_bar();
 	draw_scene_graph_window();
 	assets_window.draw(assets_window_position, assets_window_size, bold_font, &show_assets_window);

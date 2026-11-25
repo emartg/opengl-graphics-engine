@@ -3,8 +3,8 @@
  * This file contains the unit tests of the Camera class: the perspective projection that the renderer, the picking, and the
  * outline of the selection use (which depends on the zoom of the camera, on the aspect ratio or the size of the window, and on
  * the clip planes of the camera), the clip planes and their validation, the setters of the position, the angles, and the zoom,
- * look_at, the movement speed (kept by a reset), the defaults of a unit (apply_units, which never moves the camera), and that a
- * camera cannot be selected, deleted, or moved like a node.
+ * look_at, the movement speed (kept by a reset), the defaults of a unit (apply_units, which never moves the camera), the ray and
+ * the point under a pixel of a view (get_ray and unproject), and that a camera cannot be selected, deleted, or moved like a node.
  */
 
 #include <cmath>
@@ -329,4 +329,38 @@ TEST(CameraTest, OverridesAfterAUnitWinAndAnInvalidUnitChangesNothing)
 	EXPECT_FLOAT_EQ(camera.get_near_plane(), Camera::NEAR_PLANE);
 	camera.Reset();
 	EXPECT_EQ(camera.get_position(), (glm::vec3{ 16.0f, 6.0f, 16.0f }));
+}
+
+TEST(CameraTest, UnprojectingAProjectedPointGivesThePointBack)
+{
+	Camera camera{ "Camera" };
+	camera.look_at(glm::vec3{ 0.0f });
+	const GLuint width{ 800 }, height{ 600 };
+
+	// a point of the scene projected to a pixel of the view and a depth, as the renderer draws it, and back
+	const glm::vec3 point{ 1.5f, 0.5f, -2.0f };
+	const glm::vec4 clip{ camera.get_projection_matrix(width, height) * camera.get_view_matrix() * glm::vec4{ point, 1.0f } };
+	const glm::vec3 ndc{ glm::vec3{ clip } / clip.w };
+	const float     x{ (ndc.x + 1.0f) * 0.5f * width };
+	const float     y{ (1.0f - ndc.y) * 0.5f * height }; // from the top of the view
+	const float     depth{ (ndc.z + 1.0f) * 0.5f };
+
+	const glm::vec3 back{ camera.unproject(x, y, depth, width, height) };
+	EXPECT_NEAR(back.x, point.x, 1e-2f);
+	EXPECT_NEAR(back.y, point.y, 1e-2f);
+	EXPECT_NEAR(back.z, point.z, 1e-2f);
+
+	// the ray through that pixel passes through the point
+	const Ray       ray{ camera.get_ray(x, y, width, height) };
+	const glm::vec3 to_point{ point - ray.origin };
+	EXPECT_NEAR(glm::length(glm::cross(ray.direction, glm::normalize(to_point))), 0.0f, 1e-3f);
+	EXPECT_GT(glm::dot(ray.direction, to_point), 0.0f);
+}
+
+TEST(CameraTest, TheRayThroughTheCentreOfTheViewIsTheDirectionOfTheCamera)
+{
+	Camera    camera{ "Camera" };
+	const Ray ray{ camera.get_ray(400.0f, 300.0f, 800, 600) };
+	EXPECT_EQ(ray.origin, camera.get_position());
+	EXPECT_NEAR(glm::dot(ray.direction, camera.get_front()), 1.0f, 1e-5f);
 }

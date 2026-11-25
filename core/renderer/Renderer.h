@@ -21,6 +21,7 @@
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
+#include <optional>
 #include <unordered_map>
 
 #include <glad/glad.h> // holds all OpenGL type declarations
@@ -127,6 +128,13 @@ public:
 
 	// number of lights uploaded to the light buffer in the last frame
 	std::size_t get_light_count() const { return light_count_last_frame; }
+
+	// Returns the depth of the scene at a pixel of the scene viewport (measured from its top-left corner), as the depth buffer of
+	// the last rendered frame stores it (0 at the near plane, 1 at the far plane, and 1 where nothing was drawn or only the sky), or
+	// nothing when the pixel is outside the image or no frame was rendered yet. The image is the one of the last frame until the
+	// next frame clears it, so a GUI layer reads what is on the screen while it is drawn. Transparent objects do not write depth, so
+	// they are not found
+	std::optional<GLfloat> read_scene_depth(GLint x, GLint y) const;
 
 	// Setters
 	virtual void set_callback_functions() const = 0;

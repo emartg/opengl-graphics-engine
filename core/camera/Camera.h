@@ -8,6 +8,7 @@
 #pragma once
 
 #include "../Node.h"
+#include "../utils/geometry/Ray.h"
 
 #include <iostream>
 #include <algorithm>
@@ -136,6 +137,13 @@ public:
 	// over the height, or 1 when the height is 0). The renderer, the picking, and the outline of the selection all use it,
 	// so that what is drawn, what is picked, and what is outlined always agree
 	glm::mat4 get_projection_matrix(GLuint width, GLuint height) const;
+	// Returns the ray from the position of the camera through a point of a view of the given size in pixels (measured from the
+	// top-left corner of the view, as the windowing system and the GUI measure it; the centre of a pixel is at its coordinates
+	// plus 0.5), with the projection of get_projection_matrix(width, height)
+	Ray get_ray(GLfloat x, GLfloat y, GLuint width, GLuint height) const;
+	// Returns the point of the world that is drawn at a point of a view of the given size in pixels (from its top-left corner) with
+	// the given depth, as the depth buffer stores it (0 at the near plane, 1 at the far plane): the inverse of the projection
+	glm::vec3 unproject(GLfloat x, GLfloat y, GLfloat depth, GLuint width, GLuint height) const;
 
 	// Processes input received from any keyboard-like input system.
 	// Accepts input parameter in the form of defined enum class (to abstract it from windowing systems)

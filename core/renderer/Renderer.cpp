@@ -172,6 +172,22 @@ void Renderer::clear_buffers(Buffer_Type buffer_type) const
 	glClear(mask); // clear the specified buffers
 }
 
+std::optional<GLfloat> Renderer::read_scene_depth(GLint x, GLint y) const
+{
+	if (!main_render_pass || main_render_pass->get_fbo_id() == 0 || x < 0 || y < 0 || x >= static_cast<GLint>(offscreen_width) ||
+		y >= static_cast<GLint>(offscreen_height))
+		return std::nullopt;
+
+	// read the depth from the offscreen pass (OpenGL counts its rows from the bottom), and put the read framebuffer back
+	GLint previous_read_framebuffer{ 0 };
+	glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &previous_read_framebuffer);
+	glBindFramebuffer(GL_READ_FRAMEBUFFER, main_render_pass->get_fbo_id());
+	GLfloat depth{ 1.0f };
+	glReadPixels(x, static_cast<GLint>(offscreen_height) - 1 - y, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &depth);
+	glBindFramebuffer(GL_READ_FRAMEBUFFER, static_cast<GLuint>(previous_read_framebuffer));
+	return depth;
+}
+
 void Renderer::set_viewport(int width, int height) const
 {
 	glViewport(0, 0, width, height);

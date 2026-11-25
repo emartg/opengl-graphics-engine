@@ -118,6 +118,9 @@ private:
 	float                left_bar_relative_width{ 0.0f }, right_bar_relative_width{ 0.0f };
 	std::array<float, 2> left_bar_shares{};  // Scene Graph, Assets
 	std::array<float, 3> right_bar_shares{}; // Properties, Creation, Debug
+	// the area between the side bars, below the menu bar, where the scene is drawn, in the coordinates of the GUI (set by
+	// configure_gui_layout every frame; the assets dragged from the Assets window are dropped there)
+	ImVec2 scene_area_position, scene_area_size;
 	// the splitters of the current frame (set by configure_gui_layout, drawn by draw_layout_splitters)
 	std::vector<Layout_Splitter> layout_splitters;
 	// positions and sizes of the windows in the display (set by configure_gui_layout every frame)
