@@ -239,6 +239,8 @@ private:
 	// Draws controls for a model
 	void draw_model_controls(Node* model);
 
+	// Adds a light made by the Node_Factory and its gizmo to the scene
+	void add_light(const std::shared_ptr<Light>& light);
 	// Draws a pop-up modal window to create a new directional light
 	void draw_create_directional_light_popup();
 	// Draws a pop-up modal window to create a new point light

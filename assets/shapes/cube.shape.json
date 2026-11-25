@@ -1,0 +1,6 @@
+{
+  "name": "Cube Shape",
+  "shape": "cube",
+  "size": [2.0, 2.0, 2.0],
+  "color": [0.8, 0.8, 0.8, 1.0]
+}

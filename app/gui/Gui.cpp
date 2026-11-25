@@ -19,11 +19,10 @@
 
 #include "Gui.h"
 #include "ImGuiFileDialog.h"
-#include "../CUBE.h"
-#include "../PLANE.h"
 
 #include "core/Core.h"
 #include "core/Node.h"
+#include "core/asset/Node_Factory.h"
 #include "core/camera/Camera.h"
 #include "core/light/Light.h"
 #include "core/light/Directional_Light.h"
@@ -2021,11 +2020,17 @@ void GUI::draw_model_controls(Node* model)
 }
 
 
+void GUI::add_light(const std::shared_ptr<Light>& light)
+{
+	auto& node_manager = Core::get_instance()->get_node_manager();
+	// register the gizmo child for selection and picking, then the light
+	if (auto gizmo = light->get_gizmo())
+		node_manager->add_node(gizmo);
+	node_manager->add_node(light);
+}
+
 void GUI::draw_create_directional_light_popup()
 {
-	// get the node manager from the Core instance
-	auto& node_manager = Core::get_instance()->get_node_manager();
-
 	if (ImGui::BeginPopupModal("Create Directional Light", NULL, ImGuiWindowFlags_AlwaysAutoResize))
 	{ // if the popup is open
 		// display a message to the user
@@ -2074,25 +2079,13 @@ void GUI::draw_create_directional_light_popup()
 		ImGui::SameLine();
 		if (ImGui::Button("Create", ImVec2(POPUP_BUTTON_WIDTH, 0.0f)))
 		{ // if the create button is clicked
-			// create a new directional light with a placeholder name and the specified properties
-			auto directional_light = std::make_shared<Directional_Light>(
-				"Directional Light",
-				glm::vec3{ 0.1f },
-				new_albedo,
-				glm::vec3{ 1.0f },
-				new_position,
-				new_direction);
-
-			// convert the light's id to string and set it as part of the light's name
-			directional_light->set_name(String_Utils::generate_id_prefixed_name(directional_light));
-
-			// create the gizmo child (the light has been fully constructed and placed in a shared_ptr)
-			directional_light->create_gizmo();
-			// register the gizmo child for selection/picking before moving the light
-			auto directional_light_gizmo = directional_light->get_gizmo();
-			if (directional_light_gizmo)
-				node_manager->add_node(directional_light_gizmo);
-			node_manager->add_node(std::move(directional_light));
+			// create a new directional light with the specified properties, as a light asset would describe it
+			Light_Descriptor descriptor;
+			descriptor.name      = "Directional Light";
+			descriptor.type      = Light_Type::DIRECTIONAL_LIGHT;
+			descriptor.diffuse   = new_albedo;
+			descriptor.direction = new_direction;
+			add_light(Node_Factory::create_light(descriptor, new_position));
 
 			ImGui::CloseCurrentPopup(); // close the popup
 		}
@@ -2110,9 +2103,6 @@ void GUI::draw_create_directional_light_popup()
 
 void GUI::draw_create_point_light_popup()
 {
-	// get the node manager from the Core instance
-	auto& node_manager = Core::get_instance()->get_node_manager();
-
 	if (ImGui::BeginPopupModal("Create Point Light", NULL, ImGuiWindowFlags_AlwaysAutoResize))
 	{ // if the popup is open
 		// display a message to the user
@@ -2151,19 +2141,12 @@ void GUI::draw_create_point_light_popup()
 		ImGui::SameLine();
 		if (ImGui::Button("Create", ImVec2(POPUP_BUTTON_WIDTH, 0.0f)))
 		{ // if the create button is clicked
-			// create a new point light with a placeholder name and the specified properties
-			auto point_light = std::make_shared<Point_Light>("Point Light", glm::vec3{ 0.1f }, new_albedo, glm::vec3{ 1.0f }, new_position);
-
-			// convert the light's id to string and set it as part of the light's name
-			point_light->set_name(String_Utils::generate_id_prefixed_name(point_light));
-
-			// create the gizmo child (the light has been fully constructed and placed in a shared_ptr)
-			point_light->create_gizmo();
-			// register the gizmo child for selection/picking before moving the light
-			auto point_light_gizmo = point_light->get_gizmo();
-			if (point_light_gizmo)
-				node_manager->add_node(point_light_gizmo);
-			node_manager->add_node(std::move(point_light));
+			// create a new point light with the specified properties, as a light asset would describe it
+			Light_Descriptor descriptor;
+			descriptor.name    = "Point Light";
+			descriptor.type    = Light_Type::POINT_LIGHT;
+			descriptor.diffuse = new_albedo;
+			add_light(Node_Factory::create_light(descriptor, new_position));
 
 			ImGui::CloseCurrentPopup(); // close the popup
 		}
@@ -2180,9 +2163,6 @@ void GUI::draw_create_point_light_popup()
 
 void GUI::draw_create_spotlight_popup()
 {
-	// get the node manager from the Core instance
-	auto& node_manager = Core::get_instance()->get_node_manager();
-
 	if (ImGui::BeginPopupModal("Create Spotlight", NULL, ImGuiWindowFlags_AlwaysAutoResize))
 	{ // if the popup is open
 		// display a message to the user
@@ -2253,20 +2233,14 @@ void GUI::draw_create_spotlight_popup()
 		ImGui::SameLine();
 		if (ImGui::Button("Create", ImVec2(POPUP_BUTTON_WIDTH, 0.0f)))
 		{ // if the create button is clicked
-			// create a new spotlight with a placeholder name and the specified properties
-			auto spotlight =
-				std::make_shared<Spotlight>("Spotlight", glm::vec3{ 0.1f }, new_albedo, glm::vec3{ 1.0f }, new_position, new_direction);
-
-			// convert the light's id to string and set it as part of the light's name
-			spotlight->set_name(String_Utils::generate_id_prefixed_name(spotlight));
-
-			// create the gizmo child (the light has been fully constructed and placed in a shared_ptr)
-			spotlight->create_gizmo();
-			// register the gizmo child for selection/picking before moving the light
-			auto spotlight_gizmo = spotlight->get_gizmo();
-			if (spotlight_gizmo)
-				node_manager->add_node(spotlight_gizmo);
-			node_manager->add_node(std::move(spotlight));
+			// create a new spotlight with the specified properties, as a light asset would describe it (with the default
+			// cut-off angles of a spotlight, as before: the light never took the cut-off angles of this popup)
+			Light_Descriptor descriptor;
+			descriptor.name      = "Spotlight";
+			descriptor.type      = Light_Type::SPOTLIGHT;
+			descriptor.diffuse   = new_albedo;
+			descriptor.direction = new_direction;
+			add_light(Node_Factory::create_light(descriptor, new_position));
 
 			ImGui::CloseCurrentPopup(); // close the popup
 		}
@@ -2340,22 +2314,16 @@ void GUI::draw_create_plane_shape_popup()
 		ImGui::SameLine();
 		if (ImGui::Button("Create", ImVec2(POPUP_BUTTON_WIDTH, 0.0f)))
 		{ // if the create button is clicked
-			// create a plane shape with a placeholder name and the specified properties
-			auto plane_shape = std::make_shared<Shape_Model>(
-				"Plane Shape",
-				plane_vertices_vector,
-				plane_indices_vector,
-				new_albedo,
-				new_position,
-				glm::quat{ 1.0f, 0.0f, 0.0f, 0.0f },
-				new_scale);
-			// indicate that the plane is a two-sided shape
-			plane_shape->set_is_two_sided(true);
-			// set the rotation in Euler angles of the new plane shape
+			// create a plane shape with the specified properties, as a shape asset would describe it (two-sided)
+			Shape_Descriptor descriptor;
+			descriptor.name         = "Plane Shape";
+			descriptor.primitive    = Shape_Primitive::PLANE;
+			descriptor.color        = new_albedo;
+			descriptor.is_two_sided = true;
+			auto plane_shape        = Node_Factory::create_shape(descriptor, new_position);
+			// the scale and the rotation of the popup
+			plane_shape->set_scale(new_scale);
 			plane_shape->set_rotation_in_euler_angles(new_rotation);
-
-			// convert the shape's id to string and set it as part of the shape's name
-			plane_shape->set_name(String_Utils::generate_id_prefixed_name(plane_shape));
 
 			// add the new plane shape to the engine
 			node_manager->add_node(std::move(plane_shape));
@@ -2432,20 +2400,15 @@ void GUI::draw_create_cube_shape_popup()
 		ImGui::SameLine();
 		if (ImGui::Button("Create", ImVec2(POPUP_BUTTON_WIDTH, 0.0f)))
 		{ // if the create button is clicked
-			// create a cube shape with a placeholder name and the specified properties
-			auto cube_shape = std::make_shared<Shape_Model>(
-				"Cube Shape",
-				cube_vertices_vector,
-				cube_indices_vector,
-				new_albedo,
-				new_position,
-				glm::quat{ 1.0f, 0.0f, 0.0f, 0.0f },
-				new_scale);
-			// set the rotation of the new cube shape
+			// create a cube shape with the specified properties, as a shape asset would describe it
+			Shape_Descriptor descriptor;
+			descriptor.name      = "Cube Shape";
+			descriptor.primitive = Shape_Primitive::CUBE;
+			descriptor.color     = new_albedo;
+			auto cube_shape      = Node_Factory::create_shape(descriptor, new_position);
+			// the scale and the rotation of the popup
+			cube_shape->set_scale(new_scale);
 			cube_shape->set_rotation_in_euler_angles(new_rotation);
-
-			// convert the shape's id to string and set it as part of the shape's name
-			cube_shape->set_name(String_Utils::generate_id_prefixed_name(cube_shape));
 
 			// add the new cube shape to the engine
 			node_manager->add_node(std::move(cube_shape));

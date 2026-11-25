@@ -1,0 +1,7 @@
+{
+  "name": "Plane Shape",
+  "shape": "plane",
+  "size": [2.0, 2.0],
+  "color": [0.8, 0.8, 0.8, 1.0],
+  "two_sided": true
+}

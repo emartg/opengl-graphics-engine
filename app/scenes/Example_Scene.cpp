@@ -5,8 +5,8 @@
 
 #include "Scenes.h"
 
-#include "../CUBE.h"
-#include "../PLANE.h"
+#include "core/model/CUBE.h"
+#include "core/model/PLANE.h"
 
 #include "core/Core.h"
 #include "core/Node.h"
