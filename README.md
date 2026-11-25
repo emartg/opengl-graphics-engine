@@ -1,7 +1,7 @@
 
 # OpenGL 4.5 based Graphics Engine
 
-[![Language](https://img.shields.io/badge/C%2B%2B-20-blue.svg)](https://isocpp.org/)
+[![Language](https://img.shields.io/badge/C%2B%2B-23-blue.svg)](https://isocpp.org/)
 [![OpenGL](https://img.shields.io/badge/OpenGL-4.5-red.svg)](https://www.opengl.org/)
 [![CI](https://github.com/emartg/opengl-graphics-engine/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/emartg/opengl-graphics-engine/actions/workflows/ci.yml)
 [![CMake](https://img.shields.io/badge/CMake-≥3.26-brightgreen.svg)](https://cmake.org/)
