@@ -1,0 +1,8 @@
+{
+  "name": "Point Light",
+  "type": "point",
+  "color": [0.8, 0.8, 0.8],
+  "ambient": [0.1, 0.1, 0.1],
+  "specular": [1.0, 1.0, 1.0],
+  "gizmo_size": 0.3
+}
